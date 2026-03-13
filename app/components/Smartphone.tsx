@@ -127,26 +127,6 @@ function ScreenWithTexture({
   );
 }
 
-function ScreenPlaceholder({
-  screenGeometry,
-  screenPosition,
-  screenRotation,
-}: {
-  screenGeometry: THREE.ShapeGeometry;
-  screenPosition: [number, number, number];
-  screenRotation: [number, number, number];
-}) {
-  return (
-    <mesh
-      geometry={screenGeometry}
-      position={screenPosition}
-      rotation={screenRotation}
-    >
-      <meshBasicMaterial color="red" side={THREE.DoubleSide} />
-    </mesh>
-  );
-}
-
 export function Smartphone({
   imageUrl,
   screenPosition = [-125, 315, -195],
@@ -181,7 +161,7 @@ export function Smartphone({
     return geo;
   }, [screenSize]);
 
-  const hasImage = !!imageUrl && imageUrl !== "/placeholder.jpg";
+  const hasImage = !!imageUrl && imageUrl !== "/placeholder.png";
 
   return (
     <group {...props} dispose={null}>
@@ -253,20 +233,12 @@ export function Smartphone({
       />
 
       {/* TELA */}
-      {hasImage ? (
-        <ScreenWithTexture
-          imageUrl={imageUrl!}
-          screenGeometry={screenGeometry}
-          screenPosition={screenPosition}
-          screenRotation={screenRotation}
-        />
-      ) : (
-        <ScreenPlaceholder
-          screenGeometry={screenGeometry}
-          screenPosition={screenPosition}
-          screenRotation={screenRotation}
-        />
-      )}
+      <ScreenWithTexture
+        imageUrl={hasImage ? imageUrl! : "/placeholder.png"}
+        screenGeometry={screenGeometry}
+        screenPosition={screenPosition}
+        screenRotation={screenRotation}
+      />
 
       <mesh geometry={nodes.o_Capsule.geometry} material={materials["Mat.1"]} />
       <mesh

@@ -6,7 +6,8 @@ import { Smartphone } from "./components/Smartphone";
 import { Bounds, Center, OrbitControls } from "@react-three/drei";
 
 export default function Home() {
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedImage, setUploadedImage] =
+    useState<string>("/placeholder.png");
   const [modelScale, setModelScale] = useState(0.009); // Escala inicial que você usava
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
@@ -62,7 +63,7 @@ export default function Home() {
             <Bounds fit clip observe margin={1.2}>
               <Center>
                 <Smartphone
-                  imageUrl={uploadedImage ?? "/placeholder.jpg"}
+                  imageUrl={uploadedImage}
                   scale={modelScale}
                   rotation={[0, Math.PI, 0]}
                   // screenPosition, screenSize e screenRotation agora têm valores padrão dentro do componente
