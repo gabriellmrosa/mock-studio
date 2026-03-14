@@ -60,6 +60,20 @@ const DEBUG_GROUPS: { label: string; parts: string[] }[] = [
       "lente3",
     ],
   },
+  {
+    label: "Não mapeados",
+    parts: [
+      "desconhecido1",
+      "desconhecido2",
+      "desconhecido3",
+      "desconhecido4",
+      "desconhecido5",
+      "desconhecido6",
+      "desconhecido7",
+      "desconhecido8",
+      "desconhecido9",
+    ],
+  },
 ];
 
 // Cores iniciais vibrantes para cada parte no debug
@@ -82,6 +96,15 @@ const INITIAL_DEBUG_COLORS: Record<string, string> = {
   lente1: "#0000ff",
   lente2: "#ffff99",
   lente3: "#00ff99",
+  desconhecido1: "#ff0000",
+  desconhecido2: "#ff4400",
+  desconhecido3: "#ff8800",
+  desconhecido4: "#ffcc00",
+  desconhecido5: "#88ff00",
+  desconhecido6: "#00ffcc",
+  desconhecido7: "#0088ff",
+  desconhecido8: "#8800ff",
+  desconhecido9: "#ff00aa",
 };
 
 // ---------------------------------------------------------------------------

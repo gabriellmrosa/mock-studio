@@ -48,6 +48,15 @@ export const MESH_SEMANTIC: Record<string, string> = {
   lente1: "o_Cap2_2",
   lente2: "o_Cap2_6",
   lente3: "o_Cap2_1",
+  desconhecido1: "o_Cap2_3",
+  desconhecido2: "o_Cap2_4",
+  desconhecido3: "o_Cap2_5",
+  desconhecido4: "o_Extrude2_1",
+  desconhecido5: "o_Cap1_5",
+  desconhecido6: "o_Extrude1_1",
+  desconhecido7: "o_Capsule1",
+  desconhecido8: "o_Extrude_1",
+  desconhecido9: "o_Extrude_2",
 };
 
 // Inverso: nome GLB → chave semântica (para lookup rápido no mat())
@@ -98,7 +107,6 @@ function getRoundedRectangleShape(
 // ---------------------------------------------------------------------------
 type GLTFResult = GLTF & {
   nodes: {
-    o_Cube1: THREE.Mesh;
     o_Extrude2: THREE.Mesh;
     o_Cap1: THREE.Mesh;
     o_Cap2: THREE.Mesh;
