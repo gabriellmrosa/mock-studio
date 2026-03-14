@@ -6,10 +6,8 @@ import {
   Smartphone,
   THEMES,
   DEFAULT_THEME,
-  MESH_SEMANTIC,
   type ThemeName,
   type PhoneColors,
-  type DebugPartKey,
 } from "./components/Smartphone";
 import { Bounds, Center, Environment, OrbitControls } from "@react-three/drei";
 
@@ -28,17 +26,20 @@ const THEME_OPTIONS: { id: ThemeName; label: string; preview: string }[] = [
 const DEBUG_GROUPS: { label: string; parts: string[] }[] = [
   {
     label: "Corpo",
-    parts: ["corpoTraseiro", "aroFrontal", "estruturaFrontal"],
+    parts: ["smartphoneBody", "estruturaFrontal", "gradientSound"],
   },
   {
-    label: "Botões",
+    label: "Botões direitos",
     parts: [
       "botaoPowerDireito",
       "botaoVolumeCima",
       "botaoVolumeBaixo",
-      "botaoLateralDirCima",
-      "botaoLateralDirBaixo",
+      "rightBigSideButton",
     ],
+  },
+  {
+    label: "Botões esquerdos",
+    parts: ["CircleTopLeft", "CircleTopLeftMiddle", "leftSmallSideButton"],
   },
   {
     label: "Notch",
@@ -46,65 +47,63 @@ const DEBUG_GROUPS: { label: string; parts: string[] }[] = [
       "notchBolinha1",
       "notchBolinha2",
       "notchBolinha3",
-      "notchBolinha4",
+      "CircleTopRightMiddle",
       "notchPill",
     ],
   },
   {
     label: "Câmera traseira",
-    parts: [
-      "moduloCameraAro",
-      "moduloCameraBase",
-      "lente1",
-      "lente2",
-      "lente3",
-    ],
+    parts: ["moduloCameraAro", "CircleTopRight", "lente1", "lente2", "lente3"],
   },
   {
-    label: "Não mapeados",
+    label: "Traseiros / Ocultos",
     parts: [
-      "desconhecido1",
-      "desconhecido2",
-      "desconhecido3",
-      "desconhecido4",
-      "desconhecido5",
-      "desconhecido6",
-      "desconhecido7",
-      "desconhecido8",
-      "desconhecido9",
+      "behindOrHideElement1",
+      "behindOrHideElement2",
+      "behindOrHideElement3",
+      "behindOrHideElement4",
+      "behindOrHideElement5",
+      "behindOrHideElement6",
+      "behindOrHideElement7",
     ],
   },
 ];
 
 // Cores iniciais vibrantes para cada parte no debug
 const INITIAL_DEBUG_COLORS: Record<string, string> = {
-  corpoTraseiro: "#6600ff",
-  aroFrontal: "#cc00ff",
+  // Corpo
+  smartphoneBody: "#cc00ff",
   estruturaFrontal: "#ff00cc",
+  gradientSound: "#000000", // fixo preto — debug mostra mas não muda tema
+  // Botões direitos
   botaoPowerDireito: "#ff6600",
   botaoVolumeCima: "#ffcc00",
   botaoVolumeBaixo: "#ffff00",
-  botaoLateralDirCima: "#ccff99",
-  botaoLateralDirBaixo: "#66ff66",
+  rightBigSideButton: "#ff4400",
+  // Botões esquerdos
+  CircleTopLeft: "#000000", // fixo preto
+  CircleTopLeftMiddle: "#ccff99",
+  leftSmallSideButton: "#66ff66",
+  // Notch
   notchBolinha1: "#00ff00",
   notchBolinha2: "#00ffff",
   notchBolinha3: "#0099ff",
-  notchBolinha4: "#ff0066",
+  CircleTopRightMiddle: "#ff0066",
   notchPill: "#33ccff",
+  // Câmera traseira
   moduloCameraAro: "#99ff00",
-  moduloCameraBase: "#ff99cc",
+  CircleTopRight: "#ff99cc",
   lente1: "#0000ff",
   lente2: "#ffff99",
   lente3: "#00ff99",
-  desconhecido1: "#ff0000",
-  desconhecido2: "#ff4400",
-  desconhecido3: "#ff8800",
-  desconhecido4: "#ffcc00",
-  desconhecido5: "#88ff00",
-  desconhecido6: "#00ffcc",
-  desconhecido7: "#0088ff",
-  desconhecido8: "#8800ff",
-  desconhecido9: "#ff00aa",
+  // Traseiros / Ocultos
+  behindOrHideElement1: "#ff0000",
+  behindOrHideElement2: "#ff3300",
+  behindOrHideElement3: "#ff5500",
+  behindOrHideElement4: "#ff7700",
+  behindOrHideElement5: "#ff9900",
+  behindOrHideElement6: "#ffbb00",
+  behindOrHideElement7: "#ffdd00",
 };
 
 // ---------------------------------------------------------------------------
