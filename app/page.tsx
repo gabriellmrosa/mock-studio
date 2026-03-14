@@ -6,13 +6,15 @@ import {
   Smartphone,
   THEMES,
   DEFAULT_THEME,
+  MESH_SEMANTIC,
   type ThemeName,
   type PhoneColors,
+  type DebugPartKey,
 } from "./components/Smartphone";
 import { Bounds, Center, Environment, OrbitControls } from "@react-three/drei";
 
 // ---------------------------------------------------------------------------
-// Temas para exibição no painel
+// Temas
 // ---------------------------------------------------------------------------
 const THEME_OPTIONS: { id: ThemeName; label: string; preview: string }[] = [
   { id: "metallic", label: "Cinza Metálico", preview: "#8A8A8E" },
@@ -22,8 +24,68 @@ const THEME_OPTIONS: { id: ThemeName; label: string; preview: string }[] = [
   { id: "space-blue", label: "Azul Espacial", preview: "#1B3A5C" },
 ];
 
+// Grupos para o painel de debug
+const DEBUG_GROUPS: { label: string; parts: string[] }[] = [
+  {
+    label: "Corpo",
+    parts: ["corpoTraseiro", "aroFrontal", "estruturaFrontal"],
+  },
+  {
+    label: "Botões",
+    parts: [
+      "botaoPowerDireito",
+      "botaoVolumeCima",
+      "botaoVolumeBaixo",
+      "botaoLateralDirCima",
+      "botaoLateralDirBaixo",
+    ],
+  },
+  {
+    label: "Notch",
+    parts: [
+      "notchBolinha1",
+      "notchBolinha2",
+      "notchBolinha3",
+      "notchBolinha4",
+      "notchPill",
+    ],
+  },
+  {
+    label: "Câmera traseira",
+    parts: [
+      "moduloCameraAro",
+      "moduloCameraBase",
+      "lente1",
+      "lente2",
+      "lente3",
+    ],
+  },
+];
+
+// Cores iniciais vibrantes para cada parte no debug
+const INITIAL_DEBUG_COLORS: Record<string, string> = {
+  corpoTraseiro: "#6600ff",
+  aroFrontal: "#cc00ff",
+  estruturaFrontal: "#ff00cc",
+  botaoPowerDireito: "#ff6600",
+  botaoVolumeCima: "#ffcc00",
+  botaoVolumeBaixo: "#ffff00",
+  botaoLateralDirCima: "#ccff99",
+  botaoLateralDirBaixo: "#66ff66",
+  notchBolinha1: "#00ff00",
+  notchBolinha2: "#00ffff",
+  notchBolinha3: "#0099ff",
+  notchBolinha4: "#ff0066",
+  notchPill: "#33ccff",
+  moduloCameraAro: "#99ff00",
+  moduloCameraBase: "#ff99cc",
+  lente1: "#0000ff",
+  lente2: "#ffff99",
+  lente3: "#00ff99",
+};
+
 // ---------------------------------------------------------------------------
-// ColorRow — picker + input hex
+// ColorRow
 // ---------------------------------------------------------------------------
 function ColorRow({
   label,
@@ -41,20 +103,20 @@ function ColorRow({
     setInputVal(v);
     if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(v)) onChange(v);
   };
-
   const handleColorPicker = (e: ChangeEvent<HTMLInputElement>) => {
     setInputVal(e.target.value);
     onChange(e.target.value);
   };
-
   if (inputVal !== value && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value)) {
     setInputVal(value);
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="text-neutral-400 text-xs w-20 shrink-0">{label}</span>
-      <label className="relative w-8 h-8 rounded-md overflow-hidden border border-neutral-600 cursor-pointer shrink-0 hover:border-neutral-400 transition">
+    <div className="flex items-center gap-2">
+      <span className="text-neutral-400 text-[10px] flex-1 truncate">
+        {label}
+      </span>
+      <label className="relative w-6 h-6 rounded overflow-hidden border border-neutral-600 cursor-pointer shrink-0 hover:border-neutral-400 transition">
         <input
           type="color"
           value={value}
@@ -69,7 +131,7 @@ function ColorRow({
         onChange={handleHexInput}
         maxLength={7}
         placeholder="#000000"
-        className="flex-1 bg-neutral-800 border border-neutral-700 rounded-md px-2 py-1.5 text-xs text-neutral-200 font-mono focus:outline-none focus:border-neutral-500 transition"
+        className="w-20 bg-neutral-800 border border-neutral-700 rounded px-1.5 py-1 text-[10px] text-neutral-200 font-mono focus:outline-none focus:border-neutral-500 transition"
       />
     </div>
   );
@@ -83,21 +145,20 @@ export default function Home() {
     useState<string>("/placeholder.png");
   const [activeTheme, setActiveTheme] = useState<ThemeName>(DEFAULT_THEME);
   const [colors, setColors] = useState<PhoneColors>(THEMES[DEFAULT_THEME]);
+  const [debugMode, setDebugMode] = useState(false);
+  const [debugPartColors, setDebugPartColors] =
+    useState<Record<string, string>>(INITIAL_DEBUG_COLORS);
 
-  // Dimensões calibradas do mesh da tela
   const screenW = 220;
   const screenH = 470;
 
   const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const img = new window.Image();
     img.onload = () => {
-      // Recorta para a proporção exata do mesh antes de passar ao Three.js
       const targetRatio = screenW / screenH;
       const imgRatio = img.width / img.height;
-
       let srcX = 0,
         srcY = 0,
         srcW = img.width,
@@ -109,8 +170,6 @@ export default function Home() {
         srcH = img.width / targetRatio;
         srcY = (img.height - srcH) / 2;
       }
-
-      // Limita a 2048px no lado maior para compatibilidade com WebGL
       const MAX = 2048;
       const scale = Math.min(1, MAX / Math.max(srcW, srcH));
       const canvas = document.createElement("canvas");
@@ -128,7 +187,6 @@ export default function Home() {
         canvas.width,
         canvas.height,
       );
-
       setUploadedImage(canvas.toDataURL("image/jpeg", 0.95));
     };
     img.src = URL.createObjectURL(file);
@@ -138,24 +196,24 @@ export default function Home() {
     setActiveTheme(themeId);
     setColors(THEMES[themeId]);
   };
-
   const updateColor = (part: keyof PhoneColors, hex: string) => {
     setActiveTheme("" as ThemeName);
     setColors((prev) => ({ ...prev, [part]: hex }));
   };
+  const updateDebugColor = (part: string, hex: string) => {
+    setDebugPartColors((prev) => ({ ...prev, [part]: hex }));
+  };
 
   return (
     <main className="min-h-screen bg-white text-white relative flex">
-      {/* ── ÁREA 3D ── */}
       <div className="flex-1 h-screen">
         <Canvas
           camera={{ position: [0, 0, 5], fov: 45 }}
           gl={{ preserveDrawingBuffer: true }}
-          style={{ background: "#ffffff" }}
+          style={{ background: "#3b3b3b" }}
         >
           <Environment preset="studio" />
           <directionalLight position={[0, 4, 3]} intensity={1.2} />
-
           <Suspense fallback={null}>
             <Bounds fit clip observe margin={1.2}>
               <Center>
@@ -164,18 +222,17 @@ export default function Home() {
                   rotation={[0, Math.PI, 0]}
                   bodyColor={colors.body}
                   buttonsColor={colors.buttons}
+                  debugPartColors={debugMode ? debugPartColors : undefined}
                   screenPosition={[-125, 315, -195]}
                   screenSize={[screenW, screenH]}
                 />
               </Center>
             </Bounds>
           </Suspense>
-
           <OrbitControls enableZoom={false} />
         </Canvas>
       </div>
 
-      {/* ── PAINEL DIREITO ── */}
       <aside className="w-72 h-screen bg-neutral-900 border-l border-neutral-800 flex flex-col overflow-y-auto shrink-0">
         <div className="px-5 py-4 border-b border-neutral-800">
           <h1 className="text-sm font-semibold text-white tracking-wide">
@@ -187,7 +244,7 @@ export default function Home() {
         </div>
 
         <div className="flex flex-col gap-6 px-5 py-5">
-          {/* Upload */}
+          {/* Upload — sempre visível */}
           <section>
             <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
               Tela do App
@@ -227,52 +284,85 @@ export default function Home() {
             </p>
           </section>
 
-          {/* Temas */}
-          <section>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
-              Temas
-            </p>
-            <div className="grid grid-cols-5 gap-2">
-              {THEME_OPTIONS.map((theme) => (
-                <button
-                  key={theme.id}
-                  onClick={() => applyTheme(theme.id)}
-                  title={theme.label}
-                  className={`flex flex-col items-center gap-1.5 p-1.5 rounded-lg border transition ${
-                    activeTheme === theme.id
-                      ? "border-blue-500 bg-blue-500/10"
-                      : "border-neutral-700 hover:border-neutral-500 bg-transparent"
-                  }`}
-                >
-                  <div
-                    className="w-7 h-7 rounded-full border border-white/10 shadow-inner"
-                    style={{ backgroundColor: theme.preview }}
+          {/* Modo normal: temas + cores */}
+          {!debugMode && (
+            <>
+              <section>
+                <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
+                  Temas
+                </p>
+                <div className="grid grid-cols-5 gap-2">
+                  {THEME_OPTIONS.map((theme) => (
+                    <button
+                      key={theme.id}
+                      onClick={() => applyTheme(theme.id)}
+                      title={theme.label}
+                      className={`flex flex-col items-center gap-1.5 p-1.5 rounded-lg border transition ${activeTheme === theme.id ? "border-blue-500 bg-blue-500/10" : "border-neutral-700 hover:border-neutral-500 bg-transparent"}`}
+                    >
+                      <div
+                        className="w-7 h-7 rounded-full border border-white/10 shadow-inner"
+                        style={{ backgroundColor: theme.preview }}
+                      />
+                      <span className="text-[9px] text-neutral-400 leading-tight text-center">
+                        {theme.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <section>
+                <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
+                  Cores customizadas
+                </p>
+                <div className="flex flex-col gap-3">
+                  <ColorRow
+                    label="Corpo"
+                    value={colors.body}
+                    onChange={(hex) => updateColor("body", hex)}
                   />
-                  <span className="text-[9px] text-neutral-400 leading-tight text-center">
-                    {theme.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
+                  <ColorRow
+                    label="Botões"
+                    value={colors.buttons}
+                    onChange={(hex) => updateColor("buttons", hex)}
+                  />
+                </div>
+              </section>
+            </>
+          )}
 
-          {/* Cores customizadas */}
+          {/* Modo debug: color picker por parte semântica */}
+          {debugMode && (
+            <section className="flex flex-col gap-4">
+              {DEBUG_GROUPS.map((group) => (
+                <div key={group.label}>
+                  <p className="text-[10px] font-semibold text-yellow-500 uppercase tracking-widest mb-2">
+                    {group.label}
+                  </p>
+                  <div className="flex flex-col gap-2 bg-neutral-800/50 rounded-lg p-2 border border-neutral-700">
+                    {group.parts.map((part) => (
+                      <ColorRow
+                        key={part}
+                        label={part}
+                        value={debugPartColors[part] ?? "#888888"}
+                        onChange={(hex) => updateDebugColor(part, hex)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </section>
+          )}
+
+          {/* Toggle debug */}
           <section>
-            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
-              Cores customizadas
-            </p>
-            <div className="flex flex-col gap-3">
-              <ColorRow
-                label="Corpo"
-                value={colors.body}
-                onChange={(hex) => updateColor("body", hex)}
-              />
-              <ColorRow
-                label="Botões"
-                value={colors.buttons}
-                onChange={(hex) => updateColor("buttons", hex)}
-              />
-            </div>
+            <button
+              onClick={() => setDebugMode((v) => !v)}
+              className={`w-full py-2 rounded-lg text-xs font-medium transition border ${debugMode ? "bg-yellow-500/20 border-yellow-500 text-yellow-400" : "bg-neutral-800 border-neutral-700 text-neutral-400 hover:border-neutral-500"}`}
+            >
+              {debugMode
+                ? "🎨 Debug Interativo: ON"
+                : "🎨 Debug Interativo: OFF"}
+            </button>
           </section>
         </div>
       </aside>

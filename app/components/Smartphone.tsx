@@ -26,6 +26,38 @@ export const THEMES: Record<ThemeName, PhoneColors> = {
 export const DEFAULT_THEME: ThemeName = "metallic";
 
 // ---------------------------------------------------------------------------
+// Mapeamento semântico — usado pelo painel de debug
+// chave semântica → nome original do nó no GLB
+// ---------------------------------------------------------------------------
+export const MESH_SEMANTIC: Record<string, string> = {
+  corpoTraseiro: "o_Cube",
+  aroFrontal: "o_Boole1",
+  estruturaFrontal: "o_Extrude4",
+  botaoPowerDireito: "o_Extrude2",
+  botaoVolumeCima: "o_Cap1",
+  botaoVolumeBaixo: "o_Cap2",
+  botaoLateralDirCima: "o_Cap1_6",
+  botaoLateralDirBaixo: "o_Capsule",
+  notchBolinha1: "o_Cap1_1",
+  notchBolinha2: "o_Extrude1",
+  notchBolinha3: "o_Cap1_2",
+  notchBolinha4: "o_Cap1_3",
+  notchPill: "o_Extrude3",
+  moduloCameraAro: "o_Extrude",
+  moduloCameraBase: "o_Cap1_4",
+  lente1: "o_Cap2_2",
+  lente2: "o_Cap2_6",
+  lente3: "o_Cap2_1",
+};
+
+// Inverso: nome GLB → chave semântica (para lookup rápido no mat())
+const GLB_TO_SEMANTIC: Record<string, string> = Object.fromEntries(
+  Object.entries(MESH_SEMANTIC).map(([sem, glb]) => [glb, sem]),
+);
+
+export type DebugPartKey = keyof typeof MESH_SEMANTIC;
+
+// ---------------------------------------------------------------------------
 // Helpers de geometria
 // ---------------------------------------------------------------------------
 function getRoundedRectangleShape(
@@ -114,41 +146,8 @@ type SmartphoneProps = JSX.IntrinsicElements["group"] & {
   screenRotation?: [number, number, number];
   bodyColor?: string;
   buttonsColor?: string;
-  debugColors?: boolean;
-};
-
-// ---------------------------------------------------------------------------
-// Debug colors
-// ---------------------------------------------------------------------------
-const DEBUG_COLORS: Record<string, string> = {
-  o_Cube1: "#ff0000",
-  o_Extrude2: "#ff6600",
-  o_Cap1: "#ffcc00",
-  o_Cap2: "#ffff00",
-  o_Extrude: "#99ff00",
-  o_Cap1_1: "#00ff00",
-  o_Cap2_1: "#00ff99",
-  o_Extrude1: "#00ffff",
-  o_Cap1_2: "#0099ff",
-  o_Cap2_2: "#0000ff",
-  o_Cube: "#6600ff",
-  o_Boole1: "#cc00ff",
-  o_Extrude4: "#ff00cc",
-  o_Cap1_3: "#ff0066",
-  o_Cap2_3: "#ff3333",
-  o_Extrude3: "#33ccff",
-  o_Cap1_4: "#ff99cc",
-  o_Cap2_4: "#99ffcc",
-  o_Extrude2_1: "#ffcc99",
-  o_Cap1_5: "#cc99ff",
-  o_Cap2_5: "#ff99ff",
-  o_Extrude1_1: "#99ccff",
-  o_Cap1_6: "#ccff99",
-  o_Cap2_6: "#ffff99",
-  o_Capsule1: "#ff6666",
-  o_Capsule: "#66ff66",
-  o_Extrude_1: "#6666ff",
-  o_Extrude_2: "#ff6699",
+  // quando presente, sobrescreve a cor de partes específicas (debug)
+  debugPartColors?: Partial<Record<string, string>>;
 };
 
 // ---------------------------------------------------------------------------
@@ -168,35 +167,26 @@ function ScreenWithTexture({
   const texture = useTexture(imageUrl, (tex) => {
     const t = Array.isArray(tex) ? tex[0] : tex;
     const img = t.image as HTMLImageElement;
-
     const imgW = img.naturalWidth || img.width;
     const imgH = img.naturalHeight || img.height;
-
-    // Proporção alvo do mesh
-    const targetRatio = 220 / 470; // W/H
+    const targetRatio = 220 / 470;
     const imgRatio = imgW / imgH;
-
     let srcX = 0,
       srcY = 0,
       srcW = imgW,
       srcH = imgH;
-
     if (imgRatio > targetRatio) {
-      // Imagem mais larga que o mesh → corta nas laterais
       srcW = imgH * targetRatio;
       srcX = (imgW - srcW) / 2;
     } else {
-      // Imagem mais alta que o mesh → corta em cima e embaixo
       srcH = imgW / targetRatio;
       srcY = (imgH - srcH) / 2;
     }
-
     const MAX = 2048;
     const scale = Math.min(1, MAX / Math.max(srcW, srcH));
     const canvas = document.createElement("canvas");
     canvas.width = Math.round(srcW * scale);
     canvas.height = Math.round(srcH * scale);
-
     const ctx = canvas.getContext("2d")!;
     ctx.drawImage(
       img,
@@ -209,7 +199,6 @@ function ScreenWithTexture({
       canvas.width,
       canvas.height,
     );
-
     t.image = canvas;
     t.colorSpace = THREE.SRGBColorSpace;
     t.flipY = true;
@@ -241,12 +230,12 @@ function ScreenWithTexture({
 // ---------------------------------------------------------------------------
 export function Smartphone({
   imageUrl,
-  screenPosition = [-125, 316, -195],
+  screenPosition = [-125, 315, -195],
   screenSize = [220, 470],
   screenRotation = [0, 0, 0],
   bodyColor = THEMES[DEFAULT_THEME].body,
   buttonsColor = THEMES[DEFAULT_THEME].buttons,
-  debugColors = false,
+  debugPartColors,
   ...props
 }: SmartphoneProps) {
   const { nodes, materials } = useGLTF(
@@ -261,16 +250,13 @@ export function Smartphone({
     const halfW = screenSize[0] / 2;
     const halfH = screenSize[1] / 2;
     for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const y = pos.getY(i);
-      uvArray[i * 2] = 1 - (x + halfW) / screenSize[0];
-      uvArray[i * 2 + 1] = (y + halfH) / screenSize[1];
+      uvArray[i * 2] = 1 - (pos.getX(i) + halfW) / screenSize[0];
+      uvArray[i * 2 + 1] = (pos.getY(i) + halfH) / screenSize[1];
     }
     geo.setAttribute("uv", new THREE.BufferAttribute(uvArray, 2));
     return geo;
   }, [screenSize]);
 
-  // Materiais memoizados com aparência metálica realista
   const bodyMat = useMemo(
     () =>
       new THREE.MeshStandardMaterial({
@@ -290,16 +276,21 @@ export function Smartphone({
     [buttonsColor],
   );
 
+  // Resolve material: debug tem prioridade, depois body/buttons/original
   type Category = "body" | "buttons" | "original";
   function mat(
-    meshName: string,
+    glbName: string,
     category: Category,
     originalMaterial: THREE.Material,
   ): THREE.Material {
-    if (debugColors)
-      return new THREE.MeshBasicMaterial({
-        color: DEBUG_COLORS[meshName] ?? "#ffffff",
-      });
+    if (debugPartColors) {
+      const semanticKey = GLB_TO_SEMANTIC[glbName];
+      if (semanticKey && debugPartColors[semanticKey]) {
+        return new THREE.MeshBasicMaterial({
+          color: debugPartColors[semanticKey],
+        });
+      }
+    }
     if (category === "body") return bodyMat;
     if (category === "buttons") return buttonsMat;
     return originalMaterial;
@@ -308,20 +299,20 @@ export function Smartphone({
   const effectiveImageUrl =
     imageUrl && imageUrl !== "/placeholder.png" ? imageUrl : "/placeholder.png";
 
+  // ── JSX idêntico ao arquivo anterior que funcionava ──
   return (
     <group {...props} dispose={null}>
-      {/* ── Estrutura original ── */}
       <mesh
         geometry={nodes.o_Extrude2.geometry}
-        material={mat("o_Extrude2", "original", materials["Mat.6"])}
+        material={mat("o_Extrude2", "buttons", materials["Mat.6"])}
       />
       <mesh
         geometry={nodes.o_Cap1.geometry}
-        material={mat("o_Cap1", "original", materials["default"])}
+        material={mat("o_Cap1", "buttons", materials["default"])}
       />
       <mesh
         geometry={nodes.o_Cap2.geometry}
-        material={mat("o_Cap2", "original", materials["default"])}
+        material={mat("o_Cap2", "buttons", materials["default"])}
       />
       <mesh
         geometry={nodes.o_Extrude.geometry}
@@ -347,25 +338,18 @@ export function Smartphone({
         geometry={nodes.o_Cap2_2.geometry}
         material={mat("o_Cap2_2", "original", materials["default"])}
       />
-
-      {/* ── o_Cube: corpo traseiro (grande, rosa #6600ff no debug) ── */}
       <mesh
         geometry={nodes.o_Cube.geometry}
         material={mat("o_Cube", "body", materials["default"])}
       />
-
-      {/* ── o_Boole1: corpo frontal/aro (#cc00ff no debug) ── */}
       <mesh
         geometry={nodes.o_Boole1.geometry}
         material={mat("o_Boole1", "body", materials["Mat.1"])}
       />
-
-      {/* ── o_Extrude4: estrutura frontal (#ff00cc no debug) ── */}
       <mesh
         geometry={nodes.o_Extrude4.geometry}
         material={mat("o_Extrude4", "body", materials.Mat)}
       />
-
       <mesh
         geometry={nodes.o_Cap1_3.geometry}
         material={mat("o_Cap1_3", "original", materials["default"])}
@@ -382,13 +366,10 @@ export function Smartphone({
         geometry={nodes.o_Cap1_4.geometry}
         material={mat("o_Cap1_4", "original", materials["default"])}
       />
-
-      {/* ── Botão lateral esquerdo (#99ffcc no debug) ── */}
       <mesh
         geometry={nodes.o_Cap2_4.geometry}
-        material={mat("o_Cap2_4", "buttons", materials["default"])}
+        material={mat("o_Cap2_4", "original", materials["default"])}
       />
-
       <mesh
         geometry={nodes.o_Extrude2_1.geometry}
         material={mat("o_Extrude2_1", "original", materials.Mat)}
@@ -407,7 +388,7 @@ export function Smartphone({
       />
       <mesh
         geometry={nodes.o_Cap1_6.geometry}
-        material={mat("o_Cap1_6", "original", materials["default"])}
+        material={mat("o_Cap1_6", "buttons", materials["default"])}
       />
       <mesh
         geometry={nodes.o_Cap2_6.geometry}
@@ -428,17 +409,15 @@ export function Smartphone({
 
       <mesh
         geometry={nodes.o_Capsule.geometry}
-        material={mat("o_Capsule", "original", materials["Mat.1"])}
+        material={mat("o_Capsule", "buttons", materials["Mat.1"])}
       />
-
-      {/* ── Botões laterais direitos (#6666ff e #ff6699 no debug) ── */}
       <mesh
         geometry={nodes.o_Extrude_1.geometry}
-        material={mat("o_Extrude_1", "buttons", materials["Mat.1"])}
+        material={mat("o_Extrude_1", "original", materials["Mat.1"])}
       />
       <mesh
         geometry={nodes.o_Extrude_2.geometry}
-        material={mat("o_Extrude_2", "buttons", materials["Mat.1"])}
+        material={mat("o_Extrude_2", "original", materials["Mat.1"])}
       />
     </group>
   );
