@@ -5,7 +5,7 @@ import React, { JSX, useMemo } from "react";
 import { useGLTF, useTexture } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 
-export type ThemeName = "metallic" | "black" | "white" | "gold" | "space-blue";
+export type ThemeName = "gray" | "black" | "white";
 
 export interface PhoneColors {
   body: string;
@@ -13,14 +13,12 @@ export interface PhoneColors {
 }
 
 export const THEMES: Record<ThemeName, PhoneColors> = {
-  metallic: { body: "#8A8A8E", buttons: "#6D6D72" },
+  gray: { body: "#8A8A8E", buttons: "#6D6D72" },
   black: { body: "#1C1C1E", buttons: "#2C2C2E" },
   white: { body: "#F5F5F7", buttons: "#D1D1D6" },
-  gold: { body: "#C9A84C", buttons: "#A8893C" },
-  "space-blue": { body: "#1B3A5C", buttons: "#142D47" },
 };
 
-export const DEFAULT_THEME: ThemeName = "metallic";
+export const DEFAULT_THEME: ThemeName = "white";
 
 // ---------------------------------------------------------------------------
 // Mapeamento semântico
@@ -255,7 +253,7 @@ export function Smartphone({
   ) as unknown as GLTFResult;
 
   const screenGeometry = useMemo(() => {
-    const shape = getRoundedRectangleShape(screenSize[0], screenSize[1], 25);
+    const shape = getRoundedRectangleShape(screenSize[0], screenSize[1], 28);
     const geo = new THREE.ShapeGeometry(shape);
     const pos = geo.attributes.position;
     const uvArray = new Float32Array(pos.count * 2);
@@ -277,8 +275,13 @@ export function Smartphone({
     () => new THREE.MeshLambertMaterial({ color: buttonsColor }),
     [buttonsColor],
   );
+  const circleMat = useMemo(() => {
+    const color = new THREE.Color(bodyColor);
+    color.lerp(new THREE.Color("#ffffff"), 0.25); // 25% mais claro
+    return new THREE.MeshLambertMaterial({ color });
+  }, [bodyColor]);
 
-  type Category = "body" | "buttons" | "original" | "alwaysBlack";
+  type Category = "body" | "buttons" | "circle" | "original" | "alwaysBlack";
 
   function mat(
     glbName: string,
@@ -298,6 +301,7 @@ export function Smartphone({
     if (category === "alwaysBlack") {
       return FIXED_BLACK;
     }
+    if (category === "circle") return circleMat;
 
     if (category === "body") return bodyMat;
     if (category === "buttons") return buttonsMat;
@@ -309,7 +313,6 @@ export function Smartphone({
 
   return (
     <group {...props} dispose={null}>
-      {/* ── Botões laterais direitos ── */}
       <mesh
         name="botaoPowerDireito"
         geometry={nodes.o_Extrude2.geometry}
@@ -326,7 +329,6 @@ export function Smartphone({
         material={mat("o_Cap2", "buttons", materials["default"])}
       />
 
-      {/* ── Módulo câmera traseira ── */}
       <mesh
         name="moduloCameraAro"
         geometry={nodes.o_Extrude.geometry}
@@ -358,7 +360,6 @@ export function Smartphone({
         material={mat("o_Cap2_2", "original", materials["default"])}
       />
 
-      {/* ── Corpo principal ── */}
       <mesh
         name="gradientSound"
         geometry={nodes.o_Cube.geometry}
@@ -375,12 +376,6 @@ export function Smartphone({
         material={mat("o_Extrude4", "body", materials.Mat)}
       />
 
-      {/* ── Notch / Dynamic Island ── */}
-      <mesh
-        name="CircleTopRightMiddle"
-        geometry={nodes.o_Cap1_3.geometry}
-        material={mat("o_Cap1_3", "original", materials["default"])}
-      />
       <mesh
         name="behindOrHideElement1"
         geometry={nodes.o_Cap2_3.geometry}
@@ -392,11 +387,25 @@ export function Smartphone({
         material={mat("o_Extrude3", "original", materials.Mat)}
       />
 
-      {/* ── Círculos câmera superior ── */}
+      <mesh
+        name="CircleTopLeft"
+        geometry={nodes.o_Cap1_6.geometry}
+        material={mat("o_Cap1_6", "circle", materials["default"])}
+      />
+      <mesh
+        name="CircleTopLeftMiddle"
+        geometry={nodes.o_Cap1_5.geometry}
+        material={mat("o_Cap1_5", "circle", materials["default"])}
+      />
       <mesh
         name="CircleTopRight"
         geometry={nodes.o_Cap1_4.geometry}
-        material={mat("o_Cap1_4", "original", materials["default"])}
+        material={mat("o_Cap1_4", "circle", materials["default"])}
+      />
+      <mesh
+        name="CircleTopRightMiddle"
+        geometry={nodes.o_Cap1_3.geometry}
+        material={mat("o_Cap1_3", "circle", materials["default"])}
       />
       <mesh
         name="behindOrHideElement2"
@@ -404,17 +413,12 @@ export function Smartphone({
         material={mat("o_Cap2_4", "original", materials["default"])}
       />
 
-      {/* ── Elementos traseiros/ocultos ── */}
       <mesh
         name="behindOrHideElement3"
         geometry={nodes.o_Extrude2_1.geometry}
         material={mat("o_Extrude2_1", "original", materials.Mat)}
       />
-      <mesh
-        name="CircleTopLeftMiddle"
-        geometry={nodes.o_Cap1_5.geometry}
-        material={mat("o_Cap1_5", "original", materials["default"])}
-      />
+
       <mesh
         name="behindOrHideElement4"
         geometry={nodes.o_Cap2_5.geometry}
@@ -426,12 +430,6 @@ export function Smartphone({
         material={mat("o_Extrude1_1", "original", materials.Mat)}
       />
 
-      {/* ── Botões laterais esquerdos ── */}
-      <mesh
-        name="CircleTopLeft"
-        geometry={nodes.o_Cap1_6.geometry}
-        material={mat("o_Cap1_6", "body", materials["default"])}
-      />
       <mesh
         name="lente2"
         geometry={nodes.o_Cap2_6.geometry}
@@ -457,7 +455,6 @@ export function Smartphone({
         material={mat("o_Capsule", "body", materials["Mat.1"])}
       />
 
-      {/* ── Elementos traseiros/ocultos ── */}
       <mesh
         name="behindOrHideElement6"
         geometry={nodes.o_Extrude_1.geometry}

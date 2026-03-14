@@ -15,11 +15,9 @@ import { Bounds, Center, Environment, OrbitControls } from "@react-three/drei";
 // Temas
 // ---------------------------------------------------------------------------
 const THEME_OPTIONS: { id: ThemeName; label: string; preview: string }[] = [
-  { id: "metallic", label: "Cinza Metálico", preview: "#8A8A8E" },
+  { id: "gray", label: "Cinza", preview: "#8A8A8E" },
   { id: "black", label: "Preto", preview: "#1C1C1E" },
   { id: "white", label: "Branco", preview: "#F5F5F7" },
-  { id: "gold", label: "Dourado", preview: "#C9A84C" },
-  { id: "space-blue", label: "Azul Espacial", preview: "#1B3A5C" },
 ];
 
 // Grupos para o painel de debug
@@ -312,7 +310,7 @@ export default function Home() {
                 <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
                   Temas
                 </p>
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   {THEME_OPTIONS.map((theme) => (
                     <button
                       key={theme.id}
@@ -332,19 +330,11 @@ export default function Home() {
                 </div>
               </section>
               <section>
-                <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
-                  Cores customizadas
-                </p>
                 <div className="flex flex-col gap-3">
                   <ColorRow
                     label="Corpo"
                     value={colors.body}
                     onChange={(hex) => updateColor("body", hex)}
-                  />
-                  <ColorRow
-                    label="Botões"
-                    value={colors.buttons}
-                    onChange={(hex) => updateColor("buttons", hex)}
                   />
                 </div>
               </section>
