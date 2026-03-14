@@ -233,10 +233,8 @@ function ScreenWithTexture({
 // ---------------------------------------------------------------------------
 // Material preto fixo (independente de tema)
 // ---------------------------------------------------------------------------
-const FIXED_BLACK = new THREE.MeshStandardMaterial({
+const FIXED_BLACK = new THREE.MeshLambertMaterial({
   color: "#000000",
-  metalness: 0.5,
-  roughness: 0.4,
 });
 
 // ---------------------------------------------------------------------------
@@ -272,26 +270,13 @@ export function Smartphone({
   }, [screenSize]);
 
   const bodyMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: bodyColor,
-        metalness: 0.6,
-        roughness: 0.3,
-      }),
+    () => new THREE.MeshLambertMaterial({ color: bodyColor }),
     [bodyColor],
   );
   const buttonsMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: buttonsColor,
-        metalness: 0.7,
-        roughness: 0.25,
-      }),
+    () => new THREE.MeshLambertMaterial({ color: buttonsColor }),
     [buttonsColor],
   );
-
-  // Elementos que são sempre pretos, independente do tema
-  const ALWAYS_BLACK = new Set(["gradientSound", "CircleTopLeft"]);
 
   type Category = "body" | "buttons" | "original" | "alwaysBlack";
 
@@ -310,7 +295,7 @@ export function Smartphone({
     }
 
     // Sempre preto, ignora tema
-    if (category === "alwaysBlack" || ALWAYS_BLACK.has(semanticKey)) {
+    if (category === "alwaysBlack") {
       return FIXED_BLACK;
     }
 
@@ -445,7 +430,7 @@ export function Smartphone({
       <mesh
         name="CircleTopLeft"
         geometry={nodes.o_Cap1_6.geometry}
-        material={mat("o_Cap1_6", "alwaysBlack", materials["default"])}
+        material={mat("o_Cap1_6", "body", materials["default"])}
       />
       <mesh
         name="lente2"

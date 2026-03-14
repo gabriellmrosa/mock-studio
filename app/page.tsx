@@ -235,7 +235,6 @@ export default function Home() {
           style={{ background: "#3b3b3b" }}
         >
           <Environment preset="studio" />
-          <directionalLight position={[0, 4, 3]} intensity={1.2} />
           <Suspense fallback={null}>
             <Bounds fit clip observe margin={1.2}>
               <Center>
