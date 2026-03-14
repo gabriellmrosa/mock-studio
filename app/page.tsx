@@ -242,7 +242,7 @@ export default function Home() {
                   bodyColor={colors.body}
                   buttonsColor={colors.buttons}
                   debugPartColors={debugMode ? debugPartColors : undefined}
-                  screenPosition={[-125, 314.7, -195]}
+                  screenPosition={[-125, 314.85, -195]}
                   screenSize={[screenW, screenH]}
                 />
               </Center>
