@@ -12,10 +12,9 @@ import {
 } from "@react-three/drei";
 import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
 import {
-  Smartphone,
   type PhoneColors,
 } from "./Smartphone";
-import { SCREEN_HEIGHT, SCREEN_WIDTH } from "../lib/mockup-image";
+import type { DeviceModelDefinition } from "../models/device-models";
 
 export type MockupTransform = {
   position: [number, number, number];
@@ -33,8 +32,10 @@ type MockupCanvasProps = {
   debugPartColors?: Record<string, string>;
   debugMode: boolean;
   imageUrl: string;
+  model: DeviceModelDefinition;
   onExportReady: (handler: (preset: ExportPreset) => Promise<void>) => void;
   onResetCameraReady: (handler: () => void) => void;
+  showDeviceShell: boolean;
   transform: MockupTransform;
 };
 
@@ -54,8 +55,10 @@ function SceneBridge({
   debugPartColors,
   debugMode,
   imageUrl,
+  model,
   onExportReady,
   onResetCameraReady,
+  showDeviceShell,
   transform,
 }: MockupCanvasProps) {
   const controlsRef = useRef<OrbitControlsImpl | null>(null);
@@ -145,13 +148,14 @@ function SceneBridge({
         <Bounds fit clip margin={1.15}>
           <Center>
             <group ref={mockupRef}>
-              <Smartphone
+              <model.component
                 bodyColor={colors.body}
                 buttonsColor={colors.buttons}
                 debugPartColors={debugMode ? debugPartColors : undefined}
                 imageUrl={imageUrl}
-                screenPosition={[-125, 314.85, -195]}
-                screenSize={[SCREEN_WIDTH, SCREEN_HEIGHT]}
+                screenPosition={model.screenPosition}
+                screenSize={model.screenSize}
+                showDeviceShell={showDeviceShell}
               />
             </group>
           </Center>

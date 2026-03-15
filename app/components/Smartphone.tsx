@@ -158,6 +158,7 @@ type SmartphoneProps = JSX.IntrinsicElements["group"] & {
   bodyColor?: string;
   buttonsColor?: string;
   debugPartColors?: Partial<Record<string, string>>;
+  showDeviceShell?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -252,6 +253,7 @@ function SmartphoneImpl({
   bodyColor = THEMES[DEFAULT_THEME].body,
   buttonsColor = THEMES[DEFAULT_THEME].buttons,
   debugPartColors,
+  showDeviceShell = true,
   ...props
 }: SmartphoneProps) {
   const { nodes, materials } = useGLTF(
@@ -336,135 +338,138 @@ function SmartphoneImpl({
 
   return (
     <group {...props} dispose={null}>
-      <mesh
-        name="botaoPowerDireito"
-        geometry={nodes.o_Extrude2.geometry}
-        material={mat("o_Extrude2", "buttons", materials["Mat.6"])}
-      />
-      <mesh
-        name="botaoVolumeCima"
-        geometry={nodes.o_Cap1.geometry}
-        material={mat("o_Cap1", "buttons", materials["default"])}
-      />
-      <mesh
-        name="botaoVolumeBaixo"
-        geometry={nodes.o_Cap2.geometry}
-        material={mat("o_Cap2", "buttons", materials["default"])}
-      />
+      {showDeviceShell ? (
+        <>
+          <mesh
+            name="botaoPowerDireito"
+            geometry={nodes.o_Extrude2.geometry}
+            material={mat("o_Extrude2", "buttons", materials["Mat.6"])}
+          />
+          <mesh
+            name="botaoVolumeCima"
+            geometry={nodes.o_Cap1.geometry}
+            material={mat("o_Cap1", "buttons", materials["default"])}
+          />
+          <mesh
+            name="botaoVolumeBaixo"
+            geometry={nodes.o_Cap2.geometry}
+            material={mat("o_Cap2", "buttons", materials["default"])}
+          />
 
-      <mesh
-        name="moduloCameraAro"
-        geometry={nodes.o_Extrude.geometry}
-        material={mat("o_Extrude", "original", materials.Mat)}
-      />
-      <mesh
-        name="notchBolinha1"
-        geometry={nodes.o_Cap1_1.geometry}
-        material={mat("o_Cap1_1", "original", materials["default"])}
-      />
-      <mesh
-        name="lente3"
-        geometry={nodes.o_Cap2_1.geometry}
-        material={mat("o_Cap2_1", "original", materials["default"])}
-      />
-      <mesh
-        name="notchBolinha2"
-        geometry={nodes.o_Extrude1.geometry}
-        material={mat("o_Extrude1", "original", materials.Mat)}
-      />
-      <mesh
-        name="notchBolinha3"
-        geometry={nodes.o_Cap1_2.geometry}
-        material={mat("o_Cap1_2", "original", materials["default"])}
-      />
-      <mesh
-        name="lente1"
-        geometry={nodes.o_Cap2_2.geometry}
-        material={mat("o_Cap2_2", "original", materials["default"])}
-      />
+          <mesh
+            name="moduloCameraAro"
+            geometry={nodes.o_Extrude.geometry}
+            material={mat("o_Extrude", "original", materials.Mat)}
+          />
+          <mesh
+            name="notchBolinha1"
+            geometry={nodes.o_Cap1_1.geometry}
+            material={mat("o_Cap1_1", "original", materials["default"])}
+          />
+          <mesh
+            name="lente3"
+            geometry={nodes.o_Cap2_1.geometry}
+            material={mat("o_Cap2_1", "original", materials["default"])}
+          />
+          <mesh
+            name="notchBolinha2"
+            geometry={nodes.o_Extrude1.geometry}
+            material={mat("o_Extrude1", "original", materials.Mat)}
+          />
+          <mesh
+            name="notchBolinha3"
+            geometry={nodes.o_Cap1_2.geometry}
+            material={mat("o_Cap1_2", "original", materials["default"])}
+          />
+          <mesh
+            name="lente1"
+            geometry={nodes.o_Cap2_2.geometry}
+            material={mat("o_Cap2_2", "original", materials["default"])}
+          />
 
-      <mesh
-        name="gradientSound"
-        geometry={nodes.o_Cube.geometry}
-        material={mat("o_Cube", "alwaysBlack", materials["default"])}
-      />
-      <mesh
-        name="smartphoneBody"
-        geometry={nodes.o_Boole1.geometry}
-        material={mat("o_Boole1", "body", materials["Mat.1"])}
-      />
-      <mesh
-        name="estruturaFrontal"
-        geometry={nodes.o_Extrude4.geometry}
-        material={mat("o_Extrude4", "body", materials.Mat)}
-      />
+          <mesh
+            name="gradientSound"
+            geometry={nodes.o_Cube.geometry}
+            material={mat("o_Cube", "alwaysBlack", materials["default"])}
+          />
+          <mesh
+            name="smartphoneBody"
+            geometry={nodes.o_Boole1.geometry}
+            material={mat("o_Boole1", "body", materials["Mat.1"])}
+          />
+          <mesh
+            name="estruturaFrontal"
+            geometry={nodes.o_Extrude4.geometry}
+            material={mat("o_Extrude4", "body", materials.Mat)}
+          />
 
-      <mesh
-        name="behindOrHideElement1"
-        geometry={nodes.o_Cap2_3.geometry}
-        material={mat("o_Cap2_3", "original", materials["default"])}
-      />
-      <mesh
-        name="notchPill"
-        geometry={nodes.o_Extrude3.geometry}
-        material={mat("o_Extrude3", "original", materials.Mat)}
-      />
+          <mesh
+            name="behindOrHideElement1"
+            geometry={nodes.o_Cap2_3.geometry}
+            material={mat("o_Cap2_3", "original", materials["default"])}
+          />
+          <mesh
+            name="notchPill"
+            geometry={nodes.o_Extrude3.geometry}
+            material={mat("o_Extrude3", "original", materials.Mat)}
+          />
 
-      <mesh
-        name="CircleTopLeft"
-        geometry={nodes.o_Cap1_6.geometry}
-        material={mat("o_Cap1_6", "circle", materials["default"])}
-      />
-      <mesh
-        name="CircleTopLeftMiddle"
-        geometry={nodes.o_Cap1_5.geometry}
-        material={mat("o_Cap1_5", "circle", materials["default"])}
-      />
-      <mesh
-        name="CircleTopRight"
-        geometry={nodes.o_Cap1_4.geometry}
-        material={mat("o_Cap1_4", "circle", materials["default"])}
-      />
-      <mesh
-        name="CircleTopRightMiddle"
-        geometry={nodes.o_Cap1_3.geometry}
-        material={mat("o_Cap1_3", "circle", materials["default"])}
-      />
-      <mesh
-        name="behindOrHideElement2"
-        geometry={nodes.o_Cap2_4.geometry}
-        material={mat("o_Cap2_4", "original", materials["default"])}
-      />
+          <mesh
+            name="CircleTopLeft"
+            geometry={nodes.o_Cap1_6.geometry}
+            material={mat("o_Cap1_6", "circle", materials["default"])}
+          />
+          <mesh
+            name="CircleTopLeftMiddle"
+            geometry={nodes.o_Cap1_5.geometry}
+            material={mat("o_Cap1_5", "circle", materials["default"])}
+          />
+          <mesh
+            name="CircleTopRight"
+            geometry={nodes.o_Cap1_4.geometry}
+            material={mat("o_Cap1_4", "circle", materials["default"])}
+          />
+          <mesh
+            name="CircleTopRightMiddle"
+            geometry={nodes.o_Cap1_3.geometry}
+            material={mat("o_Cap1_3", "circle", materials["default"])}
+          />
+          <mesh
+            name="behindOrHideElement2"
+            geometry={nodes.o_Cap2_4.geometry}
+            material={mat("o_Cap2_4", "original", materials["default"])}
+          />
 
-      <mesh
-        name="behindOrHideElement3"
-        geometry={nodes.o_Extrude2_1.geometry}
-        material={mat("o_Extrude2_1", "original", materials.Mat)}
-      />
+          <mesh
+            name="behindOrHideElement3"
+            geometry={nodes.o_Extrude2_1.geometry}
+            material={mat("o_Extrude2_1", "original", materials.Mat)}
+          />
 
-      <mesh
-        name="behindOrHideElement4"
-        geometry={nodes.o_Cap2_5.geometry}
-        material={mat("o_Cap2_5", "original", materials["default"])}
-      />
-      <mesh
-        name="behindOrHideElement5"
-        geometry={nodes.o_Extrude1_1.geometry}
-        material={mat("o_Extrude1_1", "original", materials.Mat)}
-      />
+          <mesh
+            name="behindOrHideElement4"
+            geometry={nodes.o_Cap2_5.geometry}
+            material={mat("o_Cap2_5", "original", materials["default"])}
+          />
+          <mesh
+            name="behindOrHideElement5"
+            geometry={nodes.o_Extrude1_1.geometry}
+            material={mat("o_Extrude1_1", "original", materials.Mat)}
+          />
 
-      <mesh
-        name="lente2"
-        geometry={nodes.o_Cap2_6.geometry}
-        material={mat("o_Cap2_6", "original", materials["default"])}
-      />
-      <mesh
-        name="leftSmallSideButton"
-        geometry={nodes.o_Capsule1.geometry}
-        material={mat("o_Capsule1", "body", materials["Mat.1"])}
-      />
+          <mesh
+            name="lente2"
+            geometry={nodes.o_Cap2_6.geometry}
+            material={mat("o_Cap2_6", "original", materials["default"])}
+          />
+          <mesh
+            name="leftSmallSideButton"
+            geometry={nodes.o_Capsule1.geometry}
+            material={mat("o_Capsule1", "body", materials["Mat.1"])}
+          />
+        </>
+      ) : null}
 
-      {/* ── Tela ── */}
       <ScreenWithTexture
         imageUrl={effectiveImageUrl}
         screenGeometry={screenGeometry}
@@ -472,22 +477,26 @@ function SmartphoneImpl({
         screenRotation={screenRotation}
       />
 
-      <mesh
-        name="rightBigSideButton"
-        geometry={nodes.o_Capsule.geometry}
-        material={mat("o_Capsule", "body", materials["Mat.1"])}
-      />
+      {showDeviceShell ? (
+        <>
+          <mesh
+            name="rightBigSideButton"
+            geometry={nodes.o_Capsule.geometry}
+            material={mat("o_Capsule", "body", materials["Mat.1"])}
+          />
 
-      <mesh
-        name="behindOrHideElement6"
-        geometry={nodes.o_Extrude_1.geometry}
-        material={mat("o_Extrude_1", "original", materials["Mat.1"])}
-      />
-      <mesh
-        name="behindOrHideElement7"
-        geometry={nodes.o_Extrude_2.geometry}
-        material={mat("o_Extrude_2", "original", materials["Mat.1"])}
-      />
+          <mesh
+            name="behindOrHideElement6"
+            geometry={nodes.o_Extrude_1.geometry}
+            material={mat("o_Extrude_1", "original", materials["Mat.1"])}
+          />
+          <mesh
+            name="behindOrHideElement7"
+            geometry={nodes.o_Extrude_2.geometry}
+            material={mat("o_Extrude_2", "original", materials["Mat.1"])}
+          />
+        </>
+      ) : null}
     </group>
   );
 }
