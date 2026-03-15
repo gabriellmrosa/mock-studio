@@ -1,9 +1,15 @@
 "use client";
 
 import * as THREE from "three";
-import React, { JSX, useMemo } from "react";
+import React, { JSX, useEffect, useMemo } from "react";
 import { useGLTF, useTexture } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
+import {
+  buildScreenCanvas,
+  MAX_TEXTURE_SIZE,
+  SCREEN_HEIGHT,
+  SCREEN_WIDTH,
+} from "../lib/mockup-image";
 
 export type ThemeName = "gray" | "black" | "white";
 
@@ -61,6 +67,7 @@ const GLB_TO_SEMANTIC: Record<string, string> = Object.fromEntries(
 );
 
 export type DebugPartKey = keyof typeof MESH_SEMANTIC;
+type Category = "body" | "buttons" | "circle" | "original" | "alwaysBlack";
 
 // ---------------------------------------------------------------------------
 // Helpers de geometria
@@ -167,51 +174,50 @@ function ScreenWithTexture({
   screenPosition: [number, number, number];
   screenRotation: [number, number, number];
 }) {
-  const texture = useTexture(imageUrl, (tex) => {
-    const t = Array.isArray(tex) ? tex[0] : tex;
-    const img = t.image as HTMLImageElement;
-    const imgW = img.naturalWidth || img.width;
-    const imgH = img.naturalHeight || img.height;
-    const targetRatio = 220 / 470;
-    const imgRatio = imgW / imgH;
-    let srcX = 0,
-      srcY = 0,
-      srcW = imgW,
-      srcH = imgH;
-    if (imgRatio > targetRatio) {
-      srcW = imgH * targetRatio;
-      srcX = (imgW - srcW) / 2;
-    } else {
-      srcH = imgW / targetRatio;
-      srcY = (imgH - srcH) / 2;
+  const sourceTexture = useTexture(imageUrl);
+
+  const texture = useMemo(() => {
+    const img = sourceTexture.image as
+      | HTMLImageElement
+      | HTMLCanvasElement
+      | undefined;
+
+    if (!img) {
+      return sourceTexture;
     }
-    const MAX = 2048;
-    const scale = Math.min(1, MAX / Math.max(srcW, srcH));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(srcW * scale);
-    canvas.height = Math.round(srcH * scale);
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(
+
+    const imgW =
+      img instanceof HTMLImageElement ? img.naturalWidth || img.width : img.width;
+    const imgH =
+      img instanceof HTMLImageElement ? img.naturalHeight || img.height : img.height;
+    const canvas = buildScreenCanvas(
       img,
-      srcX,
-      srcY,
-      srcW,
-      srcH,
-      0,
-      0,
-      canvas.width,
-      canvas.height,
+      imgW,
+      imgH,
+      SCREEN_WIDTH,
+      SCREEN_HEIGHT,
+      MAX_TEXTURE_SIZE,
     );
-    t.image = canvas;
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.flipY = true;
-    t.minFilter = THREE.LinearMipmapLinearFilter;
-    t.magFilter = THREE.LinearFilter;
-    t.anisotropy = 16;
-    t.wrapS = THREE.ClampToEdgeWrapping;
-    t.wrapT = THREE.ClampToEdgeWrapping;
-    t.needsUpdate = true;
-  });
+    const nextTexture = sourceTexture.clone();
+
+    nextTexture.image = canvas;
+    nextTexture.colorSpace = THREE.SRGBColorSpace;
+    nextTexture.flipY = true;
+    nextTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    nextTexture.magFilter = THREE.LinearFilter;
+    nextTexture.anisotropy = 16;
+    nextTexture.wrapS = THREE.ClampToEdgeWrapping;
+    nextTexture.wrapT = THREE.ClampToEdgeWrapping;
+    nextTexture.needsUpdate = true;
+
+    return nextTexture;
+  }, [sourceTexture]);
+
+  useEffect(() => {
+    if (texture !== sourceTexture) {
+      return () => texture.dispose();
+    }
+  }, [sourceTexture, texture]);
 
   return (
     <mesh
@@ -238,7 +244,7 @@ const FIXED_BLACK = new THREE.MeshLambertMaterial({
 // ---------------------------------------------------------------------------
 // Componente principal
 // ---------------------------------------------------------------------------
-export function Smartphone({
+function SmartphoneImpl({
   imageUrl,
   screenPosition = [-125, 315, -195],
   screenSize = [220, 470],
@@ -280,8 +286,28 @@ export function Smartphone({
     color.lerp(new THREE.Color("#ffffff"), 0.25); // 25% mais claro
     return new THREE.MeshLambertMaterial({ color });
   }, [bodyColor]);
+  const debugMaterials = useMemo(() => {
+    if (!debugPartColors) {
+      return null;
+    }
 
-  type Category = "body" | "buttons" | "circle" | "original" | "alwaysBlack";
+    return Object.fromEntries(
+      Object.entries(debugPartColors).map(([part, color]) => [
+        part,
+        new THREE.MeshBasicMaterial({ color }),
+      ]),
+    );
+  }, [debugPartColors]);
+
+  useEffect(() => {
+    if (!debugMaterials) {
+      return;
+    }
+
+    return () => {
+      Object.values(debugMaterials).forEach((material) => material.dispose());
+    };
+  }, [debugMaterials]);
 
   function mat(
     glbName: string,
@@ -290,11 +316,8 @@ export function Smartphone({
   ): THREE.Material {
     const semanticKey = GLB_TO_SEMANTIC[glbName];
 
-    // Debug tem prioridade máxima
-    if (debugPartColors && semanticKey && debugPartColors[semanticKey]) {
-      return new THREE.MeshBasicMaterial({
-        color: debugPartColors[semanticKey],
-      });
+    if (debugMaterials && semanticKey && debugMaterials[semanticKey]) {
+      return debugMaterials[semanticKey];
     }
 
     // Sempre preto, ignora tema
@@ -468,5 +491,7 @@ export function Smartphone({
     </group>
   );
 }
+
+export const Smartphone = React.memo(SmartphoneImpl);
 
 useGLTF.preload("/models/smartphone.glb");

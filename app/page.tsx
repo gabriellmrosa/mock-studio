@@ -1,100 +1,48 @@
 "use client";
 
-import { useState, ChangeEvent, Suspense } from "react";
-import { Canvas } from "@react-three/fiber";
+import { ChangeEvent, useState } from "react";
+import Control from "./components/Control";
+import MockupCanvas, { type ExportPreset } from "./components/MockupCanvas";
 import {
-  Smartphone,
-  THEMES,
   DEFAULT_THEME,
-  type ThemeName,
+  THEMES,
   type PhoneColors,
+  type ThemeName,
 } from "./components/Smartphone";
-import { Bounds, Center, Environment, OrbitControls } from "@react-three/drei";
+import { readFileAsDataUrl } from "./lib/mockup-image";
 
-// ---------------------------------------------------------------------------
-// Temas
-// ---------------------------------------------------------------------------
 const THEME_OPTIONS: { id: ThemeName; label: string; preview: string }[] = [
   { id: "gray", label: "Cinza", preview: "#8A8A8E" },
   { id: "black", label: "Preto", preview: "#1C1C1E" },
   { id: "white", label: "Branco", preview: "#F5F5F7" },
 ];
 
-// Grupos para o painel de debug
-const DEBUG_GROUPS: { label: string; parts: string[] }[] = [
-  {
-    label: "Corpo",
-    parts: ["smartphoneBody", "estruturaFrontal", "gradientSound"],
-  },
-  {
-    label: "Botões direitos",
-    parts: [
-      "botaoPowerDireito",
-      "botaoVolumeCima",
-      "botaoVolumeBaixo",
-      "rightBigSideButton",
-    ],
-  },
-  {
-    label: "Botões esquerdos",
-    parts: ["CircleTopLeft", "CircleTopLeftMiddle", "leftSmallSideButton"],
-  },
-  {
-    label: "Notch",
-    parts: [
-      "notchBolinha1",
-      "notchBolinha2",
-      "notchBolinha3",
-      "CircleTopRightMiddle",
-      "notchPill",
-    ],
-  },
-  {
-    label: "Câmera traseira",
-    parts: ["moduloCameraAro", "CircleTopRight", "lente1", "lente2", "lente3"],
-  },
-  {
-    label: "Traseiros / Ocultos",
-    parts: [
-      "behindOrHideElement1",
-      "behindOrHideElement2",
-      "behindOrHideElement3",
-      "behindOrHideElement4",
-      "behindOrHideElement5",
-      "behindOrHideElement6",
-      "behindOrHideElement7",
-    ],
-  },
+const EXPORT_PRESETS: ExportPreset[] = [
+  { height: 1080, label: "mockup-1080p", width: 1920 },
+  { height: 1440, label: "mockup-1440p", width: 2560 },
 ];
 
-// Cores iniciais vibrantes para cada parte no debug
 const INITIAL_DEBUG_COLORS: Record<string, string> = {
-  // Corpo
   smartphoneBody: "#cc00ff",
   estruturaFrontal: "#ff00cc",
-  gradientSound: "#000000", // fixo preto — debug mostra mas não muda tema
-  // Botões direitos
+  gradientSound: "#000000",
   botaoPowerDireito: "#ff6600",
   botaoVolumeCima: "#ffcc00",
   botaoVolumeBaixo: "#ffff00",
   rightBigSideButton: "#ff4400",
-  // Botões esquerdos
-  CircleTopLeft: "#000000", // fixo preto
+  CircleTopLeft: "#000000",
   CircleTopLeftMiddle: "#ccff99",
   leftSmallSideButton: "#66ff66",
-  // Notch
   notchBolinha1: "#00ff00",
   notchBolinha2: "#00ffff",
   notchBolinha3: "#0099ff",
   CircleTopRightMiddle: "#ff0066",
   notchPill: "#33ccff",
-  // Câmera traseira
   moduloCameraAro: "#99ff00",
   CircleTopRight: "#ff99cc",
   lente1: "#0000ff",
   lente2: "#ffff99",
   lente3: "#00ff99",
-  // Traseiros / Ocultos
   behindOrHideElement1: "#ff0000",
   behindOrHideElement2: "#ff3300",
   behindOrHideElement3: "#ff5500",
@@ -104,9 +52,6 @@ const INITIAL_DEBUG_COLORS: Record<string, string> = {
   behindOrHideElement7: "#ffdd00",
 };
 
-// ---------------------------------------------------------------------------
-// ColorRow
-// ---------------------------------------------------------------------------
 function ColorRow({
   label,
   value,
@@ -119,14 +64,19 @@ function ColorRow({
   const [inputVal, setInputVal] = useState(value);
 
   const handleHexInput = (e: ChangeEvent<HTMLInputElement>) => {
-    const v = e.target.value;
-    setInputVal(v);
-    if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(v)) onChange(v);
+    const nextValue = e.target.value;
+    setInputVal(nextValue);
+
+    if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(nextValue)) {
+      onChange(nextValue);
+    }
   };
+
   const handleColorPicker = (e: ChangeEvent<HTMLInputElement>) => {
     setInputVal(e.target.value);
     onChange(e.target.value);
   };
+
   if (inputVal !== value && /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value)) {
     setInputVal(value);
   }
@@ -157,154 +107,129 @@ function ColorRow({
   );
 }
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
 export default function Home() {
   const [uploadedImage, setUploadedImage] =
     useState<string>("/placeholder.png");
+  const [uploadError, setUploadError] = useState<string>("");
   const [activeTheme, setActiveTheme] = useState<ThemeName>(DEFAULT_THEME);
   const [colors, setColors] = useState<PhoneColors>(THEMES[DEFAULT_THEME]);
+  const [rotationX, setRotationX] = useState(0);
+  const [rotationY, setRotationY] = useState(180);
+  const [rotationZ, setRotationZ] = useState(0);
   const [debugMode, setDebugMode] = useState(false);
   const [debugPartColors, setDebugPartColors] =
     useState<Record<string, string>>(INITIAL_DEBUG_COLORS);
+  const [exportHandler, setExportHandler] =
+    useState<((preset: ExportPreset) => Promise<void>) | null>(null);
+  const [resetCameraHandler, setResetCameraHandler] =
+    useState<(() => void) | null>(null);
+  const [isExporting, setIsExporting] = useState(false);
 
-  const screenW = 220;
-  const screenH = 470;
+  async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) {
+      return;
+    }
 
-  const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const img = new window.Image();
-    img.onload = () => {
-      const targetRatio = screenW / screenH;
-      const imgRatio = img.width / img.height;
-      let srcX = 0,
-        srcY = 0,
-        srcW = img.width,
-        srcH = img.height;
-      if (imgRatio > targetRatio) {
-        srcW = img.height * targetRatio;
-        srcX = (img.width - srcW) / 2;
-      } else {
-        srcH = img.width / targetRatio;
-        srcY = (img.height - srcH) / 2;
-      }
-      const MAX = 2048;
-      const scale = Math.min(1, MAX / Math.max(srcW, srcH));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(srcW * scale);
-      canvas.height = Math.round(srcH * scale);
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(
-        img,
-        srcX,
-        srcY,
-        srcW,
-        srcH,
-        0,
-        0,
-        canvas.width,
-        canvas.height,
-      );
-      setUploadedImage(canvas.toDataURL("image/jpeg", 0.95));
-    };
-    img.src = URL.createObjectURL(file);
-  };
+    try {
+      const nextImage = await readFileAsDataUrl(file);
+      setUploadedImage(nextImage);
+      setUploadError("");
+    } catch (error) {
+      console.error(error);
+      setUploadError("Nao foi possivel preparar essa imagem.");
+    } finally {
+      event.target.value = "";
+    }
+  }
 
-  const applyTheme = (themeId: ThemeName) => {
+  function applyTheme(themeId: ThemeName) {
     setActiveTheme(themeId);
     setColors(THEMES[themeId]);
-  };
-  const updateColor = (part: keyof PhoneColors, hex: string) => {
+  }
+
+  function updateColor(part: keyof PhoneColors, hex: string) {
     setActiveTheme("" as ThemeName);
     setColors((prev) => ({ ...prev, [part]: hex }));
-  };
-  const updateDebugColor = (part: string, hex: string) => {
-    setDebugPartColors((prev) => ({ ...prev, [part]: hex }));
-  };
+  }
+
+  function resetMockup() {
+    setRotationX(0);
+    setRotationY(180);
+    setRotationZ(0);
+    resetCameraHandler?.();
+  }
+
+  async function exportImage(preset: ExportPreset) {
+    if (!exportHandler || isExporting) {
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      await exportHandler(preset);
+    } catch (error) {
+      console.error(error);
+      setUploadError("Nao foi possivel exportar o PNG.");
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   return (
-    <main className="min-h-screen bg-white text-white relative flex">
-      <div className="flex-1 h-screen">
-        <Canvas
-          camera={{ position: [0, 0, 5], fov: 45 }}
-          gl={{ preserveDrawingBuffer: true }}
-          style={{ background: "#3b3b3b" }}
-        >
-          <Environment preset="studio" />
-          <Suspense fallback={null}>
-            <Bounds fit clip observe margin={1.2}>
-              <Center>
-                <Smartphone
-                  imageUrl={uploadedImage}
-                  rotation={[0, Math.PI, 0]}
-                  bodyColor={colors.body}
-                  buttonsColor={colors.buttons}
-                  debugPartColors={debugMode ? debugPartColors : undefined}
-                  screenPosition={[-125, 314.85, -195]}
-                  screenSize={[screenW, screenH]}
-                />
-              </Center>
-            </Bounds>
-          </Suspense>
-          <OrbitControls enableZoom={false} />
-        </Canvas>
-      </div>
+    <main className="min-h-screen bg-stone-950 text-white relative flex">
+      <MockupCanvas
+        colors={colors}
+        debugMode={debugMode}
+        debugPartColors={debugPartColors}
+        imageUrl={uploadedImage}
+        onExportReady={(handler) => setExportHandler(() => handler)}
+        onResetCameraReady={(handler) => setResetCameraHandler(() => handler)}
+        transform={{
+          position: [0, 0, 0],
+          rotation: [
+            (rotationX * Math.PI) / 180,
+            (rotationY * Math.PI) / 180,
+            (rotationZ * Math.PI) / 180,
+          ],
+        }}
+      />
 
-      <aside className="w-72 h-screen bg-neutral-900 border-l border-neutral-800 flex flex-col overflow-y-auto shrink-0">
-        <div className="px-5 py-4 border-b border-neutral-800">
-          <h1 className="text-sm font-semibold text-white tracking-wide">
+      <aside className="w-[320px] h-screen bg-neutral-950/95 border-l border-white/10 flex flex-col overflow-y-auto shrink-0">
+        <div className="px-5 py-4 border-b border-white/10">
+          <h1 className="text-sm font-semibold text-white tracking-[0.22em] uppercase">
             Mockup Studio
           </h1>
-          <p className="text-xs text-neutral-500 mt-0.5">
-            Personalize seu mockup
+          <p className="text-xs text-neutral-500 mt-1">
+            MVP de 1 objeto com export transparente
           </p>
         </div>
 
         <div className="flex flex-col gap-6 px-5 py-5">
-          {/* Upload — sempre visível */}
           <section>
             <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
               Tela do App
             </p>
-            <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-neutral-700 hover:border-neutral-500 bg-neutral-800/50 hover:bg-neutral-800 cursor-pointer transition text-sm text-neutral-300">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-4 h-4 text-neutral-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M12 12V4m0 0L8 8m4-4l4 4"
-                />
-              </svg>
+            <label className="flex items-center justify-center gap-2 w-full py-3 rounded-xl border border-dashed border-neutral-700 hover:border-neutral-500 bg-neutral-900 hover:bg-neutral-800 cursor-pointer transition text-sm text-neutral-300">
               Upload imagem
               <input
                 type="file"
-                accept="image/*"
+                accept="image/png,image/jpeg,image/webp"
                 onChange={handleImageUpload}
                 className="hidden"
               />
             </label>
-            <p className="text-[10px] text-neutral-500 text-center mt-2 leading-relaxed">
-              Resolução recomendada:{" "}
-              <span className="text-neutral-400">1290 × 2755 px</span>
+            <p className="text-[10px] text-neutral-500 mt-2 leading-relaxed">
+              Proporcao recomendada: 9:19.3.
               <br />
-              Proporção 9:19.3 · PNG ou JPG
-              <br />
-              <span className="text-yellow-600/80">
-                Sem sombras ou bordas na imagem
-              </span>
+              Export final sempre em PNG com fundo transparente.
             </p>
+            {uploadError ? (
+              <p className="text-[11px] text-red-400 mt-2">{uploadError}</p>
+            ) : null}
           </section>
 
-          {/* Modo normal: temas + cores */}
-          {!debugMode && (
+          {!debugMode ? (
             <>
               <section>
                 <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
@@ -316,63 +241,122 @@ export default function Home() {
                       key={theme.id}
                       onClick={() => applyTheme(theme.id)}
                       title={theme.label}
-                      className={`flex flex-col items-center gap-1.5 p-1.5 rounded-lg border transition ${activeTheme === theme.id ? "border-blue-500 bg-blue-500/10" : "border-neutral-700 hover:border-neutral-500 bg-transparent"}`}
+                      className={`flex flex-col items-center gap-1.5 p-2 rounded-xl border transition ${activeTheme === theme.id ? "border-white bg-white text-black" : "border-neutral-700 hover:border-neutral-500 bg-transparent text-white"}`}
                     >
                       <div
-                        className="w-7 h-7 rounded-full border border-white/10 shadow-inner"
+                        className="w-8 h-8 rounded-full border border-black/10 shadow-inner"
                         style={{ backgroundColor: theme.preview }}
                       />
-                      <span className="text-[9px] text-neutral-400 leading-tight text-center">
+                      <span className="text-[10px] leading-tight text-center">
                         {theme.label}
                       </span>
                     </button>
                   ))}
                 </div>
               </section>
+
               <section>
-                <div className="flex flex-col gap-3">
-                  <ColorRow
-                    label="Corpo"
-                    value={colors.body}
-                    onChange={(hex) => updateColor("body", hex)}
-                  />
-                </div>
+                <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
+                  Cor do Body
+                </p>
+                <ColorRow
+                  label="Body"
+                  value={colors.body}
+                  onChange={(hex) => updateColor("body", hex)}
+                />
               </section>
             </>
-          )}
-
-          {/* Modo debug: color picker por parte semântica */}
-          {debugMode && (
-            <section className="flex flex-col gap-4">
-              {DEBUG_GROUPS.map((group) => (
-                <div key={group.label}>
-                  <p className="text-[10px] font-semibold text-yellow-500 uppercase tracking-widest mb-2">
-                    {group.label}
-                  </p>
-                  <div className="flex flex-col gap-2 bg-neutral-800/50 rounded-lg p-2 border border-neutral-700">
-                    {group.parts.map((part) => (
-                      <ColorRow
-                        key={part}
-                        label={part}
-                        value={debugPartColors[part] ?? "#888888"}
-                        onChange={(hex) => updateDebugColor(part, hex)}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
+          ) : (
+            <section>
+              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
+                Debug
+              </p>
+              <div className="flex flex-col gap-2 rounded-xl border border-neutral-800 bg-neutral-900 p-3">
+                {Object.entries(debugPartColors).map(([part, color]) => (
+                  <ColorRow
+                    key={part}
+                    label={part}
+                    value={color}
+                    onChange={(hex) =>
+                      setDebugPartColors((prev) => ({ ...prev, [part]: hex }))
+                    }
+                  />
+                ))}
+              </div>
             </section>
           )}
 
-          {/* Toggle debug */}
+          <section>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest">
+                Transform
+              </p>
+              <button
+                onClick={resetMockup}
+                className="text-[11px] text-neutral-400 hover:text-white transition"
+              >
+                Reset camera + objeto
+              </button>
+            </div>
+
+            <div className="rounded-2xl border border-white/10 bg-neutral-900 p-3 space-y-4">
+              <Control
+                label="Rotacao X"
+                value={rotationX}
+                setValue={setRotationX}
+                min={-45}
+                max={45}
+                step={1}
+              />
+              <Control
+                label="Rotacao Y"
+                value={rotationY}
+                setValue={setRotationY}
+                min={135}
+                max={225}
+                step={1}
+              />
+              <Control
+                label="Rotacao Z"
+                value={rotationZ}
+                setValue={setRotationZ}
+                min={-25}
+                max={25}
+                step={1}
+              />
+            </div>
+            <p className="text-[10px] text-neutral-500 mt-2 leading-relaxed">
+              O objeto continua centralizado; por enquanto so liberamos rotacao.
+            </p>
+          </section>
+
+          <section>
+            <p className="text-xs font-semibold text-neutral-400 uppercase tracking-widest mb-3">
+              Export PNG
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {EXPORT_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => exportImage(preset)}
+                  disabled={!exportHandler || isExporting}
+                  className="rounded-xl border border-neutral-700 bg-neutral-900 px-3 py-3 text-sm text-white hover:border-neutral-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {preset.width}x{preset.height}
+                </button>
+              ))}
+            </div>
+            <p className="text-[10px] text-neutral-500 mt-2 leading-relaxed">
+              O arquivo sai sem fundo e com supersampling pelo resize do render.
+            </p>
+          </section>
+
           <section>
             <button
-              onClick={() => setDebugMode((v) => !v)}
-              className={`w-full py-2 rounded-lg text-xs font-medium transition border ${debugMode ? "bg-yellow-500/20 border-yellow-500 text-yellow-400" : "bg-neutral-800 border-neutral-700 text-neutral-400 hover:border-neutral-500"}`}
+              onClick={() => setDebugMode((current) => !current)}
+              className={`w-full py-2 rounded-lg text-xs font-medium transition border ${debugMode ? "bg-yellow-500/15 border-yellow-500 text-yellow-300" : "bg-neutral-900 border-neutral-700 text-neutral-400 hover:border-neutral-500"}`}
             >
-              {debugMode
-                ? "🎨 Debug Interativo: ON"
-                : "🎨 Debug Interativo: OFF"}
+              {debugMode ? "Debug interativo: ON" : "Debug interativo: OFF"}
             </button>
           </section>
         </div>
