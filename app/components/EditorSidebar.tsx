@@ -10,6 +10,7 @@ import {
   type DeviceModelDefinition,
   type DeviceModelId,
 } from "../models/device-models";
+import ToggleSwitch from "./toggleSwitch";
 
 type EditorSidebarProps = {
   copy: {
@@ -126,38 +127,38 @@ export default function EditorSidebar({
         <section className="grid grid-cols-2 gap-3">
           <div>
             <p className="editor-sidebar-label mb-3">{copy.themeLabel}</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => onUiThemeChange("dark")}
-                className={`editor-toggle ${uiTheme === "dark" ? "editor-toggle-active" : "editor-toggle-inactive"}`}
-              >
-                {copy.darkMode}
-              </button>
-              <button
-                onClick={() => onUiThemeChange("light")}
-                className={`editor-toggle ${uiTheme === "light" ? "editor-toggle-active" : "editor-toggle-inactive"}`}
-              >
-                {copy.lightMode}
-              </button>
-            </div>
+            <ToggleSwitch
+              ariaLabel={copy.themeLabel}
+              value={uiTheme}
+              onChange={onUiThemeChange}
+              options={[
+                {
+                  value: "dark",
+                  label: copy.darkMode,
+                  iconAlt: copy.darkMode,
+                  iconSrc: "/icons/moon-and-stars.png",
+                },
+                {
+                  value: "light",
+                  label: copy.lightMode,
+                  iconAlt: copy.lightMode,
+                  iconSrc: "/icons/sun.png",
+                },
+              ]}
+            />
           </div>
 
           <div>
             <p className="editor-sidebar-label mb-3">{copy.languageLabel}</p>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                onClick={() => onLocaleChange("pt-BR")}
-                className={`editor-toggle ${locale === "pt-BR" ? "editor-toggle-active" : "editor-toggle-inactive"}`}
-              >
-                {copy.portuguese}
-              </button>
-              <button
-                onClick={() => onLocaleChange("en-US")}
-                className={`editor-toggle ${locale === "en-US" ? "editor-toggle-active" : "editor-toggle-inactive"}`}
-              >
-                {copy.english}
-              </button>
-            </div>
+            <ToggleSwitch
+              ariaLabel={copy.languageLabel}
+              value={locale}
+              onChange={onLocaleChange}
+              options={[
+                { value: "pt-BR", label: copy.portuguese },
+                { value: "en-US", label: copy.english },
+              ]}
+            />
           </div>
         </section>
 
