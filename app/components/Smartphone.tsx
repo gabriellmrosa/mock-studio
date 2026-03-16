@@ -1,14 +1,17 @@
 "use client";
 
 import * as THREE from "three";
-import React, { JSX, useMemo } from "react";
+import React, { JSX, useEffect, useMemo } from "react";
 import { useGLTF, useTexture } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
+import {
+  buildScreenCanvas,
+  MAX_TEXTURE_SIZE,
+  SCREEN_HEIGHT,
+  SCREEN_WIDTH,
+} from "../lib/mockup-image";
 
-// ---------------------------------------------------------------------------
-// Temas prontos
-// ---------------------------------------------------------------------------
-export type ThemeName = "metallic" | "black" | "white" | "gold" | "space-blue";
+export type ThemeName = "gray" | "black" | "white";
 
 export interface PhoneColors {
   body: string;
@@ -16,14 +19,55 @@ export interface PhoneColors {
 }
 
 export const THEMES: Record<ThemeName, PhoneColors> = {
-  metallic: { body: "#8A8A8E", buttons: "#6D6D72" },
+  gray: { body: "#8A8A8E", buttons: "#6D6D72" },
   black: { body: "#1C1C1E", buttons: "#2C2C2E" },
   white: { body: "#F5F5F7", buttons: "#D1D1D6" },
-  gold: { body: "#C9A84C", buttons: "#A8893C" },
-  "space-blue": { body: "#1B3A5C", buttons: "#142D47" },
 };
 
-export const DEFAULT_THEME: ThemeName = "metallic";
+export const DEFAULT_THEME: ThemeName = "white";
+
+// ---------------------------------------------------------------------------
+// Mapeamento semântico
+// ---------------------------------------------------------------------------
+export const MESH_SEMANTIC: Record<string, string> = {
+  // Elementos principais visíveis
+  gradientSound: "o_Cube", // sempre preto
+  smartphoneBody: "o_Boole1",
+  estruturaFrontal: "o_Extrude4",
+  botaoPowerDireito: "o_Extrude2",
+  botaoVolumeCima: "o_Cap1",
+  botaoVolumeBaixo: "o_Cap2",
+  CircleTopLeft: "o_Cap1_6", // sempre preto
+  rightBigSideButton: "o_Capsule",
+  notchBolinha1: "o_Cap1_1",
+  notchBolinha2: "o_Extrude1",
+  notchBolinha3: "o_Cap1_2",
+  CircleTopRightMiddle: "o_Cap1_3",
+  notchPill: "o_Extrude3",
+  moduloCameraAro: "o_Extrude",
+  CircleTopRight: "o_Cap1_4",
+  lente1: "o_Cap2_2",
+  lente2: "o_Cap2_6",
+  lente3: "o_Cap2_1",
+  CircleTopLeftMiddle: "o_Cap1_5",
+  leftSmallSideButton: "o_Capsule1",
+
+  // Elementos traseiros/ocultos — serão travados futuramente
+  behindOrHideElement1: "o_Cap2_3",
+  behindOrHideElement2: "o_Cap2_4",
+  behindOrHideElement3: "o_Cap2_5",
+  behindOrHideElement4: "o_Extrude2_1",
+  behindOrHideElement5: "o_Extrude1_1",
+  behindOrHideElement6: "o_Extrude_1",
+  behindOrHideElement7: "o_Extrude_2",
+};
+
+const GLB_TO_SEMANTIC: Record<string, string> = Object.fromEntries(
+  Object.entries(MESH_SEMANTIC).map(([sem, glb]) => [glb, sem]),
+);
+
+export type DebugPartKey = keyof typeof MESH_SEMANTIC;
+type Category = "body" | "buttons" | "circle" | "original" | "alwaysBlack";
 
 // ---------------------------------------------------------------------------
 // Helpers de geometria
@@ -66,7 +110,6 @@ function getRoundedRectangleShape(
 // ---------------------------------------------------------------------------
 type GLTFResult = GLTF & {
   nodes: {
-    o_Cube1: THREE.Mesh;
     o_Extrude2: THREE.Mesh;
     o_Cap1: THREE.Mesh;
     o_Cap2: THREE.Mesh;
@@ -114,41 +157,8 @@ type SmartphoneProps = JSX.IntrinsicElements["group"] & {
   screenRotation?: [number, number, number];
   bodyColor?: string;
   buttonsColor?: string;
-  debugColors?: boolean;
-};
-
-// ---------------------------------------------------------------------------
-// Debug colors
-// ---------------------------------------------------------------------------
-const DEBUG_COLORS: Record<string, string> = {
-  o_Cube1: "#ff0000",
-  o_Extrude2: "#ff6600",
-  o_Cap1: "#ffcc00",
-  o_Cap2: "#ffff00",
-  o_Extrude: "#99ff00",
-  o_Cap1_1: "#00ff00",
-  o_Cap2_1: "#00ff99",
-  o_Extrude1: "#00ffff",
-  o_Cap1_2: "#0099ff",
-  o_Cap2_2: "#0000ff",
-  o_Cube: "#6600ff",
-  o_Boole1: "#cc00ff",
-  o_Extrude4: "#ff00cc",
-  o_Cap1_3: "#ff0066",
-  o_Cap2_3: "#ff3333",
-  o_Extrude3: "#33ccff",
-  o_Cap1_4: "#ff99cc",
-  o_Cap2_4: "#99ffcc",
-  o_Extrude2_1: "#ffcc99",
-  o_Cap1_5: "#cc99ff",
-  o_Cap2_5: "#ff99ff",
-  o_Extrude1_1: "#99ccff",
-  o_Cap1_6: "#ccff99",
-  o_Cap2_6: "#ffff99",
-  o_Capsule1: "#ff6666",
-  o_Capsule: "#66ff66",
-  o_Extrude_1: "#6666ff",
-  o_Extrude_2: "#ff6699",
+  debugPartColors?: Partial<Record<string, string>>;
+  showDeviceShell?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -165,61 +175,50 @@ function ScreenWithTexture({
   screenPosition: [number, number, number];
   screenRotation: [number, number, number];
 }) {
-  const texture = useTexture(imageUrl, (tex) => {
-    const t = Array.isArray(tex) ? tex[0] : tex;
-    const img = t.image as HTMLImageElement;
+  const sourceTexture = useTexture(imageUrl);
 
-    const imgW = img.naturalWidth || img.width;
-    const imgH = img.naturalHeight || img.height;
+  const texture = useMemo(() => {
+    const img = sourceTexture.image as
+      | HTMLImageElement
+      | HTMLCanvasElement
+      | undefined;
 
-    // Proporção alvo do mesh
-    const targetRatio = 220 / 470; // W/H
-    const imgRatio = imgW / imgH;
-
-    let srcX = 0,
-      srcY = 0,
-      srcW = imgW,
-      srcH = imgH;
-
-    if (imgRatio > targetRatio) {
-      // Imagem mais larga que o mesh → corta nas laterais
-      srcW = imgH * targetRatio;
-      srcX = (imgW - srcW) / 2;
-    } else {
-      // Imagem mais alta que o mesh → corta em cima e embaixo
-      srcH = imgW / targetRatio;
-      srcY = (imgH - srcH) / 2;
+    if (!img) {
+      return sourceTexture;
     }
 
-    const MAX = 2048;
-    const scale = Math.min(1, MAX / Math.max(srcW, srcH));
-    const canvas = document.createElement("canvas");
-    canvas.width = Math.round(srcW * scale);
-    canvas.height = Math.round(srcH * scale);
-
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(
+    const imgW =
+      img instanceof HTMLImageElement ? img.naturalWidth || img.width : img.width;
+    const imgH =
+      img instanceof HTMLImageElement ? img.naturalHeight || img.height : img.height;
+    const canvas = buildScreenCanvas(
       img,
-      srcX,
-      srcY,
-      srcW,
-      srcH,
-      0,
-      0,
-      canvas.width,
-      canvas.height,
+      imgW,
+      imgH,
+      SCREEN_WIDTH,
+      SCREEN_HEIGHT,
+      MAX_TEXTURE_SIZE,
     );
+    const nextTexture = sourceTexture.clone();
 
-    t.image = canvas;
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.flipY = true;
-    t.minFilter = THREE.LinearMipmapLinearFilter;
-    t.magFilter = THREE.LinearFilter;
-    t.anisotropy = 16;
-    t.wrapS = THREE.ClampToEdgeWrapping;
-    t.wrapT = THREE.ClampToEdgeWrapping;
-    t.needsUpdate = true;
-  });
+    nextTexture.image = canvas;
+    nextTexture.colorSpace = THREE.SRGBColorSpace;
+    nextTexture.flipY = true;
+    nextTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    nextTexture.magFilter = THREE.LinearFilter;
+    nextTexture.anisotropy = 16;
+    nextTexture.wrapS = THREE.ClampToEdgeWrapping;
+    nextTexture.wrapT = THREE.ClampToEdgeWrapping;
+    nextTexture.needsUpdate = true;
+
+    return nextTexture;
+  }, [sourceTexture]);
+
+  useEffect(() => {
+    if (texture !== sourceTexture) {
+      return () => texture.dispose();
+    }
+  }, [sourceTexture, texture]);
 
   return (
     <mesh
@@ -237,16 +236,24 @@ function ScreenWithTexture({
 }
 
 // ---------------------------------------------------------------------------
+// Material preto fixo (independente de tema)
+// ---------------------------------------------------------------------------
+const FIXED_BLACK = new THREE.MeshLambertMaterial({
+  color: "#000000",
+});
+
+// ---------------------------------------------------------------------------
 // Componente principal
 // ---------------------------------------------------------------------------
-export function Smartphone({
+function SmartphoneImpl({
   imageUrl,
-  screenPosition = [-125, 316, -195],
+  screenPosition = [-125, 315, -195],
   screenSize = [220, 470],
   screenRotation = [0, 0, 0],
   bodyColor = THEMES[DEFAULT_THEME].body,
   buttonsColor = THEMES[DEFAULT_THEME].buttons,
-  debugColors = false,
+  debugPartColors,
+  showDeviceShell = true,
   ...props
 }: SmartphoneProps) {
   const { nodes, materials } = useGLTF(
@@ -254,52 +261,73 @@ export function Smartphone({
   ) as unknown as GLTFResult;
 
   const screenGeometry = useMemo(() => {
-    const shape = getRoundedRectangleShape(screenSize[0], screenSize[1], 25);
+    const shape = getRoundedRectangleShape(screenSize[0], screenSize[1], 28);
     const geo = new THREE.ShapeGeometry(shape);
     const pos = geo.attributes.position;
     const uvArray = new Float32Array(pos.count * 2);
     const halfW = screenSize[0] / 2;
     const halfH = screenSize[1] / 2;
     for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const y = pos.getY(i);
-      uvArray[i * 2] = 1 - (x + halfW) / screenSize[0];
-      uvArray[i * 2 + 1] = (y + halfH) / screenSize[1];
+      uvArray[i * 2] = 1 - (pos.getX(i) + halfW) / screenSize[0];
+      uvArray[i * 2 + 1] = (pos.getY(i) + halfH) / screenSize[1];
     }
     geo.setAttribute("uv", new THREE.BufferAttribute(uvArray, 2));
     return geo;
   }, [screenSize]);
 
-  // Materiais memoizados com aparência metálica realista
   const bodyMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: bodyColor,
-        metalness: 0.6,
-        roughness: 0.3,
-      }),
+    () => new THREE.MeshLambertMaterial({ color: bodyColor }),
     [bodyColor],
   );
   const buttonsMat = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: buttonsColor,
-        metalness: 0.7,
-        roughness: 0.25,
-      }),
+    () => new THREE.MeshLambertMaterial({ color: buttonsColor }),
     [buttonsColor],
   );
+  const circleMat = useMemo(() => {
+    const color = new THREE.Color(bodyColor);
+    color.lerp(new THREE.Color("#ffffff"), 0.25); // 25% mais claro
+    return new THREE.MeshLambertMaterial({ color });
+  }, [bodyColor]);
+  const debugMaterials = useMemo(() => {
+    if (!debugPartColors) {
+      return null;
+    }
 
-  type Category = "body" | "buttons" | "original";
+    return Object.fromEntries(
+      Object.entries(debugPartColors).map(([part, color]) => [
+        part,
+        new THREE.MeshBasicMaterial({ color }),
+      ]),
+    );
+  }, [debugPartColors]);
+
+  useEffect(() => {
+    if (!debugMaterials) {
+      return;
+    }
+
+    return () => {
+      Object.values(debugMaterials).forEach((material) => material.dispose());
+    };
+  }, [debugMaterials]);
+
   function mat(
-    meshName: string,
+    glbName: string,
     category: Category,
     originalMaterial: THREE.Material,
   ): THREE.Material {
-    if (debugColors)
-      return new THREE.MeshBasicMaterial({
-        color: DEBUG_COLORS[meshName] ?? "#ffffff",
-      });
+    const semanticKey = GLB_TO_SEMANTIC[glbName];
+
+    if (debugMaterials && semanticKey && debugMaterials[semanticKey]) {
+      return debugMaterials[semanticKey];
+    }
+
+    // Sempre preto, ignora tema
+    if (category === "alwaysBlack") {
+      return FIXED_BLACK;
+    }
+    if (category === "circle") return circleMat;
+
     if (category === "body") return bodyMat;
     if (category === "buttons") return buttonsMat;
     return originalMaterial;
@@ -310,115 +338,138 @@ export function Smartphone({
 
   return (
     <group {...props} dispose={null}>
-      {/* ── Estrutura original ── */}
-      <mesh
-        geometry={nodes.o_Extrude2.geometry}
-        material={mat("o_Extrude2", "original", materials["Mat.6"])}
-      />
-      <mesh
-        geometry={nodes.o_Cap1.geometry}
-        material={mat("o_Cap1", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Cap2.geometry}
-        material={mat("o_Cap2", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Extrude.geometry}
-        material={mat("o_Extrude", "original", materials.Mat)}
-      />
-      <mesh
-        geometry={nodes.o_Cap1_1.geometry}
-        material={mat("o_Cap1_1", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Cap2_1.geometry}
-        material={mat("o_Cap2_1", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Extrude1.geometry}
-        material={mat("o_Extrude1", "original", materials.Mat)}
-      />
-      <mesh
-        geometry={nodes.o_Cap1_2.geometry}
-        material={mat("o_Cap1_2", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Cap2_2.geometry}
-        material={mat("o_Cap2_2", "original", materials["default"])}
-      />
+      {showDeviceShell ? (
+        <>
+          <mesh
+            name="botaoPowerDireito"
+            geometry={nodes.o_Extrude2.geometry}
+            material={mat("o_Extrude2", "buttons", materials["Mat.6"])}
+          />
+          <mesh
+            name="botaoVolumeCima"
+            geometry={nodes.o_Cap1.geometry}
+            material={mat("o_Cap1", "buttons", materials["default"])}
+          />
+          <mesh
+            name="botaoVolumeBaixo"
+            geometry={nodes.o_Cap2.geometry}
+            material={mat("o_Cap2", "buttons", materials["default"])}
+          />
 
-      {/* ── o_Cube: corpo traseiro (grande, rosa #6600ff no debug) ── */}
-      <mesh
-        geometry={nodes.o_Cube.geometry}
-        material={mat("o_Cube", "body", materials["default"])}
-      />
+          <mesh
+            name="moduloCameraAro"
+            geometry={nodes.o_Extrude.geometry}
+            material={mat("o_Extrude", "original", materials.Mat)}
+          />
+          <mesh
+            name="notchBolinha1"
+            geometry={nodes.o_Cap1_1.geometry}
+            material={mat("o_Cap1_1", "original", materials["default"])}
+          />
+          <mesh
+            name="lente3"
+            geometry={nodes.o_Cap2_1.geometry}
+            material={mat("o_Cap2_1", "original", materials["default"])}
+          />
+          <mesh
+            name="notchBolinha2"
+            geometry={nodes.o_Extrude1.geometry}
+            material={mat("o_Extrude1", "original", materials.Mat)}
+          />
+          <mesh
+            name="notchBolinha3"
+            geometry={nodes.o_Cap1_2.geometry}
+            material={mat("o_Cap1_2", "original", materials["default"])}
+          />
+          <mesh
+            name="lente1"
+            geometry={nodes.o_Cap2_2.geometry}
+            material={mat("o_Cap2_2", "original", materials["default"])}
+          />
 
-      {/* ── o_Boole1: corpo frontal/aro (#cc00ff no debug) ── */}
-      <mesh
-        geometry={nodes.o_Boole1.geometry}
-        material={mat("o_Boole1", "body", materials["Mat.1"])}
-      />
+          <mesh
+            name="gradientSound"
+            geometry={nodes.o_Cube.geometry}
+            material={mat("o_Cube", "alwaysBlack", materials["default"])}
+          />
+          <mesh
+            name="smartphoneBody"
+            geometry={nodes.o_Boole1.geometry}
+            material={mat("o_Boole1", "body", materials["Mat.1"])}
+          />
+          <mesh
+            name="estruturaFrontal"
+            geometry={nodes.o_Extrude4.geometry}
+            material={mat("o_Extrude4", "body", materials.Mat)}
+          />
 
-      {/* ── o_Extrude4: estrutura frontal (#ff00cc no debug) ── */}
-      <mesh
-        geometry={nodes.o_Extrude4.geometry}
-        material={mat("o_Extrude4", "body", materials.Mat)}
-      />
+          <mesh
+            name="behindOrHideElement1"
+            geometry={nodes.o_Cap2_3.geometry}
+            material={mat("o_Cap2_3", "original", materials["default"])}
+          />
+          <mesh
+            name="notchPill"
+            geometry={nodes.o_Extrude3.geometry}
+            material={mat("o_Extrude3", "original", materials.Mat)}
+          />
 
-      <mesh
-        geometry={nodes.o_Cap1_3.geometry}
-        material={mat("o_Cap1_3", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Cap2_3.geometry}
-        material={mat("o_Cap2_3", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Extrude3.geometry}
-        material={mat("o_Extrude3", "original", materials.Mat)}
-      />
-      <mesh
-        geometry={nodes.o_Cap1_4.geometry}
-        material={mat("o_Cap1_4", "original", materials["default"])}
-      />
+          <mesh
+            name="CircleTopLeft"
+            geometry={nodes.o_Cap1_6.geometry}
+            material={mat("o_Cap1_6", "circle", materials["default"])}
+          />
+          <mesh
+            name="CircleTopLeftMiddle"
+            geometry={nodes.o_Cap1_5.geometry}
+            material={mat("o_Cap1_5", "circle", materials["default"])}
+          />
+          <mesh
+            name="CircleTopRight"
+            geometry={nodes.o_Cap1_4.geometry}
+            material={mat("o_Cap1_4", "circle", materials["default"])}
+          />
+          <mesh
+            name="CircleTopRightMiddle"
+            geometry={nodes.o_Cap1_3.geometry}
+            material={mat("o_Cap1_3", "circle", materials["default"])}
+          />
+          <mesh
+            name="behindOrHideElement2"
+            geometry={nodes.o_Cap2_4.geometry}
+            material={mat("o_Cap2_4", "original", materials["default"])}
+          />
 
-      {/* ── Botão lateral esquerdo (#99ffcc no debug) ── */}
-      <mesh
-        geometry={nodes.o_Cap2_4.geometry}
-        material={mat("o_Cap2_4", "buttons", materials["default"])}
-      />
+          <mesh
+            name="behindOrHideElement3"
+            geometry={nodes.o_Extrude2_1.geometry}
+            material={mat("o_Extrude2_1", "original", materials.Mat)}
+          />
 
-      <mesh
-        geometry={nodes.o_Extrude2_1.geometry}
-        material={mat("o_Extrude2_1", "original", materials.Mat)}
-      />
-      <mesh
-        geometry={nodes.o_Cap1_5.geometry}
-        material={mat("o_Cap1_5", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Cap2_5.geometry}
-        material={mat("o_Cap2_5", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Extrude1_1.geometry}
-        material={mat("o_Extrude1_1", "original", materials.Mat)}
-      />
-      <mesh
-        geometry={nodes.o_Cap1_6.geometry}
-        material={mat("o_Cap1_6", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Cap2_6.geometry}
-        material={mat("o_Cap2_6", "original", materials["default"])}
-      />
-      <mesh
-        geometry={nodes.o_Capsule1.geometry}
-        material={mat("o_Capsule1", "original", materials["Mat.1"])}
-      />
+          <mesh
+            name="behindOrHideElement4"
+            geometry={nodes.o_Cap2_5.geometry}
+            material={mat("o_Cap2_5", "original", materials["default"])}
+          />
+          <mesh
+            name="behindOrHideElement5"
+            geometry={nodes.o_Extrude1_1.geometry}
+            material={mat("o_Extrude1_1", "original", materials.Mat)}
+          />
 
-      {/* ── Tela ── */}
+          <mesh
+            name="lente2"
+            geometry={nodes.o_Cap2_6.geometry}
+            material={mat("o_Cap2_6", "original", materials["default"])}
+          />
+          <mesh
+            name="leftSmallSideButton"
+            geometry={nodes.o_Capsule1.geometry}
+            material={mat("o_Capsule1", "body", materials["Mat.1"])}
+          />
+        </>
+      ) : null}
+
       <ScreenWithTexture
         imageUrl={effectiveImageUrl}
         screenGeometry={screenGeometry}
@@ -426,22 +477,30 @@ export function Smartphone({
         screenRotation={screenRotation}
       />
 
-      <mesh
-        geometry={nodes.o_Capsule.geometry}
-        material={mat("o_Capsule", "original", materials["Mat.1"])}
-      />
+      {showDeviceShell ? (
+        <>
+          <mesh
+            name="rightBigSideButton"
+            geometry={nodes.o_Capsule.geometry}
+            material={mat("o_Capsule", "body", materials["Mat.1"])}
+          />
 
-      {/* ── Botões laterais direitos (#6666ff e #ff6699 no debug) ── */}
-      <mesh
-        geometry={nodes.o_Extrude_1.geometry}
-        material={mat("o_Extrude_1", "buttons", materials["Mat.1"])}
-      />
-      <mesh
-        geometry={nodes.o_Extrude_2.geometry}
-        material={mat("o_Extrude_2", "buttons", materials["Mat.1"])}
-      />
+          <mesh
+            name="behindOrHideElement6"
+            geometry={nodes.o_Extrude_1.geometry}
+            material={mat("o_Extrude_1", "original", materials["Mat.1"])}
+          />
+          <mesh
+            name="behindOrHideElement7"
+            geometry={nodes.o_Extrude_2.geometry}
+            material={mat("o_Extrude_2", "original", materials["Mat.1"])}
+          />
+        </>
+      ) : null}
     </group>
   );
 }
+
+export const Smartphone = React.memo(SmartphoneImpl);
 
 useGLTF.preload("/models/smartphone.glb");
