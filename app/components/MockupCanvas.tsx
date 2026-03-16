@@ -169,13 +169,18 @@ function SceneBridge({
   useEffect(() => {
     const MAX_DURATION_MS = 5000;
     let mediaRecorder: MediaRecorder | null = null;
+    let chunks: BlobPart[] = [];
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const api: VideoRecordApi = {
       start: () => {
+        if (mediaRecorder?.state === "recording") {
+          return;
+        }
+
+        chunks = [];
         const canvas = gl.domElement;
         const stream = canvas.captureStream(30);
-        const chunks: BlobPart[] = [];
 
         const mimeType = MediaRecorder.isTypeSupported("video/webm; codecs=vp9")
           ? "video/webm; codecs=vp9"
@@ -190,12 +195,8 @@ function SceneBridge({
         };
 
         mediaRecorder.onstop = () => {
-          if (timeoutId !== null) {
-            clearTimeout(timeoutId);
-            timeoutId = null;
-          }
-
           const blob = new Blob(chunks, { type: mimeType });
+          chunks = [];
           downloadBlob(blob, "mockup-video.webm");
           onVideoStateChange("idle");
         };
