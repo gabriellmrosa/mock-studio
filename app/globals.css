@@ -28,11 +28,11 @@
   --canvas-overlay: rgba(42, 41, 39, 0.58);
   --canvas-toolbar: rgba(57, 53, 49, 0.92);
   --canvas-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
-  --control-strong: #383838;
+  --control-strong: #c8bfb5;
   --control-track: #7f7972;
   --control-input-bg: #45403b;
-  --control-input-border: #6a645d;
-  --control-reset-border: #6a645d;
+  --control-input-border: #7a7369;
+  --control-reset-border: #7a7369;
 }
 
 @theme inline {
@@ -670,11 +670,11 @@ body {
 
 .canvas-capture-button {
   align-items: center;
-  background: #3d3936;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--button-active-bg);
+  border: 1px solid transparent;
   border-radius: 999px;
   box-shadow: var(--canvas-shadow);
-  color: #f7f2eb;
+  color: var(--button-active-fg);
   cursor: pointer;
   display: inline-flex;
   font-size: 0.75rem;
@@ -687,7 +687,7 @@ body {
 }
 
 .canvas-capture-button:hover {
-  background: #4a4540;
+  background: color-mix(in srgb, var(--button-active-bg) 88%, var(--foreground));
   transform: translateY(-1px);
 }
 
@@ -712,14 +712,10 @@ body {
 }
 
 .panel-title-brand {
-  color: #000000;
+  color: var(--foreground);
   font-family: var(--font-brand), serif;
   font-size: 2rem;
   font-weight: 800;
-}
-
-[data-theme="dark"] .panel-title-brand {
-  color: var(--foreground);
 }
 
 .panel-title-object {
@@ -757,7 +753,7 @@ body {
 }
 
 .transform-section .editor-sidebar-label {
-  color: var(--control-strong);
+  color: var(--sidebar-label);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -861,7 +857,7 @@ body {
   align-items: center;
   background: transparent;
   border: 0;
-  color: var(--button-fg);
+  color: var(--button-muted-fg);
   cursor: pointer;
   display: inline-flex;
   height: 1.5rem;
@@ -871,7 +867,7 @@ body {
 }
 
 .editor-section-action:hover {
-  color: var(--button-muted-fg);
+  color: var(--button-fg);
 }
 
 .sidebar-footer {

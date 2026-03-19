@@ -58,7 +58,7 @@ export default function Home() {
   const [selectedObjectId, setSelectedObjectId] = useState("");
   const [, setExportHandler] =
     useState<((preset: ExportPreset) => Promise<void>) | null>(null);
-  const resetCameraVersion = 0;
+  const [resetCameraVersion, _setResetCameraVersion] = useState(0);
   const copy = APP_COPY[locale];
   const selectedObject =
     sceneObjects.find((object) => object.id === selectedObjectId) ??

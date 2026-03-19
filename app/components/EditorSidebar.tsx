@@ -311,7 +311,6 @@ export default function EditorSidebar({
           <div className="panel-card space-y-4 p-3">
             <Control
               label={copy.rotationX}
-              uiTheme={uiTheme}
               value={rotationX}
               setValue={setRotationX}
               min={-45}
@@ -320,7 +319,6 @@ export default function EditorSidebar({
             />
             <Control
               label={copy.rotationY}
-              uiTheme={uiTheme}
               value={rotationY}
               setValue={setRotationY}
               min={135}
@@ -329,7 +327,6 @@ export default function EditorSidebar({
             />
             <Control
               label={copy.rotationZ}
-              uiTheme={uiTheme}
               value={rotationZ}
               setValue={setRotationZ}
               min={-25}
