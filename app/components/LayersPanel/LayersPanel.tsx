@@ -4,7 +4,11 @@ import "./LayersPanel.css";
 import { KeyboardEvent, useState } from "react";
 import type { AppCopy, Locale, UiTheme } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
-import { IconButton, PanelHeader, PanelSection } from "../EditorPrimitives/EditorPrimitives";
+import {
+  IconButton,
+  PanelHeader,
+  PanelSection,
+} from "../EditorPrimitives/EditorPrimitives";
 import { MoreVertical, Plus } from "lucide-react";
 import ContextMenu from "../ContextMenu/ContextMenu";
 
@@ -126,7 +130,7 @@ export default function LayersPanel({
                     active={open}
                     onClick={onClick}
                   >
-                    <MoreVertical className="h-4 w-4" />
+                    <MoreVertical size={12} />
                   </IconButton>
                 )}
               />
@@ -145,7 +149,7 @@ export default function LayersPanel({
                 aria-label={copy.addObject}
                 title={copy.addObject}
               >
-                <Plus className="h-4 w-4" />
+                <Plus size={16} />
               </button>
             }
           >
@@ -228,7 +232,7 @@ export default function LayersPanel({
                             onClick();
                           }}
                         >
-                          <MoreVertical className="h-4 w-4" />
+                          <MoreVertical size={16} />
                         </IconButton>
                       )}
                     />

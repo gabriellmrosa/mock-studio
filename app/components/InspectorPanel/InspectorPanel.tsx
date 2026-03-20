@@ -100,7 +100,7 @@ export default function InspectorPanel({
           className="--without-border-bottom"
         >
           <label className="upload-card">
-            <Upload className="h-4 w-4" />
+            <Upload size={16} />
             {copy.uploadImage}
             <input
               type="file"
@@ -184,7 +184,7 @@ export default function InspectorPanel({
                 title={copy.resetObjectButton}
                 className="editor-fab"
               >
-                <RotateCcw className="h-4 w-4" />
+                <RotateCcw size={16} />
               </button>
             </div>
           }

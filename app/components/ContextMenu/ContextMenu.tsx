@@ -147,7 +147,7 @@ export default function ContextMenu({ items, trigger }: ContextMenuProps) {
                 onMouseEnter={(e) => openSubmenu(index, e.currentTarget)}
               >
                 <span className="context-menu-row-label">{item.label}</span>
-                <ChevronRight className="h-3 w-3 context-menu-row-chevron" />
+                <ChevronRight size={12} className="context-menu-row-chevron" />
               </button>
             );
           })}
@@ -167,7 +167,7 @@ export default function ContextMenu({ items, trigger }: ContextMenuProps) {
                 >
                   <span className="context-menu-row-label">{opt.label}</span>
                   {opt.checked && (
-                    <Check className="h-3 w-3 context-menu-check" />
+                    <Check size={12} className="context-menu-check" />
                   )}
                 </button>
               ))}

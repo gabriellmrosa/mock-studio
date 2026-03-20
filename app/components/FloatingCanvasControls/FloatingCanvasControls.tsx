@@ -54,7 +54,7 @@ export default function FloatingCanvasControls({
           title="Reset camera"
           onClick={onFitToScene}
         >
-          <RotateCcw className="h-4 w-4" />
+          <RotateCcw size={16} />
         </button>
         <button
           type="button"
@@ -62,7 +62,7 @@ export default function FloatingCanvasControls({
           aria-label="Move up"
           title="Move up"
         >
-          <ArrowUp className="h-4 w-4" />
+          <ArrowUp size={16} />
         </button>
         <button
           type="button"
@@ -70,7 +70,7 @@ export default function FloatingCanvasControls({
           aria-label="Move down"
           title="Move down"
         >
-          <ArrowDown className="h-4 w-4" />
+          <ArrowDown size={16} />
         </button>
         <button
           type="button"
@@ -78,7 +78,7 @@ export default function FloatingCanvasControls({
           aria-label="Move left"
           title="Move left"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft size={16} />
         </button>
         <button
           type="button"
@@ -86,7 +86,7 @@ export default function FloatingCanvasControls({
           aria-label="Move right"
           title="Move right"
         >
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight size={16} />
         </button>
         <button
           type="button"
@@ -95,7 +95,7 @@ export default function FloatingCanvasControls({
           title="Zoom out"
           onClick={onZoomOut}
         >
-          <ZoomOut className="h-4 w-4" />
+          <ZoomOut size={16} />
         </button>
         <button
           type="button"
@@ -104,7 +104,7 @@ export default function FloatingCanvasControls({
           title="Zoom in"
           onClick={onZoomIn}
         >
-          <ZoomIn className="h-4 w-4" />
+          <ZoomIn size={16} />
         </button>
 
         <div style={{ position: "relative" }}>
@@ -147,7 +147,7 @@ export default function FloatingCanvasControls({
         aria-label="Take photo"
         title="Take photo"
       >
-        <Camera className="h-4 w-4" />
+        <Camera size={16} />
         <span>Take photo</span>
       </button>
     </div>
