@@ -1,6 +1,6 @@
 "use client";
 
-import { ChangeEvent, useEffect, useState } from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
 import MockupCanvas, { type ExportPreset } from "./components/MockupCanvas/MockupCanvas";
@@ -46,6 +46,7 @@ function detectBrowserTheme(): UiTheme {
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("pt-BR");
   const [uiTheme, setUiTheme] = useState<UiTheme>("dark");
+  const isInitialized = useRef(false);
   const [uploadError, setUploadError] = useState("");
   const [sceneObjects, setSceneObjects] = useState<SceneObject[]>(() => [
     createSceneObject({
@@ -69,20 +70,20 @@ export default function Home() {
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("mock-photo-locale");
     const storedUiTheme = window.localStorage.getItem("mock-photo-ui-theme");
-    const browserLocale = detectBrowserLocale();
-    const browserTheme = detectBrowserTheme();
 
-    if (storedLocale === "pt-BR" || storedLocale === "en-US") {
-      setLocale(storedLocale);
-    } else {
-      setLocale(browserLocale);
-    }
+    setLocale(
+      storedLocale === "pt-BR" || storedLocale === "en-US"
+        ? storedLocale
+        : detectBrowserLocale(),
+    );
 
-    if (storedUiTheme === "dark" || storedUiTheme === "light") {
-      setUiTheme(storedUiTheme);
-    } else {
-      setUiTheme(browserTheme);
-    }
+    setUiTheme(
+      storedUiTheme === "dark" || storedUiTheme === "light"
+        ? storedUiTheme
+        : detectBrowserTheme(),
+    );
+
+    isInitialized.current = true;
   }, []);
 
   useEffect(() => {
@@ -98,11 +99,13 @@ export default function Home() {
   }, [locale]);
 
   useEffect(() => {
+    if (!isInitialized.current) return;
     window.localStorage.setItem("mock-photo-locale", locale);
     document.documentElement.lang = locale;
   }, [locale]);
 
   useEffect(() => {
+    if (!isInitialized.current) return;
     window.localStorage.setItem("mock-photo-ui-theme", uiTheme);
     document.documentElement.dataset.theme = uiTheme;
   }, [uiTheme]);

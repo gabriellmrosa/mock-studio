@@ -74,7 +74,7 @@ As alteracoes recentes foram feitas na branch:
 
 ## Onde Paramos
 
-Introducao do `ContextMenu` como componente reutilizavel de menu cascata. O menu de preferencias do header (Theme e Language com submenus) e o menu de contexto de cada layer (Renomear / Deletar) agora usam o mesmo componente. Icones migrados de SVGs inline para `lucide-react`. Label "Interface" renomeado para "Tema" / "Theme".
+Correcao da inicializacao de locale e tema: os `useEffect` de salvar no localStorage agora aguardam a leitura/deteccao completar antes de gravar, evitando que os defaults hardcoded contaminem o localStorage na primeira abertura. Usuarios novos iniciam com as preferencias do browser (dark/light mode e idioma). Usuarios com localStorage ja gravado mantem suas preferencias salvas.
 
 ## Proximo Passo Sugerido
 
