@@ -7,7 +7,10 @@ import type { ThemeName } from "../Smartphone";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
 import { DEVICE_MODEL_LIST } from "../../models/device-models";
-import { PanelHeader, PanelSection } from "../EditorPrimitives/EditorPrimitives";
+import {
+  InspectorPanelHeader,
+  PanelSection,
+} from "../EditorPrimitives/EditorPrimitives";
 import { ChevronDown, RotateCcw, Upload } from "lucide-react";
 
 type InspectorPanelProps = {
@@ -57,7 +60,7 @@ export default function InspectorPanel({
 
   return (
     <aside className="editor-sidebar inspector-sidebar h-screen w-[19rem] shrink-0 overflow-y-auto">
-      <PanelHeader
+      <InspectorPanelHeader
         eyebrow="Properties"
         title={object.name}
         titleClassName="panel-title-object"
@@ -70,7 +73,7 @@ export default function InspectorPanel({
         >
           <div className="select-wrapper">
             <select
-              className="editor-input w-full appearance-none rounded-[var(--radius-sm)] px-2 py-1 pr-10 text-sm focus:outline-none"
+              className="editor-input model-select w-full appearance-none rounded-[var(--radius-sm)] pr-10 text-sm focus:outline-none"
               value={object.modelId}
               onChange={(event) =>
                 onModelChange(event.target.value as SceneObject["modelId"])

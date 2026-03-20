@@ -124,3 +124,9 @@ body {
       var(--background)
     );
 }
+
+button,
+select,
+input {
+  cursor: pointer;
+}

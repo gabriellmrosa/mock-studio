@@ -6,7 +6,7 @@ import type { AppCopy, Locale, UiTheme } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
 import {
   IconButton,
-  PanelHeader,
+  LayersPanelHeader,
   PanelSection,
 } from "../EditorPrimitives/EditorPrimitives";
 import { MoreVertical, Plus } from "lucide-react";
@@ -78,7 +78,7 @@ export default function LayersPanel({
     <aside className="editor-sidebar layers-sidebar h-screen w-[19rem] shrink-0">
       <div className="flex h-full flex-col">
         <div className="relative">
-          <PanelHeader
+          <LayersPanelHeader
             title={copy.appTitle}
             subtitle="Version 1.0"
             titleClassName="panel-title panel-title-brand"
@@ -232,7 +232,7 @@ export default function LayersPanel({
                             onClick();
                           }}
                         >
-                          <MoreVertical size={16} />
+                          <MoreVertical size={12} />
                         </IconButton>
                       )}
                     />

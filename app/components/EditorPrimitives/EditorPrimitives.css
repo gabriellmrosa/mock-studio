@@ -195,7 +195,7 @@
 }
 
 .panel-eyebrow {
-  color: var(--sidebar-muted);
+  color: var(--foreground);
   font-size: 0.625rem;
   font-weight: var(--font-bold);
   letter-spacing: 0.32em;
@@ -217,9 +217,8 @@
 }
 
 .panel-title-object {
-  color: var(--foreground);
+  color: var(--sidebar-muted);
   font-size: 0.75rem;
-  font-weight: var(--font-semibold);
   line-height: 1.2;
   margin: 0;
 }
@@ -230,7 +229,6 @@
 }
 
 .panel-section {
-  border-bottom: 1px solid var(--sidebar-border);
   padding: 1rem;
 }
 

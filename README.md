@@ -32,7 +32,7 @@ Ja implementado:
 - design system com tokens primitivos de cor (`--black-000` a `--black-980`, `--gray-*`, `--ink-*`), border-radius (`--radius-xs` a `--radius-full`) e font-weight (`--font-regular` a `--font-bold`) para dark e light mode;
 - menu de preferencias com submenus cascata (Theme e Language) com checkmark no item ativo, hover com delay para nao fechar ao mover o mouse entre paineis, e fechar ao clicar fora;
 - menu de contexto por layer (3 pontos) com opcoes de Renomear e Deletar — delete so aparece em layers adicionadas pelo usuario (a layer base nao pode ser deletada);
-- `ContextMenu` como componente reutilizavel com suporte a action items e submenu items;
+- `ContextMenu` como componente reutilizavel com suporte a action items e submenu items, renderizado via React Portal para evitar clipping por `overflow`;
 - icones migrados de SVGs inline para `lucide-react`.
 
 ## Decisoes de Produto Ja Tomadas
@@ -58,7 +58,7 @@ Ja implementado:
 - [app/components/InspectorPanel/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/InspectorPanel/): painel direito com configuracoes do objeto selecionado.
 - [app/components/MockupCanvas/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/MockupCanvas/): canvas 3D, orbit controls, reset de camera, export e renderizacao de multiplos objetos.
 - [app/components/ContextMenu/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/ContextMenu/): menu de contexto reutilizavel com suporte a action items e submenus cascata.
-- [app/components/EditorPrimitives/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/EditorPrimitives/): componentes primitivos compartilhados (`PanelHeader`, `PanelSection`, `IconButton`) e seus estilos base.
+- [app/components/EditorPrimitives/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/EditorPrimitives/): componentes primitivos compartilhados (`LayersPanelHeader`, `InspectorPanelHeader`, `PanelSection`, `IconButton`) e seus estilos base.
 - [app/components/Smartphone.tsx](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/Smartphone.tsx): modelo atual do smartphone, tela com textura e modo sem casca.
 - [app/models/device-models.ts](/Users/gabrielrosa/Desktop/dev/mock-photo/app/models/device-models.ts): catalogo de dispositivos e metadados do modelo ativo.
 - [app/lib/scene-objects.ts](/Users/gabrielrosa/Desktop/dev/mock-photo/app/lib/scene-objects.ts): helpers para criar, resetar e trocar o modelo de objetos da cena.
@@ -74,7 +74,7 @@ As alteracoes recentes foram feitas na branch:
 
 ## Onde Paramos
 
-Correcao da inicializacao de locale e tema: os `useEffect` de salvar no localStorage agora aguardam a leitura/deteccao completar antes de gravar, evitando que os defaults hardcoded contaminem o localStorage na primeira abertura. Usuarios novos iniciam com as preferencias do browser (dark/light mode e idioma). Usuarios com localStorage ja gravado mantem suas preferencias salvas.
+Implementacao do React Portal no `ContextMenu`: o painel agora e renderizado diretamente no `document.body` via `createPortal`, com `position: fixed` e coordenadas calculadas por `getBoundingClientRect()`. Isso resolve o clipping causado por ancestrais com `overflow-y: auto` (como o painel de camadas), que pelo spec do CSS forcam `overflow-x` a nao ser `visible`, cortando elementos absolutamente posicionados. O `PanelHeader` tambem foi dividido em `LayersPanelHeader` e `InspectorPanelHeader` para facilitar manutencao independente de cada painel.
 
 ## Proximo Passo Sugerido
 

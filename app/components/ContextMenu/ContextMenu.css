@@ -12,14 +12,12 @@
   background: var(--surface-raised);
   backdrop-filter: blur(12px);
   border: 1px solid var(--panel-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   box-shadow: var(--canvas-shadow);
   padding: 0.25rem;
-  position: absolute;
-  right: 0;
-  top: calc(100% + 4px);
+  position: fixed;
   width: 9.5rem;
-  z-index: 30;
+  z-index: 9999;
 }
 
 .context-submenu-panel {
@@ -27,7 +25,7 @@
   background: var(--surface-raised);
   backdrop-filter: blur(12px);
   border: 1px solid var(--panel-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-sm);
   box-shadow: var(--canvas-shadow);
   padding: 0.25rem;
   position: absolute;

@@ -2,6 +2,7 @@
 
 import "./ContextMenu.css";
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronRight } from "lucide-react";
 
 export type ContextMenuActionItem = {
@@ -29,9 +30,16 @@ type ContextMenuProps = {
   trigger: (props: { open: boolean; onClick: () => void }) => ReactNode;
 };
 
+type PanelPosition = { top: number; left: number };
+
 export default function ContextMenu({ items, trigger }: ContextMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeSubmenuIndex, setActiveSubmenuIndex] = useState<number | null>(null);
+  const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(
+    null,
+  );
+  const [activeSubmenuIndex, setActiveSubmenuIndex] = useState<number | null>(
+    null,
+  );
   const [submenuTop, setSubmenuTop] = useState(0);
 
   const rootRef = useRef<HTMLDivElement | null>(null);
@@ -40,6 +48,7 @@ export default function ContextMenu({ items, trigger }: ContextMenuProps) {
 
   function close() {
     setIsOpen(false);
+    setPanelPosition(null);
     setActiveSubmenuIndex(null);
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
@@ -51,13 +60,20 @@ export default function ContextMenu({ items, trigger }: ContextMenuProps) {
     if (!isOpen) return;
 
     function handleOutsideClick(e: MouseEvent) {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      const inRoot = rootRef.current?.contains(target) ?? false;
+      const inPanel = panelRef.current?.contains(target) ?? false;
+      if (!inRoot && !inPanel) {
         close();
       }
     }
 
     document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("scroll", close, true);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+      window.removeEventListener("scroll", close, true);
+    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -70,6 +86,10 @@ export default function ContextMenu({ items, trigger }: ContextMenuProps) {
     if (isOpen) {
       close();
     } else {
+      const rect = rootRef.current?.getBoundingClientRect();
+      if (rect) {
+        setPanelPosition({ top: rect.bottom + 4, left: rect.left });
+      }
       setIsOpen(true);
       setActiveSubmenuIndex(null);
     }
@@ -113,68 +133,73 @@ export default function ContextMenu({ items, trigger }: ContextMenuProps) {
   const submenuOptions =
     activeSubmenuItem?.type === "submenu" ? activeSubmenuItem.options : null;
 
-  return (
-    <div ref={rootRef} className="context-menu-root">
-      {/* eslint-disable-next-line react-hooks/refs */}
-      {trigger({ open: isOpen, onClick: handleTriggerClick })}
+  const panel =
+    isOpen && panelPosition
+      ? createPortal(
+          <div
+            ref={panelRef}
+            className="context-menu-panel"
+            style={{ top: panelPosition.top, left: panelPosition.left }}
+            onMouseEnter={cancelCloseSubmenu}
+            onMouseLeave={scheduleCloseSubmenu}
+          >
+            {items.map((item, index) => {
+              if (item.type === "action") {
+                return (
+                  <button
+                    key={index}
+                    type="button"
+                    className={`context-menu-row${item.variant === "danger" ? " context-menu-row-danger" : ""}`}
+                    onClick={() => handleOptionClick(item.onClick)}
+                  >
+                    <span className="context-menu-row-label">{item.label}</span>
+                  </button>
+                );
+              }
 
-      {isOpen && (
-        <div
-          ref={panelRef}
-          className="context-menu-panel"
-          onMouseEnter={cancelCloseSubmenu}
-          onMouseLeave={scheduleCloseSubmenu}
-        >
-          {items.map((item, index) => {
-            if (item.type === "action") {
               return (
                 <button
                   key={index}
                   type="button"
-                  className={`context-menu-row${item.variant === "danger" ? " context-menu-row-danger" : ""}`}
-                  onClick={() => handleOptionClick(item.onClick)}
+                  className={`context-menu-row${activeSubmenuIndex === index ? " context-menu-row-active" : ""}`}
+                  onMouseEnter={(e) => openSubmenu(index, e.currentTarget)}
                 >
                   <span className="context-menu-row-label">{item.label}</span>
+                  <ChevronRight size={12} className="context-menu-row-chevron" />
                 </button>
               );
-            }
+            })}
 
-            return (
-              <button
-                key={index}
-                type="button"
-                className={`context-menu-row${activeSubmenuIndex === index ? " context-menu-row-active" : ""}`}
-                onMouseEnter={(e) => openSubmenu(index, e.currentTarget)}
+            {submenuOptions && (
+              <div
+                className="context-submenu-panel"
+                style={{ top: submenuTop }}
+                onMouseEnter={cancelCloseSubmenu}
               >
-                <span className="context-menu-row-label">{item.label}</span>
-                <ChevronRight size={12} className="context-menu-row-chevron" />
-              </button>
-            );
-          })}
+                {submenuOptions.map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    className="context-menu-row"
+                    onClick={() => handleOptionClick(opt.onClick)}
+                  >
+                    <span className="context-menu-row-label">{opt.label}</span>
+                    {opt.checked && (
+                      <Check size={12} className="context-menu-check" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>,
+          document.body,
+        )
+      : null;
 
-          {submenuOptions && (
-            <div
-              className="context-submenu-panel"
-              style={{ top: submenuTop }}
-              onMouseEnter={cancelCloseSubmenu}
-            >
-              {submenuOptions.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  className="context-menu-row"
-                  onClick={() => handleOptionClick(opt.onClick)}
-                >
-                  <span className="context-menu-row-label">{opt.label}</span>
-                  {opt.checked && (
-                    <Check size={12} className="context-menu-check" />
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+  return (
+    <div ref={rootRef} className="context-menu-root">
+      {trigger({ open: isOpen, onClick: handleTriggerClick })}
+      {panel}
     </div>
   );
 }

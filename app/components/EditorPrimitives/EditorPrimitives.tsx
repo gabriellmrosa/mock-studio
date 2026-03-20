@@ -1,33 +1,47 @@
 import "./EditorPrimitives.css";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 
-type PanelHeaderProps = {
+type LayersPanelHeaderProps = {
   action?: ReactNode;
-  eyebrow?: string;
   subtitle?: string;
   title: string;
   titleClassName?: string;
 };
 
-export function PanelHeader({
+export function LayersPanelHeader({
   action,
-  eyebrow,
   subtitle,
   title,
   titleClassName,
-}: PanelHeaderProps) {
+}: LayersPanelHeaderProps) {
   return (
     <header className="panel-header">
-      <div className="min-w-0 flex-1">
-        {eyebrow ? <p className="panel-eyebrow">{eyebrow}</p> : null}
-        <div className="mt-1 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className={titleClassName ?? "panel-title"}>{title}</h2>
-            {subtitle ? <p className="panel-subtitle">{subtitle}</p> : null}
-          </div>
+      <div className="flex flex-col w-full">
+        <div className="flex min-w-0 justify-between items-center flex-1">
+          <h2 className={titleClassName ?? "panel-title"}>{title}</h2>
           {action ? <div className="shrink-0">{action}</div> : null}
         </div>
+        {subtitle ? <p className="panel-subtitle">{subtitle}</p> : null}
       </div>
+    </header>
+  );
+}
+
+type InspectorPanelHeaderProps = {
+  eyebrow?: string;
+  title: string;
+  titleClassName?: string;
+};
+
+export function InspectorPanelHeader({
+  eyebrow,
+  title,
+  titleClassName,
+}: InspectorPanelHeaderProps) {
+  return (
+    <header className="panel-header gap-4 flex-col items-start">
+      {eyebrow ? <p className="panel-eyebrow">{eyebrow}</p> : null}
+      <h2 className={titleClassName ?? "panel-title"}>{title}</h2>
     </header>
   );
 }
