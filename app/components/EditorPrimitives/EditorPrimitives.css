@@ -88,6 +88,31 @@
   border-color: var(--button-border-hover);
 }
 
+/* --- FAB (circular icon button) --- */
+
+.editor-fab {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-full);
+  color: var(--icon-fg);
+  cursor: pointer;
+  display: inline-flex;
+  height: 2.25rem;
+  justify-content: center;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease;
+  width: 2.25rem;
+}
+
+.editor-fab:hover {
+  background: var(--surface-hover);
+  border-color: var(--button-border-hover);
+  transform: translateY(-1px);
+}
+
 /* --- Icon Button --- */
 
 .editor-icon-button {
@@ -144,11 +169,12 @@
   background: var(--input-bg);
   border: 1px solid var(--input-border);
   color: var(--input-fg);
+  min-height: var(--input-min-height);
   transition:
     border-color 160ms ease,
     background-color 160ms ease;
   flex: 1;
-  padding: 0.1rem 0.5rem;
+  padding: 0.2rem 0.5rem;
 }
 
 .editor-input:focus {

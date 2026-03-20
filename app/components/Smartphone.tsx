@@ -11,7 +11,7 @@ import {
   SCREEN_WIDTH,
 } from "../lib/mockup-image";
 
-export type ThemeName = "gray" | "black" | "white";
+export type ThemeName = "gray" | "black" | "light-gray" | "blood";
 
 export interface PhoneColors {
   body: string;
@@ -21,10 +21,11 @@ export interface PhoneColors {
 export const THEMES: Record<ThemeName, PhoneColors> = {
   gray: { body: "#8A8A8E", buttons: "#6D6D72" },
   black: { body: "#1C1C1E", buttons: "#2C2C2E" },
-  white: { body: "#F5F5F7", buttons: "#D1D1D6" },
+  "light-gray": { body: "#d1d1d1", buttons: "#b8b8b8" },
+  blood: { body: "#6a2525", buttons: "#521d1d" },
 };
 
-export const DEFAULT_THEME: ThemeName = "white";
+export const DEFAULT_THEME: ThemeName = "light-gray";
 
 // ---------------------------------------------------------------------------
 // Mapeamento semântico

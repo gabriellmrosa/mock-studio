@@ -49,7 +49,7 @@ export default function FloatingCanvasControls({
       <div className="canvas-floating-cluster">
         <button
           type="button"
-          className="canvas-fab"
+          className="editor-fab"
           aria-label="Reset camera"
           title="Reset camera"
           onClick={onFitToScene}
@@ -58,7 +58,7 @@ export default function FloatingCanvasControls({
         </button>
         <button
           type="button"
-          className="canvas-fab"
+          className="editor-fab"
           aria-label="Move up"
           title="Move up"
         >
@@ -66,7 +66,7 @@ export default function FloatingCanvasControls({
         </button>
         <button
           type="button"
-          className="canvas-fab"
+          className="editor-fab"
           aria-label="Move down"
           title="Move down"
         >
@@ -74,7 +74,7 @@ export default function FloatingCanvasControls({
         </button>
         <button
           type="button"
-          className="canvas-fab"
+          className="editor-fab"
           aria-label="Move left"
           title="Move left"
         >
@@ -82,7 +82,7 @@ export default function FloatingCanvasControls({
         </button>
         <button
           type="button"
-          className="canvas-fab"
+          className="editor-fab"
           aria-label="Move right"
           title="Move right"
         >
@@ -90,7 +90,7 @@ export default function FloatingCanvasControls({
         </button>
         <button
           type="button"
-          className="canvas-fab"
+          className="editor-fab"
           aria-label="Zoom out"
           title="Zoom out"
           onClick={onZoomOut}
@@ -99,7 +99,7 @@ export default function FloatingCanvasControls({
         </button>
         <button
           type="button"
-          className="canvas-fab"
+          className="editor-fab"
           aria-label="Zoom in"
           title="Zoom in"
           onClick={onZoomIn}
@@ -110,7 +110,7 @@ export default function FloatingCanvasControls({
         <div style={{ position: "relative" }}>
           <button
             type="button"
-            className="canvas-fab"
+            className="editor-fab"
             aria-label="Canvas background color"
             title="Canvas background color"
             onClick={() => colorInputRef.current?.click()}

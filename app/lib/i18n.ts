@@ -73,7 +73,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     themeNames: {
       gray: "Cinza",
       black: "Preto",
-      white: "Branco",
+      "light-gray": "Cinza Claro",
+      blood: "Blood",
     },
   },
   "en-US": {
@@ -110,7 +111,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     themeNames: {
       gray: "Gray",
       black: "Black",
-      white: "White",
+      "light-gray": "Light Gray",
+      blood: "Blood",
     },
   },
 };

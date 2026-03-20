@@ -36,6 +36,11 @@
   --font-bold: 700;
 
   /* =====================
+     SIZING
+     ===================== */
+  --input-min-height: 26px;
+
+  /* =====================
      BORDER RADIUS SCALE
      ===================== */
   --radius-xs: 0.25rem; /* 4px  — checkboxes, tiny tags */

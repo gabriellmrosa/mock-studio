@@ -13,10 +13,10 @@
 }
 
 .select-chevron {
-  color: var(--sidebar-muted);
+  color: var(--icon-fg);
   pointer-events: none;
   position: absolute;
-  right: 1rem;
+  right: 0.5rem;
   top: 50%;
   transform: translateY(-50%);
 }
@@ -59,7 +59,7 @@
   flex-direction: column;
   gap: 0.5rem;
   min-height: 4.5rem;
-  padding: 0.75rem 0.5rem;
+  padding: 0.75rem 0.25rem;
   transition:
     transform 160ms ease,
     border-color 160ms ease,
@@ -117,13 +117,6 @@
   line-height: 1;
 }
 
-.transform-reset-button {
-  background: color-mix(in srgb, var(--control-input-bg) 68%, transparent);
-  border: 1.5px solid var(--control-reset-border);
-  color: var(--control-strong);
-  height: 2.5rem;
-  width: 2.5rem;
-}
 
 .transform-groups {
   display: flex;

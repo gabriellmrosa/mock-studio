@@ -123,7 +123,7 @@ export default function InspectorPanel({
               title={copy.themesSectionTitle}
               className="--without-border-bottom"
             >
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 {model?.themeOptions.map((theme) => (
                   <button
                     key={theme.id}
@@ -177,15 +177,15 @@ export default function InspectorPanel({
           action={
             <div className="transform-reset-wrap">
               <span className="transform-reset-label">Reset</span>
-              <IconButton
+              <button
+                type="button"
                 onClick={onResetObject}
                 aria-label={copy.resetObjectButton}
                 title={copy.resetObjectButton}
-                className="transform-reset-button"
-                style={{ borderRadius: "50%" }}
+                className="editor-fab"
               >
                 <RotateCcwIcon className="h-4 w-4" />
-              </IconButton>
+              </button>
             </div>
           }
         >

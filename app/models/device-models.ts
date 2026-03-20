@@ -32,7 +32,8 @@ export type DeviceModelDefinition = {
 const SMARTPHONE_THEME_OPTIONS: DeviceThemeOption[] = [
   { id: "gray", label: "Cinza", preview: "#8A8A8E" },
   { id: "black", label: "Preto", preview: "#1C1C1E" },
-  { id: "white", label: "Branco", preview: "#F5F5F7" },
+  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
+  { id: "blood", label: "Blood", preview: "#6a2525" },
 ];
 
 const SMARTPHONE_DEBUG_COLORS: Record<DebugPartKey, string> = {
