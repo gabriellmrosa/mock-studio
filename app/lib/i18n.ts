@@ -15,6 +15,9 @@ export type AppCopy = {
   lightMode: string;
   portuguese: string;
   english: string;
+  cameraControlsLabel: string;
+  cameraInverted: string;
+  cameraNormal: string;
   deleteObject: string;
   renameObject: string;
   modelLabel: string;
@@ -50,6 +53,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     lightMode: "Light",
     portuguese: "PT-BR",
     english: "EN-US",
+    cameraControlsLabel: "Câmera",
+    cameraInverted: "Invertido",
+    cameraNormal: "Normal",
     deleteObject: "Excluir",
     renameObject: "Renomear",
     modelLabel: "Modelo",
@@ -89,6 +95,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     lightMode: "Light",
     portuguese: "PT-BR",
     english: "EN-US",
+    cameraControlsLabel: "Camera",
+    cameraInverted: "Inverted",
+    cameraNormal: "Normal",
     deleteObject: "Delete",
     renameObject: "Rename",
     modelLabel: "Model",

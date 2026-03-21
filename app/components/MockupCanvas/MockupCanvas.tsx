@@ -6,13 +6,12 @@ import * as THREE from "three";
 import { Canvas, useThree } from "@react-three/fiber";
 import {
   Bounds,
+  CameraControls,
   Center,
   Environment,
-  OrbitControls,
   useBounds,
-  type OrbitControlsProps,
 } from "@react-three/drei";
-import type { OrbitControls as OrbitControlsImpl } from "three-stdlib";
+import type CameraControlsImpl from "camera-controls";
 import type { UiTheme } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
 import {
@@ -29,6 +28,7 @@ export type ExportPreset = {
 };
 
 type MockupCanvasProps = {
+  cameraInverted: boolean;
   canvasBgColor: string | null;
   objects: SceneObject[];
   onBgColorChange: (color: string) => void;
@@ -39,6 +39,10 @@ type MockupCanvasProps = {
 
 type ViewportControlsApi = {
   fitToScene: () => void;
+  panDown: () => void;
+  panLeft: () => void;
+  panRight: () => void;
+  panUp: () => void;
   resetToInitial: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
@@ -50,9 +54,7 @@ type SceneBridgeProps = MockupCanvasProps & {
 
 const CAMERA_POSITION: [number, number, number] = [0, 0, 5];
 const CAMERA_FOV = 45;
-const ORBIT_LIMITS: OrbitControlsProps = {
-  enablePan: false,
-  enableZoom: true,
+const ANGLE_LIMITS = {
   maxAzimuthAngle: 0.85,
   maxPolarAngle: Math.PI * 0.68,
   minAzimuthAngle: -0.85,
@@ -82,25 +84,15 @@ function getResolvedObjectPosition(
 }
 
 function SceneBridge({
+  cameraInverted,
   objects,
   onExportReady,
   onViewportControlsReady,
   resetCameraVersion,
 }: SceneBridgeProps) {
-  const controlsRef = useRef<OrbitControlsImpl | null>(null);
+  const controlsRef = useRef<CameraControlsImpl | null>(null);
   const sceneRef = useRef<THREE.Group | null>(null);
   const { camera, gl, scene, size } = useThree();
-
-  useEffect(() => {
-    const controls = controlsRef.current;
-    if (!controls) {
-      return;
-    }
-
-    controls.target.set(0, 0, 0);
-    controls.update();
-    controls.saveState();
-  }, []);
 
   useEffect(() => {
     onExportReady(async ({ height, label, width }) => {
@@ -157,7 +149,7 @@ function SceneBridge({
     <>
       <Environment preset="studio" />
       <Suspense fallback={null}>
-        <Bounds fit clip margin={1.18}>
+        <Bounds margin={1.18}>
           <Center>
             <group ref={sceneRef}>
               {objects.map((object, index) => {
@@ -197,11 +189,13 @@ function SceneBridge({
           />
         </Bounds>
       </Suspense>
-      <OrbitControls
+      <CameraControls
         ref={controlsRef}
-        {...ORBIT_LIMITS}
+        makeDefault
+        {...ANGLE_LIMITS}
         dampingFactor={0.08}
-        enableDamping
+        azimuthRotateSpeed={cameraInverted ? -1 : 1}
+        polarRotateSpeed={cameraInverted ? -1 : 1}
       />
     </>
   );
@@ -213,12 +207,13 @@ function BoundsResetController({
   resetCameraVersion,
   sceneRef,
 }: {
-  controlsRef: { current: OrbitControlsImpl | null };
+  controlsRef: { current: CameraControlsImpl | null };
   onViewportControlsReady: (api: ViewportControlsApi | null) => void;
   resetCameraVersion: number;
   sceneRef: { current: THREE.Group | null };
 }) {
   const bounds = useBounds();
+  const { camera } = useThree();
   const hasCapturedInitialState = useRef(false);
 
   useEffect(() => {
@@ -232,15 +227,32 @@ function BoundsResetController({
     let frameId = 0;
 
     frameId = requestAnimationFrame(() => {
-      bounds.refresh(sceneGroup).reset().clip();
+      bounds.refresh(sceneGroup);
+
+      const { center, distance } = bounds.getSize();
+
+      camera.near = distance / 100;
+      camera.far = distance * 100;
+      camera.updateProjectionMatrix();
+
+      controls.setLookAt(
+        center.x,
+        center.y,
+        center.z + distance,
+        center.x,
+        center.y,
+        center.z,
+        true,
+      );
       controls.saveState();
+
       hasCapturedInitialState.current = true;
     });
 
     return () => {
       cancelAnimationFrame(frameId);
     };
-  }, [bounds, controlsRef, sceneRef]);
+  }, [bounds, camera, controlsRef, sceneRef]);
 
   useEffect(() => {
     const controls = controlsRef.current;
@@ -248,20 +260,6 @@ function BoundsResetController({
     if (!controls) {
       return;
     }
-
-    const runZoom = (direction: "in" | "out") => {
-      const zoomStep = 1.16;
-      const zoomHandler =
-        direction === "in"
-          ? (controls as OrbitControlsImpl & { dollyIn?: (scale: number) => void })
-              .dollyIn
-          : (controls as OrbitControlsImpl & {
-              dollyOut?: (scale: number) => void;
-            }).dollyOut;
-
-      zoomHandler?.call(controls, zoomStep);
-      controls.update();
-    };
 
     onViewportControlsReady({
       fitToScene: () => {
@@ -271,18 +269,17 @@ function BoundsResetController({
           return;
         }
 
-        bounds.refresh(sceneGroup).reset().clip();
+        const box = new THREE.Box3().setFromObject(sceneGroup);
+
+        controls.fitToBox(box, true);
       },
-      resetToInitial: () => {
-        controls.reset();
-        controls.update();
-      },
-      zoomIn: () => {
-        runZoom("out");
-      },
-      zoomOut: () => {
-        runZoom("in");
-      },
+      panDown: () => controls.truck(0, -controls.distance * 0.08, false),
+      panLeft: () => controls.truck(-controls.distance * 0.08, 0, false),
+      panRight: () => controls.truck(controls.distance * 0.08, 0, false),
+      panUp: () => controls.truck(0, controls.distance * 0.08, false),
+      resetToInitial: () => controls.reset(true),
+      zoomIn: () => controls.dolly(controls.distance * 0.138, false),
+      zoomOut: () => controls.dolly(-controls.distance * 0.138, false),
     });
 
     return () => {
@@ -295,24 +292,8 @@ function BoundsResetController({
       return;
     }
 
-    let frameId = 0;
-
-    frameId = requestAnimationFrame(() => {
-      const controls = controlsRef.current;
-      const sceneGroup = sceneRef.current;
-
-      if (!controls || !sceneGroup) {
-        return;
-      }
-
-      controls.reset();
-      controls.update();
-    });
-
-    return () => {
-      cancelAnimationFrame(frameId);
-    };
-  }, [bounds, controlsRef, resetCameraVersion, sceneRef]);
+    controlsRef.current?.reset(true);
+  }, [controlsRef, resetCameraVersion]);
 
   return null;
 }
@@ -346,6 +327,10 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           bgColor={props.canvasBgColor}
           onBgColorChange={props.onBgColorChange}
           onFitToScene={() => viewportControls?.fitToScene()}
+          onPanDown={() => viewportControls?.panDown()}
+          onPanLeft={() => viewportControls?.panLeft()}
+          onPanRight={() => viewportControls?.panRight()}
+          onPanUp={() => viewportControls?.panUp()}
           onZoomIn={() => viewportControls?.zoomIn()}
           onZoomOut={() => viewportControls?.zoomOut()}
           uiTheme={props.uiTheme}

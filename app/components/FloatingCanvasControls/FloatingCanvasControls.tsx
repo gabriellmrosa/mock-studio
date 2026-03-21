@@ -18,6 +18,10 @@ type FloatingCanvasControlsProps = {
   bgColor: string | null;
   onBgColorChange: (color: string) => void;
   onFitToScene: () => void;
+  onPanDown: () => void;
+  onPanLeft: () => void;
+  onPanRight: () => void;
+  onPanUp: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
   uiTheme: UiTheme;
@@ -32,6 +36,10 @@ export default function FloatingCanvasControls({
   bgColor,
   onBgColorChange,
   onFitToScene,
+  onPanDown,
+  onPanLeft,
+  onPanRight,
+  onPanUp,
   onZoomIn,
   onZoomOut,
   uiTheme,
@@ -61,6 +69,7 @@ export default function FloatingCanvasControls({
           className="editor-fab"
           aria-label="Move up"
           title="Move up"
+          onClick={onPanUp}
         >
           <ArrowUp size={16} />
         </button>
@@ -69,6 +78,7 @@ export default function FloatingCanvasControls({
           className="editor-fab"
           aria-label="Move down"
           title="Move down"
+          onClick={onPanDown}
         >
           <ArrowDown size={16} />
         </button>
@@ -77,6 +87,7 @@ export default function FloatingCanvasControls({
           className="editor-fab"
           aria-label="Move left"
           title="Move left"
+          onClick={onPanLeft}
         >
           <ArrowLeft size={16} />
         </button>
@@ -85,6 +96,7 @@ export default function FloatingCanvasControls({
           className="editor-fab"
           aria-label="Move right"
           title="Move right"
+          onClick={onPanRight}
         >
           <ArrowRight size={16} />
         </button>
@@ -107,7 +119,7 @@ export default function FloatingCanvasControls({
           <ZoomIn size={16} />
         </button>
 
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative" }} className="ml-4 mr-4">
           <button
             type="button"
             className="editor-fab"
