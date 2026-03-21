@@ -29,7 +29,7 @@ Ja implementado:
 - toggle global de `dark/light`;
 - toggle global de idioma `pt-BR/en-US`;
 - arquitetura inicial de catalogo de dispositivos;
-- design system com tokens primitivos de cor (`--black-000` a `--black-980`, `--gray-*`, `--ink-*`), border-radius (`--radius-xs` a `--radius-full`) e font-weight (`--font-regular` a `--font-bold`) para dark e light mode;
+- design system com tokens primitivos de cor (`--black-000` a `--black-980`, `--gray-*`, `--ink-*`), border-radius (`--radius-xs` a `--radius-full`) e font-weight (`--font-regular` a `--font-bold`) para dark e light mode, incluindo token `--input-border-error` para estados de erro;
 - menu de preferencias com submenus cascata (Theme e Language) com checkmark no item ativo, hover com delay para nao fechar ao mover o mouse entre paineis, e fechar ao clicar fora;
 - menu de contexto por layer (3 pontos) com opcoes de Renomear e Deletar — delete so aparece em layers adicionadas pelo usuario (a layer base nao pode ser deletada);
 - `ContextMenu` como componente reutilizavel com suporte a action items e submenu items, renderizado via React Portal para evitar clipping por `overflow`;
@@ -37,9 +37,9 @@ Ja implementado:
 - controle de camera migrado de `OrbitControls` para `CameraControls` (`camera-controls`), habilitando pan programatico;
 - botoes de seta no toolbar flutuante movem a camera (pan) proporcionalmente a distancia atual via `controls.truck()`;
 - setas do teclado tambem acionam o pan da camera (desativado quando foco esta em input de texto);
-- preferencia de camera (Invertido/Normal) no menu de settings, persistida em localStorage, padrao invertido;
 - animacao suave de entrada da camera ao carregar a cena;
-- grid de profundidade infinito no canvas (`drei <Grid>`) com cor adaptativa baseada em luminancia do fundo.
+- grid de profundidade infinito no canvas (`drei <Grid>`) com cor adaptativa baseada em luminancia do fundo;
+- input de hex no `ColorRow` com suporte a digitacao e colagem livre (com ou sem `#`), normalizacao automatica no blur, debounce de 350ms e feedback visual de erro para valores invalidos.
 
 ## Decisoes de Produto Ja Tomadas
 
@@ -80,7 +80,7 @@ As alteracoes recentes foram feitas na branch:
 
 ## Onde Paramos
 
-Migracao de `OrbitControls` para `CameraControls` concluida: pan programatico via `controls.truck()` funcionando nos botoes de seta e no teclado. Grid de profundidade infinito adicionado com cor adaptativa ao fundo. Preferencia de camera (invertido/normal) adicionada ao menu de settings com persistencia em localStorage.
+Input de hex do `ColorRow` reescrito com suporte a digitacao e colagem livre, normalizacao automatica e feedback visual de erro. Preferencia de camera invertida removida (controles sempre no modo normal).
 
 **Bug conhecido pendente:** o reset de camera restaura posicao, zoom e rotacao vertical corretamente, mas a rotacao horizontal (azimute) nao retorna ao estado inicial. Causa: breaking change do `camera-controls` v3 no tratamento de normalizacao de angulo. Investigado com `normalizeRotations()` e correcao manual de path — sem solucao definitiva ainda.
 

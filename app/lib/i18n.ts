@@ -15,9 +15,6 @@ export type AppCopy = {
   lightMode: string;
   portuguese: string;
   english: string;
-  cameraControlsLabel: string;
-  cameraInverted: string;
-  cameraNormal: string;
   deleteObject: string;
   renameObject: string;
   modelLabel: string;
@@ -53,9 +50,6 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     lightMode: "Light",
     portuguese: "PT-BR",
     english: "EN-US",
-    cameraControlsLabel: "Câmera",
-    cameraInverted: "Invertido",
-    cameraNormal: "Normal",
     deleteObject: "Excluir",
     renameObject: "Renomear",
     modelLabel: "Modelo",
@@ -65,7 +59,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     uploadImage: "Upload imagem",
     screenSectionHint: "Recommended 1290x2755",
     themesSectionTitle: "Temas",
-    bodyColorLabel: "Body",
+    bodyColorLabel: "Customizar",
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transform",
     resetObjectButton: "Reset objeto",
@@ -95,9 +89,6 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     lightMode: "Light",
     portuguese: "PT-BR",
     english: "EN-US",
-    cameraControlsLabel: "Camera",
-    cameraInverted: "Inverted",
-    cameraNormal: "Normal",
     deleteObject: "Delete",
     renameObject: "Rename",
     modelLabel: "Model",
@@ -107,7 +98,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     uploadImage: "Upload image",
     screenSectionHint: "Recommended 1290x2755",
     themesSectionTitle: "Themes",
-    bodyColorLabel: "Body",
+    bodyColorLabel: "Customize",
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transform",
     resetObjectButton: "Reset object",

@@ -29,7 +29,6 @@ export type ExportPreset = {
 };
 
 type MockupCanvasProps = {
-  cameraInverted: boolean;
   canvasBgColor: string | null;
   objects: SceneObject[];
   onBgColorChange: (color: string) => void;
@@ -99,7 +98,6 @@ function getResolvedObjectPosition(
 }
 
 function SceneBridge({
-  cameraInverted,
   canvasBgColor,
   objects,
   onExportReady,
@@ -225,8 +223,8 @@ function SceneBridge({
         makeDefault
         {...ANGLE_LIMITS}
         dampingFactor={0.08}
-        azimuthRotateSpeed={cameraInverted ? -1 : 1}
-        polarRotateSpeed={cameraInverted ? -1 : 1}
+        azimuthRotateSpeed={1}
+        polarRotateSpeed={1}
       />
     </>
   );

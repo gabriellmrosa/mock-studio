@@ -26,6 +26,7 @@
   --input-bg: var(--black-300);
   --input-border: var(--black-500);
   --input-border-hover: #8a8178;
+  --input-border-error: #b85252;
   --input-fg: var(--black-980);
   --surface-hover: #45413c;
   --surface-active: var(--black-400);
@@ -65,6 +66,7 @@
   --input-bg: #fffdf9;
   --input-border: var(--gray-600);
   --input-border-hover: #848484;
+  --input-border-error: #c04040;
   --input-fg: var(--ink-dark);
   --surface-hover: var(--black-900);
   --surface-active: #e8ded1;

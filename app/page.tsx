@@ -46,7 +46,6 @@ function detectBrowserTheme(): UiTheme {
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("pt-BR");
   const [uiTheme, setUiTheme] = useState<UiTheme>("dark");
-  const [cameraInverted, setCameraInverted] = useState(true);
   const isInitialized = useRef(false);
   const [uploadError, setUploadError] = useState("");
   const [sceneObjects, setSceneObjects] = useState<SceneObject[]>(() => [
@@ -71,7 +70,6 @@ export default function Home() {
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("mock-photo-locale");
     const storedUiTheme = window.localStorage.getItem("mock-photo-ui-theme");
-    const storedCameraInverted = window.localStorage.getItem("mock-photo-camera-inverted");
 
     setLocale(
       storedLocale === "pt-BR" || storedLocale === "en-US"
@@ -84,10 +82,6 @@ export default function Home() {
         ? storedUiTheme
         : detectBrowserTheme(),
     );
-
-    if (storedCameraInverted !== null) {
-      setCameraInverted(storedCameraInverted === "true");
-    }
 
     isInitialized.current = true;
   }, []);
@@ -115,11 +109,6 @@ export default function Home() {
     window.localStorage.setItem("mock-photo-ui-theme", uiTheme);
     document.documentElement.dataset.theme = uiTheme;
   }, [uiTheme]);
-
-  useEffect(() => {
-    if (!isInitialized.current) return;
-    window.localStorage.setItem("mock-photo-camera-inverted", String(cameraInverted));
-  }, [cameraInverted]);
 
   useEffect(() => {
     if (!selectedObjectId && sceneObjects[0]) {
@@ -241,12 +230,10 @@ export default function Home() {
   return (
     <main className="app-shell min-h-screen relative flex">
       <LayersPanel
-        cameraInverted={cameraInverted}
         copy={copy}
         locale={locale}
         objects={sceneObjects}
         onAddObject={handleAddObject}
-        onCameraInvertedChange={setCameraInverted}
         onLocaleChange={setLocale}
         onRenameObject={(id, name) => updateSceneObject(id, { name })}
         onRemoveObject={handleRemoveObject}
@@ -257,7 +244,6 @@ export default function Home() {
       />
 
       <MockupCanvas
-        cameraInverted={cameraInverted}
         canvasBgColor={canvasBgColor}
         objects={sceneObjects}
         onBgColorChange={setCanvasBgColor}

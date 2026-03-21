@@ -4,3 +4,8 @@
 
 /* ColorRow uses Tailwind utilities inline.
    Component-specific overrides go here. */
+
+.color-row-input-error {
+  border-color: var(--input-border-error) !important;
+  transition: border-color 120ms ease;
+}

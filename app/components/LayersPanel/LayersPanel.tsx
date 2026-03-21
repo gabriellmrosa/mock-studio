@@ -13,12 +13,10 @@ import { MoreVertical, Plus } from "lucide-react";
 import ContextMenu from "../ContextMenu/ContextMenu";
 
 type LayersPanelProps = {
-  cameraInverted: boolean;
   copy: AppCopy;
   locale: Locale;
   objects: SceneObject[];
   onAddObject: () => void;
-  onCameraInvertedChange: (inverted: boolean) => void;
   onLocaleChange: (locale: Locale) => void;
   onRenameObject: (id: string, name: string) => void;
   onRemoveObject: (id: string) => void;
@@ -29,12 +27,10 @@ type LayersPanelProps = {
 };
 
 export default function LayersPanel({
-  cameraInverted,
   copy,
   locale,
   objects,
   onAddObject,
-  onCameraInvertedChange,
   onLocaleChange,
   onRenameObject,
   onRemoveObject,
@@ -122,24 +118,6 @@ export default function LayersPanel({
                         value: "en-US",
                         checked: locale === "en-US",
                         onClick: () => onLocaleChange("en-US"),
-                      },
-                    ],
-                  },
-                  {
-                    type: "submenu",
-                    label: copy.cameraControlsLabel,
-                    options: [
-                      {
-                        label: copy.cameraInverted,
-                        value: "inverted",
-                        checked: cameraInverted,
-                        onClick: () => onCameraInvertedChange(true),
-                      },
-                      {
-                        label: copy.cameraNormal,
-                        value: "normal",
-                        checked: !cameraInverted,
-                        onClick: () => onCameraInvertedChange(false),
                       },
                     ],
                   },
