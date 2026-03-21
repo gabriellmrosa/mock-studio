@@ -9,6 +9,7 @@ import {
   CameraControls,
   Center,
   Environment,
+  Grid,
   useBounds,
 } from "@react-three/drei";
 import type CameraControlsImpl from "camera-controls";
@@ -52,6 +53,20 @@ type SceneBridgeProps = MockupCanvasProps & {
   onViewportControlsReady: (api: ViewportControlsApi | null) => void;
 };
 
+const DEFAULT_BG: Record<UiTheme, string> = { dark: "#2e2b28", light: "#f2ebe0" };
+
+function getGridColors(bgHex: string | null, uiTheme: UiTheme) {
+  const hex = bgHex ?? DEFAULT_BG[uiTheme];
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+  return luminance > 0.5
+    ? { cell: "#888888", section: "#555555" }
+    : { cell: "#555555", section: "#888888" };
+}
+
 const CAMERA_POSITION: [number, number, number] = [0, 0, 5];
 const CAMERA_FOV = 45;
 const ANGLE_LIMITS = {
@@ -85,10 +100,12 @@ function getResolvedObjectPosition(
 
 function SceneBridge({
   cameraInverted,
+  canvasBgColor,
   objects,
   onExportReady,
   onViewportControlsReady,
   resetCameraVersion,
+  uiTheme,
 }: SceneBridgeProps) {
   const controlsRef = useRef<CameraControlsImpl | null>(null);
   const sceneRef = useRef<THREE.Group | null>(null);
@@ -145,9 +162,23 @@ function SceneBridge({
     };
   }, [camera, gl, onExportReady, scene, size.height, size.width]);
 
+  const gridColors = getGridColors(canvasBgColor, uiTheme);
+
   return (
     <>
       <Environment preset="studio" />
+      <Grid
+        position={[0, -300, 0]}
+        cellSize={50}
+        cellThickness={0.5}
+        cellColor={gridColors.cell}
+        sectionSize={200}
+        sectionThickness={1}
+        sectionColor={gridColors.section}
+        fadeDistance={3000}
+        fadeStrength={1.5}
+        infiniteGrid
+      />
       <Suspense fallback={null}>
         <Bounds margin={1.18}>
           <Center>
@@ -215,6 +246,10 @@ function BoundsResetController({
   const bounds = useBounds();
   const { camera } = useThree();
   const hasCapturedInitialState = useRef(false);
+  const initialLookAt = useRef<{
+    px: number; py: number; pz: number;
+    tx: number; ty: number; tz: number;
+  } | null>(null);
 
   useEffect(() => {
     const controls = controlsRef.current;
@@ -235,18 +270,17 @@ function BoundsResetController({
       camera.far = distance * 100;
       camera.updateProjectionMatrix();
 
+      hasCapturedInitialState.current = true;
+      initialLookAt.current = {
+        px: center.x, py: center.y, pz: center.z + distance,
+        tx: center.x, ty: center.y, tz: center.z,
+      };
+
       controls.setLookAt(
-        center.x,
-        center.y,
-        center.z + distance,
-        center.x,
-        center.y,
-        center.z,
+        center.x, center.y, center.z + distance,
+        center.x, center.y, center.z,
         true,
       );
-      controls.saveState();
-
-      hasCapturedInitialState.current = true;
     });
 
     return () => {
@@ -260,6 +294,22 @@ function BoundsResetController({
     if (!controls) {
       return;
     }
+
+    const resetToInitial = () => {
+      const s = initialLookAt.current;
+      if (!s) return;
+
+      // normalizeRotations mapeia azimute para [0, 2π].
+      // Se > π, rotaciona instantaneamente para o equivalente negativo em [-π, 0]
+      // para que a animação até 0 tome sempre o caminho mais curto.
+      controls.normalizeRotations();
+      const azimuth = controls.azimuthAngle;
+      if (azimuth > Math.PI) {
+        controls.rotate(azimuth - Math.PI * 2, 0, false);
+      }
+
+      controls.setLookAt(s.px, s.py, s.pz, s.tx, s.ty, s.tz, true);
+    };
 
     onViewportControlsReady({
       fitToScene: () => {
@@ -277,7 +327,7 @@ function BoundsResetController({
       panLeft: () => controls.truck(-controls.distance * 0.08, 0, false),
       panRight: () => controls.truck(controls.distance * 0.08, 0, false),
       panUp: () => controls.truck(0, controls.distance * 0.08, false),
-      resetToInitial: () => controls.reset(true),
+      resetToInitial,
       zoomIn: () => controls.dolly(controls.distance * 0.138, false),
       zoomOut: () => controls.dolly(-controls.distance * 0.138, false),
     });
@@ -292,7 +342,17 @@ function BoundsResetController({
       return;
     }
 
-    controlsRef.current?.reset(true);
+    const s = initialLookAt.current;
+    const controls = controlsRef.current;
+    if (!s || !controls) return;
+
+    controls.normalizeRotations();
+    const azimuth = controls.azimuthAngle;
+    if (azimuth > Math.PI) {
+      controls.rotate(azimuth - Math.PI * 2, 0, false);
+    }
+
+    controls.setLookAt(s.px, s.py, s.pz, s.tx, s.ty, s.tz, true);
   }, [controlsRef, resetCameraVersion]);
 
   return null;
@@ -301,6 +361,35 @@ function BoundsResetController({
 export default function MockupCanvas(props: MockupCanvasProps) {
   const [viewportControls, setViewportControls] =
     useState<ViewportControlsApi | null>(null);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const tag = (event.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
+
+      switch (event.key) {
+        case "ArrowUp":
+          event.preventDefault();
+          viewportControls?.panUp();
+          break;
+        case "ArrowDown":
+          event.preventDefault();
+          viewportControls?.panDown();
+          break;
+        case "ArrowLeft":
+          event.preventDefault();
+          viewportControls?.panLeft();
+          break;
+        case "ArrowRight":
+          event.preventDefault();
+          viewportControls?.panRight();
+          break;
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [viewportControls]);
 
   const stageClass = props.canvasBgColor
     ? "mockup-stage relative flex-1 h-screen"

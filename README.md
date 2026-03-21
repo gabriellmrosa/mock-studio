@@ -33,7 +33,13 @@ Ja implementado:
 - menu de preferencias com submenus cascata (Theme e Language) com checkmark no item ativo, hover com delay para nao fechar ao mover o mouse entre paineis, e fechar ao clicar fora;
 - menu de contexto por layer (3 pontos) com opcoes de Renomear e Deletar — delete so aparece em layers adicionadas pelo usuario (a layer base nao pode ser deletada);
 - `ContextMenu` como componente reutilizavel com suporte a action items e submenu items, renderizado via React Portal para evitar clipping por `overflow`;
-- icones migrados de SVGs inline para `lucide-react`.
+- icones migrados de SVGs inline para `lucide-react`;
+- controle de camera migrado de `OrbitControls` para `CameraControls` (`camera-controls`), habilitando pan programatico;
+- botoes de seta no toolbar flutuante movem a camera (pan) proporcionalmente a distancia atual via `controls.truck()`;
+- setas do teclado tambem acionam o pan da camera (desativado quando foco esta em input de texto);
+- preferencia de camera (Invertido/Normal) no menu de settings, persistida em localStorage, padrao invertido;
+- animacao suave de entrada da camera ao carregar a cena;
+- grid de profundidade infinito no canvas (`drei <Grid>`) com cor adaptativa baseada em luminancia do fundo.
 
 ## Decisoes de Produto Ja Tomadas
 
@@ -41,7 +47,7 @@ Ja implementado:
 - export: somente PNG com fundo transparente;
 - transformacoes liberadas nesta etapa: posicao X/Y/Z e rotacao X/Y/Z por objeto;
 - camera continua global da cena;
-- o giro com mouse no canvas atua na camera via `OrbitControls`, nao no estado de rotacao do objeto;
+- o giro com mouse no canvas atua na camera via `CameraControls`, nao no estado de rotacao do objeto;
 - cada objeto possui sua propria imagem e sua propria configuracao;
 - o objeto inicial da cena nao pode ser deletado;
 - novos objetos entram com leve deslocamento automatico para nao sobrepor totalmente o objeto base;
@@ -56,7 +62,7 @@ Ja implementado:
 - [app/globals.css](/Users/gabrielrosa/Desktop/dev/mock-photo/app/globals.css): tokens semanticos (`--background`, `--sidebar-bg`...) que referenciam os primitivos, resets globais e `.app-shell`.
 - [app/components/LayersPanel/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/LayersPanel/): painel esquerdo com camadas/objetos e preferencias globais.
 - [app/components/InspectorPanel/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/InspectorPanel/): painel direito com configuracoes do objeto selecionado.
-- [app/components/MockupCanvas/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/MockupCanvas/): canvas 3D, orbit controls, reset de camera, export e renderizacao de multiplos objetos.
+- [app/components/MockupCanvas/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/MockupCanvas/): canvas 3D, CameraControls, grid de profundidade, reset de camera, export e renderizacao de multiplos objetos.
 - [app/components/ContextMenu/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/ContextMenu/): menu de contexto reutilizavel com suporte a action items e submenus cascata.
 - [app/components/EditorPrimitives/](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/EditorPrimitives/): componentes primitivos compartilhados (`LayersPanelHeader`, `InspectorPanelHeader`, `PanelSection`, `IconButton`) e seus estilos base.
 - [app/components/Smartphone.tsx](/Users/gabrielrosa/Desktop/dev/mock-photo/app/components/Smartphone.tsx): modelo atual do smartphone, tela com textura e modo sem casca.
@@ -74,21 +80,25 @@ As alteracoes recentes foram feitas na branch:
 
 ## Onde Paramos
 
-Implementacao do React Portal no `ContextMenu`: o painel agora e renderizado diretamente no `document.body` via `createPortal`, com `position: fixed` e coordenadas calculadas por `getBoundingClientRect()`. Isso resolve o clipping causado por ancestrais com `overflow-y: auto` (como o painel de camadas), que pelo spec do CSS forcam `overflow-x` a nao ser `visible`, cortando elementos absolutamente posicionados. O `PanelHeader` tambem foi dividido em `LayersPanelHeader` e `InspectorPanelHeader` para facilitar manutencao independente de cada painel.
+Migracao de `OrbitControls` para `CameraControls` concluida: pan programatico via `controls.truck()` funcionando nos botoes de seta e no teclado. Grid de profundidade infinito adicionado com cor adaptativa ao fundo. Preferencia de camera (invertido/normal) adicionada ao menu de settings com persistencia em localStorage.
+
+**Bug conhecido pendente:** o reset de camera restaura posicao, zoom e rotacao vertical corretamente, mas a rotacao horizontal (azimute) nao retorna ao estado inicial. Causa: breaking change do `camera-controls` v3 no tratamento de normalizacao de angulo. Investigado com `normalizeRotations()` e correcao manual de path — sem solucao definitiva ainda.
 
 ## Proximo Passo Sugerido
 
-Validar com calma o fluxo multiobjeto atual e, depois disso, escolher entre:
-
-- adicionar o segundo modelo real ao catalogo, aproveitando a nova estrutura por objeto;
-- refinar os controles de composicao por objeto, incluindo limites, presets ou interacoes mais rapidas;
-- refinar UX de camadas, incluindo reorder, lock ou visibilidade.
+- investigar bug de reset do azimute da camera (`camera-controls` v3);
+- adicionar o segundo modelo real ao catalogo;
+- refinar os controles de composicao por objeto;
+- refinar UX de camadas (reorder, lock ou visibilidade).
 
 ## Observacoes Tecnicas
 
 - a textura da tela ja foi corrigida e nao deve mais deformar sozinha;
 - o reset da secao `Transform` atua apenas no objeto selecionado;
-- o botao flutuante central do canvas reenquadra a cena visivel via `Bounds`, de forma separada do reset de transformacao do objeto;
+- o botao de reset da camera usa `setLookAt()` direto com `normalizeRotations()` — nao usa `controls.reset()`;
+- `controls.truck(distance * 0.08, ...)` garante pan sempre visivel independente do zoom atual;
+- o grid usa `infiniteGrid` do drei com `cellSize=50` e `sectionSize=200` (escala do modelo em centenas de unidades), posicionado em `y=-300`;
+- a cor do grid e recalculada via luminancia do hex de fundo a cada mudanca de cor do canvas;
 - presets padrao de transformacao e offsets automaticos da cena foram centralizados em uma fonte unica para evitar valores soltos;
 - o offset automatico entre objetos continua ajudando a evitar sobreposicao total ao adicionar novos itens, mesmo com os controles manuais de posicao ja expostos no inspector;
 - existe apenas 1 modelo real no catalogo neste momento: `smartphone`;
