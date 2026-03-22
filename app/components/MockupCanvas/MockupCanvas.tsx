@@ -58,6 +58,8 @@ type SceneBridgeProps = MockupCanvasProps & {
   onExportReady: (
     handler: ((preset: ExportPreset) => Promise<void>) | null,
   ) => void;
+  onObjectLoadStateChange: (id: string, isLoading: boolean) => void;
+  onObjectResolved: (id: string) => void;
   onViewportControlsReady: (api: ViewportControlsApi | null) => void;
   sceneFitKey: string;
   spawnOverrides: SpawnOverrides;
@@ -121,6 +123,8 @@ function SceneBridge({
   canvasBgColor,
   objects,
   onExportReady,
+  onObjectLoadStateChange,
+  onObjectResolved,
   onViewportControlsReady,
   resetCameraVersion,
   scaleOverrides,
@@ -205,7 +209,20 @@ function SceneBridge({
               const model = DEVICE_MODELS[object.modelId];
 
               return (
-                <Suspense key={object.id} fallback={null}>
+                <Suspense
+                  key={object.id}
+                  fallback={
+                    <SceneObjectLoadingFallback
+                      id={object.id}
+                      onObjectLoadStateChange={onObjectLoadStateChange}
+                    />
+                  }
+                >
+                  <SceneObjectResolvedReporter
+                    id={object.id}
+                    modelId={object.modelId}
+                    onObjectResolved={onObjectResolved}
+                  />
                   <group
                     position={getResolvedObjectPosition(object, index, spawnOverrides, model.modelSpawnOffset)}
                     rotation={[
@@ -257,6 +274,40 @@ function SceneBridge({
       />
     </>
   );
+}
+
+function SceneObjectLoadingFallback({
+  id,
+  onObjectLoadStateChange,
+}: {
+  id: string;
+  onObjectLoadStateChange: (id: string, isLoading: boolean) => void;
+}) {
+  useEffect(() => {
+    onObjectLoadStateChange(id, true);
+
+    return () => {
+      onObjectLoadStateChange(id, false);
+    };
+  }, [id, onObjectLoadStateChange]);
+
+  return null;
+}
+
+function SceneObjectResolvedReporter({
+  id,
+  modelId,
+  onObjectResolved,
+}: {
+  id: string;
+  modelId: SceneObject["modelId"];
+  onObjectResolved: (id: string) => void;
+}) {
+  useEffect(() => {
+    onObjectResolved(id);
+  }, [id, modelId, onObjectResolved]);
+
+  return null;
 }
 
 function BoundsResetController({
@@ -375,6 +426,10 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const exportHandlerRef =
     useRef<((preset: ExportPreset) => Promise<void>) | null>(null);
   const [isExportReady, setIsExportReady] = useState(false);
+  const [loadingObjectIds, setLoadingObjectIds] = useState<string[]>([]);
+  const [resolvedObjectIds, setResolvedObjectIds] = useState<string[]>([]);
+  const [incrementalLoadingDelayElapsed, setIncrementalLoadingDelayElapsed] =
+    useState(false);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -408,6 +463,47 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const stageClass = props.canvasBgColor
     ? "mockup-stage relative flex-1 h-screen"
     : `mockup-stage relative flex-1 h-screen ${props.uiTheme === "dark" ? "mockup-stage-dark" : "mockup-stage-light"}`;
+  const currentObjectIds = new Set(props.objects.map((object) => object.id));
+  const activeLoadingObjectIds = loadingObjectIds.filter((id) => currentObjectIds.has(id));
+  const activeResolvedObjectIds = resolvedObjectIds.filter((id) => currentObjectIds.has(id));
+  const isInitialSceneLoading =
+    props.objects.length > 0 && activeResolvedObjectIds.length === 0;
+  const isIncrementalObjectLoading =
+    activeLoadingObjectIds.length > 0 && activeResolvedObjectIds.length > 0;
+  const showIncrementalLoading =
+    isIncrementalObjectLoading && incrementalLoadingDelayElapsed;
+  const incrementalLoadingLabel =
+    activeLoadingObjectIds.length > 1
+      ? `${props.copy.canvasObjectLoadingLabel} (${activeLoadingObjectIds.length})`
+      : props.copy.canvasObjectLoadingLabel;
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setIncrementalLoadingDelayElapsed(true);
+    }, 1000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      setIncrementalLoadingDelayElapsed(false);
+    };
+  }, [isIncrementalObjectLoading]);
+
+  function handleObjectLoadStateChange(id: string, isLoading: boolean) {
+    setLoadingObjectIds((current) => {
+      if (isLoading) {
+        return current.includes(id) ? current : [...current, id];
+      }
+
+      return current.filter((currentId) => currentId !== id);
+    });
+  }
+
+  function handleObjectResolved(id: string) {
+    setResolvedObjectIds((current) =>
+      current.includes(id) ? current : [...current, id],
+    );
+    setLoadingObjectIds((current) => current.filter((currentId) => currentId !== id));
+  }
 
   async function handleTakePhoto() {
     const exportHandler = exportHandlerRef.current;
@@ -442,12 +538,30 @@ export default function MockupCanvas(props: MockupCanvasProps) {
             exportHandlerRef.current = handler;
             setIsExportReady(Boolean(handler));
           }}
+          onObjectLoadStateChange={handleObjectLoadStateChange}
+          onObjectResolved={handleObjectResolved}
           onViewportControlsReady={setViewportControls}
           sceneFitKey={props.objects.map((o) => o.id).join(",")}
         />
       </Canvas>
 
       <div className="canvas-stage-overlay">
+        {isInitialSceneLoading ? (
+          <div className="canvas-loading-overlay">
+            <div className="canvas-loading-minimal">
+              <div className="canvas-loading-spinner" aria-hidden="true" />
+              <p className="canvas-loading-label">{props.copy.canvasInitialLoadingLabel}</p>
+            </div>
+          </div>
+        ) : null}
+
+        {showIncrementalLoading ? (
+          <div className="canvas-loading-chip">
+            <div className="canvas-loading-spinner canvas-loading-spinner-small" aria-hidden="true" />
+            <span>{incrementalLoadingLabel}</span>
+          </div>
+        ) : null}
+
         <FloatingCanvasControls
           bgColor={props.canvasBgColor}
           copy={props.copy}

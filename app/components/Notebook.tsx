@@ -4,7 +4,6 @@ import * as THREE from "three";
 import React, { useEffect, useMemo } from "react";
 import { useGLTF, useTexture } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
-import { useControls } from "leva";
 import { GLTF, SkeletonUtils } from "three-stdlib";
 import {
   buildScreenCanvas,
@@ -68,6 +67,17 @@ const NOTEBOOK_SCREEN_CROP_W = 1600;
 const NOTEBOOK_SCREEN_CROP_H = 978;
 
 export type NotebookDebugPartKey = keyof typeof NOTEBOOK_MESH_SEMANTIC;
+
+const NOTEBOOK_FINISH_DEFAULTS = {
+  bodyBottomClearcoat: 0.015,
+  bodyBottomClearcoatRoughness: 0.86,
+  bodyBottomMetalness: 0.02,
+  bodyBottomRoughness: 0,
+  keyboardBaseOuterRoughness: 0,
+  keyboardDeckRoughness: 0,
+  touchpadBorderRoughness: 0,
+  touchpadRoughness: 0,
+} as const;
 
 type GLTFResult = GLTF & {
   nodes: Record<string, THREE.Mesh>;
@@ -182,16 +192,6 @@ function NotebookImpl({
 }: NotebookProps) {
   void _sp;
   void _ss;
-  const bodyBottomFinish = useControls("Notebook Body Bottom", {
-    bodyBottomRoughness: { value: 0, min: 0, max: 1, step: 0.01 },
-    bodyBottomMetalness: { value: 0.02, min: 0, max: 1, step: 0.01 },
-    bodyBottomClearcoat: { value: 0.015, min: 0, max: 1, step: 0.005 },
-    bodyBottomClearcoatRoughness: { value: 0.86, min: 0, max: 1, step: 0.01 },
-    keyboardBaseOuterRoughness: { value: 0, min: 0, max: 1, step: 0.01 },
-    keyboardDeckRoughness: { value: 0, min: 0, max: 1, step: 0.01 },
-    touchpadRoughness: { value: 0, min: 0, max: 1, step: 0.01 },
-    touchpadBorderRoughness: { value: 0, min: 0, max: 1, step: 0.01 },
-  });
   const { scene } = useGLTF("/models/notebook.glb");
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   useGraph(clone) as unknown as GLTFResult;
@@ -295,13 +295,13 @@ function NotebookImpl({
           semantic as keyof typeof NOTEBOOK_MESH_SEMANTIC,
           themedMaterial,
           matteColors,
-          bodyBottomFinish,
+          NOTEBOOK_FINISH_DEFAULTS,
         );
         themedMaterial.needsUpdate = true;
         return [[semantic, themedMaterial] as const];
       }),
     );
-  }, [bodyBottomFinish, colors, matteColors, originalMaterials]);
+  }, [colors, matteColors, originalMaterials]);
 
   useEffect(() => {
     if (!themeMaterials) return;

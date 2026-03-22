@@ -38,6 +38,8 @@ export type AppCopy = {
   scale: string;
   debugOn: string;
   debugOff: string;
+  canvasInitialLoadingLabel: string;
+  canvasObjectLoadingLabel: string;
   uploadImageError: string;
   themeNames: Record<string, string>;
 };
@@ -79,6 +81,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     scale: "Escala",
     debugOn: "Debug interativo: ON",
     debugOff: "Debug interativo: OFF",
+    canvasInitialLoadingLabel: "Carregando",
+    canvasObjectLoadingLabel: "Carregando modelo",
     uploadImageError: "Nao foi possivel preparar essa imagem.",
     themeNames: {
       gray: "Cinza",
@@ -123,6 +127,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     scale: "Scale",
     debugOn: "Interactive debug: ON",
     debugOff: "Interactive debug: OFF",
+    canvasInitialLoadingLabel: "Loading",
+    canvasObjectLoadingLabel: "Loading model",
     uploadImageError: "Could not prepare this image.",
     themeNames: {
       gray: "Gray",

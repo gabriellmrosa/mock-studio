@@ -66,21 +66,21 @@ export default function FloatingCanvasControls({
       <div className="canvas-floating-cluster">
         <button
           type="button"
+          className="editor-fab mr-4"
+          aria-label={copy.resetCameraButton}
+          title={copy.resetCameraButton}
+          onClick={onResetCamera}
+        >
+          <RotateCcw size={16} />
+        </button>
+        <button
+          type="button"
           className="editor-fab"
           aria-label={copy.fitSceneButton}
           title={copy.fitSceneButton}
           onClick={onFitToScene}
         >
           <ScanSearch size={16} />
-        </button>
-        <button
-          type="button"
-          className="editor-fab"
-          aria-label={copy.resetCameraButton}
-          title={copy.resetCameraButton}
-          onClick={onResetCamera}
-        >
-          <RotateCcw size={16} />
         </button>
         <button
           type="button"

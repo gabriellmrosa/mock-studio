@@ -28,6 +28,8 @@ Ja implementado:
 - color picker de cor de fundo do canvas na toolbar flutuante;
 - export PNG transparente em `1920x1080` e `2560x1440`;
 - CTA `Take photo` exporta captura PNG `1920x1080` com nome timestamped;
+- loading inicial central para o primeiro carregamento real do canvas/modelo;
+- loading incremental discreto no topo do canvas para troca/adicao de modelos, com atraso para evitar flicker em loads rapidos;
 - modo debug de cores por parte por objeto;
 - modo `So tela`, que remove a casca do dispositivo e deixa apenas a textura da tela;
 - toggle global de `dark/light`;
@@ -106,7 +108,7 @@ Ja implementado:
 
 Catalogo consolidado em 4 dispositivos. Arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo. `smartwatch` segue com tela texturizada funcional e material fisico preservado no casco. `notebook` aceita a imagem do app na malha correta da tela, com placeholder proprio e debug semantico inicial. O `smartphone2` antigo foi substituido pelo asset recortado do iPhone 14, com placeholder `1290x2748`, temas ativos, mapeamento semantico inicial e tela aplicada no mesh real do GLB. Placeholders sao definidos por modelo, sem troca por idioma. O inspector continua com toggle por objeto para acabamento fosco. O reset de camera agora usa `saveState/reset` do `camera-controls`, `fit scene` e `reset camera` ficaram separados, e o CTA `Take photo` exporta captura real do canvas.
 
-A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spacing recorrentes foram movidos para tokens em `app/styles/tokens.css`, primitives compartilhados foram consolidados, utilitarios arbitrarios foram reduzidos nos paineis principais e o `ContextMenu` deixou de usar render prop para um trigger padronizado.
+A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spacing recorrentes foram movidos para tokens em `app/styles/tokens.css`, primitives compartilhados foram consolidados, utilitarios arbitrarios foram reduzidos nos paineis principais e o `ContextMenu` deixou de usar render prop para um trigger padronizado. O canvas agora tambem diferencia loading inicial e loading incremental de objetos.
 
 ## Proximo Passo Sugerido
 
@@ -150,6 +152,7 @@ A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spa
 - grid em `y=-300` com `infiniteGrid`, `cellSize=50`, `sectionSize=200`;
 - `npm run lint` deve passar;
 - `AI-GUIDE.md` concentra o guia tecnico de modelos 3D e a convencao de styling;
+- `Notebook` nao deve mais expor calibracao temporaria via `leva` na UI;
 - `npx next build --webpack` para validacao de build.
 
 ## Como Rodar

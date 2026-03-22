@@ -1,7 +1,6 @@
 "use client";
 
 import { ChangeEvent, useEffect, useRef, useState } from "react";
-import { Leva } from "leva";
 import type { ScaleOverrides, SpawnOverrides } from "./components/MockupCanvas/MockupCanvas";
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
@@ -222,7 +221,6 @@ export default function Home() {
 
   return (
     <main className="app-shell min-h-screen relative flex">
-      <Leva collapsed />
       <LayersPanel
         copy={copy}
         locale={locale}
