@@ -1,78 +1,47 @@
-// Tokens de cores para o modelo Smartphone2 3D.
-//
-// Partes visíveis identificadas via debug mode:
-//   sideBody      → Plane008_1 (casca lateral — cor primária)
-//   chargingPort  → Plane008_2 (buraco do carregador na base)
-//   frontBody     → Plane008_3 (painel frontal — mesma cor que sideBody)
-//   sideButtons   → Plane008_5 (botões laterais)
-//   speakerGrille → Plane008_8 (grade do speaker na frente, topo)
-//
-// Partes não visíveis (não fazem parte dos temas):
-//   Plane008_4 (black3Part), Plane008_6 (cameraLensPart) — ocultas na cena.
-//   Plane008_7 — tela, gerenciada pelo componente.
-
 export type Smartphone2ThemeName = "gray" | "black" | "light-gray" | "blood";
 
 export interface Smartphone2Colors {
   [key: string]: string;
-  sideBody: string;
-  chargingPort: string;
-  frontBody: string;
-  sideButtons: string;
-  speakerGrille: string;
+  body: string;
+  sideCuts: string;
+  topCutout: string;
+  frame: string;
+  rearInset: string;
+  cameraMicroPart: string;
+  frontGlass: string;
+  cameraBlock: string;
+  cameraBlockInner: string;
+  cameraLensHighlight: string;
+  cameraSideDetail: string;
 }
 
 export const SMARTPHONE2_DEFAULT_THEME: Smartphone2ThemeName = "gray";
 
-// sideBody e frontBody têm sempre a mesma cor (cor primária).
-// sideButtons acompanha a cor primária com 10% de escurecimento.
-// speakerGrille é derivado com 35% de clareamento para manter contraste sutil.
-// chargingPort é sempre preto — representa o vão físico do conector.
-export const SMARTPHONE2_THEMES: Record<Smartphone2ThemeName, Smartphone2Colors> = {
-  gray: {
-    sideBody:      "#8A8A8E",
-    chargingPort:  "#000000",
-    frontBody:     "#8A8A8E",
-    sideButtons:   "#6E6E72",
-    speakerGrille: "#ABABAE",
-  },
-  black: {
-    sideBody:      "#1C1C1E",
-    chargingPort:  "#000000",
-    frontBody:     "#1C1C1E",
-    sideButtons:   "#111113",
-    speakerGrille: "#3A3A3C",
-  },
-  "light-gray": {
-    sideBody:      "#d1d1d1",
-    chargingPort:  "#000000",
-    frontBody:     "#d1d1d1",
-    sideButtons:   "#b8b8b8",
-    speakerGrille: "#E2E2E2",
-  },
-  blood: {
-    sideBody:      "#6a2525",
-    chargingPort:  "#000000",
-    frontBody:     "#6a2525",
-    sideButtons:   "#521c1c",
-    speakerGrille: "#8F5B5B",
-  },
+export const SMARTPHONE2_THEMES: Record<
+  Smartphone2ThemeName,
+  Smartphone2Colors
+> = {
+  gray: buildSmartphone2ColorsFromPrimary("#8A8A8E"),
+  black: buildSmartphone2ColorsFromPrimary("#1C1C1E"),
+  "light-gray": buildSmartphone2ColorsFromPrimary("#d1d1d1"),
+  blood: buildSmartphone2ColorsFromPrimary("#6a2525"),
 };
 
-/**
- * Gera Smartphone2Colors a partir de uma cor primária livre (color picker).
- * frontBody e sideBody recebem a cor primária.
- * sideButtons escurece 10% em direção ao preto.
- * speakerGrille clareia 35% em direção ao branco.
- * chargingPort é sempre preto.
- */
-export function buildSmartphone2ColorsFromPrimary(hex: string): Smartphone2Colors {
+export function buildSmartphone2ColorsFromPrimary(
+  hex: string,
+): Smartphone2Colors {
   return {
-    sideBody:      hex,
-    chargingPort:  "#000000",
-    frontBody:     hex,
-    sideButtons:   lerpHexToBlack(hex, 0.1),
-    speakerGrille: lerpHexToWhite(hex, 0.35),
+    body: hex,
+    sideCuts: hex,
+    topCutout: "#000000",
+    frame: lerpHexToBlack(hex, 0.18),
+    rearInset: lerpHexToBlack(hex, 0.08),
+    cameraMicroPart: lerpHexToBlack(hex, 0.22),
+    frontGlass: lerpHexToBlack(hex, 0.62),
+    cameraBlock: lerpHexToBlack(hex, 0.1),
+    cameraBlockInner: lerpHexToBlack(hex, 0.16),
+    cameraLensHighlight: lerpHexToWhite(hex, 0.28),
+    cameraSideDetail: lerpHexToBlack(hex, 0.2),
   };
 }
 
@@ -99,5 +68,7 @@ function lerpHexToBlack(hex: string, t: number): string {
 }
 
 function toHex(r: number, g: number, b: number): string {
-  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+  return `#${r.toString(16).padStart(2, "0")}${g
+    .toString(16)
+    .padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
 }

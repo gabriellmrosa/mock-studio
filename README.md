@@ -4,7 +4,7 @@ Editor de mockups em Next.js + React Three Fiber para compor imagens de app em d
 
 ## Estado Atual
 
-O projeto esta funcional como um editor de composicao multiobjeto com catalogo de 5 modelos 3D reais.
+O projeto esta funcional como um editor de composicao multiobjeto com catalogo de 4 modelos 3D reais.
 
 Ja implementado:
 
@@ -32,13 +32,13 @@ Ja implementado:
 - toggle global de idioma `pt-BR/en-US`;
 - placeholders por modelo, independentes de idioma;
 - recomendacao de upload por modelo no inspector;
-- catalogo com 5 modelos 3D: `smartphone`, `smartphone2`, `smartwatch`, `notebook` e `iphone14pro-orange`;
+- catalogo com 4 modelos 3D: `smartphone`, `smartphone2`, `smartwatch` e `notebook`;
 - arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo;
 - `smartwatch` com tela texturizada em plano separado, raio calibrado e casco preservando o material fisico do GLB;
 - `notebook` com tela do app aplicada na malha correta do GLB, placeholder proprio, temas ativos e debug semantico inicial das partes mapeadas;
-- `iphone14pro-orange` integrado a partir de um pack recortado, com tela aplicada no mesh real do GLB, placeholder proprio `1290x2748`, temas ativos e debug semantico inicial;
-- modo `Cor fosca` reduz reflexo dos materiais fisicos e, no `iphone14pro-orange`, oculta o vidro frontal para privilegiar a leitura da tela;
-- `smartphone`, `smartphone2`, `smartwatch`, `notebook` e `iphone14pro-orange` iniciam no tema `gray`;
+- `smartphone2` agora usa o asset recortado do iPhone 14, com tela aplicada no mesh real do GLB, placeholder proprio `1290x2748`, temas ativos e debug semantico inicial;
+- modo `Cor fosca` reduz reflexo dos materiais fisicos e, no `smartphone2` atual, oculta o vidro frontal para privilegiar a leitura da tela;
+- `smartphone`, `smartphone2`, `smartwatch` e `notebook` iniciam no tema `gray`;
 - design system com tokens primitivos de cor (`--black-000` a `--black-980`, `--gray-*`, `--ink-*`), border-radius (`--radius-xs` a `--radius-full`) e font-weight (`--font-regular` a `--font-bold`) para dark e light mode;
 - menu de preferencias com submenus cascata (Theme e Language) com checkmark no item ativo;
 - menu de contexto por layer (3 pontos) com opcoes de Renomear e Deletar;
@@ -57,10 +57,9 @@ Ja implementado:
 | Modelo | Arquivo GLB | modelScale | baseRotation | modelSpawnOffset | Upload recomendado |
 |---|---|---|---|---|
 | smartphone | smartphone.glb | [1, 1, 1] | [0, 0, 0] | [0, 0, 0] | 1290x2755 |
-| smartphone2 | smartphone2.glb | [102.6, 102.6, 102.6] | [0, π, 0] | [115, 50, 180] | 1290x2848 |
+| smartphone2 | apple_iphone_14_pro_orange.glb | [122.9, 122.9, 122.9] | [0, 90.5°, 0] | [0, 0, 0] | 1290x2748 |
 | smartwatch | smartwatch.glb | [19.44, 19.44, 19.44] | [0, -π/2, 0] | [130, 40, 270] | 1290x1452 |
 | notebook | notebook.glb | [2311, 2311, 2311] | [0, π, 0] | [120, 100, 0] | 2755x1684 |
-| iphone14pro-orange | apple_iphone_14_pro_orange.glb | [122.9, 122.9, 122.9] | [0, 90.5°, 0] | [0, 0, 0] | 1290x2748 |
 
 ## Decisoes de Produto Ja Tomadas
 
@@ -83,7 +82,7 @@ Ja implementado:
 - [app/components/InspectorPanel/](app/components/InspectorPanel/): painel direito com configuracoes do objeto selecionado (transform, temas, debug).
 - [app/components/MockupCanvas/](app/components/MockupCanvas/): canvas 3D, CameraControls, grid, export e renderizacao de multiplos objetos.
 - [app/components/Smartphone.tsx](app/components/Smartphone.tsx): modelo smartphone com tela texturizada.
-- [app/components/Smartphone2.tsx](app/components/Smartphone2.tsx): modelo smartphone2 com correcao de UV atlas na tela.
+- [app/components/Smartphone2.tsx](app/components/Smartphone2.tsx): modelo smartphone2 atual, baseado no iPhone 14 com tela aplicada no mesh real do GLB.
 - [app/components/Smartwatch.tsx](app/components/Smartwatch.tsx): modelo smartwatch.
 - [app/components/Notebook.tsx](app/components/Notebook.tsx): modelo notebook.
 - [app/models/device-models.ts](app/models/device-models.ts): catalogo de dispositivos com metadados de escala, rotacao e offset.
@@ -100,7 +99,7 @@ Ja implementado:
 
 ## Onde Paramos
 
-Catalogo expandido para 5 dispositivos. Arquitetura multimodelo consolidada com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo. `smartwatch` calibrado com tela texturizada funcional, placeholder proprio e material fisico preservado no casco. `notebook` agora aceita a imagem do app na malha correta da tela, tem placeholder proprio, recomendacao `2755x1684`, temas ativos e debug semantico inicial das partes mapeadas. `iphone14pro-orange` foi recortado de um pack, ganhou placeholder `1290x2748`, temas ativos, mapeamento semantico inicial e tela aplicada no mesh real do GLB. Placeholders agora sao definidos por modelo, sem troca por idioma. O inspector ganhou toggle por objeto para acabamento fosco. Painel de debug de spawn removido da UI lateral.
+Catalogo consolidado em 4 dispositivos. Arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo. `smartwatch` segue com tela texturizada funcional e material fisico preservado no casco. `notebook` aceita a imagem do app na malha correta da tela, com placeholder proprio e debug semantico inicial. O `smartphone2` antigo foi substituido pelo asset recortado do iPhone 14, com placeholder `1290x2748`, temas ativos, mapeamento semantico inicial e tela aplicada no mesh real do GLB. Placeholders sao definidos por modelo, sem troca por idioma. O inspector continua com toggle por objeto para acabamento fosco.
 
 **Bug conhecido pendente:** reset de camera restaura posicao e zoom corretamente, mas o azimute nao retorna ao estado inicial (`camera-controls` v3).
 
@@ -118,10 +117,10 @@ Catalogo expandido para 5 dispositivos. Arquitetura multimodelo consolidada com 
 - a solucao robusta para o `smartwatch` foi usar um plano separado para a tela e preservar o material original do GLB no casco;
 - trocar `MeshPhysicalMaterial` original por `MeshLambertMaterial` no `smartwatch` fazia o corpo parecer oco; clonar o material original e trocar apenas a cor resolveu isso;
 - no `notebook`, a malha de tela correta e `tfTbkkzhxqpKRgC`; o contorno preto da tela e `nAIWMiVEtSYdjdZ`, e a barra inferior da dobra e `WyuoVWKMOcOlXJM`;
-- no `iphone14pro-orange`, a malha de tela correta e `Object_13`; o recorte superior preto e `Object_4`, o body principal e `Object_7`, e os pequenos cortes laterais seguem a cor do body via `Object_8`;
+- no `smartphone2` atual, a malha de tela correta e `Object_13`; o recorte superior preto e `Object_4`, o body principal e `Object_7`, e os pequenos cortes laterais seguem a cor do body via `Object_8`;
 - `screenBezel` e `lowerHingeBar` do `notebook` devem permanecer sempre pretos; a borracha de tela/dobra tambem deve ser tratada como detalhe fixo escuro;
 - o controle de `fosco` precisa atuar no material real de cada modelo, nao apenas existir na UI;
-- no `iphone14pro-orange`, esconder o vidro frontal no modo fosco produz leitura melhor da textura do app;
+- no `smartphone2` atual, esconder o vidro frontal no modo fosco produz leitura melhor da textura do app;
 - para depurar brilho/reflexo do `notebook`, expor roughness via `leva` foi mais eficiente do que entupir o inspector principal com controles temporarios.
 
 ## Observacoes Tecnicas

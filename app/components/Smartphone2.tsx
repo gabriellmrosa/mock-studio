@@ -15,54 +15,33 @@ import {
   type Smartphone2Colors,
 } from "../lib/3d-tokens/smartphone2";
 
-// Dimensões da tela do smartphone2 derivadas da geometria do mesh (purple_screen).
-// Proporção física: 2.071 (X) × 4.568 (Y) em unidades Three.js.
-// Os UVs da mesh NÃO são 0–1: vão de U=0.2928 a U=0.6568 (V é 0–1 normal).
-// O repeat/offset abaixo remapeia a textura para cobrir exatamente esse intervalo.
-const SCREEN2_CROP_W = 207;
-const SCREEN2_CROP_H = 457;
-const SCREEN2_UV_U_MIN = 0.2928;
-const SCREEN2_UV_U_MAX = 0.6568;
+export const MESH_SEMANTIC = {
+  topCutout: "Object_4",
+  frame: "Object_5",
+  rearInset: "Object_6",
+  body: "Object_7",
+  sideCuts: "Object_8",
+  cameraMicroPart: "Object_9",
+  frontGlass: "Object_10",
+  cameraBlock: "Object_11",
+  cameraBlockInner: "Object_12",
+  screen: "Object_13",
+  cameraLensHighlight: "Object_14",
+  cameraSideDetail: "Object_15",
+} as const;
 
-// ---------------------------------------------------------------------------
-// Mapeamento semântico — partes visíveis identificadas via debug mode.
-// Partes não visíveis (Plane008_4, Plane008_6) excluídas intencionalmente.
-// ---------------------------------------------------------------------------
-export const MESH_SEMANTIC: Record<string, string> = {
-  sideBody:      "Plane008_1", // casca lateral — cor primária
-  chargingPort:  "Plane008_2", // buraco do conector na base
-  frontBody:     "Plane008_3", // painel frontal — mesma cor que sideBody
-  sideButtons:   "Plane008_5", // botões laterais
-  // Plane008_7 = tela, tratada separadamente
-  speakerGrille: "Plane008_8", // grade do speaker frontal (topo)
-};
+const SCREEN_MESH = MESH_SEMANTIC.screen;
+const SCREEN_CROP_W = 421;
+const SCREEN_CROP_H = 896;
 
 export type Smartphone2DebugPartKey = keyof typeof MESH_SEMANTIC;
-
-// Re-exports para compatibilidade
 export type { Smartphone2Colors };
 
-// ---------------------------------------------------------------------------
-// Tipos GLTF
-// ---------------------------------------------------------------------------
 type GLTFResult = GLTF & {
-  nodes: {
-    Bone_9: THREE.Bone;
-    Plane008_1: THREE.Mesh;
-    Plane008_2: THREE.Mesh;
-    Plane008_3: THREE.Mesh;
-    Plane008_4: THREE.Mesh;
-    Plane008_5: THREE.Mesh;
-    Plane008_6: THREE.Mesh;
-    Plane008_7: THREE.Mesh;
-    Plane008_8: THREE.Mesh;
-  };
+  nodes: Record<string, THREE.Mesh>;
   materials: Record<string, THREE.Material>;
 };
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
 type Smartphone2Props = JSX.IntrinsicElements["group"] & {
   imageUrl?: string;
   colors?: Record<string, string>;
@@ -74,21 +53,76 @@ type Smartphone2Props = JSX.IntrinsicElements["group"] & {
   screenRotation?: [number, number, number];
 };
 
-function createFinishMaterial(color: string, matte: boolean) {
-  if (matte) {
-    return new THREE.MeshLambertMaterial({ color });
+function rotateCanvas180(source: HTMLCanvasElement) {
+  const canvas = document.createElement("canvas");
+  canvas.width = source.width;
+  canvas.height = source.height;
+
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Nao foi possivel rotacionar a textura da tela.");
   }
 
-  return new THREE.MeshPhongMaterial({
-    color,
-    shininess: 65,
-    specular: new THREE.Color("#555555"),
-  });
+  context.translate(canvas.width, canvas.height);
+  context.rotate(Math.PI);
+  context.drawImage(source, 0, 0);
+
+  return canvas;
 }
 
-// ---------------------------------------------------------------------------
-// Componente principal
-// ---------------------------------------------------------------------------
+function applyFinishMaterial(material: THREE.Material, matte: boolean) {
+  material.transparent = false;
+  material.opacity = 1;
+
+  if ("roughness" in material && typeof material.roughness === "number") {
+    material.roughness = matte
+      ? Math.max(material.roughness, 0.82)
+      : Math.min(material.roughness, 0.38);
+  }
+  if ("metalness" in material && typeof material.metalness === "number") {
+    material.metalness = matte
+      ? Math.min(material.metalness, 0.08)
+      : Math.max(material.metalness, 0.14);
+  }
+  if ("clearcoat" in material && typeof material.clearcoat === "number") {
+    material.clearcoat = matte
+      ? Math.min(material.clearcoat, 0.03)
+      : Math.max(material.clearcoat, 0.14);
+  }
+  if (
+    "clearcoatRoughness" in material &&
+    typeof material.clearcoatRoughness === "number"
+  ) {
+    material.clearcoatRoughness = matte
+      ? Math.max(material.clearcoatRoughness, 0.72)
+      : Math.min(material.clearcoatRoughness, 0.28);
+  }
+
+  return material;
+}
+
+function applyGlassFinishMaterial(
+  material: THREE.Material,
+  color: string,
+  matte: boolean,
+) {
+  if ("color" in material && material.color instanceof THREE.Color) {
+    material.color = new THREE.Color(color);
+  }
+
+  material.transparent = true;
+  material.opacity = 0.28;
+
+  if ("roughness" in material && typeof material.roughness === "number") {
+    material.roughness = matte ? 0.06 : 0.02;
+  }
+  if ("metalness" in material && typeof material.metalness === "number") {
+    material.metalness = 0;
+  }
+
+  return material;
+}
+
 function Smartphone2Impl({
   imageUrl,
   colors,
@@ -103,112 +137,199 @@ function Smartphone2Impl({
   void _sp;
   void _ss;
   void _sr;
-  const { scene } = useGLTF("/models/smartphone2.glb");
+
+  const { scene } = useGLTF("/models/apple_iphone_14_pro_orange.glb");
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
-  // useGraph para ter acesso tipado aos nodes caso precisemos no futuro
   useGraph(clone) as unknown as GLTFResult;
 
-  const effectiveImageUrl =
-    imageUrl && imageUrl !== "/placeholder-enus.png"
-      ? imageUrl
-      : "/placeholder-enus.png";
-
+  const effectiveImageUrl = imageUrl ?? "/placeholder-1290x2748.png";
   const sourceTexture = useTexture(effectiveImageUrl);
+  const resolvedColors: Smartphone2Colors =
+    (colors as Smartphone2Colors) ??
+    SMARTPHONE2_THEMES[SMARTPHONE2_DEFAULT_THEME];
 
-  const texture = useMemo(() => {
-    const img = sourceTexture.image as HTMLImageElement | HTMLCanvasElement | undefined;
+  const screenTexture = useMemo(() => {
+    const img =
+      sourceTexture.image as HTMLImageElement | HTMLCanvasElement | undefined;
+
     if (!img) return sourceTexture;
 
-    const imgW = img instanceof HTMLImageElement ? (img.naturalWidth || img.width) : img.width;
-    const imgH = img instanceof HTMLImageElement ? (img.naturalHeight || img.height) : img.height;
+    const imgW =
+      img instanceof HTMLImageElement ? (img.naturalWidth || img.width) : img.width;
+    const imgH =
+      img instanceof HTMLImageElement ? (img.naturalHeight || img.height) : img.height;
 
-    const canvas = buildScreenCanvas(img, imgW, imgH, SCREEN2_CROP_W, SCREEN2_CROP_H, MAX_TEXTURE_SIZE);
-    const t = sourceTexture.clone();
-    t.image = canvas;
-    t.colorSpace = THREE.SRGBColorSpace;
-    t.flipY = false;
-    t.minFilter = THREE.LinearMipmapLinearFilter;
-    t.magFilter = THREE.LinearFilter;
-    t.anisotropy = 16;
-    t.wrapS = THREE.ClampToEdgeWrapping;
-    t.wrapT = THREE.ClampToEdgeWrapping;
-    // Os UVs da mesh da tela mapeiam de U=0.2928 a U=0.6568 (não 0–1).
-    // Ajusta repeat/offset para a imagem preencher exatamente esse intervalo.
-    const uRange = SCREEN2_UV_U_MAX - SCREEN2_UV_U_MIN;
-    t.repeat.set(1 / uRange, 1);
-    t.offset.set(-SCREEN2_UV_U_MIN / uRange, 0);
-    t.needsUpdate = true;
-    return t;
+    const croppedCanvas = buildScreenCanvas(
+      img,
+      imgW,
+      imgH,
+      SCREEN_CROP_W,
+      SCREEN_CROP_H,
+      MAX_TEXTURE_SIZE,
+    );
+    const canvas = rotateCanvas180(croppedCanvas);
+
+    const nextTexture = sourceTexture.clone();
+    nextTexture.image = canvas;
+    nextTexture.colorSpace = THREE.SRGBColorSpace;
+    nextTexture.flipY = false;
+    nextTexture.repeat.set(1, -1);
+    nextTexture.offset.set(0, 1);
+    nextTexture.minFilter = THREE.LinearMipmapLinearFilter;
+    nextTexture.magFilter = THREE.LinearFilter;
+    nextTexture.anisotropy = 16;
+    nextTexture.wrapS = THREE.ClampToEdgeWrapping;
+    nextTexture.wrapT = THREE.ClampToEdgeWrapping;
+    nextTexture.needsUpdate = true;
+
+    return nextTexture;
   }, [sourceTexture]);
 
   useEffect(() => {
-    if (texture !== sourceTexture) return () => texture.dispose();
-  }, [sourceTexture, texture]);
+    if (screenTexture !== sourceTexture) {
+      return () => screenTexture.dispose();
+    }
+  }, [screenTexture, sourceTexture]);
 
-  const screenMat = useMemo(
-    () => new THREE.MeshBasicMaterial({ map: texture, side: THREE.DoubleSide, toneMapped: false }),
-    [texture],
+  const screenMaterial = useMemo(
+    () =>
+      new THREE.MeshBasicMaterial({
+        map: screenTexture,
+        side: THREE.DoubleSide,
+        toneMapped: false,
+      }),
+    [screenTexture],
   );
-  useEffect(() => () => screenMat.dispose(), [screenMat]);
 
-  // Esconde nós com scale=0 (variantes inativos do GLTF) para não distorcer bounding box
-  useEffect(() => {
+  useEffect(() => () => screenMaterial.dispose(), [screenMaterial]);
+
+  const originalMaterials = useMemo(() => {
+    const materials = new Map<string, THREE.Material | THREE.Material[]>();
+
     clone.traverse((obj) => {
-      if (obj.scale.x === 0 && obj.scale.y === 0 && obj.scale.z === 0) {
-        obj.visible = false;
+      if (obj instanceof THREE.Mesh && obj.name) {
+        materials.set(obj.name, obj.material);
       }
     });
+
+    return materials;
   }, [clone]);
 
-  // Materiais de tema — um por parte visível
-  const c: Smartphone2Colors = (colors as Smartphone2Colors) ?? SMARTPHONE2_THEMES[SMARTPHONE2_DEFAULT_THEME];
-  const partMaterials = useMemo(
-    () => ({
-      sideBody:      createFinishMaterial(c.sideBody, matteColors),
-      chargingPort:  createFinishMaterial(c.chargingPort, matteColors),
-      frontBody:     createFinishMaterial(c.frontBody, matteColors),
-      sideButtons:   createFinishMaterial(c.sideButtons, matteColors),
-      speakerGrille: createFinishMaterial(c.speakerGrille, matteColors),
-    }),
-    [c.sideBody, c.chargingPort, c.frontBody, c.sideButtons, c.speakerGrille, matteColors],
-  );
-  useEffect(() => () => Object.values(partMaterials).forEach((m) => m.dispose()), [partMaterials]);
+  const themeMaterials = useMemo(() => {
+    return Object.fromEntries(
+      Object.entries(MESH_SEMANTIC).flatMap(([semantic, meshName]) => {
+        if (meshName === SCREEN_MESH) {
+          return [];
+        }
 
-  // Aplica textura da tela ao mesh Plane008_7 do clone
-  useEffect(() => {
-    const mesh = clone.getObjectByName("Plane008_7") as THREE.Mesh | undefined;
-    if (mesh) mesh.material = screenMat;
-  }, [clone, screenMat]);
+        const originalMaterial = originalMaterials.get(meshName);
+        const color = resolvedColors[semantic];
 
-  // Aplica cores de tema e, se ativo, sobrepõe com cores de debug
+        if (!originalMaterial || Array.isArray(originalMaterial) || !color) {
+          return [];
+        }
+
+        const themedMaterial = originalMaterial.clone();
+        if (semantic === "frontGlass") {
+          applyGlassFinishMaterial(themedMaterial, color, matteColors);
+        } else {
+          const resolvedColor =
+            semantic === "frame" && !matteColors ? "#000000" : color;
+          if (
+            "color" in themedMaterial &&
+            themedMaterial.color instanceof THREE.Color
+          ) {
+            themedMaterial.color = new THREE.Color(resolvedColor);
+          }
+          applyFinishMaterial(themedMaterial, matteColors);
+        }
+        themedMaterial.needsUpdate = true;
+
+        return [[semantic, themedMaterial] as const];
+      }),
+    ) as Record<string, THREE.Material>;
+  }, [matteColors, originalMaterials, resolvedColors]);
+
   useEffect(() => {
-    Object.entries(MESH_SEMANTIC).forEach(([semantic, glbName]) => {
-      const mesh = clone.getObjectByName(glbName) as THREE.Mesh | undefined;
+    return () => {
+      Object.values(themeMaterials).forEach((material) => material.dispose());
+    };
+  }, [themeMaterials]);
+
+  const debugMaterials = useMemo(() => {
+    if (!debugPartColors) return null;
+    return Object.fromEntries(
+      Object.entries(debugPartColors).map(([part, color]) => [
+        part,
+        new THREE.MeshBasicMaterial({ color }),
+      ]),
+    ) as Record<string, THREE.MeshBasicMaterial>;
+  }, [debugPartColors]);
+
+  useEffect(() => {
+    if (!debugMaterials) return;
+    return () => {
+      Object.values(debugMaterials).forEach((material) => material.dispose());
+    };
+  }, [debugMaterials]);
+
+  useEffect(() => {
+    Object.entries(MESH_SEMANTIC).forEach(([semantic, meshName]) => {
+      const mesh = clone.getObjectByName(meshName) as THREE.Mesh | undefined;
       if (!mesh) return;
 
-      if (debugPartColors?.[semantic]) {
-        mesh.material = new THREE.MeshBasicMaterial({ color: debugPartColors[semantic] });
-      } else {
-        mesh.material = partMaterials[semantic as keyof typeof partMaterials];
+      const debugMaterial = debugMaterials?.[semantic];
+      if (debugMaterial) {
+        mesh.material = debugMaterial;
+        return;
+      }
+
+      if (meshName === SCREEN_MESH) {
+        mesh.material = screenMaterial;
+        return;
+      }
+
+      const themedMaterial = themeMaterials[semantic];
+      if (themedMaterial) {
+        mesh.material = themedMaterial;
+        return;
+      }
+
+      const originalMaterial = originalMaterials.get(meshName);
+      if (originalMaterial) {
+        mesh.material = originalMaterial;
       }
     });
-  }, [clone, debugPartColors, partMaterials]);
+  }, [clone, debugMaterials, originalMaterials, screenMaterial, themeMaterials]);
 
-  // Controla visibilidade das partes (showDeviceShell)
   useEffect(() => {
-    Object.values(MESH_SEMANTIC).forEach((glbName) => {
-      const mesh = clone.getObjectByName(glbName) as THREE.Mesh | undefined;
-      if (mesh) mesh.visible = showDeviceShell;
+    Object.values(MESH_SEMANTIC).forEach((meshName) => {
+      const mesh = clone.getObjectByName(meshName) as THREE.Mesh | undefined;
+      if (!mesh) return;
+
+      if (meshName === SCREEN_MESH) {
+        mesh.visible = true;
+        return;
+      }
+
+      if (meshName === MESH_SEMANTIC.frontGlass) {
+        mesh.visible = showDeviceShell && !matteColors;
+        return;
+      }
+
+      mesh.visible = showDeviceShell;
     });
-  }, [clone, showDeviceShell]);
+  }, [clone, matteColors, showDeviceShell]);
 
   return (
     <group {...props} dispose={null}>
-      <primitive object={clone} />
+      <group position={[1.5, 2.5, -1.0]} rotation={[0, 0, 0]} scale={1}>
+        <primitive object={clone} />
+      </group>
     </group>
   );
 }
 
 export const Smartphone2 = React.memo(Smartphone2Impl);
 
-useGLTF.preload("/models/smartphone2.glb");
+useGLTF.preload("/models/apple_iphone_14_pro_orange.glb");

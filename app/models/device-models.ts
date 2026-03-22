@@ -13,10 +13,6 @@ import {
 import { Smartwatch, type SmartwatchDebugPartKey } from "../components/Smartwatch";
 import { Notebook, type NotebookDebugPartKey } from "../components/Notebook";
 import {
-  Iphone14ProOrange,
-  type Iphone14ProOrangeDebugPartKey,
-} from "../components/Iphone14ProOrange";
-import {
   SMARTPHONE_DEFAULT_THEME,
   SMARTPHONE_THEMES,
   buildSmartphoneColorsFromPrimary,
@@ -32,18 +28,11 @@ import {
   NOTEBOOK_THEMES,
   buildNotebookColorsFromPrimary,
 } from "../lib/3d-tokens/notebook";
-import {
-  IPHONE14PRO_ORANGE_DEFAULT_THEME,
-  IPHONE14PRO_ORANGE_THEMES,
-  buildIphone14ProOrangeColorsFromPrimary,
-} from "../lib/3d-tokens/iphone14pro-orange";
-
 export type DeviceModelId =
   | "smartphone"
   | "smartphone2"
   | "smartwatch"
-  | "notebook"
-  | "iphone14pro-orange";
+  | "notebook";
 
 export type DeviceThemeOption = {
   id: string;
@@ -61,8 +50,7 @@ export type DeviceModelDefinition = {
     | typeof Smartphone
     | typeof Smartphone2
     | typeof Smartwatch
-    | typeof Notebook
-    | typeof Iphone14ProOrange;
+    | typeof Notebook;
   defaultTheme: string;
   id: DeviceModelId;
   initialDebugColors: Record<string, string>;
@@ -126,11 +114,18 @@ const SMARTPHONE_DEBUG_COLORS: Record<DebugPartKey, string> = {
 // Smartphone2 — cores de debug para identificação visual das partes visíveis
 // ---------------------------------------------------------------------------
 const SMARTPHONE2_DEBUG_COLORS: Record<Smartphone2DebugPartKey, string> = {
-  sideBody:      "#ff0066",
-  chargingPort:  "#00ff99",
-  frontBody:     "#ff6600",
-  sideButtons:   "#ffcc00",
-  speakerGrille: "#00ffff",
+  topCutout: "#ff6600",
+  frame: "#00ff99",
+  rearInset: "#ffcc00",
+  body: "#cc00ff",
+  sideCuts: "#00ffff",
+  cameraMicroPart: "#ff0099",
+  frontGlass: "#33ccff",
+  cameraBlock: "#66ff00",
+  cameraBlockInner: "#0066ff",
+  screen: "#ffffff",
+  cameraLensHighlight: "#ff3300",
+  cameraSideDetail: "#ffff99",
 };
 
 const SMARTPHONE2_THEME_OPTIONS = [
@@ -218,31 +213,6 @@ const NOTEBOOK_DEBUG_COLORS: Record<NotebookDebugPartKey, string> = {
   QSjoCOCzvxPnLpK: "#66ff00",
 };
 
-const IPHONE14PRO_ORANGE_THEME_OPTIONS_FILLED: DeviceThemeOption[] = [
-  { id: "gray", label: "Cinza", preview: "#8A8A8E" },
-  { id: "black", label: "Preto", preview: "#1C1C1E" },
-  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
-  { id: "blood", label: "Blood", preview: "#6a2525" },
-];
-
-const IPHONE14PRO_ORANGE_DEBUG_COLORS: Record<
-  Iphone14ProOrangeDebugPartKey,
-  string
-> = {
-  topCutout: "#ff6600",
-  frame: "#00ff99",
-  rearInset: "#ffcc00",
-  body: "#cc00ff",
-  sideCuts: "#00ffff",
-  cameraMicroPart: "#ff0099",
-  frontGlass: "#33ccff",
-  cameraBlock: "#66ff00",
-  cameraBlockInner: "#0066ff",
-  screen: "#ffffff",
-  cameraLensHighlight: "#ff3300",
-  cameraSideDetail: "#ffff99",
-};
-
 // ---------------------------------------------------------------------------
 export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
   smartphone: {
@@ -264,20 +234,20 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     themes: SMARTPHONE_THEMES,
   },
   smartphone2: {
-    primaryColorKey: "sideBody",
-    baseRotation: [0, Math.PI, 0],
+    primaryColorKey: "body",
+    baseRotation: [0, (90.5 * Math.PI) / 180, 0],
     buildColorsFromPrimary: buildSmartphone2ColorsFromPrimary,
     component: Smartphone2,
     defaultTheme: SMARTPHONE2_DEFAULT_THEME,
     id: "smartphone2",
     initialDebugColors: SMARTPHONE2_DEBUG_COLORS,
-    modelScale: [102.6, 102.6, 102.6],
-    modelSpawnOffset: [115, 50, 180],
+    modelScale: [122.9, 122.9, 122.9],
+    modelSpawnOffset: [0, 0, 0],
     name: "Smartphone 2",
     pivotOffset: [0, 0, 0],
-    recommendedUploadSize: "1290x2848",
+    recommendedUploadSize: "1290x2748",
     screenPosition: [0, 0, 0],
-    screenSize: [220, 470],
+    screenSize: [0, 0],
     themeOptions: SMARTPHONE2_THEME_OPTIONS,
     themes: SMARTPHONE2_THEMES,
   },
@@ -328,24 +298,6 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     screenSize: [0, 0],
     themeOptions: NOTEBOOK_THEME_OPTIONS,
     themes: NOTEBOOK_THEMES,
-  },
-  "iphone14pro-orange": {
-    primaryColorKey: "body",
-    baseRotation: [0, (90.5 * Math.PI) / 180, 0],
-    buildColorsFromPrimary: buildIphone14ProOrangeColorsFromPrimary,
-    component: Iphone14ProOrange,
-    defaultTheme: IPHONE14PRO_ORANGE_DEFAULT_THEME,
-    id: "iphone14pro-orange",
-    initialDebugColors: IPHONE14PRO_ORANGE_DEBUG_COLORS,
-    modelScale: [122.9, 122.9, 122.9],
-    modelSpawnOffset: [0, 0, 0],
-    name: "iPhone 14 Pro Orange",
-    pivotOffset: [0, 0, 0],
-    recommendedUploadSize: "1290x2748",
-    screenPosition: [0, 0, 0],
-    screenSize: [0, 0],
-    themeOptions: IPHONE14PRO_ORANGE_THEME_OPTIONS_FILLED,
-    themes: IPHONE14PRO_ORANGE_THEMES,
   },
 };
 
