@@ -1,7 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import React, { JSX, useEffect, useMemo, useRef } from "react";
+import React, { JSX, useEffect, useMemo } from "react";
 import { useGLTF, useTexture } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
 import { GLTF, SkeletonUtils } from "three-stdlib";
@@ -9,6 +9,11 @@ import {
   buildScreenCanvas,
   MAX_TEXTURE_SIZE,
 } from "../lib/mockup-image";
+import {
+  SMARTPHONE2_DEFAULT_THEME,
+  SMARTPHONE2_THEMES,
+  type Smartphone2Colors,
+} from "../lib/3d-tokens/smartphone2";
 
 // Dimensões da tela do smartphone2 derivadas da geometria do mesh (purple_screen).
 // Proporção física: 2.071 (X) × 4.568 (Y) em unidades Three.js.
@@ -20,21 +25,22 @@ const SCREEN2_UV_U_MIN = 0.2928;
 const SCREEN2_UV_U_MAX = 0.6568;
 
 // ---------------------------------------------------------------------------
-// Mapeamento semântico — nomes baseados nos materiais do GLTF.
-// TODO: renomear após debug visual das partes no app.
+// Mapeamento semântico — partes visíveis identificadas via debug mode.
+// Partes não visíveis (Plane008_4, Plane008_6) excluídas intencionalmente.
 // ---------------------------------------------------------------------------
 export const MESH_SEMANTIC: Record<string, string> = {
-  color1Part:     "Plane008_1", // material original: Color 1
-  blackPart:      "Plane008_2", // material original: Black
-  color2Part:     "Plane008_3", // material original: Color 2
-  black3Part:     "Plane008_4", // material original: Black 3
-  black2Part:     "Plane008_5", // material original: Black 2
-  cameraLensPart: "Plane008_6", // material original: Camera Lens
+  sideBody:      "Plane008_1", // casca lateral — cor primária
+  chargingPort:  "Plane008_2", // buraco do conector na base
+  frontBody:     "Plane008_3", // painel frontal — mesma cor que sideBody
+  sideButtons:   "Plane008_5", // botões laterais
   // Plane008_7 = tela, tratada separadamente
-  whitePart:      "Plane008_8", // material original: white
+  speakerGrille: "Plane008_8", // grade do speaker frontal (topo)
 };
 
 export type Smartphone2DebugPartKey = keyof typeof MESH_SEMANTIC;
+
+// Re-exports para compatibilidade
+export type { Smartphone2Colors };
 
 // ---------------------------------------------------------------------------
 // Tipos GLTF
@@ -72,7 +78,7 @@ type Smartphone2Props = JSX.IntrinsicElements["group"] & {
 // ---------------------------------------------------------------------------
 function Smartphone2Impl({
   imageUrl,
-  colors: _colors,
+  colors,
   debugPartColors,
   showDeviceShell = true,
   screenPosition: _sp,
@@ -137,15 +143,20 @@ function Smartphone2Impl({
     });
   }, [clone]);
 
-  // Guarda materiais originais do clone para restaurar quando debug é desligado
-  const originalMaterials = useRef<Map<string, THREE.Material | THREE.Material[]>>(new Map());
-  useEffect(() => {
-    const map = new Map<string, THREE.Material | THREE.Material[]>();
-    clone.traverse((obj) => {
-      if (obj instanceof THREE.Mesh && obj.name) map.set(obj.name, obj.material);
-    });
-    originalMaterials.current = map;
-  }, [clone]);
+  // Materiais de tema — um por parte visível
+  const c: Smartphone2Colors = (colors as Smartphone2Colors) ?? SMARTPHONE2_THEMES[SMARTPHONE2_DEFAULT_THEME];
+  const partMaterials = useMemo(
+    () => ({
+      sideBody:      new THREE.MeshLambertMaterial({ color: c.sideBody }),
+      chargingPort:  new THREE.MeshLambertMaterial({ color: c.chargingPort }),
+      frontBody:     new THREE.MeshLambertMaterial({ color: c.frontBody }),
+      sideButtons:   new THREE.MeshLambertMaterial({ color: c.sideButtons }),
+      speakerGrille: new THREE.MeshLambertMaterial({ color: c.speakerGrille }),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [c.sideBody, c.chargingPort, c.frontBody, c.sideButtons, c.speakerGrille],
+  );
+  useEffect(() => () => Object.values(partMaterials).forEach((m) => m.dispose()), [partMaterials]);
 
   // Aplica textura da tela ao mesh Plane008_7 do clone
   useEffect(() => {
@@ -153,7 +164,7 @@ function Smartphone2Impl({
     if (mesh) mesh.material = screenMat;
   }, [clone, screenMat]);
 
-  // Aplica / restaura materiais de debug
+  // Aplica cores de tema e, se ativo, sobrepõe com cores de debug
   useEffect(() => {
     Object.entries(MESH_SEMANTIC).forEach(([semantic, glbName]) => {
       const mesh = clone.getObjectByName(glbName) as THREE.Mesh | undefined;
@@ -162,11 +173,10 @@ function Smartphone2Impl({
       if (debugPartColors?.[semantic]) {
         mesh.material = new THREE.MeshBasicMaterial({ color: debugPartColors[semantic] });
       } else {
-        const orig = originalMaterials.current.get(glbName);
-        if (orig) mesh.material = orig as THREE.Material;
+        mesh.material = partMaterials[semantic as keyof typeof partMaterials];
       }
     });
-  }, [clone, debugPartColors]);
+  }, [clone, debugPartColors, partMaterials]);
 
   // Controla visibilidade das partes (showDeviceShell)
   useEffect(() => {

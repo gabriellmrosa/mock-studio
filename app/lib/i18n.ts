@@ -19,7 +19,7 @@ export type AppCopy = {
   sceneSectionHint: string;
   screenSectionTitle: string;
   uploadImage: string;
-  screenSectionHint: string;
+  screenSectionHintPrefix: string;
   themesSectionTitle: string;
   bodyColorLabel: string;
   debugSectionTitle: string;
@@ -56,7 +56,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "Você pode ativar ou desativar a casca 3D",
     screenSectionTitle: "Tela do App",
     uploadImage: "Upload imagem",
-    screenSectionHint: "Recommended 1290x2755",
+    screenSectionHintPrefix: "Recommended",
     themesSectionTitle: "Temas",
     bodyColorLabel: "Customizar",
     debugSectionTitle: "Debug",
@@ -96,7 +96,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "You can toggle the 3D shell",
     screenSectionTitle: "App Screen",
     uploadImage: "Upload image",
-    screenSectionHint: "Recommended 1290x2755",
+    screenSectionHintPrefix: "Recommended",
     themesSectionTitle: "Themes",
     bodyColorLabel: "Customize",
     debugSectionTitle: "Debug",

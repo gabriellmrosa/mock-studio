@@ -22,7 +22,7 @@ export interface SmartphoneColors {
   CircleTopRightMiddle: string;
 }
 
-export const SMARTPHONE_DEFAULT_THEME: SmartphoneThemeName = "light-gray";
+export const SMARTPHONE_DEFAULT_THEME: SmartphoneThemeName = "gray";
 
 // Cores derivadas dos círculos calculadas via lerp 25% para branco da cor do body.
 // Os valores estão explícitos aqui para facilitar ajustes finos por tema sem tocar em código.

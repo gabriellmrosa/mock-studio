@@ -10,8 +10,6 @@ import { readFileAsDataUrl } from "./lib/mockup-image";
 import {
   changeSceneObjectModel,
   createSceneObject,
-  getPlaceholderImageUrl,
-  isPlaceholderImageUrl,
   resetSceneObject,
   type SceneObject,
 } from "./lib/scene-objects";
@@ -52,7 +50,6 @@ export default function Home() {
     createSceneObject({
       deletable: false,
       id: "base-object",
-      locale: "pt-BR",
       name: "Object 1",
     }),
   ]);
@@ -61,8 +58,8 @@ export default function Home() {
   const [, setExportHandler] =
     useState<((preset: ExportPreset) => Promise<void>) | null>(null);
   const [resetCameraVersion] = useState(0);
-  const [scaleOverrides, setScaleOverrides] = useState<ScaleOverrides>({});
-  const [spawnOverrides, setSpawnOverrides] = useState<SpawnOverrides>({});
+  const [scaleOverrides] = useState<ScaleOverrides>({});
+  const [spawnOverrides] = useState<SpawnOverrides>({});
   const copy = APP_COPY[locale];
   const selectedObject =
     sceneObjects.find((object) => object.id === selectedObjectId) ??
@@ -87,18 +84,6 @@ export default function Home() {
 
     isInitialized.current = true;
   }, []);
-
-  useEffect(() => {
-    const localizedPlaceholder = getPlaceholderImageUrl(locale);
-
-    setSceneObjects((current) =>
-      current.map((object) =>
-        isPlaceholderImageUrl(object.imageUrl)
-          ? { ...object, imageUrl: localizedPlaceholder }
-          : object,
-      ),
-    );
-  }, [locale]);
 
   useEffect(() => {
     if (!isInitialized.current) return;
@@ -154,7 +139,6 @@ export default function Home() {
 
   function handleAddObject() {
     const nextObject = createSceneObject({
-      locale,
       name: `Object ${sceneObjects.length + 1}`,
     });
 
@@ -211,7 +195,7 @@ export default function Home() {
     setSceneObjects((current) =>
       current.map((object) =>
         object.id === selectedObject.id
-          ? changeSceneObjectModel(object, locale, modelId)
+          ? changeSceneObjectModel(object, modelId)
           : object,
       ),
     );
@@ -260,20 +244,11 @@ export default function Home() {
       <InspectorPanel
         copy={copy}
         object={selectedObject}
-        selectedObjectIndex={sceneObjects.findIndex((o) => o.id === selectedObject?.id)}
-        scaleOverrides={scaleOverrides}
-        spawnOverrides={spawnOverrides}
         onColorChange={handleColorChange}
         onDebugColorChange={handleDebugColorChange}
         onImageUpload={handleImageUpload}
         onModelChange={handleModelChange}
         onResetObject={handleResetObject}
-        onScaleOverrideChange={(index, scale) =>
-          setScaleOverrides((prev: ScaleOverrides) => ({ ...prev, [index]: scale }))
-        }
-        onSpawnOverrideChange={(index, pos) =>
-          setSpawnOverrides((prev: SpawnOverrides) => ({ ...prev, [index]: pos }))
-        }
         onThemeChange={handleThemeChange}
         onToggleDebugMode={() =>
           selectedObject &&

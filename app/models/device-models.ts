@@ -5,7 +5,12 @@ import {
   type DebugPartKey,
 } from "../components/Smartphone";
 import { Smartphone2, type Smartphone2DebugPartKey } from "../components/Smartphone2";
-import { Smartwatch, type SmartwatchDebugPartKey, SMARTWATCH_MESH_NAMES } from "../components/Smartwatch";
+import {
+  SMARTPHONE2_DEFAULT_THEME,
+  SMARTPHONE2_THEMES,
+  buildSmartphone2ColorsFromPrimary,
+} from "../lib/3d-tokens/smartphone2";
+import { Smartwatch, type SmartwatchDebugPartKey } from "../components/Smartwatch";
 import { Notebook } from "../components/Notebook";
 import {
   SMARTPHONE_DEFAULT_THEME,
@@ -51,6 +56,7 @@ export type DeviceModelDefinition = {
   // garantindo que o pivot de rotação coincida com o centro visual do modelo.
   // Calcular como: negativo do centro do bounding box visível em espaço GLTF.
   pivotOffset: [number, number, number];
+  recommendedUploadSize: string;
   screenPosition: [number, number, number];
   screenSize: [number, number];
   themeOptions: DeviceThemeOption[];
@@ -98,34 +104,46 @@ const SMARTPHONE_DEBUG_COLORS: Record<DebugPartKey, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Smartphone2 — cores de debug para identificação visual das partes
-// Nomes baseados nos materiais do GLTF, renomear após debug visual
+// Smartphone2 — cores de debug para identificação visual das partes visíveis
 // ---------------------------------------------------------------------------
 const SMARTPHONE2_DEBUG_COLORS: Record<Smartphone2DebugPartKey, string> = {
-  color1Part:    "#ff0066",
-  blackPart:     "#00ff99",
-  color2Part:    "#ff6600",
-  black3Part:    "#0066ff",
-  black2Part:    "#ffcc00",
-  cameraLensPart:"#cc00ff",
-  whitePart:     "#00ffff",
+  sideBody:      "#ff0066",
+  chargingPort:  "#00ff99",
+  frontBody:     "#ff6600",
+  sideButtons:   "#ffcc00",
+  speakerGrille: "#00ffff",
 };
 
+const SMARTPHONE2_THEME_OPTIONS = [
+  { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
+  { id: "black",      label: "Preto",      preview: "#1C1C1E" },
+  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
+  { id: "blood",      label: "Blood",      preview: "#6a2525" },
+];
+
 // ---------------------------------------------------------------------------
-// Smartwatch — cores de debug (Object_2 a Object_11)
+// Smartwatch — cores de debug para identificação visual das partes visíveis.
+// O miolo do casco é Object_11. A tela é um plano separado no componente.
 // ---------------------------------------------------------------------------
 const SMARTWATCH_DEBUG_COLORS: Record<SmartwatchDebugPartKey, string> = {
-  Object_2:  "#ff0066",
-  Object_3:  "#00ff99",
-  Object_4:  "#ff6600",
-  Object_5:  "#0066ff",
-  Object_6:  "#ffcc00",
-  Object_7:  "#cc00ff",
-  Object_8:  "#00ffff",
-  Object_9:  "#ff4400",
-  Object_10: "#66ff00",
-  Object_11: "#ff0099",
+  twoSideButtons: "#ff0066",
+  bandClasp:      "#00ff99",
+  oneSideButton:  "#ff6600",
+  body:           "#0066ff",
+  bandDetails:    "#ffcc00",
+  bandBottom:     "#cc00ff",
+  bandDetails2:   "#00ffff",
+  crownDetail:    "#ffffff",
+  bandTop:        "#66ff00",
+  bodyBackground: "#ff0099",
 };
+
+const SMARTWATCH_THEME_OPTIONS = [
+  { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
+  { id: "black",      label: "Preto",      preview: "#1C1C1E" },
+  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
+  { id: "blood",      label: "Blood",      preview: "#6a2525" },
+];
 
 // ---------------------------------------------------------------------------
 export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
@@ -141,30 +159,32 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     modelSpawnOffset: [0, 0, 0],
     name: "Smartphone",
     pivotOffset: [0, 0, 0],
+    recommendedUploadSize: "1290x2755",
     screenPosition: [-125, 314.85, -195],
     screenSize: [220, 470],
     themeOptions: SMARTPHONE_THEME_OPTIONS,
     themes: SMARTPHONE_THEMES,
   },
   smartphone2: {
-    // primaryColorKey: undefined — sem temas definidos ainda, color picker oculto
+    primaryColorKey: "sideBody",
     baseRotation: [0, Math.PI, 0],
-    buildColorsFromPrimary: (_hex) => ({}),
+    buildColorsFromPrimary: buildSmartphone2ColorsFromPrimary,
     component: Smartphone2,
-    defaultTheme: "",
+    defaultTheme: SMARTPHONE2_DEFAULT_THEME,
     id: "smartphone2",
     initialDebugColors: SMARTPHONE2_DEBUG_COLORS,
     modelScale: [102.6, 102.6, 102.6],
     modelSpawnOffset: [115, 50, 180],
     name: "Smartphone 2",
     pivotOffset: [0, 0, 0],
+    recommendedUploadSize: "1290x2848",
     screenPosition: [0, 0, 0],
     screenSize: [220, 470],
-    themeOptions: [],
-    themes: {},
+    themeOptions: SMARTPHONE2_THEME_OPTIONS,
+    themes: SMARTPHONE2_THEMES,
   },
   smartwatch: {
-    // primaryColorKey: undefined — temas não definidos ainda, color picker oculto
+    primaryColorKey: "body",
     // GLTF tem -PI/2 X baked. +PI/2 X cancela → modelo nativo deitado.
     // Z -PI/2 ergue o relógio do chão; Y PI enfrenta a câmera.
     baseRotation: [0, -Math.PI / 2, 0],
@@ -179,9 +199,15 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     modelSpawnOffset: [130, 40, 270],
     name: "Smartwatch",
     pivotOffset: [0, 0, 0],
-    screenPosition: [0, 0, 0],
-    screenSize: [0, 0],
-    themeOptions: [],
+    recommendedUploadSize: "1290x1452",
+    // Calibrado a partir do bbox do scene graph do miolo frontal (Object_11),
+    // já com a rotação baked do GLB aplicada:
+    // center ≈ [6.575, 14.518, -0.097], size ≈ [12.992, 8.813, 8.057].
+    // O plano da tela fica ligeiramente à frente da face frontal para evitar
+    // z-fighting com o bodyBackground, centrado em Y/Z.
+    screenPosition: [0.02, 14.52, -0.1],
+    screenSize: [6.87, 7.73],
+    themeOptions: SMARTWATCH_THEME_OPTIONS,
     themes: SMARTWATCH_THEMES,
   },
   notebook: {
@@ -199,6 +225,7 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     modelSpawnOffset: [120, 100, 0],
     name: "Notebook",
     pivotOffset: [0, 0, 0],
+    recommendedUploadSize: "",
     screenPosition: [0, 0, 0],
     screenSize: [0, 0],
     themeOptions: [],

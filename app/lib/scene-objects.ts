@@ -4,7 +4,6 @@ import {
   DEVICE_MODELS,
   type DeviceModelId,
 } from "../models/device-models";
-import type { Locale } from "./i18n";
 import { DEFAULT_OBJECT_TRANSFORM } from "./scene-presets";
 
 export type SceneObject = {
@@ -27,29 +26,29 @@ export type SceneObject = {
   showDeviceShell: boolean;
 };
 
-const PLACEHOLDER_BY_LOCALE: Record<Locale, string> = {
-  "pt-BR": "/placeholder-ptbr.png",
-  "en-US": "/placeholder-enus.png",
+const MODEL_PLACEHOLDERS: Record<DeviceModelId, string> = {
+  smartphone: "/placeholder-1290x2755.png",
+  smartphone2: "/placeholder-1290x2848.png",
+  smartwatch: "/placeholder-1290x1452.png",
+  notebook: "/placeholder-1290x2755.png",
 };
 
-export function getPlaceholderImageUrl(locale: Locale) {
-  return PLACEHOLDER_BY_LOCALE[locale];
+export function getPlaceholderImageUrl(modelId: DeviceModelId = "smartphone") {
+  return MODEL_PLACEHOLDERS[modelId];
 }
 
 export function isPlaceholderImageUrl(imageUrl: string) {
-  return Object.values(PLACEHOLDER_BY_LOCALE).includes(imageUrl);
+  return Object.values(MODEL_PLACEHOLDERS).includes(imageUrl);
 }
 
 export function createSceneObject({
   deletable = true,
   id,
-  locale = "en-US",
   modelId = "smartphone",
   name,
 }: {
   deletable?: boolean;
   id?: string;
-  locale?: Locale;
   modelId?: DeviceModelId;
   name: string;
 }): SceneObject {
@@ -62,7 +61,7 @@ export function createSceneObject({
     deletable,
     deviceTheme: model.defaultTheme,
     id: id ?? crypto.randomUUID(),
-    imageUrl: getPlaceholderImageUrl(locale),
+    imageUrl: getPlaceholderImageUrl(modelId),
     modelId,
     name,
     ...DEFAULT_OBJECT_TRANSFORM,
@@ -79,7 +78,6 @@ export function resetSceneObject(object: SceneObject): SceneObject {
 
 export function changeSceneObjectModel(
   object: SceneObject,
-  locale: Locale,
   modelId: DeviceModelId,
 ): SceneObject {
   const model = DEVICE_MODELS[modelId];
@@ -90,7 +88,7 @@ export function changeSceneObjectModel(
     debugMode: false,
     debugPartColors: { ...model.initialDebugColors },
     deviceTheme: model.defaultTheme,
-    imageUrl: getPlaceholderImageUrl(locale),
+    imageUrl: getPlaceholderImageUrl(modelId),
     modelId,
     ...DEFAULT_OBJECT_TRANSFORM,
     showDeviceShell: true,
