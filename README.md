@@ -131,6 +131,55 @@ A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spa
 - evitar utilitarios arbitrarios como `text-[...]`, `rounded-[...]`, `border-[...]` e `w-[...]` quando ja houver token equivalente;
 - inline style deve ficar restrito a valores realmente dinamicos, como posicao calculada, cor variavel, progresso de slider e custom properties derivadas de estado.
 
+## Adicionando Novos Modelos 3D
+
+### Escala canonica
+
+O modelo de referencia e `smartphone.glb`, com altura visual de aproximadamente `490` unidades Three.js.
+Todo modelo novo deve entrar com altura equivalente na cena.
+
+Regra principal:
+- normalizar a escala no Blender antes de exportar o GLB;
+- se o GLB ainda vier fora de escala, corrigir com `modelScale` em `app/models/device-models.ts`.
+
+Referencias atuais:
+
+| Modelo | modelScale | Observacao |
+|---|---|---|
+| smartphone | [1, 1, 1] | modelo de referencia, ja normalizado |
+| smartphone2 | [122.9, 122.9, 122.9] | GLB exportado em escala Blender padrao |
+
+### Pivot de rotacao
+
+`pivotOffset` corrige o centro de rotacao do modelo. Sem isso, o objeto pode orbitar em volta da origem do GLB em vez de girar sobre si.
+
+Como calcular:
+- usar o negativo do centro do bounding box visivel em coordenadas GLTF, antes de aplicar `modelScale`;
+- se o centro geometrico for `(cx, cy, cz)`, entao `pivotOffset = [-cx, -cy, -cz]`.
+
+Ideal na exportacao:
+- `Origin to Geometry`;
+- objeto em `[0, 0, 0]`;
+- `Apply All Transforms`.
+
+### Orientacao
+
+`DEFAULT_OBJECT_TRANSFORM` aplica `rotationY: 180` em todos os objetos.
+
+Regra pratica:
+- se o modelo aparecer de costas com o padrao, usar `baseRotation: [0, Math.PI, 0]`;
+- se aparecer correto, usar `baseRotation: [0, 0, 0]`.
+
+### Checklist ao adicionar modelo
+
+- colocar o `.glb` em `public/models/`;
+- criar o componente React em `app/components/`;
+- criar os tokens de cor em `app/lib/3d-tokens/`;
+- adicionar entrada em `app/models/device-models.ts` com `modelScale`, `baseRotation`, `pivotOffset` e metadados;
+- atualizar a union `DeviceModelId`;
+- ligar `debug mode`, identificar visualmente as partes e renomear `MESH_SEMANTIC`;
+- definir temas de cor e `buildColorsFromPrimary` no token file do modelo.
+
 ## Aprendizados
 
 - no `smartwatch`, `Object_11` nao e um `screen mesh` puro; ele faz parte do corpo frontal interno;
@@ -159,7 +208,6 @@ A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spa
 - grid em `y=-300` com `infiniteGrid`, `cellSize=50`, `sectionSize=200`;
 - durante o `Take photo`, grid e fundo visivel do canvas sao removidos temporariamente para garantir PNG transparente;
 - `npm run lint` deve passar;
-- `AI-GUIDE.md` concentra o guia tecnico de modelos 3D e a convencao de styling;
 - `Notebook` nao deve mais expor calibracao temporaria via `leva` na UI;
 - `npx next build --webpack` para validacao de build.
 
