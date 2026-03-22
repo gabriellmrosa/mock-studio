@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import React, { useEffect, useMemo } from "react";
 import { useGLTF, useTexture } from "@react-three/drei";
-import { useGraph } from "@react-three/fiber";
+import { useFrame, useGraph } from "@react-three/fiber";
 import { GLTF, SkeletonUtils } from "three-stdlib";
 import {
   buildScreenCanvas,
@@ -90,9 +90,30 @@ type NotebookProps = React.ComponentPropsWithoutRef<"group"> & {
   matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
+  showNotebookKeyboard?: boolean;
   screenPosition?: [number, number, number];
   screenSize?: [number, number];
 };
+
+const NOTEBOOK_DISPLAY_ASSEMBLY_PARTS = new Set<keyof typeof NOTEBOOK_MESH_SEMANTIC>([
+  "screen",
+  "screenBezel",
+  "screenBackCover",
+  "screenRubberSeal",
+  "lowerHingeBar",
+]);
+const NOTEBOOK_BACK_COVER_CLIP_OFFSET = 0.88;
+
+function applyMaterialClipping(
+  material: THREE.Material,
+  clippingPlane: THREE.Plane,
+  enabled: boolean,
+) {
+  material.clippingPlanes = enabled ? [clippingPlane] : [];
+  material.clipShadows = enabled;
+  material.needsUpdate = true;
+  return material;
+}
 
 function applyFinishMaterial(material: THREE.Material, matte: boolean) {
   material.transparent = false;
@@ -186,6 +207,7 @@ function NotebookImpl({
   matteColors = true,
   debugPartColors,
   showDeviceShell = true,
+  showNotebookKeyboard = true,
   screenPosition: _sp,
   screenSize: _ss,
   ...props
@@ -261,15 +283,21 @@ function NotebookImpl({
     return materials;
   }, [clone]);
 
+  const backCoverClipPlane = useMemo(() => new THREE.Plane(), []);
   const debugMaterials = useMemo(() => {
     if (!debugPartColors) return null;
     return Object.fromEntries(
-      Object.entries(debugPartColors).map(([part, color]) => [
-        part,
-        new THREE.MeshBasicMaterial({ color }),
-      ]),
+      Object.entries(debugPartColors).map(([part, color]) => {
+        const material = new THREE.MeshBasicMaterial({ color });
+
+        if (part === "screenBackCover") {
+          applyMaterialClipping(material, backCoverClipPlane, !showNotebookKeyboard);
+        }
+
+        return [part, material] as const;
+      }),
     );
-  }, [debugPartColors]);
+  }, [backCoverClipPlane, debugPartColors, showNotebookKeyboard]);
 
   useEffect(() => {
     if (!debugMaterials) return;
@@ -291,6 +319,13 @@ function NotebookImpl({
         if ("color" in themedMaterial && themedMaterial.color instanceof THREE.Color) {
           themedMaterial.color = new THREE.Color(color);
         }
+        if (semantic === "screenBackCover") {
+          applyMaterialClipping(
+            themedMaterial,
+            backCoverClipPlane,
+            !showNotebookKeyboard,
+          );
+        }
         applyNotebookPartFinish(
           semantic as keyof typeof NOTEBOOK_MESH_SEMANTIC,
           themedMaterial,
@@ -301,12 +336,43 @@ function NotebookImpl({
         return [[semantic, themedMaterial] as const];
       }),
     );
-  }, [colors, matteColors, originalMaterials]);
+  }, [
+    backCoverClipPlane,
+    colors,
+    matteColors,
+    originalMaterials,
+    showNotebookKeyboard,
+  ]);
 
   useEffect(() => {
     if (!themeMaterials) return;
     return () => Object.values(themeMaterials).forEach((mat) => mat.dispose());
   }, [themeMaterials]);
+
+  const clippedOriginalBackCoverMaterial = useMemo(() => {
+    const originalMaterial = originalMaterials.get(
+      NOTEBOOK_MESH_SEMANTIC.screenBackCover,
+    );
+
+    if (
+      showNotebookKeyboard ||
+      !originalMaterial ||
+      Array.isArray(originalMaterial)
+    ) {
+      return null;
+    }
+
+    return applyMaterialClipping(
+      originalMaterial.clone(),
+      backCoverClipPlane,
+      true,
+    );
+  }, [backCoverClipPlane, originalMaterials, showNotebookKeyboard]);
+
+  useEffect(() => {
+    if (!clippedOriginalBackCoverMaterial) return;
+    return () => clippedOriginalBackCoverMaterial.dispose();
+  }, [clippedOriginalBackCoverMaterial]);
 
   useEffect(() => {
     Object.entries(NOTEBOOK_MESH_SEMANTIC).forEach(([semantic, meshName]) => {
@@ -332,19 +398,82 @@ function NotebookImpl({
 
       const originalMaterial = originalMaterials.get(meshName);
       if (originalMaterial) {
+        if (semantic === "screenBackCover" && clippedOriginalBackCoverMaterial) {
+          mesh.material = clippedOriginalBackCoverMaterial;
+          return;
+        }
+
         mesh.material = originalMaterial;
       }
     });
-  }, [clone, colors, debugMaterials, originalMaterials, screenMaterial, themeMaterials]);
+  }, [
+    backCoverClipPlane,
+    clone,
+    clippedOriginalBackCoverMaterial,
+    colors,
+    debugMaterials,
+    originalMaterials,
+    screenMaterial,
+    showNotebookKeyboard,
+    themeMaterials,
+  ]);
 
-  // Controla visibilidade do device shell
+  useFrame(() => {
+    if (showNotebookKeyboard) {
+      return;
+    }
+
+    const mesh = clone.getObjectByName(
+      NOTEBOOK_MESH_SEMANTIC.screenBackCover,
+    ) as THREE.Mesh | undefined;
+    if (!mesh || !mesh.geometry) {
+      return;
+    }
+
+    const geometry = mesh.geometry;
+    if (!geometry.boundingBox) {
+      geometry.computeBoundingBox();
+    }
+    if (!geometry.boundingBox) {
+      return;
+    }
+
+    const cutY =
+      geometry.boundingBox.min.y +
+      (geometry.boundingBox.max.y - geometry.boundingBox.min.y) *
+        NOTEBOOK_BACK_COVER_CLIP_OFFSET;
+
+    mesh.updateWorldMatrix(true, false);
+    backCoverClipPlane
+      .set(new THREE.Vector3(0, -1, 0), cutY)
+      .applyMatrix4(
+        mesh.matrixWorld,
+        new THREE.Matrix3().getNormalMatrix(mesh.matrixWorld),
+      );
+  }, [backCoverClipPlane, clone, showNotebookKeyboard]);
+
+  // A tela segue sempre visível. A base do notebook pode ser ocultada separadamente.
   useEffect(() => {
-    Object.values(NOTEBOOK_MESH_SEMANTIC).forEach((meshName) => {
+    Object.entries(NOTEBOOK_MESH_SEMANTIC).forEach(([semantic, meshName]) => {
       const mesh = clone.getObjectByName(meshName) as THREE.Mesh | undefined;
       if (!mesh) return;
-      mesh.visible = meshName === NOTEBOOK_SCREEN_MESH ? true : showDeviceShell;
+      if (meshName === NOTEBOOK_SCREEN_MESH) {
+        mesh.visible = true;
+        return;
+      }
+
+      if (!showDeviceShell) {
+        mesh.visible = false;
+        return;
+      }
+
+      mesh.visible = showNotebookKeyboard
+        ? true
+        : NOTEBOOK_DISPLAY_ASSEMBLY_PARTS.has(
+            semantic as keyof typeof NOTEBOOK_MESH_SEMANTIC,
+          );
     });
-  }, [clone, showDeviceShell]);
+  }, [clone, showDeviceShell, showNotebookKeyboard]);
 
   return (
     <group {...props} dispose={null}>

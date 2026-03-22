@@ -26,6 +26,7 @@ export type SceneObject = {
   rotationZ: number;
   scale: number;
   showDeviceShell: boolean;
+  showNotebookKeyboard: boolean;
 };
 
 const MODEL_PLACEHOLDERS: Record<DeviceModelId, string> = {
@@ -70,6 +71,7 @@ export function createSceneObject({
     matteColors: true,
     ...DEFAULT_OBJECT_TRANSFORM,
     showDeviceShell: true,
+    showNotebookKeyboard: true,
   };
 }
 
@@ -98,5 +100,6 @@ export function changeSceneObjectModel(
     matteColors: true,
     ...DEFAULT_OBJECT_TRANSFORM,
     showDeviceShell: true,
+    showNotebookKeyboard: true,
   };
 }

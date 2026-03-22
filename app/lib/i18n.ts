@@ -20,6 +20,7 @@ export type AppCopy = {
   renameObject: string;
   modelLabel: string;
   sceneSectionHint: string;
+  keyboardToggleLabel: string;
   screenSectionTitle: string;
   uploadImage: string;
   screenSectionHintPrefix: string;
@@ -61,8 +62,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     deleteObject: "Excluir",
     renameObject: "Renomear",
     modelLabel: "Modelo",
-    sceneSectionHint:
-      "Você pode ativar ou desativar a casca 3D",
+    sceneSectionHint: "Casca 3D",
+    keyboardToggleLabel: "Teclado",
     screenSectionTitle: "Tela do App",
     uploadImage: "Upload imagem",
     screenSectionHintPrefix: "Recommended",
@@ -107,8 +108,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     deleteObject: "Delete",
     renameObject: "Rename",
     modelLabel: "Model",
-    sceneSectionHint:
-      "You can toggle the 3D shell",
+    sceneSectionHint: "3D Shell",
+    keyboardToggleLabel: "Keyboard",
     screenSectionTitle: "App Screen",
     uploadImage: "Upload image",
     screenSectionHintPrefix: "Recommended",

@@ -28,7 +28,7 @@ Ja implementado:
 - `fit scene` separado de `reset camera` na toolbar flutuante;
 - color picker de cor de fundo do canvas na toolbar flutuante;
 - export PNG transparente em `1920x1080` e `2560x1440`;
-- CTA `Take photo` exporta captura PNG `1920x1080` com nome timestamped;
+- CTA `Take photo` exporta captura PNG `1920x1080` com nome timestamped, fundo transparente real e sem grid;
 - loading inicial central para o primeiro carregamento real do canvas/modelo;
 - loading incremental discreto no topo do canvas para troca/adicao de modelos, com atraso para evitar flicker em loads rapidos;
 - modo debug de cores por parte por objeto;
@@ -41,6 +41,8 @@ Ja implementado:
 - arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo;
 - `smartwatch` com tela texturizada em plano separado, raio calibrado e casco preservando o material fisico do GLB;
 - `notebook` com tela do app aplicada na malha correta do GLB, placeholder proprio, temas ativos e debug semantico inicial das partes mapeadas;
+- `notebook` ganhou toggle dedicado de `Teclado`, permitindo esconder a base e manter apenas o conjunto visual da tela;
+- no `notebook`, quando `Teclado` esta desligado, a lista de `Customizar` passa a mostrar apenas as partes que continuam visiveis;
 - `smartphone2` agora usa o asset recortado do iPhone 14, com tela aplicada no mesh real do GLB, placeholder proprio `1290x2748`, temas ativos e debug semantico inicial;
 - modo `Cor fosca` reduz reflexo dos materiais fisicos e, no `smartphone2` atual, oculta o vidro frontal para privilegiar a leitura da tela;
 - `smartphone`, `smartphone2`, `smartwatch` e `notebook` iniciam no tema `gray`;
@@ -110,14 +112,14 @@ Ja implementado:
 
 ## Onde Paramos
 
-Catalogo consolidado em 4 dispositivos. Arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo. `smartwatch` segue com tela texturizada funcional e material fisico preservado no casco. `notebook` aceita a imagem do app na malha correta da tela, com placeholder proprio e debug semantico inicial. O `smartphone2` antigo foi substituido pelo asset recortado do iPhone 14, com placeholder `1290x2748`, temas ativos, mapeamento semantico inicial e tela aplicada no mesh real do GLB. Placeholders sao definidos por modelo, sem troca por idioma. O inspector continua com toggle por objeto para acabamento fosco. O reset de camera agora usa `saveState/reset` do `camera-controls`, `fit scene` e `reset camera` ficaram separados, e o CTA `Take photo` exporta captura real do canvas.
+Catalogo consolidado em 4 dispositivos. Arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo. `smartwatch` segue com tela texturizada funcional e material fisico preservado no casco. `notebook` aceita a imagem do app na malha correta da tela, com placeholder proprio, debug semantico inicial e agora um modo de tela isolada via toggle de `Teclado`, apoiado por clipping local na tampa traseira. O `smartphone2` antigo foi substituido pelo asset recortado do iPhone 14, com placeholder `1290x2748`, temas ativos, mapeamento semantico inicial e tela aplicada no mesh real do GLB. Placeholders sao definidos por modelo, sem troca por idioma. O inspector continua com toggle por objeto para acabamento fosco. O reset de camera agora usa `saveState/reset` do `camera-controls`, `fit scene` e `reset camera` ficaram separados, e o CTA `Take photo` exporta captura real do canvas em PNG com transparencia verdadeira, sem cor do stage nem grid.
 
 A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spacing recorrentes foram movidos para tokens em `app/styles/tokens.css`, primitives compartilhados foram consolidados, utilitarios arbitrarios foram reduzidos nos paineis principais e o `ContextMenu` deixou de usar render prop para um trigger padronizado. O canvas agora tambem diferencia loading inicial e loading incremental de objetos. O inspector tambem ganhou uma primeira versao de `custom theme` por objeto, com lista reduzida de cores amigaveis por modelo.
 
 ## Proximo Passo Sugerido
 
 - revisar se os controles temporarios do `leva` para roughness do `notebook` devem virar tokens fixos por tema ou sair da codebase apos calibracao final;
-- continuar o mapeamento semantico das malhas restantes do `notebook`;
+- continuar o mapeamento semantico das malhas restantes do `notebook`, especialmente onde tampa, dobradica e vedacoes ainda compartilham geometria;
 - refinar UX de camadas (reorder, lock ou visibilidade).
 
 ## Regras de Styling
@@ -151,9 +153,11 @@ A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spa
 - `modelSpawnOffset` e somado ao `AUTO_OBJECT_POSITIONS` por indice;
 - placeholders agora sao unicos por modelo e nao mudam com o idioma;
 - `notebook` usa placeholder `/placeholder-2755x1684.png`;
+- `notebook` usa clipping local na `screenBackCover` quando `Teclado` esta desligado, para esconder a base visual sem recortar o asset inteiro;
 - `leva` foi adicionado para calibracao local de materiais do `notebook`;
 - `OBJECT_POSITION_MULTIPLIER = 140` (X/Y) e `OBJECT_POSITION_MULTIPLIER_Z = 420` (Z);
 - grid em `y=-300` com `infiniteGrid`, `cellSize=50`, `sectionSize=200`;
+- durante o `Take photo`, grid e fundo visivel do canvas sao removidos temporariamente para garantir PNG transparente;
 - `npm run lint` deve passar;
 - `AI-GUIDE.md` concentra o guia tecnico de modelos 3D e a convencao de styling;
 - `Notebook` nao deve mais expor calibracao temporaria via `leva` na UI;

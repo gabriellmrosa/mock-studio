@@ -296,6 +296,12 @@ export default function Home() {
             showDeviceShell: !selectedObject.showDeviceShell,
           })
         }
+        onToggleNotebookKeyboard={() =>
+          selectedObject &&
+          updateSceneObject(selectedObject.id, {
+            showNotebookKeyboard: !selectedObject.showNotebookKeyboard,
+          })
+        }
         onToggleMatteColors={() =>
           selectedObject &&
           updateSceneObject(selectedObject.id, {

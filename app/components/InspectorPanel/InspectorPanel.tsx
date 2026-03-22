@@ -12,6 +12,13 @@ import {
 } from "../EditorPrimitives/EditorPrimitives";
 import { ChevronDown, RotateCcw, Upload } from "lucide-react";
 
+const NOTEBOOK_SCREEN_ONLY_COLOR_KEYS = new Set([
+  "screenBackCover",
+  "screenBezel",
+  "screenRubberSeal",
+  "lowerHingeBar",
+]);
+
 type InspectorPanelProps = {
   copy: AppCopy;
   object: SceneObject | null;
@@ -24,6 +31,7 @@ type InspectorPanelProps = {
   onToggleCustomColors: () => void;
   onToggleDebugMode: () => void;
   onToggleDeviceShell: () => void;
+  onToggleNotebookKeyboard: () => void;
   onToggleMatteColors: () => void;
   onUpdateRotation: (
     patch: Pick<SceneObject, "rotationX" | "rotationY" | "rotationZ">,
@@ -48,6 +56,7 @@ export default function InspectorPanel({
   onToggleCustomColors,
   onToggleDebugMode,
   onToggleDeviceShell,
+  onToggleNotebookKeyboard,
   onToggleMatteColors,
   onUpdatePosition,
   onUpdateRotation,
@@ -65,7 +74,11 @@ export default function InspectorPanel({
   const uploadRecommendation = model?.recommendedUploadSize
     ? `${copy.screenSectionHintPrefix} ${model.recommendedUploadSize}`
     : "";
-  const customizableColorKeys = model?.customizableColorKeys ?? [];
+  const customizableColorKeys = (model?.customizableColorKeys ?? []).filter((part) =>
+    object.modelId === "notebook" && !object.showNotebookKeyboard
+      ? NOTEBOOK_SCREEN_ONLY_COLOR_KEYS.has(part)
+      : true,
+  );
   const customizableColorLabels = model?.customizableColorLabels ?? {};
 
   return (
@@ -106,6 +119,17 @@ export default function InspectorPanel({
               className="inspector-checkbox"
             />
           </label>
+          {object.modelId === "notebook" ? (
+            <label className="inspector-inline-toggle">
+              <span className="inspector-inline-toggle-text">{copy.keyboardToggleLabel}</span>
+              <input
+                type="checkbox"
+                checked={object.showNotebookKeyboard}
+                onChange={onToggleNotebookKeyboard}
+                className="inspector-checkbox"
+              />
+            </label>
+          ) : null}
         </PanelSection>
 
         <PanelSection

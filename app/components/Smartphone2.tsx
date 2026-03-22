@@ -48,6 +48,7 @@ type Smartphone2Props = JSX.IntrinsicElements["group"] & {
   matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
+  showNotebookKeyboard?: boolean;
   screenPosition?: [number, number, number];
   screenSize?: [number, number];
   screenRotation?: [number, number, number];

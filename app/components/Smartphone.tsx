@@ -143,9 +143,6 @@ type GLTFResult = GLTF & {
   };
 };
 
-// ---------------------------------------------------------------------------
-// Props
-// ---------------------------------------------------------------------------
 type SmartphoneProps = JSX.IntrinsicElements["group"] & {
   imageUrl?: string;
   screenPosition?: [number, number, number];
@@ -155,6 +152,7 @@ type SmartphoneProps = JSX.IntrinsicElements["group"] & {
   matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
+  showNotebookKeyboard?: boolean;
 };
 
 function createFinishMaterial(color: string, matte: boolean) {

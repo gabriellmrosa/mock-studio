@@ -136,6 +136,7 @@ function SceneBridge({
   uiTheme,
 }: SceneBridgeProps) {
   const controlsRef = useRef<CameraControlsImpl | null>(null);
+  const gridRef = useRef<THREE.Object3D | null>(null);
   const sceneRef = useRef<THREE.Group | null>(null);
   const { camera, gl, scene, size } = useThree();
 
@@ -152,11 +153,21 @@ function SceneBridge({
       const previousWidth = size.width;
       const previousHeight = size.height;
       const previousPixelRatio = gl.getPixelRatio();
+      const previousClearAlpha = gl.getClearAlpha();
+      const previousClearColor = gl.getClearColor(new THREE.Color()).clone();
       const previousAspect =
         camera instanceof THREE.PerspectiveCamera ? camera.aspect : null;
+      const previousSceneBackground = scene.background;
+      const previousGridVisible = gridRef.current?.visible ?? true;
 
       gl.setPixelRatio(1);
       gl.setSize(width, height, false);
+      gl.setClearColor(previousClearColor, 0);
+      scene.background = null;
+
+      if (gridRef.current) {
+        gridRef.current.visible = false;
+      }
 
       if (camera instanceof THREE.PerspectiveCamera) {
         camera.aspect = width / height;
@@ -174,6 +185,11 @@ function SceneBridge({
           gl.domElement.toBlob(resolve, "image/png");
         })) ?? dataUrlToBlob(gl.domElement.toDataURL("image/png"));
 
+      if (gridRef.current) {
+        gridRef.current.visible = previousGridVisible;
+      }
+      scene.background = previousSceneBackground;
+      gl.setClearColor(previousClearColor, previousClearAlpha);
       gl.setPixelRatio(previousPixelRatio);
       gl.setSize(previousWidth, previousHeight, false);
 
@@ -202,6 +218,7 @@ function SceneBridge({
     <>
       <Environment preset="studio" />
       <Grid
+        ref={gridRef}
         position={[0, -300, 0]}
         cellSize={50}
         cellThickness={0.5}
@@ -261,6 +278,7 @@ function SceneBridge({
                         screenPosition={model.screenPosition}
                         screenSize={model.screenSize}
                         showDeviceShell={object.showDeviceShell}
+                        showNotebookKeyboard={object.showNotebookKeyboard}
                       />
                       </group>
                     </group>
@@ -558,6 +576,9 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         camera={{ fov: CAMERA_FOV, position: CAMERA_POSITION }}
         dpr={[1, 2]}
         gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
+        onCreated={({ gl }) => {
+          gl.localClippingEnabled = true;
+        }}
       >
         <SceneBridge
           {...props}

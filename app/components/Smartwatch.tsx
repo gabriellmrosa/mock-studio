@@ -49,6 +49,7 @@ type SmartwatchProps = React.ComponentPropsWithoutRef<"group"> & {
   matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
+  showNotebookKeyboard?: boolean;
   screenPosition?: [number, number, number];
   screenSize?: [number, number];
 };
