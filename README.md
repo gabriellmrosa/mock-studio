@@ -24,8 +24,10 @@ Ja implementado:
 - controle de escala uniforme por objeto;
 - reset das transformacoes do objeto selecionado;
 - reset global de camera;
+- `fit scene` separado de `reset camera` na toolbar flutuante;
 - color picker de cor de fundo do canvas na toolbar flutuante;
 - export PNG transparente em `1920x1080` e `2560x1440`;
+- CTA `Take photo` exporta captura PNG `1920x1080` com nome timestamped;
 - modo debug de cores por parte por objeto;
 - modo `So tela`, que remove a casca do dispositivo e deixa apenas a textura da tela;
 - toggle global de `dark/light`;
@@ -39,7 +41,7 @@ Ja implementado:
 - `smartphone2` agora usa o asset recortado do iPhone 14, com tela aplicada no mesh real do GLB, placeholder proprio `1290x2748`, temas ativos e debug semantico inicial;
 - modo `Cor fosca` reduz reflexo dos materiais fisicos e, no `smartphone2` atual, oculta o vidro frontal para privilegiar a leitura da tela;
 - `smartphone`, `smartphone2`, `smartwatch` e `notebook` iniciam no tema `gray`;
-- design system com tokens primitivos de cor (`--black-000` a `--black-980`, `--gray-*`, `--ink-*`), border-radius (`--radius-xs` a `--radius-full`) e font-weight (`--font-regular` a `--font-bold`) para dark e light mode;
+- design system com tokens primitivos de cor (`--black-000` a `--black-980`, `--gray-*`, `--ink-*`), border-radius (`--radius-xs` a `--radius-full`), font-weight (`--font-regular` a `--font-bold`), font-size (`--font-size-*`) e spacing (`--space-*`) para dark e light mode;
 - menu de preferencias com submenus cascata (Theme e Language) com checkmark no item ativo;
 - menu de contexto por layer (3 pontos) com opcoes de Renomear e Deletar;
 - `ContextMenu` renderizado via React Portal para evitar clipping por `overflow`;
@@ -49,6 +51,7 @@ Ja implementado:
 - setas do teclado tambem acionam o pan da camera;
 - grid de profundidade infinito no canvas com cor adaptativa baseada em luminancia do fundo;
 - input de hex no `ColorRow` com debounce, normalizacao e feedback visual de erro;
+- convencao de styling consolidada: tokens CSS para design system, Tailwind para layout e CSS de componente para estados/regras locais;
 - `Suspense` por objeto para isolar o carregamento de textura sem disparar re-fit da camera;
 - camera re-ajusta apenas quando objetos sao adicionados ou removidos (nao em mudancas de propriedade).
 
@@ -76,11 +79,13 @@ Ja implementado:
 ## Estrutura Relevante
 
 - [app/page.tsx](app/page.tsx): orquestra o estado do editor, lista de objetos da cena e selecao ativa.
-- [app/styles/tokens.css](app/styles/tokens.css): tokens primitivos de cor, border-radius e font-weight.
+- [app/styles/tokens.css](app/styles/tokens.css): tokens primitivos de cor, tipografia, spacing, border-radius e font-weight.
 - [app/globals.css](app/globals.css): tokens semanticos e resets globais.
+- [app/components/EditorPrimitives/](app/components/EditorPrimitives/): primitives compartilhados da UI do editor.
 - [app/components/LayersPanel/](app/components/LayersPanel/): painel esquerdo com camadas/objetos e preferencias globais.
 - [app/components/InspectorPanel/](app/components/InspectorPanel/): painel direito com configuracoes do objeto selecionado (transform, temas, debug).
 - [app/components/MockupCanvas/](app/components/MockupCanvas/): canvas 3D, CameraControls, grid, export e renderizacao de multiplos objetos.
+- [app/components/ContextMenu/](app/components/ContextMenu/): menu contextual via portal com trigger padronizado.
 - [app/components/Smartphone.tsx](app/components/Smartphone.tsx): modelo smartphone com tela texturizada.
 - [app/components/Smartphone2.tsx](app/components/Smartphone2.tsx): modelo smartphone2 atual, baseado no iPhone 14 com tela aplicada no mesh real do GLB.
 - [app/components/Smartwatch.tsx](app/components/Smartwatch.tsx): modelo smartwatch.
@@ -91,7 +96,7 @@ Ja implementado:
 - [app/lib/scene-presets.ts](app/lib/scene-presets.ts): presets padrao de transformacao e posicoes automaticas da cena.
 - [app/lib/mockup-image.ts](app/lib/mockup-image.ts): utilitarios da textura/imagem da tela.
 - [app/lib/i18n.ts](app/lib/i18n.ts): copy da interface em `pt-BR` e `en-US`.
-- [CLAUDE.md](CLAUDE.md): guia tecnico para adicionar novos modelos 3D ao catalogo.
+- [AI-GUIDE.md](AI-GUIDE.md): guia tecnico para adicionar novos modelos 3D ao catalogo.
 
 ## Branch de Trabalho
 
@@ -99,16 +104,24 @@ Ja implementado:
 
 ## Onde Paramos
 
-Catalogo consolidado em 4 dispositivos. Arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo. `smartwatch` segue com tela texturizada funcional e material fisico preservado no casco. `notebook` aceita a imagem do app na malha correta da tela, com placeholder proprio e debug semantico inicial. O `smartphone2` antigo foi substituido pelo asset recortado do iPhone 14, com placeholder `1290x2748`, temas ativos, mapeamento semantico inicial e tela aplicada no mesh real do GLB. Placeholders sao definidos por modelo, sem troca por idioma. O inspector continua com toggle por objeto para acabamento fosco.
+Catalogo consolidado em 4 dispositivos. Arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo. `smartwatch` segue com tela texturizada funcional e material fisico preservado no casco. `notebook` aceita a imagem do app na malha correta da tela, com placeholder proprio e debug semantico inicial. O `smartphone2` antigo foi substituido pelo asset recortado do iPhone 14, com placeholder `1290x2748`, temas ativos, mapeamento semantico inicial e tela aplicada no mesh real do GLB. Placeholders sao definidos por modelo, sem troca por idioma. O inspector continua com toggle por objeto para acabamento fosco. O reset de camera agora usa `saveState/reset` do `camera-controls`, `fit scene` e `reset camera` ficaram separados, e o CTA `Take photo` exporta captura real do canvas.
 
-**Bug conhecido pendente:** reset de camera restaura posicao e zoom corretamente, mas o azimute nao retorna ao estado inicial (`camera-controls` v3).
+A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spacing recorrentes foram movidos para tokens em `app/styles/tokens.css`, primitives compartilhados foram consolidados, utilitarios arbitrarios foram reduzidos nos paineis principais e o `ContextMenu` deixou de usar render prop para um trigger padronizado.
 
 ## Proximo Passo Sugerido
 
-- investigar bug de reset do azimute da camera;
 - revisar se os controles temporarios do `leva` para roughness do `notebook` devem virar tokens fixos por tema ou sair da codebase apos calibracao final;
 - continuar o mapeamento semantico das malhas restantes do `notebook`;
 - refinar UX de camadas (reorder, lock ou visibilidade).
+
+## Regras de Styling
+
+- tokens CSS em `app/styles/tokens.css` sao a fonte de verdade para cor, `font-size`, `font-weight`, spacing, radius e escalas recorrentes;
+- `app/globals.css` concentra variaveis semanticas dependentes de tema ou contexto;
+- Tailwind deve ser usado principalmente para layout e composicao estrutural: `flex`, `grid`, posicionamento, overflow e responsividade;
+- CSS de componente deve cuidar de estados visuais e regras locais do componente;
+- evitar utilitarios arbitrarios como `text-[...]`, `rounded-[...]`, `border-[...]` e `w-[...]` quando ja houver token equivalente;
+- inline style deve ficar restrito a valores realmente dinamicos, como posicao calculada, cor variavel, progresso de slider e custom properties derivadas de estado.
 
 ## Aprendizados
 
@@ -136,6 +149,7 @@ Catalogo consolidado em 4 dispositivos. Arquitetura multimodelo com `modelScale`
 - `OBJECT_POSITION_MULTIPLIER = 140` (X/Y) e `OBJECT_POSITION_MULTIPLIER_Z = 420` (Z);
 - grid em `y=-300` com `infiniteGrid`, `cellSize=50`, `sectionSize=200`;
 - `npm run lint` deve passar;
+- `AI-GUIDE.md` concentra o guia tecnico de modelos 3D e a convencao de styling;
 - `npx next build --webpack` para validacao de build.
 
 ## Como Rodar

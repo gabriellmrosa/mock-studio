@@ -7,12 +7,15 @@ export type AppCopy = {
   appTitle: string;
   addObject: string;
   baseObject: string;
+  fitSceneButton: string;
   languageLabel: string;
   themeLabel: string;
   darkMode: string;
   lightMode: string;
   portuguese: string;
   english: string;
+  resetCameraButton: string;
+  takePhotoButton: string;
   deleteObject: string;
   renameObject: string;
   modelLabel: string;
@@ -44,12 +47,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     appTitle: "Mock Studio",
     addObject: "Adicionar objeto",
     baseObject: "Objeto base",
+    fitSceneButton: "Enquadrar cena",
     languageLabel: "Idioma",
     themeLabel: "Tema",
     darkMode: "Dark",
     lightMode: "Light",
     portuguese: "PT-BR",
     english: "EN-US",
+    resetCameraButton: "Reset camera",
+    takePhotoButton: "Tirar foto",
     deleteObject: "Excluir",
     renameObject: "Renomear",
     modelLabel: "Modelo",
@@ -85,12 +91,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     appTitle: "Mock Studio",
     addObject: "Add object",
     baseObject: "Base object",
+    fitSceneButton: "Fit scene",
     languageLabel: "Language",
     themeLabel: "Theme",
     darkMode: "Dark",
     lightMode: "Light",
     portuguese: "PT-BR",
     english: "EN-US",
+    resetCameraButton: "Reset camera",
+    takePhotoButton: "Take photo",
     deleteObject: "Delete",
     renameObject: "Rename",
     modelLabel: "Model",

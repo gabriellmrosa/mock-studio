@@ -39,7 +39,7 @@ export function InspectorPanelHeader({
   titleClassName,
 }: InspectorPanelHeaderProps) {
   return (
-    <header className="panel-header gap-4 flex-col items-start">
+    <header className="panel-header panel-header-inspector">
       {eyebrow ? <p className="panel-eyebrow">{eyebrow}</p> : null}
       <h2 className={titleClassName ?? "panel-title"}>{title}</h2>
     </header>

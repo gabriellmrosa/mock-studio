@@ -4,18 +4,38 @@
 
 .canvas-floating-toolbar {
   align-items: center;
-  bottom: 1.5rem;
+  bottom: var(--space-6);
   display: flex;
-  gap: 0.75rem;
+  gap: var(--space-3);
   pointer-events: auto;
   position: absolute;
-  right: 1.5rem;
+  right: var(--space-6);
 }
 
 .canvas-floating-cluster {
   align-items: center;
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-2);
+}
+
+.canvas-color-control {
+  margin-left: var(--space-4);
+  margin-right: var(--space-4);
+  position: relative;
+}
+
+.canvas-color-swatch {
+  border-radius: var(--radius-xs);
+  height: 1rem;
+  width: 1rem;
+}
+
+.canvas-color-input {
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 0;
 }
 
 /* .canvas-fab extends .editor-fab — no overrides needed at this size */
@@ -23,17 +43,18 @@
 .canvas-capture-button {
   align-items: center;
   background: var(--button-active-bg);
-  border: 1px solid transparent;
+  border: 1px solid var(--button-border);
   border-radius: var(--radius-full);
   box-shadow: var(--canvas-shadow);
   color: var(--button-active-fg);
   cursor: pointer;
   display: inline-flex;
-  font-size: 0.75rem;
-  gap: 0.5rem;
+  font-size: var(--font-size-300);
+  gap: var(--space-2);
   height: 2.5rem;
-  padding: 0 1rem;
+  padding: 0 var(--space-4);
   transition:
+    border-color 160ms ease,
     transform 160ms ease,
     background-color 160ms ease;
 }
@@ -44,5 +65,12 @@
     var(--button-active-bg) 88%,
     var(--foreground)
   );
+  border-color: var(--button-border-hover);
   transform: translateY(-1px);
+}
+
+.canvas-capture-button:disabled {
+  cursor: default;
+  opacity: 0.6;
+  transform: none;
 }

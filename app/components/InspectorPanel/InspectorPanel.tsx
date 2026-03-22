@@ -55,7 +55,7 @@ export default function InspectorPanel({
 }: InspectorPanelProps) {
   if (!object) {
     return (
-      <aside className="editor-sidebar inspector-sidebar h-screen w-[19rem] shrink-0" />
+      <aside className="editor-sidebar editor-sidebar-shell inspector-sidebar" />
     );
   }
 
@@ -65,21 +65,21 @@ export default function InspectorPanel({
     : "";
 
   return (
-    <aside className="editor-sidebar inspector-sidebar h-screen w-[19rem] shrink-0 overflow-y-auto">
+    <aside className="editor-sidebar editor-sidebar-shell inspector-sidebar inspector-sidebar-scroll">
       <InspectorPanelHeader
         eyebrow="Properties"
         title={object.name}
         titleClassName="panel-title-object"
       />
 
-      <div className="flex flex-col">
+      <div className="inspector-stack">
         <PanelSection
           title={copy.modelLabel}
           className="--without-border-bottom"
         >
           <div className="select-wrapper">
             <select
-              className="editor-input model-select w-full appearance-none rounded-[var(--radius-sm)] pr-10 text-sm focus:outline-none"
+              className="editor-input model-select appearance-none focus:outline-none"
               value={object.modelId}
               onChange={(event) =>
                 onModelChange(event.target.value as SceneObject["modelId"])
@@ -93,13 +93,13 @@ export default function InspectorPanel({
             </select>
             <ChevronDown className="select-chevron h-4 w-4" />
           </div>
-          <label className="mt-2 flex justify-end items-center gap-2 text-[0.6875rem] leading-relaxed text-[var(--sidebar-muted)]">
-            <span className="text-right">{copy.sceneSectionHint}</span>
+          <label className="inspector-inline-toggle">
+            <span className="inspector-inline-toggle-text">{copy.sceneSectionHint}</span>
             <input
               type="checkbox"
               checked={object.showDeviceShell}
               onChange={onToggleDeviceShell}
-              className="mt-[0.125rem] h-3.5 w-3.5 rounded-[var(--radius-xs)] border border-[var(--input-border)] bg-[var(--input-bg)] accent-[var(--foreground)]"
+              className="inspector-checkbox"
             />
           </label>
         </PanelSection>
@@ -118,11 +118,11 @@ export default function InspectorPanel({
               className="hidden"
             />
           </label>
-          <p className="editor-sidebar-muted text-[10px] mt-2 leading-relaxed text-right">
+          <p className="editor-sidebar-muted inspector-meta-note">
             {uploadRecommendation}
           </p>
           {uploadError ? (
-            <p className="text-[11px] text-red-400 mt-2">{uploadError}</p>
+            <p className="inspector-error-note">{uploadError}</p>
           ) : null}
         </PanelSection>
 
@@ -132,7 +132,7 @@ export default function InspectorPanel({
               title={copy.themesSectionTitle}
               className="--without-border-bottom"
             >
-              <div className="grid grid-cols-4 gap-2">
+              <div className="theme-grid">
                 {model?.themeOptions.map((theme) => (
                   <button
                     key={theme.id}
@@ -141,10 +141,10 @@ export default function InspectorPanel({
                     className={`theme-card ${object.deviceTheme === theme.id ? "theme-card-active" : "theme-card-inactive"}`}
                   >
                     <div
-                      className="w-8 h-8 rounded-full border border-black/10 shadow-inner"
+                      className="theme-preview"
                       style={{ backgroundColor: theme.preview }}
                     />
-                    <span className="text-[10px] leading-tight text-center">
+                    <span className="theme-card-label">
                       {copy.themeNames[theme.id]}
                     </span>
                   </button>
@@ -164,13 +164,13 @@ export default function InspectorPanel({
                       compact
                     />
                   </div>
-                  <label className="mt-2 flex justify-end items-center gap-2 text-[0.6875rem] leading-relaxed text-[var(--sidebar-muted)]">
-                    <span className="text-right">{copy.matteColorLabel}</span>
+                  <label className="inspector-inline-toggle">
+                    <span className="inspector-inline-toggle-text">{copy.matteColorLabel}</span>
                     <input
                       type="checkbox"
                       checked={object.matteColors}
                       onChange={onToggleMatteColors}
-                      className="mt-[0.125rem] h-3.5 w-3.5 rounded-[var(--radius-xs)] border border-[var(--input-border)] bg-[var(--input-bg)] accent-[var(--foreground)]"
+                      className="inspector-checkbox"
                     />
                   </label>
                 </>
@@ -179,7 +179,7 @@ export default function InspectorPanel({
           </>
         ) : (
           <PanelSection title={copy.debugSectionTitle}>
-            <div className="panel-card flex flex-col gap-2 p-3">
+            <div className="panel-card debug-panel">
               {Object.entries(object.debugPartColors).map(([part, color]) => (
                 <ColorRow
                   key={part}
@@ -316,7 +316,7 @@ export default function InspectorPanel({
         <PanelSection title={copy.debugSectionTitle}>
           <button
             onClick={onToggleDebugMode}
-            className={`w-full py-2 rounded-lg text-xs font-medium transition border ${object.debugMode ? "bg-yellow-500/15 border-yellow-500 text-yellow-300" : "editor-button editor-button-muted"}`}
+            className={`debug-toggle-button ${object.debugMode ? "debug-toggle-button-on" : "editor-button editor-button-muted debug-toggle-button-off"}`}
           >
             {object.debugMode ? copy.debugOn : copy.debugOff}
           </button>

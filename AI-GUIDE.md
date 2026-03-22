@@ -1,6 +1,31 @@
-# CLAUDE.md — Guia para desenvolvimento do mock-photo
+# AI-GUIDE.md — Guia para desenvolvimento do mock-photo
 
 ## Adicionando novos modelos 3D
+
+## Convenção de Styling
+
+Para manter a UI consistente e fácil de evoluir:
+
+- use **tokens CSS** em `app/styles/tokens.css` para escalas e decisões de design system:
+  cores, font-size, font-weight, spacing, radius e sombras;
+- use **variáveis semânticas** em `app/globals.css` quando o valor muda por tema ou contexto;
+- use **Tailwind** para layout e composição estrutural:
+  flex, grid, posicionamento, overflow e responsividade;
+- use **CSS de componente** para estados visuais e regras específicas do componente.
+
+### O que evitar
+
+- utilitários arbitrários como `text-[...]`, `rounded-[...]`, `border-[...]` e `w-[...]` quando o valor já pertence ao design system;
+- estilos inline para valores estáticos de UI;
+- duplicar spacing/tipografia em vários componentes com números literais.
+
+### O que pode continuar inline
+
+- valores realmente dinâmicos e contínuos, como:
+  posição calculada de menu,
+  cor vinda de estado,
+  progresso de slider,
+  custom properties dinâmicas de animação/posição.
 
 ### Escala canônica
 
@@ -12,7 +37,7 @@ Todo modelo novo deve ter a mesma altura visual na cena ao entrar.
 | Modelo      | modelScale  | Observação                              |
 |-------------|-------------|------------------------------------------|
 | smartphone  | [1, 1, 1]   | modelo de referência, já normalizado     |
-| smartphone2 | [102.6, …]  | GLB exportado em escala Blender padrão   |
+| smartphone2 | [122.9, …]  | GLB exportado em escala Blender padrão   |
 
 ### Pivot de rotação (pivotOffset)
 

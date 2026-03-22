@@ -11,7 +11,7 @@
 
 .editor-sidebar-label {
   color: var(--sidebar-label);
-  font-size: 0.625rem;
+  font-size: var(--font-size-100);
   font-weight: var(--font-bold);
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -23,7 +23,7 @@
 
 .editor-link-button {
   color: var(--sidebar-muted);
-  font-size: 11px;
+  font-size: var(--font-size-150);
   transition: color 160ms ease;
 }
 
@@ -61,7 +61,7 @@
 
 .editor-toggle {
   border-radius: var(--radius-full);
-  font-size: 0.625rem;
+  font-size: var(--font-size-100);
   font-weight: var(--font-bold);
   letter-spacing: 0.16em;
   padding: 0.625rem 0.875rem;
@@ -174,7 +174,7 @@
     border-color 160ms ease,
     background-color 160ms ease;
   flex: 1;
-  padding: 0.2rem 0.5rem;
+  padding: var(--space-1) var(--space-2);
 }
 
 .editor-input:focus {
@@ -191,12 +191,19 @@
 
 .panel-header {
   border-bottom: 1px solid var(--sidebar-border);
-  padding: 1.5rem 1rem 1rem;
+  padding: var(--space-6) var(--space-4) var(--space-4);
+}
+
+.panel-header-inspector {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .panel-eyebrow {
   color: var(--foreground);
-  font-size: 0.625rem;
+  font-size: var(--font-size-100);
   font-weight: var(--font-bold);
   letter-spacing: 0.32em;
   text-transform: uppercase;
@@ -204,7 +211,7 @@
 
 .panel-title {
   color: var(--foreground);
-  font-size: 1.75rem;
+  font-size: var(--font-size-700);
   font-weight: var(--font-semibold);
   line-height: 1.05;
 }
@@ -212,24 +219,24 @@
 .panel-title-brand {
   color: var(--foreground);
   font-family: var(--font-brand), serif;
-  font-size: 2rem;
+  font-size: var(--font-size-800);
   font-weight: 800;
 }
 
 .panel-title-object {
   color: var(--sidebar-muted);
-  font-size: 0.75rem;
+  font-size: var(--font-size-200);
   line-height: 1.2;
   margin: 0;
 }
 
 .panel-subtitle {
   color: var(--sidebar-muted);
-  font-size: 0.75rem;
+  font-size: var(--font-size-200);
 }
 
 .panel-section {
-  padding: 1rem;
+  padding: var(--space-4);
 }
 
 .--without-border-bottom {
@@ -240,5 +247,11 @@
   align-items: center;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  margin-bottom: var(--space-3);
+}
+
+.editor-sidebar-shell {
+  flex-shrink: 0;
+  height: 100vh;
+  width: 19rem;
 }

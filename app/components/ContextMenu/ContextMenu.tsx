@@ -4,6 +4,7 @@ import "./ContextMenu.css";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronRight } from "lucide-react";
+import { IconButton } from "../EditorPrimitives/EditorPrimitives";
 
 export type ContextMenuActionItem = {
   type: "action";
@@ -27,12 +28,23 @@ export type ContextMenuItem = ContextMenuActionItem | ContextMenuSubmenuItem;
 
 type ContextMenuProps = {
   items: ContextMenuItem[];
-  trigger: (props: { open: boolean; onClick: () => void }) => ReactNode;
+  triggerAriaLabel: string;
+  triggerClassName?: string;
+  triggerIcon: ReactNode;
+  triggerStopPropagation?: boolean;
+  triggerTitle: string;
 };
 
 type PanelPosition = { top: number; left: number };
 
-export default function ContextMenu({ items, trigger }: ContextMenuProps) {
+export default function ContextMenu({
+  items,
+  triggerAriaLabel,
+  triggerClassName,
+  triggerIcon,
+  triggerStopPropagation = false,
+  triggerTitle,
+}: ContextMenuProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(
     null,
@@ -93,6 +105,14 @@ export default function ContextMenu({ items, trigger }: ContextMenuProps) {
       setIsOpen(true);
       setActiveSubmenuIndex(null);
     }
+  }
+
+  function handleTriggerButtonClick(event?: React.MouseEvent<HTMLButtonElement>) {
+    if (triggerStopPropagation) {
+      event?.stopPropagation();
+    }
+
+    handleTriggerClick();
   }
 
   function openSubmenu(index: number, rowEl: HTMLButtonElement) {
@@ -198,7 +218,16 @@ export default function ContextMenu({ items, trigger }: ContextMenuProps) {
 
   return (
     <div ref={rootRef} className="context-menu-root">
-      {trigger({ open: isOpen, onClick: handleTriggerClick })}
+      <IconButton
+        aria-expanded={isOpen}
+        aria-label={triggerAriaLabel}
+        title={triggerTitle}
+        active={isOpen}
+        className={triggerClassName}
+        onClick={handleTriggerButtonClick}
+      >
+        {triggerIcon}
+      </IconButton>
       {panel}
     </div>
   );

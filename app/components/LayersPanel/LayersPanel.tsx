@@ -5,7 +5,6 @@ import { KeyboardEvent, useState } from "react";
 import type { AppCopy, Locale, UiTheme } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
 import {
-  IconButton,
   LayersPanelHeader,
   PanelSection,
 } from "../EditorPrimitives/EditorPrimitives";
@@ -75,8 +74,8 @@ export default function LayersPanel({
   }
 
   return (
-    <aside className="editor-sidebar layers-sidebar h-screen w-[19rem] shrink-0">
-      <div className="flex h-full flex-col">
+    <aside className="editor-sidebar editor-sidebar-shell layers-sidebar">
+      <div className="layers-shell">
         <div className="relative">
           <LayersPanelHeader
             title={copy.appTitle}
@@ -122,23 +121,15 @@ export default function LayersPanel({
                     ],
                   },
                 ]}
-                trigger={({ open, onClick }) => (
-                  <IconButton
-                    aria-expanded={open}
-                    aria-label="Open preferences"
-                    title="Open preferences"
-                    active={open}
-                    onClick={onClick}
-                  >
-                    <MoreVertical size={12} />
-                  </IconButton>
-                )}
+                triggerAriaLabel="Open preferences"
+                triggerTitle="Open preferences"
+                triggerIcon={<MoreVertical size={12} />}
               />
             }
           />
         </div>
 
-        <div className="flex flex-col flex-1 overflow-y-auto">
+        <div className="layers-body">
           <PanelSection
             title="3D Objects"
             className="section-objects"
@@ -153,7 +144,7 @@ export default function LayersPanel({
               </button>
             }
           >
-            <div className="flex flex-col gap-2">
+            <div className="layers-stack">
               {objects.map((object) => {
                 const isSelected = object.id === selectedObjectId;
 
@@ -173,7 +164,7 @@ export default function LayersPanel({
                     aria-pressed={isSelected}
                   >
                     <div className="min-w-0 flex-1 text-left">
-                      <div className="flex items-center gap-2">
+                      <div className="layer-title-row">
                         {editingObjectId === object.id ? (
                           <input
                             autoFocus
@@ -221,20 +212,11 @@ export default function LayersPanel({
                             ]
                           : []),
                       ]}
-                      trigger={({ open, onClick }) => (
-                        <IconButton
-                          className="layer-menu-trigger"
-                          aria-label="Object options"
-                          title="Object options"
-                          active={open}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onClick();
-                          }}
-                        >
-                          <MoreVertical size={12} />
-                        </IconButton>
-                      )}
+                      triggerAriaLabel="Object options"
+                      triggerClassName="layer-menu-trigger"
+                      triggerStopPropagation
+                      triggerTitle="Object options"
+                      triggerIcon={<MoreVertical size={12} />}
                     />
                   </div>
                 );
@@ -244,7 +226,7 @@ export default function LayersPanel({
         </div>
 
         <footer className="sidebar-footer">
-          <div className="flex items-center gap-1">
+          <div className="sidebar-footer-row">
             <p>Made with </p>
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -265,7 +247,7 @@ export default function LayersPanel({
                 href="will_be_added_later"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ textDecoration: "underline" }}
+                className="sidebar-footer-link"
               >
                 Gabriel Rosa
               </a>
@@ -277,7 +259,7 @@ export default function LayersPanel({
               href="will_be_added_later"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ textDecoration: "underline" }}
+              className="sidebar-footer-link"
             >
               Credits
             </a>{" "}

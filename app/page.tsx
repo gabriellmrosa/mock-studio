@@ -5,7 +5,7 @@ import { Leva } from "leva";
 import type { ScaleOverrides, SpawnOverrides } from "./components/MockupCanvas/MockupCanvas";
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
-import MockupCanvas, { type ExportPreset } from "./components/MockupCanvas/MockupCanvas";
+import MockupCanvas from "./components/MockupCanvas/MockupCanvas";
 import { APP_COPY, type Locale, type UiTheme } from "./lib/i18n";
 import { readFileAsDataUrl } from "./lib/mockup-image";
 import {
@@ -56,8 +56,6 @@ export default function Home() {
   ]);
   const [canvasBgColor, setCanvasBgColor] = useState<string | null>(null);
   const [selectedObjectId, setSelectedObjectId] = useState("");
-  const [, setExportHandler] =
-    useState<((preset: ExportPreset) => Promise<void>) | null>(null);
   const [resetCameraVersion] = useState(0);
   const [scaleOverrides] = useState<ScaleOverrides>({});
   const [spawnOverrides] = useState<SpawnOverrides>({});
@@ -241,9 +239,9 @@ export default function Home() {
 
       <MockupCanvas
         canvasBgColor={canvasBgColor}
+        copy={copy}
         objects={sceneObjects}
         onBgColorChange={setCanvasBgColor}
-        onExportReady={(handler) => setExportHandler(() => handler)}
         resetCameraVersion={resetCameraVersion}
         scaleOverrides={scaleOverrides}
         spawnOverrides={spawnOverrides}

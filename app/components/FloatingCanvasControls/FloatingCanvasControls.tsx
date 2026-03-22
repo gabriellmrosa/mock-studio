@@ -2,7 +2,7 @@
 
 import "./FloatingCanvasControls.css";
 import { useRef } from "react";
-import type { UiTheme } from "../../lib/i18n";
+import type { AppCopy, UiTheme } from "../../lib/i18n";
 import {
   ArrowDown,
   ArrowLeft,
@@ -10,20 +10,25 @@ import {
   ArrowUp,
   Camera,
   RotateCcw,
+  ScanSearch,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
 
 type FloatingCanvasControlsProps = {
   bgColor: string | null;
+  copy: AppCopy;
   onBgColorChange: (color: string) => void;
   onFitToScene: () => void;
+  onResetCamera: () => void;
   onPanDown: () => void;
   onPanLeft: () => void;
   onPanRight: () => void;
   onPanUp: () => void;
+  onTakePhoto: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
+  takePhotoDisabled: boolean;
   uiTheme: UiTheme;
 };
 
@@ -34,14 +39,18 @@ const DEFAULT_BG: Record<UiTheme, string> = {
 
 export default function FloatingCanvasControls({
   bgColor,
+  copy,
   onBgColorChange,
   onFitToScene,
+  onResetCamera,
   onPanDown,
   onPanLeft,
   onPanRight,
   onPanUp,
+  onTakePhoto,
   onZoomIn,
   onZoomOut,
+  takePhotoDisabled,
   uiTheme,
 }: FloatingCanvasControlsProps) {
   const colorInputRef = useRef<HTMLInputElement>(null);
@@ -58,9 +67,18 @@ export default function FloatingCanvasControls({
         <button
           type="button"
           className="editor-fab"
-          aria-label="Reset camera"
-          title="Reset camera"
+          aria-label={copy.fitSceneButton}
+          title={copy.fitSceneButton}
           onClick={onFitToScene}
+        >
+          <ScanSearch size={16} />
+        </button>
+        <button
+          type="button"
+          className="editor-fab"
+          aria-label={copy.resetCameraButton}
+          title={copy.resetCameraButton}
+          onClick={onResetCamera}
         >
           <RotateCcw size={16} />
         </button>
@@ -119,7 +137,7 @@ export default function FloatingCanvasControls({
           <ZoomIn size={16} />
         </button>
 
-        <div style={{ position: "relative" }} className="ml-4 mr-4">
+        <div className="canvas-color-control">
           <button
             type="button"
             className="editor-fab"
@@ -128,10 +146,8 @@ export default function FloatingCanvasControls({
             onClick={() => colorInputRef.current?.click()}
           >
             <div
+              className="canvas-color-swatch"
               style={{
-                width: "1rem",
-                height: "1rem",
-                borderRadius: "var(--radius-xs)",
                 background: displayColor,
                 border: circleBorder,
               }}
@@ -142,13 +158,7 @@ export default function FloatingCanvasControls({
             type="color"
             value={displayColor}
             onChange={(e) => onBgColorChange(e.target.value)}
-            style={{
-              position: "absolute",
-              opacity: 0,
-              pointerEvents: "none",
-              width: 0,
-              height: 0,
-            }}
+            className="canvas-color-input"
           />
         </div>
       </div>
@@ -156,11 +166,13 @@ export default function FloatingCanvasControls({
       <button
         type="button"
         className="canvas-capture-button"
-        aria-label="Take photo"
-        title="Take photo"
+        aria-label={copy.takePhotoButton}
+        disabled={takePhotoDisabled}
+        title={copy.takePhotoButton}
+        onClick={onTakePhoto}
       >
         <Camera size={16} />
-        <span>Take photo</span>
+        <span>{copy.takePhotoButton}</span>
       </button>
     </div>
   );

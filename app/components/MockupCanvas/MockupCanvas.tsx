@@ -13,7 +13,7 @@ import {
   useBounds,
 } from "@react-three/drei";
 import type CameraControlsImpl from "camera-controls";
-import type { UiTheme } from "../../lib/i18n";
+import type { AppCopy, UiTheme } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
 import {
   AUTO_OBJECT_POSITIONS,
@@ -31,9 +31,9 @@ export type ExportPreset = {
 
 type MockupCanvasProps = {
   canvasBgColor: string | null;
+  copy: AppCopy;
   objects: SceneObject[];
   onBgColorChange: (color: string) => void;
-  onExportReady: (handler: (preset: ExportPreset) => Promise<void>) => void;
   resetCameraVersion: number;
   scaleOverrides: ScaleOverrides;
   spawnOverrides: SpawnOverrides;
@@ -55,6 +55,9 @@ export type SpawnOverrides = Record<number, [number, number, number]>;
 export type ScaleOverrides = Record<number, number>;
 
 type SceneBridgeProps = MockupCanvasProps & {
+  onExportReady: (
+    handler: ((preset: ExportPreset) => Promise<void>) | null,
+  ) => void;
   onViewportControlsReady: (api: ViewportControlsApi | null) => void;
   sceneFitKey: string;
   spawnOverrides: SpawnOverrides;
@@ -76,6 +79,11 @@ function getGridColors(bgHex: string | null, uiTheme: UiTheme) {
 
 const CAMERA_POSITION: [number, number, number] = [0, 0, 5];
 const CAMERA_FOV = 45;
+const TAKE_PHOTO_PRESET: ExportPreset = {
+  height: 1080,
+  label: "take-photo",
+  width: 1920,
+};
 const ANGLE_LIMITS = {
   maxAzimuthAngle: 0.85,
   maxPolarAngle: Math.PI * 0.68,
@@ -169,9 +177,7 @@ function SceneBridge({
     });
 
     return () => {
-      onExportReady(async () => {
-        throw new Error("Export indisponivel.");
-      });
+      onExportReady(null);
     };
   }, [camera, gl, onExportReady, scene, size.height, size.width]);
 
@@ -297,11 +303,13 @@ function BoundsResetController({
         tx: center.x, ty: center.y, tz: center.z,
       };
 
-      controls.setLookAt(
+      void controls.setLookAt(
         center.x, center.y, center.z + distance,
         center.x, center.y, center.z,
         true,
-      );
+      ).then(() => {
+        controls.saveState();
+      });
     });
 
     return () => {
@@ -317,19 +325,7 @@ function BoundsResetController({
     }
 
     const resetToInitial = () => {
-      const s = initialLookAt.current;
-      if (!s) return;
-
-      // normalizeRotations mapeia azimute para [0, 2π].
-      // Se > π, rotaciona instantaneamente para o equivalente negativo em [-π, 0]
-      // para que a animação até 0 tome sempre o caminho mais curto.
-      controls.normalizeRotations();
-      const azimuth = controls.azimuthAngle;
-      if (azimuth > Math.PI) {
-        controls.rotate(azimuth - Math.PI * 2, 0, false);
-      }
-
-      controls.setLookAt(s.px, s.py, s.pz, s.tx, s.ty, s.tz, true);
+      void controls.reset(true);
     };
 
     onViewportControlsReady({
@@ -367,13 +363,7 @@ function BoundsResetController({
     const controls = controlsRef.current;
     if (!s || !controls) return;
 
-    controls.normalizeRotations();
-    const azimuth = controls.azimuthAngle;
-    if (azimuth > Math.PI) {
-      controls.rotate(azimuth - Math.PI * 2, 0, false);
-    }
-
-    controls.setLookAt(s.px, s.py, s.pz, s.tx, s.ty, s.tz, true);
+    void controls.reset(true);
   }, [controlsRef, resetCameraVersion]);
 
   return null;
@@ -382,6 +372,9 @@ function BoundsResetController({
 export default function MockupCanvas(props: MockupCanvasProps) {
   const [viewportControls, setViewportControls] =
     useState<ViewportControlsApi | null>(null);
+  const exportHandlerRef =
+    useRef<((preset: ExportPreset) => Promise<void>) | null>(null);
+  const [isExportReady, setIsExportReady] = useState(false);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -416,6 +409,23 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     ? "mockup-stage relative flex-1 h-screen"
     : `mockup-stage relative flex-1 h-screen ${props.uiTheme === "dark" ? "mockup-stage-dark" : "mockup-stage-light"}`;
 
+  async function handleTakePhoto() {
+    const exportHandler = exportHandlerRef.current;
+
+    if (!exportHandler) {
+      return;
+    }
+
+    try {
+      await exportHandler({
+        ...TAKE_PHOTO_PRESET,
+        label: `mock-photo-${formatTimestampForFilename(new Date())}`,
+      });
+    } catch (error) {
+      console.error("Failed to export canvas photo.", error);
+    }
+  }
+
   return (
     <div
       className={stageClass}
@@ -428,6 +438,10 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       >
         <SceneBridge
           {...props}
+          onExportReady={(handler) => {
+            exportHandlerRef.current = handler;
+            setIsExportReady(Boolean(handler));
+          }}
           onViewportControlsReady={setViewportControls}
           sceneFitKey={props.objects.map((o) => o.id).join(",")}
         />
@@ -436,14 +450,20 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       <div className="canvas-stage-overlay">
         <FloatingCanvasControls
           bgColor={props.canvasBgColor}
+          copy={props.copy}
           onBgColorChange={props.onBgColorChange}
           onFitToScene={() => viewportControls?.fitToScene()}
+          onResetCamera={() => viewportControls?.resetToInitial()}
           onPanDown={() => viewportControls?.panDown()}
           onPanLeft={() => viewportControls?.panLeft()}
           onPanRight={() => viewportControls?.panRight()}
           onPanUp={() => viewportControls?.panUp()}
+          onTakePhoto={() => {
+            void handleTakePhoto();
+          }}
           onZoomIn={() => viewportControls?.zoomIn()}
           onZoomOut={() => viewportControls?.zoomOut()}
+          takePhotoDisabled={!isExportReady}
           uiTheme={props.uiTheme}
         />
       </div>
@@ -474,4 +494,15 @@ function dataUrlToBlob(dataUrl: string) {
   }
 
   return new Blob([bytes], { type: mimeType });
+}
+
+function formatTimestampForFilename(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  const seconds = String(date.getSeconds()).padStart(2, "0");
+
+  return `${year}-${month}-${day}_${hours}-${minutes}-${seconds}`;
 }
