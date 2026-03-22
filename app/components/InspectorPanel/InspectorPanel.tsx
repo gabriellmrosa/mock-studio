@@ -15,12 +15,13 @@ import { ChevronDown, RotateCcw, Upload } from "lucide-react";
 type InspectorPanelProps = {
   copy: AppCopy;
   object: SceneObject | null;
-  onColorChange: (hex: string) => void;
   onDebugColorChange: (part: string, hex: string) => void;
   onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onModelChange: (modelId: SceneObject["modelId"]) => void;
   onResetObject: () => void;
+  onThemeColorChange: (part: string, hex: string) => void;
   onThemeChange: (themeId: string) => void;
+  onToggleCustomColors: () => void;
   onToggleDebugMode: () => void;
   onToggleDeviceShell: () => void;
   onToggleMatteColors: () => void;
@@ -38,12 +39,13 @@ type InspectorPanelProps = {
 export default function InspectorPanel({
   copy,
   object,
-  onColorChange,
   onDebugColorChange,
   onImageUpload,
   onModelChange,
   onResetObject,
+  onThemeColorChange,
   onThemeChange,
+  onToggleCustomColors,
   onToggleDebugMode,
   onToggleDeviceShell,
   onToggleMatteColors,
@@ -63,6 +65,8 @@ export default function InspectorPanel({
   const uploadRecommendation = model?.recommendedUploadSize
     ? `${copy.screenSectionHintPrefix} ${model.recommendedUploadSize}`
     : "";
+  const customizableColorKeys = model?.customizableColorKeys ?? [];
+  const customizableColorLabels = model?.customizableColorLabels ?? {};
 
   return (
     <aside className="editor-sidebar editor-sidebar-shell inspector-sidebar inspector-sidebar-scroll">
@@ -150,20 +154,8 @@ export default function InspectorPanel({
                   </button>
                 ))}
               </div>
-              {model?.primaryColorKey ? (
+              {customizableColorKeys.length > 0 ? (
                 <>
-                  <div className="theme-color-inline">
-                    <span className="theme-color-inline-label">
-                      {copy.bodyColorLabel}
-                    </span>
-                    <ColorRow
-                      label=""
-                      uiTheme={uiTheme}
-                      value={object.colors[model.primaryColorKey] ?? ""}
-                      onChange={onColorChange}
-                      compact
-                    />
-                  </div>
                   <label className="inspector-inline-toggle">
                     <span className="inspector-inline-toggle-text">{copy.matteColorLabel}</span>
                     <input
@@ -173,6 +165,30 @@ export default function InspectorPanel({
                       className="inspector-checkbox"
                     />
                   </label>
+
+                  <label className="inspector-inline-toggle">
+                    <span className="inspector-inline-toggle-text">{copy.bodyColorLabel}</span>
+                    <input
+                      type="checkbox"
+                      checked={object.customColorsEnabled}
+                      onChange={onToggleCustomColors}
+                      className="inspector-checkbox"
+                    />
+                  </label>
+
+                  {object.customColorsEnabled ? (
+                    <div className="panel-card custom-theme-panel">
+                      {customizableColorKeys.map((part) => (
+                        <ColorRow
+                          key={part}
+                          label={customizableColorLabels[part] ?? formatColorPartLabel(part)}
+                          uiTheme={uiTheme}
+                          value={object.colors[part] ?? "#000000"}
+                          onChange={(hex) => onThemeColorChange(part, hex)}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
                 </>
               ) : null}
             </PanelSection>
@@ -324,4 +340,12 @@ export default function InspectorPanel({
       </div>
     </aside>
   );
+}
+
+function formatColorPartLabel(part: string) {
+  return part
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/([A-Z]+)([A-Z][a-z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
 }

@@ -5,7 +5,7 @@
 .color-row {
   align-items: center;
   display: flex;
-  gap: var(--space-3);
+  gap: var(--space-2);
 }
 
 .color-row-compact {
@@ -38,14 +38,14 @@
 
 .color-row-swatch-compact {
   border-radius: var(--radius-xs);
-  height: 1.75rem;
-  width: 1.75rem;
+  height: 1.5rem;
+  width: 1.5rem;
 }
 
 .color-row-swatch-default {
   border-radius: var(--radius-full);
-  height: 2rem;
-  width: 2rem;
+  height: 1.625rem;
+  width: 1.625rem;
 }
 
 .color-row-swatch-input {
@@ -70,12 +70,12 @@
 
 .color-row-input-compact {
   padding: var(--space-2) var(--space-2);
-  width: 5.5rem;
+  width: 4.75rem;
 }
 
 .color-row-input-default {
   padding: var(--space-2) calc(var(--space-2) + 0.125rem);
-  width: 6rem;
+  width: 5.125rem;
 }
 
 .color-row-input-dark::selection {

@@ -17,7 +17,7 @@ Ja implementado:
 - selecao de objeto ativo por painel de camadas;
 - inspector separado para editar apenas o objeto selecionado;
 - selecao de tema base do device por objeto;
-- ajuste manual da cor do body por objeto;
+- customizacao manual de cores por objeto a partir de uma lista reduzida de partes nomeadas;
 - toggle por objeto para acabamento `fosco` ou mais refletivo;
 - controles de posicao X, Y e Z por objeto;
 - controles de rotacao X, Y e Z por objeto;
@@ -53,6 +53,7 @@ Ja implementado:
 - setas do teclado tambem acionam o pan da camera;
 - grid de profundidade infinito no canvas com cor adaptativa baseada em luminancia do fundo;
 - input de hex no `ColorRow` com debounce, normalizacao e feedback visual de erro;
+- no inspector, `Cor fosca` fica logo abaixo dos temas e `Customizar` expande uma lista menor de cores amigaveis por modelo;
 - convencao de styling consolidada: tokens CSS para design system, Tailwind para layout e CSS de componente para estados/regras locais;
 - `Suspense` por objeto para isolar o carregamento de textura sem disparar re-fit da camera;
 - camera re-ajusta apenas quando objetos sao adicionados ou removidos (nao em mudancas de propriedade).
@@ -77,6 +78,7 @@ Ja implementado:
 - o objeto inicial da cena nao pode ser deletado;
 - novos objetos entram com leve deslocamento automatico para nao sobrepor totalmente o objeto base;
 - ao trocar o modelo de um objeto, a imagem da tela e resetada para placeholder.
+- a customizacao manual de cor nasce das cores atuais do objeto e limpa o `deviceTheme` ao primeiro ajuste.
 
 ## Estrutura Relevante
 
@@ -108,7 +110,7 @@ Ja implementado:
 
 Catalogo consolidado em 4 dispositivos. Arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo. `smartwatch` segue com tela texturizada funcional e material fisico preservado no casco. `notebook` aceita a imagem do app na malha correta da tela, com placeholder proprio e debug semantico inicial. O `smartphone2` antigo foi substituido pelo asset recortado do iPhone 14, com placeholder `1290x2748`, temas ativos, mapeamento semantico inicial e tela aplicada no mesh real do GLB. Placeholders sao definidos por modelo, sem troca por idioma. O inspector continua com toggle por objeto para acabamento fosco. O reset de camera agora usa `saveState/reset` do `camera-controls`, `fit scene` e `reset camera` ficaram separados, e o CTA `Take photo` exporta captura real do canvas.
 
-A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spacing recorrentes foram movidos para tokens em `app/styles/tokens.css`, primitives compartilhados foram consolidados, utilitarios arbitrarios foram reduzidos nos paineis principais e o `ContextMenu` deixou de usar render prop para um trigger padronizado. O canvas agora tambem diferencia loading inicial e loading incremental de objetos.
+A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spacing recorrentes foram movidos para tokens em `app/styles/tokens.css`, primitives compartilhados foram consolidados, utilitarios arbitrarios foram reduzidos nos paineis principais e o `ContextMenu` deixou de usar render prop para um trigger padronizado. O canvas agora tambem diferencia loading inicial e loading incremental de objetos. O inspector tambem ganhou uma primeira versao de `custom theme` por objeto, com lista reduzida de cores amigaveis por modelo.
 
 ## Proximo Passo Sugerido
 

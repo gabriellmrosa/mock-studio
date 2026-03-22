@@ -160,17 +160,39 @@ export default function Home() {
     });
   }
 
-  function handleColorChange(hex: string) {
+  function handleThemeColorChange(part: string, hex: string) {
     if (!selectedObject) {
       return;
     }
 
     const model = DEVICE_MODELS[selectedObject.modelId];
-    if (selectedObject.colors[model.primaryColorKey ?? ""] === hex) {
+    if (selectedObject.colors[part] === hex) {
       return;
     }
+
+    const primaryColorKey = model.primaryColorKey;
+    const isPrimaryColorUpdate = Boolean(primaryColorKey && part === primaryColorKey);
+
+    const nextColors = isPrimaryColorUpdate
+      ? {
+          ...model.buildColorsFromPrimary(hex),
+          ...Object.fromEntries(
+            model.customizableColorKeys.map((key) => [
+              key,
+              key === part
+                ? hex
+                : (selectedObject.colors[key] ??
+                  model.buildColorsFromPrimary(hex)[key]),
+            ]),
+          ),
+        }
+      : {
+          ...selectedObject.colors,
+          [part]: hex,
+        };
+
     updateSceneObject(selectedObject.id, {
-      colors: model.buildColorsFromPrimary(hex),
+      colors: nextColors,
       deviceTheme: "",
     });
   }
@@ -249,12 +271,18 @@ export default function Home() {
       <InspectorPanel
         copy={copy}
         object={selectedObject}
-        onColorChange={handleColorChange}
         onDebugColorChange={handleDebugColorChange}
         onImageUpload={handleImageUpload}
         onModelChange={handleModelChange}
         onResetObject={handleResetObject}
+        onThemeColorChange={handleThemeColorChange}
         onThemeChange={handleThemeChange}
+        onToggleCustomColors={() =>
+          selectedObject &&
+          updateSceneObject(selectedObject.id, {
+            customColorsEnabled: !selectedObject.customColorsEnabled,
+          })
+        }
         onToggleDebugMode={() =>
           selectedObject &&
           updateSceneObject(selectedObject.id, {

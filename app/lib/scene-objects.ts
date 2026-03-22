@@ -8,6 +8,7 @@ import { DEFAULT_OBJECT_TRANSFORM } from "./scene-presets";
 
 export type SceneObject = {
   colors: Record<string, string>;
+  customColorsEnabled: boolean;
   debugMode: boolean;
   debugPartColors: Record<string, string>;
   deletable: boolean;
@@ -57,6 +58,7 @@ export function createSceneObject({
 
   return {
     colors: { ...(model.themes[model.defaultTheme] ?? {}) },
+    customColorsEnabled: false,
     debugMode: false,
     debugPartColors: { ...model.initialDebugColors },
     deletable,
@@ -87,6 +89,7 @@ export function changeSceneObjectModel(
   return {
     ...object,
     colors: { ...(model.themes[model.defaultTheme] ?? {}) },
+    customColorsEnabled: false,
     debugMode: false,
     debugPartColors: { ...model.initialDebugColors },
     deviceTheme: model.defaultTheme,
