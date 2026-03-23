@@ -10,6 +10,7 @@ import {
 } from "../EditorPrimitives/EditorPrimitives";
 import { MoreVertical, Plus } from "lucide-react";
 import ContextMenu from "../ContextMenu/ContextMenu";
+import CreditsModal from "../CreditsModal/CreditsModal";
 
 type LayersPanelProps = {
   copy: AppCopy;
@@ -40,6 +41,7 @@ export default function LayersPanel({
 }: LayersPanelProps) {
   const [editingObjectId, setEditingObjectId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
+  const [isCreditsOpen, setIsCreditsOpen] = useState(false);
 
   function startEditing(object: SceneObject) {
     setEditingObjectId(object.id);
@@ -75,6 +77,11 @@ export default function LayersPanel({
 
   return (
     <aside className="editor-sidebar editor-sidebar-shell layers-sidebar">
+      <CreditsModal
+        isOpen={isCreditsOpen}
+        onClose={() => setIsCreditsOpen(false)}
+      />
+
       <div className="layers-shell">
         <div className="relative">
           <LayersPanelHeader
@@ -255,14 +262,13 @@ export default function LayersPanel({
           </div>
 
           <p>
-            <a
-              href="will_be_added_later"
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
               className="sidebar-footer-link"
+              onClick={() => setIsCreditsOpen(true)}
             >
               Credits
-            </a>{" "}
+            </button>{" "}
             for 3D assets
           </p>
         </footer>

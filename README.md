@@ -55,6 +55,7 @@ Ja implementado:
 - menu de preferencias com submenus cascata (Theme e Language) com checkmark no item ativo;
 - menu de contexto por layer (3 pontos) com opcoes de Renomear e Deletar;
 - `ContextMenu` renderizado via React Portal para evitar clipping por `overflow`;
+- link `Credits` no rodape agora abre um modal proprio via portal, com atribuicoes/licencas dos assets 3D e fechamento por overlay/Esc;
 - icones via `lucide-react`;
 - controle de camera via `CameraControls` com pan programatico;
 - configuracao basica de navegacao do canvas ajustada para wheel/trackpad scroll em dolly, pinch/2 dedos em dolly+truck e zoom ao cursor;
@@ -100,6 +101,7 @@ Ja implementado:
 - [app/components/CustomSelect/](app/components/CustomSelect/): select custom reutilizavel com portal para menus consistentes.
 - [app/components/MockupCanvas/](app/components/MockupCanvas/): canvas 3D, CameraControls, grid, export e renderizacao de multiplos objetos.
 - [app/components/ContextMenu/](app/components/ContextMenu/): menu contextual via portal com trigger padronizado.
+- [app/components/CreditsModal/](app/components/CreditsModal/): modal de atribuicoes/licencas dos assets 3D via portal.
 - [app/components/Smartphone.tsx](app/components/Smartphone.tsx): modelo smartphone com tela texturizada.
 - [app/components/Smartphone2.tsx](app/components/Smartphone2.tsx): modelo smartphone2 atual, baseado no iPhone 14 com tela aplicada no mesh real do GLB.
 - [app/components/Smartwatch.tsx](app/components/Smartwatch.tsx): modelo smartwatch.
@@ -118,7 +120,7 @@ Ja implementado:
 
 ## Onde Paramos
 
-Catalogo consolidado em 4 dispositivos. Arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo. `smartwatch` segue com tela texturizada funcional e material fisico preservado no casco. `notebook` aceita a imagem do app na malha correta da tela, com placeholder proprio, debug semantico inicial e um modo de tela isolada via toggle de `Teclado`; com `Teclado` desligado ficam visiveis apenas a moldura original da tela e a tela, e com `Casca` desligada entra uma tela arredondada separada. O `smartphone2` antigo foi substituido pelo asset recortado do iPhone 14, com placeholder `1290x2748`, temas ativos e tela aplicada no mesh real do GLB, sem o vidro frontal no fluxo visual atual. O `smartphone` recebeu refinamentos de materiais em aneis, speaker e botoes laterais para eliminar artefatos do asset. Placeholders sao definidos por modelo, sem troca por idioma. O inspector continua com toggle por objeto para acabamento fosco e agora usa um `CustomSelect` proprio para a troca de modelo. O reset de camera agora usa `saveState/reset` do `camera-controls`, `fit scene` e `reset camera` ficaram separados, e o CTA `Take photo` exporta captura real do canvas em PNG com transparencia verdadeira, sem cor do stage nem grid.
+Catalogo consolidado em 4 dispositivos. Arquitetura multimodelo com `modelScale`, `baseRotation`, `pivotOffset` e `modelSpawnOffset` por modelo. `smartwatch` segue com tela texturizada funcional e material fisico preservado no casco. `notebook` aceita a imagem do app na malha correta da tela, com placeholder proprio, debug semantico inicial e um modo de tela isolada via toggle de `Teclado`; com `Teclado` desligado ficam visiveis apenas a moldura original da tela e a tela, e com `Casca` desligada entra uma tela arredondada separada. O `smartphone2` antigo foi substituido pelo asset recortado do iPhone 14, com placeholder `1290x2748`, temas ativos e tela aplicada no mesh real do GLB, sem o vidro frontal no fluxo visual atual. O `smartphone` recebeu refinamentos de materiais em aneis, speaker e botoes laterais para eliminar artefatos do asset. Placeholders sao definidos por modelo, sem troca por idioma. O inspector continua com toggle por objeto para acabamento fosco e agora usa um `CustomSelect` proprio para a troca de modelo. O rodape do painel esquerdo agora tambem abre um modal minimalista de `Credits`, via portal, com as atribuicoes e licencas dos assets 3D usados no projeto. O reset de camera agora usa `saveState/reset` do `camera-controls`, `fit scene` e `reset camera` ficaram separados, e o CTA `Take photo` exporta captura real do canvas em PNG com transparencia verdadeira, sem cor do stage nem grid.
 
 A camada de UI tambem passou por uma refatoracao de manutencao: tipografia e spacing recorrentes foram movidos para tokens em `app/styles/tokens.css`, primitives compartilhados foram consolidados, utilitarios arbitrarios foram reduzidos nos paineis principais e o `ContextMenu` deixou de usar render prop para um trigger padronizado. O canvas agora tambem diferencia loading inicial e loading incremental de objetos. O inspector tambem ganhou uma primeira versao de `custom theme` por objeto, com lista reduzida de cores amigaveis por modelo.
 

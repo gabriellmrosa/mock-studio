@@ -121,6 +121,12 @@
 }
 
 .sidebar-footer-link {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
   text-decoration: underline;
 }
 
