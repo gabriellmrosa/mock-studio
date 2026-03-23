@@ -457,6 +457,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     activeLoadingObjectIds.length > 1
       ? `${props.copy.canvasObjectLoadingLabel} (${activeLoadingObjectIds.length})`
       : props.copy.canvasObjectLoadingLabel;
+  const sceneFitKey = `${props.objects.map((object) => object.id).join(",")}::${activeResolvedObjectIds.join(",")}`;
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -527,7 +528,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           onObjectResolved={handleObjectResolved}
           onSelectObject={props.onSelectObject}
           onViewportControlsReady={setViewportControls}
-          sceneFitKey={props.objects.map((o) => o.id).join(",")}
+          sceneFitKey={sceneFitKey}
         />
       </Canvas>
 
