@@ -68,6 +68,9 @@ export type DeviceModelDefinition = {
   recommendedUploadSize: string;
   screenPosition: [number, number, number];
   screenSize: [number, number];
+  // Largura visual efetiva no eixo X em world units, já considerando
+  // o tamanho do GLB, modelScale e baseRotation. Usado para spawn lado a lado.
+  spawnFootprintWidth: number;
   themeOptions: DeviceThemeOption[];
   themes: Record<string, Record<string, string>>;
 };
@@ -340,6 +343,7 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     recommendedUploadSize: "1290x2755",
     screenPosition: [-125, 314.85, -195],
     screenSize: [220, 470],
+    spawnFootprintWidth: 243.01,
     themeOptions: SMARTPHONE_THEME_OPTIONS,
     themes: SMARTPHONE_THEMES,
   },
@@ -360,6 +364,7 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     recommendedUploadSize: "1290x2748",
     screenPosition: [0, 0, 0],
     screenSize: [0, 0],
+    spawnFootprintWidth: 245.19,
     themeOptions: SMARTPHONE2_THEME_OPTIONS,
     themes: SMARTPHONE2_THEMES,
   },
@@ -389,6 +394,7 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     // z-fighting com o bodyBackground, centrado em Y/Z.
     screenPosition: [0.02, 14.52, -0.1],
     screenSize: [6.87, 7.73],
+    spawnFootprintWidth: 160.02,
     themeOptions: SMARTWATCH_THEME_OPTIONS,
     themes: SMARTWATCH_THEMES,
   },
@@ -412,6 +418,7 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     recommendedUploadSize: "2755x1684",
     screenPosition: [0, 0, 0],
     screenSize: [0, 0],
+    spawnFootprintWidth: 720.41,
     themeOptions: NOTEBOOK_THEME_OPTIONS,
     themes: NOTEBOOK_THEMES,
   },

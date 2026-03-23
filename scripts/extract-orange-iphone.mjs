@@ -1,3 +1,5 @@
+// Utility script used during asset preparation to isolate the cropped orange
+// iPhone node from the source GLB and write the derived model used by the app.
 import { NodeIO } from "@gltf-transform/core";
 import { center, prune } from "@gltf-transform/functions";
 

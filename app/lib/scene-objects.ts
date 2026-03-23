@@ -4,7 +4,10 @@ import {
   DEVICE_MODELS,
   type DeviceModelId,
 } from "../models/device-models";
-import { DEFAULT_OBJECT_TRANSFORM } from "./scene-presets";
+import {
+  DEFAULT_OBJECT_TRANSFORM,
+  OBJECT_POSITION_MULTIPLIER,
+} from "./scene-presets";
 
 export type SceneObject = {
   colors: Record<string, string>;
@@ -37,12 +40,64 @@ const MODEL_PLACEHOLDERS: Record<DeviceModelId, string> = {
   notebook: "/placeholder-2755x1684.png",
 };
 
+const SPAWN_GAP_WORLD_X = 28;
+
 export function getPlaceholderImageUrl(modelId: DeviceModelId = "smartphone") {
   return MODEL_PLACEHOLDERS[modelId];
 }
 
 export function isPlaceholderImageUrl(imageUrl: string) {
   return Object.values(MODEL_PLACEHOLDERS).includes(imageUrl);
+}
+
+function hasSameModelAtTransform(
+  object: SceneObject,
+  modelId: DeviceModelId,
+  positionY: number,
+  positionZ: number,
+) {
+  return (
+    object.modelId === modelId &&
+    object.positionY === positionY &&
+    object.positionZ === positionZ
+  );
+}
+
+function getNormalizedSpawnWidth(modelId: DeviceModelId, scale = 1) {
+  return (DEVICE_MODELS[modelId].spawnFootprintWidth * scale) / OBJECT_POSITION_MULTIPLIER;
+}
+
+export function getOffsetSpawnTransform(
+  objects: SceneObject[],
+  modelId: DeviceModelId,
+) {
+  const { positionY, positionZ } = DEFAULT_OBJECT_TRANSFORM;
+  const objectsOnDefaultPlane = objects.filter((object) =>
+    hasSameModelAtTransform(object, modelId, positionY, positionZ),
+  );
+
+  if (objectsOnDefaultPlane.length === 0) {
+    return {
+      positionX: DEFAULT_OBJECT_TRANSFORM.positionX,
+      positionY,
+      positionZ,
+    };
+  }
+
+  const nextWidth = getNormalizedSpawnWidth(modelId);
+  const gapX = SPAWN_GAP_WORLD_X / OBJECT_POSITION_MULTIPLIER;
+  const rightmostEdge = Math.max(
+    ...objectsOnDefaultPlane.map(
+      (object) =>
+        object.positionX + getNormalizedSpawnWidth(object.modelId, object.scale) / 2,
+    ),
+  );
+
+  return {
+    positionX: rightmostEdge + nextWidth / 2 + gapX,
+    positionY,
+    positionZ,
+  };
 }
 
 export function createSceneObject({

@@ -77,6 +77,7 @@ export default function InspectorPanel({
       : true,
   );
   const customizableColorLabels = model?.customizableColorLabels ?? {};
+  const positionXRange = Math.max(5, Math.ceil(Math.abs(object.positionX)) + 1);
   const modelOptions = DEVICE_MODEL_LIST.map((device) => ({
     value: device.id,
     label: device.name,
@@ -245,8 +246,8 @@ export default function InspectorPanel({
                     positionZ: object.positionZ,
                   })
                 }
-                min={-5}
-                max={5}
+                min={-positionXRange}
+                max={positionXRange}
                 step={0.01}
               />
               <Control

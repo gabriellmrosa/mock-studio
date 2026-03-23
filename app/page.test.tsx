@@ -65,9 +65,15 @@ jest.mock("./components/MockupCanvas/MockupCanvas", () => ({
 
 jest.mock("./components/InspectorPanel/InspectorPanel", () => ({
   __esModule: true,
-  default: ({ object }: { object: { name: string; modelId: string } | null }) => (
+  default: ({
+    object,
+  }: {
+    object: { name: string; modelId: string; positionX: number } | null;
+  }) => (
     <aside data-testid="inspector-panel">
-      {object ? `${object.name} :: ${object.modelId}` : "no-selection"}
+      {object
+        ? `${object.name} :: ${object.modelId} :: x=${object.positionX.toFixed(2)}`
+        : "no-selection"}
     </aside>
   ),
 }));
@@ -93,13 +99,13 @@ describe("Home page layers and selection flow", () => {
     render(<Home />);
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
-      "Object 1 :: smartphone",
+      "Object 1 :: smartphone :: x=0.00",
     );
 
     fireEvent.click(screen.getByLabelText("Add layer"));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
-      "Object 2 :: smartphone",
+      "Object 2 :: smartphone :: x=1.94",
     );
     expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
   });
@@ -111,7 +117,7 @@ describe("Home page layers and selection flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "select-Object 1" }));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
-      "Object 1 :: smartphone",
+      "Object 1 :: smartphone :: x=0.00",
     );
   });
 
@@ -143,7 +149,7 @@ describe("Home page layers and selection flow", () => {
     fireEvent.click(deleteButtons[0]);
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
-      "Object 1 :: smartphone",
+      "Object 1 :: smartphone :: x=0.00",
     );
   });
 });

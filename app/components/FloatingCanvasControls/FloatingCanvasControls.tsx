@@ -14,6 +14,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import ContextMenu, { type ContextMenuItem } from "../ContextMenu/ContextMenu";
 
 type FloatingCanvasControlsProps = {
   bgColor: string | null;
@@ -31,6 +32,12 @@ type FloatingCanvasControlsProps = {
   takePhotoDisabled: boolean;
   uiTheme: UiTheme;
 };
+
+const EXPORT_OPTIONS = [
+  { id: "full-hd", label: "1920x1080", enabled: true },
+  { id: "quad-hd", label: "2560x1440", enabled: false },
+  { id: "ultra-hd", label: "3840x2160", enabled: false },
+] as const;
 
 const DEFAULT_BG: Record<UiTheme, string> = {
   dark: "#2e2b28",
@@ -60,6 +67,13 @@ export default function FloatingCanvasControls({
     uiTheme === "dark"
       ? "1.5px solid rgba(255,255,255,0.28)"
       : "1.5px solid rgba(0,0,0,0.18)";
+  const exportMenuItems: ContextMenuItem[] = EXPORT_OPTIONS.map((option) => ({
+    type: "action",
+    label: option.label,
+    badgeLabel: option.enabled ? undefined : "Em breve",
+    disabled: !option.enabled,
+    onClick: onTakePhoto,
+  }));
 
   return (
     <div className="canvas-floating-toolbar">
@@ -163,17 +177,22 @@ export default function FloatingCanvasControls({
         </div>
       </div>
 
-      <button
-        type="button"
-        className="canvas-capture-button"
-        aria-label={copy.takePhotoButton}
-        disabled={takePhotoDisabled}
-        title={copy.takePhotoButton}
-        onClick={onTakePhoto}
-      >
-        <Camera size={16} />
-        <span>{copy.takePhotoButton}</span>
-      </button>
+      <ContextMenu
+        items={exportMenuItems}
+        panelPlacement="top-end"
+        panelClassName="canvas-export-context-menu"
+        triggerAriaLabel={copy.takePhotoButton}
+        triggerTitle={copy.takePhotoButton}
+        triggerDisabled={takePhotoDisabled}
+        triggerIcon={<Camera size={16} />}
+        triggerContentClassName="canvas-capture-button"
+        triggerContent={
+          <>
+            <Camera size={16} />
+            <span>{copy.takePhotoButton}</span>
+          </>
+        }
+      />
     </div>
   );
 }

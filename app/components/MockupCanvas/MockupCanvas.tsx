@@ -180,8 +180,8 @@ function SceneBridge({
         sectionSize={200}
         sectionThickness={1}
         sectionColor={gridColors.section}
-        fadeDistance={3000}
-        fadeStrength={1.5}
+        fadeDistance={5500}
+        fadeStrength={0.9}
         infiniteGrid
       />
       <Bounds margin={1.18}>

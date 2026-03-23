@@ -74,3 +74,7 @@
   opacity: 0.6;
   transform: none;
 }
+
+.canvas-export-context-menu {
+  width: 12.75rem;
+}

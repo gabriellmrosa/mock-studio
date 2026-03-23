@@ -1,13 +1,17 @@
 "use client";
 
 import "./ContextMenu.css";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronRight } from "lucide-react";
 import { IconButton } from "../EditorPrimitives/EditorPrimitives";
 
+const TOP_END_MENU_GAP = 16;
+
 export type ContextMenuActionItem = {
   type: "action";
+  badgeLabel?: string;
+  disabled?: boolean;
   label: string;
   onClick: () => void;
   variant?: "default" | "danger";
@@ -28,8 +32,13 @@ export type ContextMenuItem = ContextMenuActionItem | ContextMenuSubmenuItem;
 
 type ContextMenuProps = {
   items: ContextMenuItem[];
+  panelPlacement?: "bottom-start" | "top-end";
+  panelClassName?: string;
   triggerAriaLabel: string;
   triggerClassName?: string;
+  triggerContentClassName?: string;
+  triggerContent?: ReactNode;
+  triggerDisabled?: boolean;
   triggerIcon: ReactNode;
   triggerStopPropagation?: boolean;
   triggerTitle: string;
@@ -39,8 +48,13 @@ type PanelPosition = { top: number; left: number };
 
 export default function ContextMenu({
   items,
+  panelPlacement = "bottom-start",
+  panelClassName,
   triggerAriaLabel,
   triggerClassName,
+  triggerContentClassName,
+  triggerContent,
+  triggerDisabled = false,
   triggerIcon,
   triggerStopPropagation = false,
   triggerTitle,
@@ -49,6 +63,7 @@ export default function ContextMenu({
   const [panelPosition, setPanelPosition] = useState<PanelPosition | null>(
     null,
   );
+  const [isPanelPositionResolved, setIsPanelPositionResolved] = useState(false);
   const [activeSubmenuIndex, setActiveSubmenuIndex] = useState<number | null>(
     null,
   );
@@ -61,6 +76,7 @@ export default function ContextMenu({
   function close() {
     setIsOpen(false);
     setPanelPosition(null);
+    setIsPanelPositionResolved(false);
     setActiveSubmenuIndex(null);
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
@@ -100,12 +116,41 @@ export default function ContextMenu({
     } else {
       const rect = rootRef.current?.getBoundingClientRect();
       if (rect) {
-        setPanelPosition({ top: rect.bottom + 4, left: rect.left });
+        setPanelPosition(
+          panelPlacement === "top-end"
+            ? { top: rect.top, left: rect.right }
+            : { top: rect.bottom + 4, left: rect.left },
+        );
       }
       setIsOpen(true);
+      setIsPanelPositionResolved(panelPlacement === "bottom-start");
       setActiveSubmenuIndex(null);
     }
   }
+
+  useLayoutEffect(() => {
+    if (!isOpen || panelPlacement !== "top-end" || !panelRef.current || !panelPosition) {
+      return;
+    }
+
+    const triggerRect = rootRef.current?.getBoundingClientRect();
+    if (!triggerRect) {
+      return;
+    }
+
+    const panelRect = panelRef.current.getBoundingClientRect();
+    const nextTop = triggerRect.top - panelRect.height - TOP_END_MENU_GAP;
+    const nextLeft = triggerRect.right - panelRect.width;
+
+    if (nextTop !== panelPosition.top || nextLeft !== panelPosition.left) {
+      setPanelPosition({ top: nextTop, left: nextLeft });
+      return;
+    }
+
+    if (!isPanelPositionResolved) {
+      setIsPanelPositionResolved(true);
+    }
+  }, [isOpen, isPanelPositionResolved, panelPlacement, panelPosition]);
 
   function handleTriggerButtonClick(event?: React.MouseEvent<HTMLButtonElement>) {
     if (triggerStopPropagation) {
@@ -158,8 +203,14 @@ export default function ContextMenu({
       ? createPortal(
           <div
             ref={panelRef}
-            className="context-menu-panel"
-            style={{ top: panelPosition.top, left: panelPosition.left }}
+            className={`context-menu-panel ${panelClassName ?? ""}`.trim()}
+            style={
+              {
+                top: panelPosition.top,
+                left: panelPosition.left,
+                visibility: isPanelPositionResolved ? "visible" : "hidden",
+              }
+            }
             onMouseEnter={cancelCloseSubmenu}
             onMouseLeave={scheduleCloseSubmenu}
           >
@@ -169,10 +220,20 @@ export default function ContextMenu({
                   <button
                     key={index}
                     type="button"
-                    className={`context-menu-row${item.variant === "danger" ? " context-menu-row-danger" : ""}`}
-                    onClick={() => handleOptionClick(item.onClick)}
+                    className={`context-menu-row${item.variant === "danger" ? " context-menu-row-danger" : ""}${item.disabled ? " context-menu-row-disabled" : ""}`}
+                    disabled={item.disabled}
+                    onClick={() => {
+                      if (item.disabled) {
+                        return;
+                      }
+
+                      handleOptionClick(item.onClick);
+                    }}
                   >
                     <span className="context-menu-row-label">{item.label}</span>
+                    {item.badgeLabel ? (
+                      <span className="context-menu-row-badge">{item.badgeLabel}</span>
+                    ) : null}
                   </button>
                 );
               }
@@ -218,16 +279,31 @@ export default function ContextMenu({
 
   return (
     <div ref={rootRef} className="context-menu-root">
-      <IconButton
-        aria-expanded={isOpen}
-        aria-label={triggerAriaLabel}
-        title={triggerTitle}
-        active={isOpen}
-        className={triggerClassName}
-        onClick={handleTriggerButtonClick}
-      >
-        {triggerIcon}
-      </IconButton>
+      {triggerContent ? (
+        <button
+          type="button"
+          aria-expanded={isOpen}
+          aria-label={triggerAriaLabel}
+          disabled={triggerDisabled}
+          title={triggerTitle}
+          className={triggerContentClassName}
+          onClick={handleTriggerButtonClick}
+        >
+          {triggerContent}
+        </button>
+      ) : (
+        <IconButton
+          aria-expanded={isOpen}
+          aria-label={triggerAriaLabel}
+          title={triggerTitle}
+          disabled={triggerDisabled}
+          active={isOpen}
+          className={triggerClassName}
+          onClick={handleTriggerButtonClick}
+        >
+          {triggerIcon}
+        </IconButton>
+      )}
       {panel}
     </div>
   );

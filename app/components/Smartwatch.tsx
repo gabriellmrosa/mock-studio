@@ -9,6 +9,7 @@ import {
   buildScreenCanvas,
   MAX_TEXTURE_SIZE,
 } from "../lib/mockup-image";
+import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import {
   SMARTWATCH_DEFAULT_THEME,
   SMARTWATCH_THEMES,
@@ -140,7 +141,7 @@ function SmartwatchImpl({
   const { scene } = useGLTF("/models/smartwatch.glb");
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   useGraph(clone) as unknown as GLTFResult;
-  const effectiveImageUrl = imageUrl ?? "/placeholder-enus.png";
+  const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("smartwatch");
   const sourceTexture = useTexture(effectiveImageUrl);
 
   const screenTexture = useMemo(() => {

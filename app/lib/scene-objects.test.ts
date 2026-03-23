@@ -1,6 +1,7 @@
 import {
   changeSceneObjectModel,
   createSceneObject,
+  getOffsetSpawnTransform,
   getPlaceholderImageUrl,
   isPlaceholderImageUrl,
   resetSceneObject,
@@ -151,5 +152,61 @@ describe("scene-objects", () => {
     }
 
     expect(isPlaceholderImageUrl("data:image/png;base64,abc")).toBe(false);
+  });
+
+  it("offsets spawn position on X when the same model already exists at the default transform", () => {
+    const existingObjects = [
+      createSceneObject({
+        id: "smartphone-1",
+        modelId: "smartphone",
+        name: "Object 1",
+      }),
+    ];
+
+    const spawn = getOffsetSpawnTransform(existingObjects, "smartphone");
+
+    expect(spawn.positionX).toBeCloseTo(1.9357857142857142);
+    expect(spawn.positionY).toBe(0);
+    expect(spawn.positionZ).toBe(0);
+  });
+
+  it("stacks the next same-model spawn after the rightmost object edge", () => {
+    const existingObjects = [
+      createSceneObject({
+        id: "smartphone-1",
+        modelId: "smartphone",
+        name: "Object 1",
+      }),
+      {
+        ...createSceneObject({
+          id: "smartphone-2",
+          modelId: "smartphone",
+          name: "Object 2",
+        }),
+        positionX: 1.9357655525207518,
+      },
+    ];
+
+    const spawn = getOffsetSpawnTransform(existingObjects, "smartphone");
+
+    expect(spawn.positionX).toBeCloseTo(3.871551266806466);
+    expect(spawn.positionY).toBe(0);
+    expect(spawn.positionZ).toBe(0);
+  });
+
+  it("does not offset spawn when the overlapping object is from another model", () => {
+    const existingObjects = [
+      createSceneObject({
+        id: "watch-1",
+        modelId: "smartwatch",
+        name: "Watch 1",
+      }),
+    ];
+
+    expect(getOffsetSpawnTransform(existingObjects, "smartphone")).toEqual({
+      positionX: 0,
+      positionY: 0,
+      positionZ: 0,
+    });
   });
 });

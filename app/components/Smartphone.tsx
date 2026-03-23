@@ -10,6 +10,7 @@ import {
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
 } from "../lib/mockup-image";
+import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import { createSimpleFinishMaterial } from "../lib/simple-finish-material";
 import {
   SMARTPHONE_DEFAULT_THEME,
@@ -345,10 +346,11 @@ function SmartphoneImpl({
       : fallback;
   }
 
+  const placeholderImageUrl = getPlaceholderImageUrl("smartphone");
   const effectiveImageUrl =
-    imageUrl && imageUrl !== "/placeholder-enus.png"
+    imageUrl && imageUrl !== placeholderImageUrl
       ? imageUrl
-      : "/placeholder-enus.png";
+      : placeholderImageUrl;
 
   return (
     <group {...props} dispose={null}>

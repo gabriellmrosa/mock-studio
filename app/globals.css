@@ -28,9 +28,9 @@
   --input-border-hover: #8a8178;
   --input-border-error: #b85252;
   --input-fg: var(--black-980);
-  --surface-hover: #45413c;
-  --surface-active: #635c55;
-  --surface-raised: rgba(72, 67, 62, 0.88);
+  --surface-hover: #524c46;
+  --surface-active: #6f675f;
+  --surface-raised: rgba(78, 73, 68, 0.9);
   --canvas-overlay: rgba(42, 41, 39, 0.58);
   --canvas-toolbar: rgba(57, 53, 49, 0.92);
   --canvas-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);

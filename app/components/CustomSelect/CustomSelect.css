@@ -103,8 +103,17 @@
   background: var(--surface-hover);
 }
 
+[data-theme="dark"] .custom-select-option:hover,
+[data-theme="dark"] .custom-select-option[data-highlighted="true"] {
+  background: color-mix(in srgb, var(--foreground) 12%, var(--surface-raised));
+}
+
 .custom-select-option[data-selected="true"] {
   background: var(--surface-active);
+}
+
+[data-theme="dark"] .custom-select-option[data-selected="true"] {
+  background: color-mix(in srgb, var(--foreground) 18%, var(--surface-raised));
 }
 
 .custom-select-option-copy {

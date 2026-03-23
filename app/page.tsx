@@ -10,6 +10,7 @@ import { readFileAsDataUrl } from "./lib/mockup-image";
 import {
   changeSceneObjectModel,
   createSceneObject,
+  getOffsetSpawnTransform,
   resetSceneObject,
   type SceneObject,
 } from "./lib/scene-objects";
@@ -138,7 +139,17 @@ export default function Home() {
       name: `Object ${sceneObjects.length + 1}`,
     });
 
-    setSceneObjects((current) => [...current, nextObject]);
+    setSceneObjects((current) => {
+      const spawnTransform = getOffsetSpawnTransform(current, nextObject.modelId);
+
+      return [
+        ...current,
+        {
+          ...nextObject,
+          ...spawnTransform,
+        },
+      ];
+    });
     setSelectedObjectId(nextObject.id);
   }
 

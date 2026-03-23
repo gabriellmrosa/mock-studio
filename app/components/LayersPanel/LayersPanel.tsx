@@ -276,7 +276,7 @@ export default function LayersPanel({
             <p>
               by{" "}
               <a
-                href="will_be_added_later"
+                href="https://www.garosa.com.br/"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="sidebar-footer-link"

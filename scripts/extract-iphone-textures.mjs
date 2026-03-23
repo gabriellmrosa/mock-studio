@@ -1,3 +1,5 @@
+// Utility script used during asset preparation to inspect/export key textures
+// from the original iPhone GLB into tmp/ for local analysis.
 import fs from "node:fs/promises";
 import path from "node:path";
 import { NodeIO } from "@gltf-transform/core";
