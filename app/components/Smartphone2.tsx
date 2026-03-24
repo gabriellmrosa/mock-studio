@@ -56,22 +56,6 @@ type Smartphone2Props = JSX.IntrinsicElements["group"] & {
   screenRotation?: [number, number, number];
 };
 
-function rotateCanvas180(source: HTMLCanvasElement) {
-  const canvas = document.createElement("canvas");
-  canvas.width = source.width;
-  canvas.height = source.height;
-
-  const context = canvas.getContext("2d");
-  if (!context) {
-    throw new Error("Não foi possível rotacionar a textura da tela.");
-  }
-
-  context.translate(canvas.width, canvas.height);
-  context.rotate(Math.PI);
-  context.drawImage(source, 0, 0);
-
-  return canvas;
-}
 
 function getRoundedRectangleShape(
   width: number,
@@ -142,7 +126,7 @@ function Smartphone2Impl({
     const imgH =
       img instanceof HTMLImageElement ? (img.naturalHeight || img.height) : img.height;
 
-    const croppedCanvas = buildScreenCanvas(
+    const canvas = buildScreenCanvas(
       img,
       imgW,
       imgH,
@@ -150,14 +134,11 @@ function Smartphone2Impl({
       SCREEN_CROP_H,
       MAX_TEXTURE_SIZE,
     );
-    const canvas = rotateCanvas180(croppedCanvas);
 
     const nextTexture = sourceTexture.clone();
     nextTexture.image = canvas;
     nextTexture.colorSpace = THREE.SRGBColorSpace;
-    nextTexture.flipY = false;
-    nextTexture.repeat.set(1, -1);
-    nextTexture.offset.set(0, 1);
+    nextTexture.flipY = true;
     nextTexture.minFilter = THREE.LinearMipmapLinearFilter;
     nextTexture.magFilter = THREE.LinearFilter;
     nextTexture.anisotropy = 16;
