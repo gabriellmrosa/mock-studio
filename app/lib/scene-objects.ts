@@ -67,16 +67,18 @@ function getNormalizedSpawnWidth(modelId: DeviceModelId, scale = 1) {
   return (DEVICE_MODELS[modelId].spawnFootprintWidth * scale) / OBJECT_POSITION_MULTIPLIER;
 }
 
-export function getOffsetSpawnTransform(
+function getOffsetSpawnTransformForPlane(
   objects: SceneObject[],
   modelId: DeviceModelId,
+  positionY: number,
+  positionZ: number,
+  scale = 1,
 ) {
-  const { positionY, positionZ } = DEFAULT_OBJECT_TRANSFORM;
-  const objectsOnDefaultPlane = objects.filter((object) =>
+  const objectsOnPlane = objects.filter((object) =>
     hasSameModelAtTransform(object, modelId, positionY, positionZ),
   );
 
-  if (objectsOnDefaultPlane.length === 0) {
+  if (objectsOnPlane.length === 0) {
     return {
       positionX: DEFAULT_OBJECT_TRANSFORM.positionX,
       positionY,
@@ -84,10 +86,10 @@ export function getOffsetSpawnTransform(
     };
   }
 
-  const nextWidth = getNormalizedSpawnWidth(modelId);
+  const nextWidth = getNormalizedSpawnWidth(modelId, scale);
   const gapX = SPAWN_GAP_WORLD_X / OBJECT_POSITION_MULTIPLIER;
   const rightmostEdge = Math.max(
-    ...objectsOnDefaultPlane.map(
+    ...objectsOnPlane.map(
       (object) =>
         object.positionX + getNormalizedSpawnWidth(object.modelId, object.scale) / 2,
     ),
@@ -98,6 +100,14 @@ export function getOffsetSpawnTransform(
     positionY,
     positionZ,
   };
+}
+
+export function getOffsetSpawnTransform(
+  objects: SceneObject[],
+  modelId: DeviceModelId,
+) {
+  const { positionY, positionZ } = DEFAULT_OBJECT_TRANSFORM;
+  return getOffsetSpawnTransformForPlane(objects, modelId, positionY, positionZ);
 }
 
 export function createSceneObject({
@@ -129,6 +139,34 @@ export function createSceneObject({
     ...DEFAULT_OBJECT_TRANSFORM,
     showDeviceShell: true,
     showNotebookKeyboard: true,
+  };
+}
+
+export function duplicateSceneObject({
+  id,
+  name,
+  objects,
+  source,
+}: {
+  id?: string;
+  name: string;
+  objects: SceneObject[];
+  source: SceneObject;
+}): SceneObject {
+  const spawnTransform = getOffsetSpawnTransformForPlane(
+    objects,
+    source.modelId,
+    source.positionY,
+    source.positionZ,
+    source.scale,
+  );
+
+  return {
+    ...source,
+    deletable: true,
+    id: id ?? crypto.randomUUID(),
+    name,
+    ...spawnTransform,
   };
 }
 

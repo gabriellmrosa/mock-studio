@@ -20,6 +20,7 @@ export type AppCopy = {
   resetCameraButton: string;
   takePhotoButton: string;
   deleteObject: string;
+  duplicateObject: string;
   renameObject: string;
   layersSectionTitle: string;
   objectOptionsLabel: string;
@@ -96,6 +97,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     resetCameraButton: "Resetar visão",
     takePhotoButton: "Exportar PNG",
     deleteObject: "Excluir",
+    duplicateObject: "Duplicar",
     renameObject: "Renomear",
     layersSectionTitle: "Camadas",
     objectOptionsLabel: "Opções da camada",
@@ -180,6 +182,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     resetCameraButton: "Reset view",
     takePhotoButton: "Export PNG",
     deleteObject: "Delete",
+    duplicateObject: "Duplicate",
     renameObject: "Rename",
     layersSectionTitle: "Layers",
     objectOptionsLabel: "Layer options",

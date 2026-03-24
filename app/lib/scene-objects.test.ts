@@ -1,6 +1,7 @@
 import {
   changeSceneObjectModel,
   createSceneObject,
+  duplicateSceneObject,
   getOffsetSpawnTransform,
   getPlaceholderImageUrl,
   isPlaceholderImageUrl,
@@ -57,6 +58,63 @@ describe("scene-objects", () => {
     expect(object.matteColors).toBe(true);
     expect(object.imageUrl).toBe("/placeholder-1290x2755.png");
     expect(object.deviceTheme).toBe(DEVICE_MODELS.smartphone.defaultTheme);
+  });
+
+  it("duplicates an object preserving inspector state and shifting it on X", () => {
+    const original = {
+      ...createSceneObject({
+        deletable: false,
+        id: "scene-object",
+        modelId: "notebook",
+        name: "Workspace",
+      }),
+      colors: { keyboardDeck: "#111111", screenBackCover: "#222222" },
+      customColorsEnabled: true,
+      debugMode: true,
+      deviceTheme: "",
+      imageUrl: "data:image/png;base64,abc",
+      isVisible: false,
+      matteColors: false,
+      positionX: 1.25,
+      positionY: -0.4,
+      positionZ: 0.6,
+      rotationX: 12,
+      rotationY: 194,
+      rotationZ: -8,
+      scale: 1.3,
+      showDeviceShell: false,
+      showNotebookKeyboard: false,
+    };
+
+    const duplicated = duplicateSceneObject({
+      id: "scene-object-copy",
+      name: "Workspace copy",
+      objects: [original],
+      source: original,
+    });
+
+    expect(duplicated).toMatchObject({
+      colors: original.colors,
+      customColorsEnabled: true,
+      debugMode: true,
+      deletable: true,
+      deviceTheme: "",
+      id: "scene-object-copy",
+      imageUrl: "data:image/png;base64,abc",
+      isVisible: false,
+      matteColors: false,
+      modelId: "notebook",
+      name: "Workspace copy",
+      positionY: -0.4,
+      positionZ: 0.6,
+      rotationX: 12,
+      rotationY: 194,
+      rotationZ: -8,
+      scale: 1.3,
+      showDeviceShell: false,
+      showNotebookKeyboard: false,
+    });
+    expect(duplicated.positionX).toBeCloseTo(8.139328571428572);
   });
 
   it("resets transform only when resetting an object", () => {

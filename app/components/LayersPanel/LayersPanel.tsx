@@ -19,6 +19,7 @@ type LayersPanelProps = {
   locale: Locale;
   objects: SceneObject[];
   onAddObject: () => void;
+  onDuplicateObject: (id: string) => void;
   onLocaleChange: (locale: Locale) => void;
   onRenameObject: (id: string, name: string) => void;
   onRemoveObject: (id: string) => void;
@@ -35,6 +36,7 @@ export default function LayersPanel({
   locale,
   objects,
   onAddObject,
+  onDuplicateObject,
   onLocaleChange,
   onRenameObject,
   onRemoveObject,
@@ -230,6 +232,11 @@ export default function LayersPanel({
                       </IconButton>
                       <ContextMenu
                         items={[
+                          {
+                            type: "action",
+                            label: copy.duplicateObject,
+                            onClick: () => onDuplicateObject(object.id),
+                          },
                           {
                             type: "action",
                             label: copy.renameObject,

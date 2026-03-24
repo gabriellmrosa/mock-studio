@@ -56,6 +56,7 @@ const copy: AppCopy = {
   debugOn: "Debug on",
   debugSectionTitle: "Debug",
   deleteObject: "Delete",
+  duplicateObject: "Duplicate",
   english: "EN-US",
   fitSceneButton: "Fit to view",
   hideObject: "Hide",
@@ -119,6 +120,7 @@ describe("LayersPanel", () => {
         locale="en-US"
         objects={[object]}
         onAddObject={jest.fn()}
+        onDuplicateObject={jest.fn()}
         onLocaleChange={jest.fn()}
         onRenameObject={jest.fn()}
         onRemoveObject={jest.fn()}
@@ -149,6 +151,7 @@ describe("LayersPanel", () => {
         locale="en-US"
         objects={[object]}
         onAddObject={jest.fn()}
+        onDuplicateObject={jest.fn()}
         onLocaleChange={jest.fn()}
         onRenameObject={onRenameObject}
         onRemoveObject={jest.fn()}

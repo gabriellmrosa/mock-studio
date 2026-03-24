@@ -111,6 +111,7 @@ const copy: AppCopy = {
   debugOn: "Debug on",
   debugSectionTitle: "Debug",
   deleteObject: "Delete",
+  duplicateObject: "Duplicate",
   english: "EN-US",
   fitSceneButton: "Fit to view",
   hideObject: "Hide",

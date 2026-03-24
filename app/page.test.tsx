@@ -39,7 +39,10 @@ jest.mock("./components/ContextMenu/ContextMenu", () => ({
                 <button
                   key={`${triggerAriaLabel}-${item.label}`}
                   type="button"
-                  onClick={item.onClick}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    item.onClick();
+                  }}
                 >
                   {item.label}
                 </button>
@@ -162,5 +165,18 @@ describe("Home page layers and selection flow", () => {
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
       "Object 1 :: smartphone :: x=0.00",
     );
+  });
+
+  it("duplicates a layer preserving its state and selects the copy", () => {
+    render(<Home />);
+
+    const objectOptionsButtons = screen.getAllByLabelText("Layer options");
+    fireEvent.click(objectOptionsButtons[0]);
+    fireEvent.click(screen.getByText("Duplicate"));
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
+      "Object 1 copy :: smartphone :: x=1.94",
+    );
+    expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
   });
 });

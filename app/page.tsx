@@ -14,6 +14,7 @@ import { readFileAsDataUrl } from "./lib/mockup-image";
 import {
   changeSceneObjectModel,
   createSceneObject,
+  duplicateSceneObject,
   getOffsetSpawnTransform,
   resetSceneObject,
   type SceneObject,
@@ -168,6 +169,29 @@ export default function Home() {
     setSceneObjects((current) => current.filter((object) => object.id !== id));
   }
 
+  function getDuplicateName(name: string) {
+    return `${name} copy`;
+  }
+
+  function handleDuplicateObject(id: string) {
+    setSceneObjects((current) => {
+      const source = current.find((object) => object.id === id);
+
+      if (!source) {
+        return current;
+      }
+
+      const duplicated = duplicateSceneObject({
+        name: getDuplicateName(source.name),
+        objects: current,
+        source,
+      });
+
+      setSelectedObjectId(duplicated.id);
+      return [...current, duplicated];
+    });
+  }
+
   function handleToggleObjectVisibility(id: string) {
     setSceneObjects((current) =>
       current.map((object) =>
@@ -265,6 +289,7 @@ export default function Home() {
         locale={locale}
         objects={sceneObjects}
         onAddObject={handleAddObject}
+        onDuplicateObject={handleDuplicateObject}
         onLocaleChange={setLocale}
         onRenameObject={(id, name) => updateSceneObject(id, { name })}
         onRemoveObject={handleRemoveObject}

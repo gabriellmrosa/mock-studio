@@ -5,6 +5,7 @@ Open source editor for composing app screens inside 3D device mockups with `Next
 ## Features
 
 - multi-object composition with `smartphone`, `smartphone2`, `smartwatch` and `notebook`
+- layer duplication that preserves transform, image and inspector settings
 - per-object image upload with model-specific placeholders
 - per-object transform controls for position, rotation and scale
 - device themes plus manual color customization by semantic part
@@ -92,6 +93,7 @@ Checklist:
 
 - placeholders are model-specific and no longer tied to locale
 - same-model objects spawn side by side to avoid invisible overlap when adding layers
+- duplicated layers also reuse the anti-overlap spawn logic on the same plane
 - export uses a floating resolution menu, with `1920x1080` active and higher presets marked as `Em breve`
 - PNG export now renders offscreen, avoiding visible canvas distortion during capture
 - changing the model of an existing layer preserves its current transform
