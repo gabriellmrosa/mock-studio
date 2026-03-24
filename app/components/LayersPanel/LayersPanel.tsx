@@ -137,7 +137,7 @@ export default function LayersPanel({
                   },
                 ]}
                 triggerAriaLabel={copy.preferencesLabel}
-                triggerClassName="context-menu-trigger-quiet"
+                triggerClassName="context-menu-trigger-quiet editor-icon-button-no-hover-bg"
                 triggerTitle={copy.preferencesLabel}
                 triggerIcon={<MoreVertical size={12} />}
               />
@@ -217,7 +217,7 @@ export default function LayersPanel({
                         title={
                           object.isVisible ? copy.hideObject : copy.showObject
                         }
-                        className="layer-inline-action"
+                        className="layer-inline-action editor-icon-button-no-hover-bg"
                         active={!object.isVisible}
                         onClick={(event) => {
                           event.stopPropagation();
@@ -254,7 +254,7 @@ export default function LayersPanel({
                             : []),
                         ]}
                         triggerAriaLabel={copy.objectOptionsLabel}
-                        triggerClassName="layer-menu-trigger context-menu-trigger-quiet"
+                        triggerClassName="layer-menu-trigger context-menu-trigger-quiet editor-icon-button-no-hover-bg"
                         triggerStopPropagation
                         triggerTitle={copy.objectOptionsLabel}
                         triggerIcon={<MoreVertical size={12} />}

@@ -139,6 +139,13 @@
   cursor: pointer;
 }
 
+.editor-icon-button-no-hover-bg:hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--icon-fg);
+  transform: none;
+}
+
 .editor-icon-button-active {
   background: var(--surface-active);
   border-color: var(--button-border-hover);
