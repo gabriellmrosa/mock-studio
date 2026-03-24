@@ -1,5 +1,3 @@
-"use client";
-
 export type Locale = "pt-BR" | "en-US";
 export type UiTheme = "dark" | "light";
 
@@ -57,6 +55,9 @@ export type AppCopy = {
   canvasInitialLoadingLabel: string;
   canvasObjectLoadingLabel: string;
   canvasExportLoadingLabel: string;
+  photoExportSuccess: string;
+  photoExportError: string;
+  dismissSnackbar: string;
   desktopOnlyTitle: string;
   desktopOnlyBody: string;
   desktopOnlyHint: string;
@@ -130,6 +131,10 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     canvasInitialLoadingLabel: "Preparando cena",
     canvasObjectLoadingLabel: "Atualizando visualização",
     canvasExportLoadingLabel: "Tirando a foto",
+    photoExportSuccess:
+      "Foto exportada com sucesso. Confira a pasta Downloads.",
+    photoExportError: "Não foi possível exportar a foto. Tente novamente.",
+    dismissSnackbar: "Fechar aviso",
     desktopOnlyTitle: "Disponível apenas em desktop",
     desktopOnlyBody:
       "Este app roda apenas em desktop ou notebook com janela de no mínimo {size}.",
@@ -210,6 +215,10 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     canvasInitialLoadingLabel: "Preparing scene",
     canvasObjectLoadingLabel: "Refreshing preview",
     canvasExportLoadingLabel: "Taking photo",
+    photoExportSuccess:
+      "Photo exported successfully. Check your Downloads folder.",
+    photoExportError: "Could not export the photo. Please try again.",
+    dismissSnackbar: "Dismiss notice",
     desktopOnlyTitle: "Desktop only",
     desktopOnlyBody:
       "This app works only on desktop or laptop screens with a minimum viewport of {size}.",

@@ -26,6 +26,7 @@ import {
   exportCanvasPhoto,
   formatTimestampForFilename,
 } from "./export-photo";
+import ActivityNotice from "../ActivityNotice/ActivityNotice";
 
 export type ExportPreset = {
   height: number;
@@ -36,6 +37,7 @@ export type ExportPreset = {
 type MockupCanvasProps = {
   copy: AppCopy;
   objects: SceneObject[];
+  onNotify?: (tone: "error" | "success", message: string) => void;
   onSelectObject: (id: string) => void;
   scaleOverrides: ScaleOverrides;
   spawnOverrides: SpawnOverrides;
@@ -500,8 +502,10 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         ...TAKE_PHOTO_PRESET,
         label: `mock-photo-${formatTimestampForFilename(new Date())}`,
       });
+      props.onNotify?.("success", props.copy.photoExportSuccess);
     } catch (error) {
       console.error("Failed to export canvas photo.", error);
+      props.onNotify?.("error", props.copy.photoExportError);
     } finally {
       setIsExporting(false);
     }
@@ -537,29 +541,15 @@ export default function MockupCanvas(props: MockupCanvasProps) {
 
       <div className="canvas-stage-overlay">
         {isInitialSceneLoading ? (
-          <div className="canvas-loading-overlay" role="status" aria-live="polite">
-            <div className="canvas-loading-minimal">
-              <div className="canvas-loading-spinner" aria-hidden="true" />
-              <p className="canvas-loading-label">{props.copy.canvasInitialLoadingLabel}</p>
-            </div>
-          </div>
+          <ActivityNotice label={props.copy.canvasInitialLoadingLabel} />
         ) : null}
 
         {showIncrementalLoading ? (
-          <div className="canvas-loading-chip" role="status" aria-live="polite">
-            <div className="canvas-loading-spinner canvas-loading-spinner-small" aria-hidden="true" />
-            <span>{incrementalLoadingLabel}</span>
-          </div>
+          <ActivityNotice label={incrementalLoadingLabel} />
         ) : null}
 
         {isExporting ? (
-          <div className="canvas-loading-chip" role="status" aria-live="polite">
-            <div
-              className="canvas-loading-spinner canvas-loading-spinner-small"
-              aria-hidden="true"
-            />
-            <span>{props.copy.canvasExportLoadingLabel}</span>
-          </div>
+          <ActivityNotice label={props.copy.canvasExportLoadingLabel} />
         ) : null}
 
         <FloatingCanvasControls

@@ -5,6 +5,9 @@ import type { ScaleOverrides, SpawnOverrides } from "./components/MockupCanvas/M
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
 import MockupCanvas from "./components/MockupCanvas/MockupCanvas";
+import Snackbar, {
+  type SnackbarNotification,
+} from "./components/Snackbar/Snackbar";
 import { APP_VERSION } from "./lib/app-version";
 import { APP_COPY, type Locale, type UiTheme } from "./lib/i18n";
 import { readFileAsDataUrl } from "./lib/mockup-image";
@@ -49,6 +52,9 @@ function detectBrowserTheme(): UiTheme {
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("pt-BR");
   const [uiTheme, setUiTheme] = useState<UiTheme>("dark");
+  const [notification, setNotification] = useState<SnackbarNotification | null>(
+    null,
+  );
   const isInitialized = useRef(false);
   const [uploadError, setUploadError] = useState("");
   const [sceneObjects, setSceneObjects] = useState<SceneObject[]>(() => [
@@ -272,6 +278,13 @@ export default function Home() {
       <MockupCanvas
         copy={copy}
         objects={sceneObjects}
+        onNotify={(tone, message) =>
+          setNotification({
+            id: Date.now(),
+            message,
+            tone,
+          })
+        }
         onSelectObject={setSelectedObjectId}
         scaleOverrides={scaleOverrides}
         spawnOverrides={spawnOverrides}
@@ -319,6 +332,11 @@ export default function Home() {
         uploadError={uploadError}
       />
       </main>
+      <Snackbar
+        dismissLabel={copy.dismissSnackbar}
+        notification={notification}
+        onDismiss={() => setNotification(null)}
+      />
 
       <section
         className="desktop-only-blocker"

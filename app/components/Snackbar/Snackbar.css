@@ -1,0 +1,75 @@
+.snackbar-root {
+  bottom: var(--space-5);
+  left: 50%;
+  pointer-events: none;
+  position: fixed;
+  transform: translateX(-50%);
+  z-index: 120;
+}
+
+.snackbar {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface-raised) 96%, transparent);
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--canvas-shadow);
+  color: var(--foreground);
+  display: inline-flex;
+  gap: var(--space-3);
+  max-width: min(34rem, calc(100vw - 2rem));
+  min-height: 2.75rem;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-4);
+  pointer-events: auto;
+}
+
+.snackbar-tone-success {
+  border-color: color-mix(in srgb, var(--button-border) 72%, var(--black-800));
+}
+
+.snackbar-tone-error {
+  border-color: color-mix(in srgb, var(--button-border) 64%, #c04040);
+}
+
+.snackbar-message {
+  flex: 1;
+  font-size: var(--font-size-300);
+  line-height: 1.4;
+}
+
+.snackbar-close {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 1.875rem;
+  justify-content: center;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+  width: 1.875rem;
+}
+
+.snackbar-close:hover {
+  background: color-mix(in srgb, var(--surface-hover) 72%, transparent);
+  color: var(--foreground);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 767px) {
+  .snackbar-root {
+    bottom: var(--space-4);
+    left: var(--space-4);
+    right: var(--space-4);
+    transform: none;
+  }
+
+  .snackbar {
+    max-width: none;
+    width: 100%;
+  }
+}
