@@ -34,8 +34,9 @@ export type SceneObject = {
 };
 
 const MODEL_PLACEHOLDERS: Record<DeviceModelId, string> = {
-  smartphone: "/placeholder-1290x2755.png",
+  smartphone: "/placeholder-1290x2748.png",
   smartphone2: "/placeholder-1290x2748.png",
+  smartphone3: "/placeholder-1290x2755.png",
   smartwatch: "/placeholder-1290x1452.png",
   notebook: "/placeholder-2755x1684.png",
 };

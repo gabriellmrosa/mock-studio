@@ -84,7 +84,9 @@ export default function InspectorPanel({
       value: device.id,
       label: device.name,
       icon:
-        device.id === "smartphone" || device.id === "smartphone2" ? (
+        device.id === "smartphone" ||
+        device.id === "smartphone2" ||
+        device.id === "smartphone3" ? (
           <Smartphone size={14} />
         ) : device.id === "smartwatch" ? (
           <Watch size={14} />

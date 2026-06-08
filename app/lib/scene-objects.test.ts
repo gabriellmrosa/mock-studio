@@ -57,7 +57,7 @@ describe("scene-objects", () => {
     expect(object.showDeviceShell).toBe(true);
     expect(object.showNotebookKeyboard).toBe(true);
     expect(object.matteColors).toBe(true);
-    expect(object.imageUrl).toBe("/placeholder-1290x2755.png");
+    expect(object.imageUrl).toBe("/placeholder-1290x2748.png");
     expect(object.deviceTheme).toBe(DEVICE_MODELS.smartphone.defaultTheme);
   });
 
@@ -230,7 +230,7 @@ describe("scene-objects", () => {
 
     const spawn = getOffsetSpawnTransform(existingObjects, "smartphone");
 
-    expect(spawn.positionX).toBeCloseTo(1.9357857142857142);
+    expect(spawn.positionX).toBeCloseTo(1.9513571428571428);
     expect(spawn.positionY).toBe(0);
     expect(spawn.positionZ).toBe(0);
   });
@@ -254,7 +254,7 @@ describe("scene-objects", () => {
 
     const spawn = getOffsetSpawnTransform(existingObjects, "smartphone");
 
-    expect(spawn.positionX).toBeCloseTo(3.871551266806466);
+    expect(spawn.positionX).toBeCloseTo(3.8871226953778946);
     expect(spawn.positionY).toBe(0);
     expect(spawn.positionZ).toBe(0);
   });
@@ -286,7 +286,7 @@ describe("scene-objects", () => {
 
     const spawn = getSequentialSpawnTransform(existingObjects, "smartphone");
 
-    expect(spawn.positionX).toBeCloseTo(1.6393928571428573);
+    expect(spawn.positionX).toBeCloseTo(1.6471785714285714);
     expect(spawn.positionY).toBe(0);
     expect(spawn.positionZ).toBe(0);
   });

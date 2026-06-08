@@ -35,7 +35,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 
 ## Features
 
-- multi-object composition with `smartphone`, `smartphone2`, `smartwatch` and `notebook`
+- multi-object composition with `smartphone`, `smartphone2`, `smartphone3`, `smartwatch` and `notebook`
 - layer duplication that preserves transform, image and inspector settings
 - per-object image upload with model-specific placeholders
 - per-object transform controls for position, rotation and scale
@@ -90,12 +90,15 @@ To see traffic data in production:
 
 ## Model Catalog
 
-| Model | GLB file | modelScale | baseRotation | modelSpawnOffset | Recommended upload |
-|---|---|---|---|---|---|
-| smartphone | smartphone.glb | [1, 1, 1] | [0, 0, 0] | [0, 0, 0] | 1290x2755 |
-| smartphone2 | apple_iphone_14_pro_orange.glb | [122.9, 122.9, 122.9] | [0, 90.5°, 0] | [0, 0, 0] | 1290x2748 |
-| smartwatch | smartwatch.glb | [19.44, 19.44, 19.44] | [0, -π/2, 0] | [130, 40, 270] | 1290x1452 |
-| notebook | notebook.glb | [2311, 2311, 2311] | [0, π, 0] | [120, 100, 0] | 2755x1684 |
+| Model | GLB file | modelScale | baseRotation | modelSpawnOffset | Recommended upload | Notes |
+|---|---|---|---|---|---|---|
+| smartphone | apple_iphone_14_pro_orange.glb | [122.9, 122.9, 122.9] | [0, 90.5°, 0] | [0, 0, 0] | 1290x2748 | default model, notch removed (clean full screen) |
+| smartphone2 | apple_iphone_14_pro_orange.glb | [122.9, 122.9, 122.9] | [0, 90.5°, 0] | [0, 0, 0] | 1290x2748 | same GLB, keeps the notch |
+| smartphone3 | smartphone.glb | [1, 1, 1] | [0, 0, 0] | [0, 0, 0] | 1290x2755 | generic phone |
+| smartwatch | smartwatch.glb | [19.44, 19.44, 19.44] | [0, -π/2, 0] | [130, 40, 270] | 1290x1452 | |
+| notebook | notebook.glb | [2311, 2311, 2311] | [0, π, 0] | [120, 100, 0] | 2755x1684 | |
+
+The `smartphone` (default) and `smartphone2` share the same iPhone GLB. `smartphone` hides the notched screen mesh and covers the molded notch with a generated clean rounded-rectangle screen plane pushed slightly in front; `smartphone2` keeps the original notch.
 
 ## Project Structure
 

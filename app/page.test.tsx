@@ -124,7 +124,7 @@ describe("Home page layers and selection flow", () => {
     fireEvent.click(screen.getByLabelText("Add layer"));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
-      "Object 2 :: smartphone :: x=1.94",
+      "Object 2 :: smartphone :: x=1.95",
     );
     expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
   });
@@ -180,7 +180,7 @@ describe("Home page layers and selection flow", () => {
     fireEvent.click(screen.getByText("Duplicate"));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
-      "Object 1 copy :: smartphone :: x=1.94",
+      "Object 1 copy :: smartphone :: x=1.95",
     );
     expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
   });
@@ -196,7 +196,7 @@ describe("Home page layers and selection flow", () => {
     fireEvent.click(screen.getByLabelText("Add layer"));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
-      "Object 2 :: smartphone :: x=1.64",
+      "Object 2 :: smartphone :: x=1.65",
     );
   });
 });

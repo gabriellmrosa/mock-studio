@@ -5,11 +5,17 @@ import {
   type DebugPartKey,
 } from "../components/Smartphone";
 import { Smartphone2, type Smartphone2DebugPartKey } from "../components/Smartphone2";
+import { Smartphone3, type Smartphone3DebugPartKey } from "../components/Smartphone3";
 import {
   SMARTPHONE2_DEFAULT_THEME,
   SMARTPHONE2_THEMES,
   buildSmartphone2ColorsFromPrimary,
 } from "../lib/3d-tokens/smartphone2";
+import {
+  SMARTPHONE3_DEFAULT_THEME,
+  SMARTPHONE3_THEMES,
+  buildSmartphone3ColorsFromPrimary,
+} from "../lib/3d-tokens/smartphone3";
 import { Smartwatch, type SmartwatchDebugPartKey } from "../components/Smartwatch";
 import { Notebook, type NotebookDebugPartKey } from "../components/Notebook";
 import {
@@ -31,6 +37,7 @@ import {
 export type DeviceModelId =
   | "smartphone"
   | "smartphone2"
+  | "smartphone3"
   | "smartwatch"
   | "notebook";
 
@@ -51,6 +58,7 @@ export type DeviceModelDefinition = {
   component:
     | typeof Smartphone
     | typeof Smartphone2
+    | typeof Smartphone3
     | typeof Smartwatch
     | typeof Notebook;
   defaultTheme: string;
@@ -76,7 +84,7 @@ export type DeviceModelDefinition = {
 };
 
 // ---------------------------------------------------------------------------
-// Smartphone
+// Smartphone — variante sem notch (corte reto na tela). Modelo principal/default.
 // ---------------------------------------------------------------------------
 const SMARTPHONE_THEME_OPTIONS: DeviceThemeOption[] = [
   { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
@@ -86,52 +94,43 @@ const SMARTPHONE_THEME_OPTIONS: DeviceThemeOption[] = [
 ];
 
 const SMARTPHONE_CUSTOMIZABLE_COLOR_KEYS = [
-  "gradientSound",
-  "smartphoneBody",
-  "rightBigSideButton",
-  "leftSmallSideButton",
-  "CircleTopLeft",
-  "CircleTopLeftMiddle",
-  "CircleTopRight",
-  "CircleTopRightMiddle",
+  "body",
+  "sideCuts",
+  "topCutout",
+  "frame",
+  "rearInset",
+  "cameraMicroPart",
+  "cameraBlock",
+  "cameraBlockInner",
+  "cameraLensHighlight",
+  "cameraSideDetail",
 ];
 
 const SMARTPHONE_CUSTOMIZABLE_COLOR_LABELS: Record<string, string> = {
-  gradientSound: "Alto-falante",
-  smartphoneBody: "Corpo",
-  rightBigSideButton: "Botao lateral direito",
-  leftSmallSideButton: "Botao lateral esquerdo",
-  CircleTopLeft: "Anel camera sup. esquerdo",
-  CircleTopLeftMiddle: "Anel camera centro esquerdo",
-  CircleTopRight: "Anel camera sup. direito",
-  CircleTopRightMiddle: "Anel camera centro direito",
+  body: "Corpo",
+  sideCuts: "Recortes laterais",
+  topCutout: "Recorte superior",
+  frame: "Frame",
+  rearInset: "Area traseira",
+  cameraMicroPart: "Detalhe da camera",
+  cameraBlock: "Bloco da camera",
+  cameraBlockInner: "Miolo da camera",
+  cameraLensHighlight: "Brilho da lente",
+  cameraSideDetail: "Detalhe lateral",
 };
 
 const SMARTPHONE_DEBUG_COLORS: Record<DebugPartKey, string> = {
-  smartphoneBody: "#cc00ff",
-  estruturaFrontal: "#ff00cc",
-  gradientSound: "#000000",
-  rightBigSideButton: "#ff4400",
-  CircleTopLeft: "#000000",
-  CircleTopLeftMiddle: "#ccff99",
-  leftSmallSideButton: "#66ff66",
-  notchBolinha1: "#00ff00",
-  notchBolinha2: "#00ffff",
-  notchBolinha3: "#0099ff",
-  CircleTopRightMiddle: "#ff0066",
-  notchPill: "#33ccff",
-  moduloCameraAro: "#99ff00",
-  CircleTopRight: "#ff99cc",
-  lente1: "#0000ff",
-  lente2: "#ffff99",
-  lente3: "#00ff99",
-  behindOrHideElement1: "#ff0000",
-  behindOrHideElement2: "#ff3300",
-  behindOrHideElement3: "#ff5500",
-  behindOrHideElement4: "#ff7700",
-  behindOrHideElement5: "#ff9900",
-  behindOrHideElement6: "#ffbb00",
-  behindOrHideElement7: "#ffdd00",
+  topCutout: "#ff6600",
+  frame: "#00ff99",
+  rearInset: "#ffcc00",
+  body: "#cc00ff",
+  sideCuts: "#00ffff",
+  cameraMicroPart: "#ff0099",
+  cameraBlock: "#66ff00",
+  cameraBlockInner: "#0066ff",
+  screen: "#ffffff",
+  cameraLensHighlight: "#ff3300",
+  cameraSideDetail: "#ffff99",
 };
 
 // ---------------------------------------------------------------------------
@@ -182,6 +181,65 @@ const SMARTPHONE2_CUSTOMIZABLE_COLOR_LABELS: Record<string, string> = {
   cameraBlockInner: "Miolo da camera",
   cameraLensHighlight: "Brilho da lente",
   cameraSideDetail: "Detalhe lateral",
+};
+
+// ---------------------------------------------------------------------------
+// Smartphone 3 — modelo genérico (smartphone.glb), antigo "Smartphone".
+// ---------------------------------------------------------------------------
+const SMARTPHONE3_THEME_OPTIONS: DeviceThemeOption[] = [
+  { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
+  { id: "black",      label: "Preto",      preview: "#1C1C1E" },
+  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
+  { id: "blood",      label: "Red",        preview: "#6a2525" },
+];
+
+const SMARTPHONE3_CUSTOMIZABLE_COLOR_KEYS = [
+  "gradientSound",
+  "smartphoneBody",
+  "rightBigSideButton",
+  "leftSmallSideButton",
+  "CircleTopLeft",
+  "CircleTopLeftMiddle",
+  "CircleTopRight",
+  "CircleTopRightMiddle",
+];
+
+const SMARTPHONE3_CUSTOMIZABLE_COLOR_LABELS: Record<string, string> = {
+  gradientSound: "Alto-falante",
+  smartphoneBody: "Corpo",
+  rightBigSideButton: "Botao lateral direito",
+  leftSmallSideButton: "Botao lateral esquerdo",
+  CircleTopLeft: "Anel camera sup. esquerdo",
+  CircleTopLeftMiddle: "Anel camera centro esquerdo",
+  CircleTopRight: "Anel camera sup. direito",
+  CircleTopRightMiddle: "Anel camera centro direito",
+};
+
+const SMARTPHONE3_DEBUG_COLORS: Record<Smartphone3DebugPartKey, string> = {
+  smartphoneBody: "#cc00ff",
+  estruturaFrontal: "#ff00cc",
+  gradientSound: "#000000",
+  rightBigSideButton: "#ff4400",
+  CircleTopLeft: "#000000",
+  CircleTopLeftMiddle: "#ccff99",
+  leftSmallSideButton: "#66ff66",
+  notchBolinha1: "#00ff00",
+  notchBolinha2: "#00ffff",
+  notchBolinha3: "#0099ff",
+  CircleTopRightMiddle: "#ff0066",
+  notchPill: "#33ccff",
+  moduloCameraAro: "#99ff00",
+  CircleTopRight: "#ff99cc",
+  lente1: "#0000ff",
+  lente2: "#ffff99",
+  lente3: "#00ff99",
+  behindOrHideElement1: "#ff0000",
+  behindOrHideElement2: "#ff3300",
+  behindOrHideElement3: "#ff5500",
+  behindOrHideElement4: "#ff7700",
+  behindOrHideElement5: "#ff9900",
+  behindOrHideElement6: "#ffbb00",
+  behindOrHideElement7: "#ffdd00",
 };
 
 // ---------------------------------------------------------------------------
@@ -326,24 +384,25 @@ const NOTEBOOK_DEBUG_COLORS: Record<NotebookDebugPartKey, string> = {
 
 // ---------------------------------------------------------------------------
 export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
+  // Modelo principal/default = variante SEM notch (GLB do iPhone).
   smartphone: {
     customizableColorKeys: SMARTPHONE_CUSTOMIZABLE_COLOR_KEYS,
     customizableColorLabels: SMARTPHONE_CUSTOMIZABLE_COLOR_LABELS,
-    primaryColorKey: "smartphoneBody",
-    baseRotation: [0, 0, 0],
+    primaryColorKey: "body",
+    baseRotation: [0, (90.5 * Math.PI) / 180, 0],
     buildColorsFromPrimary: buildSmartphoneColorsFromPrimary,
     component: Smartphone,
     defaultTheme: SMARTPHONE_DEFAULT_THEME,
     id: "smartphone",
     initialDebugColors: SMARTPHONE_DEBUG_COLORS,
-    modelScale: [1, 1, 1],
+    modelScale: [122.9, 122.9, 122.9],
     modelSpawnOffset: [0, 0, 0],
     name: "Smartphone",
     pivotOffset: [0, 0, 0],
-    recommendedUploadSize: "1290x2755",
-    screenPosition: [-125, 314.85, -195],
-    screenSize: [220, 470],
-    spawnFootprintWidth: 243.01,
+    recommendedUploadSize: "1290x2748",
+    screenPosition: [0, 0, 0],
+    screenSize: [0, 0],
+    spawnFootprintWidth: 245.19,
     themeOptions: SMARTPHONE_THEME_OPTIONS,
     themes: SMARTPHONE_THEMES,
   },
@@ -367,6 +426,28 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     spawnFootprintWidth: 245.19,
     themeOptions: SMARTPHONE2_THEME_OPTIONS,
     themes: SMARTPHONE2_THEMES,
+  },
+  // Smartphone 3 = modelo genérico (smartphone.glb), antigo "Smartphone".
+  smartphone3: {
+    customizableColorKeys: SMARTPHONE3_CUSTOMIZABLE_COLOR_KEYS,
+    customizableColorLabels: SMARTPHONE3_CUSTOMIZABLE_COLOR_LABELS,
+    primaryColorKey: "smartphoneBody",
+    baseRotation: [0, 0, 0],
+    buildColorsFromPrimary: buildSmartphone3ColorsFromPrimary,
+    component: Smartphone3,
+    defaultTheme: SMARTPHONE3_DEFAULT_THEME,
+    id: "smartphone3",
+    initialDebugColors: SMARTPHONE3_DEBUG_COLORS,
+    modelScale: [1, 1, 1],
+    modelSpawnOffset: [0, 0, 0],
+    name: "Smartphone 3",
+    pivotOffset: [0, 0, 0],
+    recommendedUploadSize: "1290x2755",
+    screenPosition: [-125, 314.85, -195],
+    screenSize: [220, 470],
+    spawnFootprintWidth: 243.01,
+    themeOptions: SMARTPHONE3_THEME_OPTIONS,
+    themes: SMARTPHONE3_THEMES,
   },
   smartwatch: {
     customizableColorKeys: SMARTWATCH_CUSTOMIZABLE_COLOR_KEYS,
