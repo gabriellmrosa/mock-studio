@@ -22,6 +22,11 @@ type ExportPhotoArgs = {
   scene: THREE.Scene;
 };
 
+// Render at a multiple of the target resolution and downscale (SSAA) so the
+// exported PNG has clean, screenshot-quality edges instead of relying on MSAA
+// alone at 1x resolution.
+const SUPERSAMPLE_SCALE = 2;
+
 export async function exportCanvasPhoto({
   camera,
   gl,
@@ -36,11 +41,25 @@ export async function exportCanvasPhoto({
     camera instanceof THREE.PerspectiveCamera ? camera.aspect : null;
   const previousSceneBackground = scene.background;
   const previousGridVisible = gridRef.current?.visible ?? true;
-  const exportTarget = new THREE.WebGLRenderTarget(preset.width, preset.height, {
+
+  // Clamp the supersampled dimensions to the GPU's max texture size so large
+  // presets don't fail to allocate the render target.
+  const maxTextureSize = gl.capabilities.maxTextureSize ?? 4096;
+  const scale = Math.max(
+    1,
+    Math.min(
+      SUPERSAMPLE_SCALE,
+      Math.floor(maxTextureSize / Math.max(preset.width, preset.height)),
+    ),
+  );
+  const renderWidth = preset.width * scale;
+  const renderHeight = preset.height * scale;
+
+  const exportTarget = new THREE.WebGLRenderTarget(renderWidth, renderHeight, {
     depthBuffer: true,
     stencilBuffer: false,
   });
-  exportTarget.samples = gl.capabilities.isWebGL2 ? 4 : 0;
+  exportTarget.samples = gl.capabilities.isWebGL2 ? 8 : 0;
   exportTarget.texture.colorSpace = gl.outputColorSpace;
   let blob: Blob | null = null;
 
@@ -64,9 +83,15 @@ export async function exportCanvasPhoto({
       requestAnimationFrame(() => resolve());
     });
 
-    const pixels = new Uint8Array(preset.width * preset.height * 4);
-    gl.readRenderTargetPixels(exportTarget, 0, 0, preset.width, preset.height, pixels);
-    blob = await renderTargetPixelsToBlob(pixels, preset.width, preset.height);
+    const pixels = new Uint8Array(renderWidth * renderHeight * 4);
+    gl.readRenderTargetPixels(exportTarget, 0, 0, renderWidth, renderHeight, pixels);
+    blob = await renderTargetPixelsToBlob(
+      pixels,
+      renderWidth,
+      renderHeight,
+      preset.width,
+      preset.height,
+    );
   } finally {
     if (gridRef.current) {
       gridRef.current.visible = previousGridVisible;
@@ -95,6 +120,8 @@ export async function renderTargetPixelsToBlob(
   pixels: Uint8Array,
   width: number,
   height: number,
+  targetWidth: number = width,
+  targetHeight: number = height,
 ) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -118,10 +145,30 @@ export async function renderTargetPixelsToBlob(
   imageData.data.set(flippedPixels);
   context.putImageData(imageData, 0, 0);
 
+  // Downscale the supersampled render to the target size with high-quality
+  // smoothing so edges stay crisp.
+  let outputCanvas = canvas;
+
+  if (width !== targetWidth || height !== targetHeight) {
+    const scaledCanvas = document.createElement("canvas");
+    scaledCanvas.width = targetWidth;
+    scaledCanvas.height = targetHeight;
+
+    const scaledContext = scaledCanvas.getContext("2d");
+    if (!scaledContext) {
+      throw new Error("Não foi possível preparar a imagem exportada.");
+    }
+
+    scaledContext.imageSmoothingEnabled = true;
+    scaledContext.imageSmoothingQuality = "high";
+    scaledContext.drawImage(canvas, 0, 0, targetWidth, targetHeight);
+    outputCanvas = scaledCanvas;
+  }
+
   return (
     (await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, "image/png");
-    })) ?? dataUrlToBlob(canvas.toDataURL("image/png"))
+      outputCanvas.toBlob(resolve, "image/png");
+    })) ?? dataUrlToBlob(outputCanvas.toDataURL("image/png"))
   );
 }
 

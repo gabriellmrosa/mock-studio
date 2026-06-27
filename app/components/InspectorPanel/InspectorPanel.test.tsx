@@ -86,6 +86,8 @@ const copy: AppCopy = {
   baseObject: "Base layer",
   bodyColorLabel: "Customize",
   backgroundColorButton: "Background color",
+  hideUiButton: "Hide UI",
+  showUiButton: "Show UI",
   canvasInitialLoadingLabel: "Loading",
   canvasObjectLoadingLabel: "Updating scene",
   canvasExportLoadingLabel: "Taking photo",

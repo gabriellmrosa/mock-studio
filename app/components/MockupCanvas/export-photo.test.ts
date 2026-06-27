@@ -46,6 +46,7 @@ describe("export-photo", () => {
                 height,
                 width,
               })),
+              drawImage: jest.fn(),
               putImageData,
             })),
             height: 0,

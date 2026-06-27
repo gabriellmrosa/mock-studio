@@ -36,9 +36,11 @@ export type ExportPreset = {
 
 type MockupCanvasProps = {
   copy: AppCopy;
+  isUiHidden: boolean;
   objects: SceneObject[];
   onNotify?: (tone: "error" | "success", message: string) => void;
   onSelectObject: (id: string) => void;
+  onToggleUiHidden: () => void;
   scaleOverrides: ScaleOverrides;
   spawnOverrides: SpawnOverrides;
   uiTheme: UiTheme;
@@ -87,11 +89,6 @@ function getGridColors(bgHex: string | null, uiTheme: UiTheme) {
 
 const CAMERA_POSITION: [number, number, number] = [0, 0, 5];
 const CAMERA_FOV = 45;
-const TAKE_PHOTO_PRESET: ExportPreset = {
-  height: 1080,
-  label: "take-photo",
-  width: 1920,
-};
 const ANGLE_LIMITS = {
   maxAzimuthAngle: 0.85,
   maxPolarAngle: Math.PI * 0.68,
@@ -489,7 +486,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     setLoadingObjectIds((current) => current.filter((currentId) => currentId !== id));
   }
 
-  async function handleTakePhoto() {
+  async function handleTakePhoto(resolution: { width: number; height: number }) {
     const exportHandler = exportHandlerRef.current;
 
     if (!exportHandler || isExporting) {
@@ -499,8 +496,9 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     try {
       setIsExporting(true);
       await exportHandler({
-        ...TAKE_PHOTO_PRESET,
-        label: `mock-photo-${formatTimestampForFilename(new Date())}`,
+        width: resolution.width,
+        height: resolution.height,
+        label: `mock-photo-${resolution.width}x${resolution.height}-${formatTimestampForFilename(new Date())}`,
       });
       props.onNotify?.("success", props.copy.photoExportSuccess);
     } catch (error) {
@@ -555,6 +553,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         <FloatingCanvasControls
           bgColor={canvasBgColor}
           copy={props.copy}
+          isUiHidden={props.isUiHidden}
           onBgColorChange={setCanvasBgColor}
           onFitToScene={() => viewportControls?.fitToScene()}
           onResetCamera={() => viewportControls?.resetToInitial()}
@@ -562,9 +561,10 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           onPanLeft={() => viewportControls?.panLeft()}
           onPanRight={() => viewportControls?.panRight()}
           onPanUp={() => viewportControls?.panUp()}
-          onTakePhoto={() => {
-            void handleTakePhoto();
+          onTakePhoto={(resolution) => {
+            void handleTakePhoto(resolution);
           }}
+          onToggleUiHidden={props.onToggleUiHidden}
           onZoomIn={() => viewportControls?.zoomIn()}
           onZoomOut={() => viewportControls?.zoomOut()}
           takePhotoDisabled={!isExportReady || isExporting}

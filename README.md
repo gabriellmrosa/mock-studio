@@ -29,7 +29,8 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 
 - compose multiple devices in one scene with independent transforms and uploaded screens
 - switch between themes, semantic part colors and model-specific placeholders
-- export transparent PNGs directly from the canvas
+- export transparent PNGs at `1080p`, `1440p` or `4K` directly from the canvas
+- hide the entire interface for clean, full-canvas captures
 - manage layers with selection, duplication and inspector-driven editing
 - support `pt-BR` and `en-US` UI modes
 
@@ -41,7 +42,10 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - per-object transform controls for position, rotation and scale
 - device themes plus manual color customization by semantic part
 - transparent PNG export from the canvas
+- export resolution menu with `1920x1080`, `2560x1440` and `3840x2160` presets
+- supersampled (SSAA) rendering for sharper, screenshot-grade exports
 - export feedback chip while the PNG is being prepared
+- distraction-free `Hide UI` mode with a toggle you can drag to any canvas corner
 - layered selection flow via list and direct interaction in the 3D scene
 - `pt-BR` and `en-US` UI support
 - dark and light themes
@@ -128,8 +132,9 @@ Checklist:
 - placeholders are model-specific and no longer tied to locale
 - new layers spawn after the rightmost object on the default plane, even when models differ
 - duplicated layers also reuse the anti-overlap spawn logic on the same plane
-- export uses a floating resolution menu, with `1920x1080` active and higher presets marked as `Em breve`
-- PNG export now renders offscreen, avoiding visible canvas distortion during capture
+- export uses a floating resolution menu with `1920x1080`, `2560x1440` and `3840x2160` presets, all active
+- PNG export renders offscreen at 2x internally (SSAA) and downscales, for sharp edges without visible canvas distortion during capture
+- `Hide UI` hides every panel and floating control except the canvas; its toggle can be dragged and snaps to the nearest corner, remembered via `localStorage`
 - changing the model of an existing layer preserves its current transform
 - floating menus and list rows use stronger hover contrast in dark mode
 - the infinite grid now stays visible longer during zoom-out before fading

@@ -78,3 +78,41 @@
 .canvas-export-context-menu {
   width: 12.75rem;
 }
+
+/* Hide UI standalone button — draggable, snaps to a canvas corner */
+.canvas-hide-ui-fab {
+  position: absolute;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: grab;
+  z-index: 2;
+}
+
+.canvas-hide-ui-fab.corner-top-left {
+  left: var(--space-6);
+  top: var(--space-6);
+}
+
+.canvas-hide-ui-fab.corner-top-right {
+  right: var(--space-6);
+  top: var(--space-6);
+}
+
+.canvas-hide-ui-fab.corner-bottom-left {
+  bottom: var(--space-6);
+  left: var(--space-6);
+}
+
+.canvas-hide-ui-fab.corner-bottom-right {
+  bottom: var(--space-6);
+  right: var(--space-6);
+}
+
+.canvas-hide-ui-fab.is-dragging {
+  position: fixed;
+  bottom: auto;
+  right: auto;
+  cursor: grabbing;
+  transform: translate(-50%, -50%);
+  opacity: 0.9;
+}

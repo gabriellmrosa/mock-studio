@@ -51,6 +51,8 @@ export type AppCopy = {
   zoomInButton: string;
   zoomOutButton: string;
   backgroundColorButton: string;
+  hideUiButton: string;
+  showUiButton: string;
   debugOn: string;
   debugOff: string;
   canvasInitialLoadingLabel: string;
@@ -128,6 +130,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     zoomInButton: "Aproximar",
     zoomOutButton: "Afastar",
     backgroundColorButton: "Cor de fundo",
+    hideUiButton: "Ocultar interface",
+    showUiButton: "Mostrar interface",
     debugOn: "Debug interativo: ON",
     debugOff: "Debug interativo: OFF",
     canvasInitialLoadingLabel: "Preparando cena",
@@ -213,6 +217,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     zoomInButton: "Zoom in",
     zoomOutButton: "Zoom out",
     backgroundColorButton: "Background color",
+    hideUiButton: "Hide UI",
+    showUiButton: "Show UI",
     debugOn: "Interactive debug: ON",
     debugOff: "Interactive debug: OFF",
     canvasInitialLoadingLabel: "Preparing scene",

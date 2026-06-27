@@ -67,6 +67,7 @@ export default function Home() {
     }),
   ]);
   const [selectedObjectId, setSelectedObjectId] = useState("");
+  const [isUiHidden, setIsUiHidden] = useState(false);
   const [scaleOverrides] = useState<ScaleOverrides>({});
   const [spawnOverrides] = useState<SpawnOverrides>({});
   const copy = APP_COPY[locale];
@@ -284,25 +285,28 @@ export default function Home() {
   return (
     <>
       <main className="app-shell app-desktop-shell min-h-screen relative flex">
-      <LayersPanel
-        appMeta={APP_VERSION}
-        copy={copy}
-        locale={locale}
-        objects={sceneObjects}
-        onAddObject={handleAddObject}
-        onDuplicateObject={handleDuplicateObject}
-        onLocaleChange={setLocale}
-        onRenameObject={(id, name) => updateSceneObject(id, { name })}
-        onRemoveObject={handleRemoveObject}
-        onSelectObject={setSelectedObjectId}
-        onToggleObjectVisibility={handleToggleObjectVisibility}
-        onUiThemeChange={setUiTheme}
-        selectedObjectId={selectedObject?.id ?? ""}
-        uiTheme={uiTheme}
-      />
+      {!isUiHidden && (
+        <LayersPanel
+          appMeta={APP_VERSION}
+          copy={copy}
+          locale={locale}
+          objects={sceneObjects}
+          onAddObject={handleAddObject}
+          onDuplicateObject={handleDuplicateObject}
+          onLocaleChange={setLocale}
+          onRenameObject={(id, name) => updateSceneObject(id, { name })}
+          onRemoveObject={handleRemoveObject}
+          onSelectObject={setSelectedObjectId}
+          onToggleObjectVisibility={handleToggleObjectVisibility}
+          onUiThemeChange={setUiTheme}
+          selectedObjectId={selectedObject?.id ?? ""}
+          uiTheme={uiTheme}
+        />
+      )}
 
       <MockupCanvas
         copy={copy}
+        isUiHidden={isUiHidden}
         objects={sceneObjects}
         onNotify={(tone, message) =>
           setNotification({
@@ -312,11 +316,13 @@ export default function Home() {
           })
         }
         onSelectObject={setSelectedObjectId}
+        onToggleUiHidden={() => setIsUiHidden((current) => !current)}
         scaleOverrides={scaleOverrides}
         spawnOverrides={spawnOverrides}
         uiTheme={uiTheme}
       />
 
+      {!isUiHidden && (
       <InspectorPanel
         copy={copy}
         object={selectedObject}
@@ -357,6 +363,7 @@ export default function Home() {
         uiTheme={uiTheme}
         uploadError={uploadError}
       />
+      )}
       </main>
       <Snackbar
         dismissLabel={copy.dismissSnackbar}

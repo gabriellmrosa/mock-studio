@@ -12,12 +12,12 @@
 - show the editor canvas, layers panel and inspector
 - improve first impression for GitHub visitors
 
-## 3. Ship higher-resolution PNG export presets
+## 3. Ship higher-resolution PNG export presets — done (v1.1.0)
 
-- enable `2560x1440` export
-- evaluate `3840x2160` export
-- keep `1920x1080` as the default fast path
-- validate quality versus export time
+- [x] enable `2560x1440` export
+- [x] enable `3840x2160` export
+- [x] keep `1920x1080` as the default fast path
+- [x] supersampled (SSAA) rendering for sharper output at every preset
 
 ## 4. Document asset and branding usage boundaries
 
