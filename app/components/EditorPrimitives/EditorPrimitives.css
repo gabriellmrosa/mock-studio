@@ -269,5 +269,10 @@
 .editor-sidebar-shell {
   flex-shrink: 0;
   height: 100vh;
-  width: 19rem;
+  width: var(--editor-sidebar-width);
+  /* Overlay the canvas so toggling panels never resizes (and re-fits) the
+     3D scene behind them. */
+  position: absolute;
+  top: 0;
+  z-index: 40;
 }

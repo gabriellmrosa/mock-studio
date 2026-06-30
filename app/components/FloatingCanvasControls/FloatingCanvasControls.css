@@ -9,7 +9,9 @@
   gap: var(--space-3);
   pointer-events: auto;
   position: absolute;
-  right: var(--space-6);
+  /* Canvas now spans full width behind the overlay panels, so clear the
+     inspector sidebar on the right. */
+  right: calc(var(--editor-sidebar-width) + var(--space-6));
 }
 
 .canvas-floating-cluster {

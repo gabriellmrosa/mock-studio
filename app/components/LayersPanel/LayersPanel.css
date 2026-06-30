@@ -4,6 +4,7 @@
 
 .layers-sidebar {
   border-right: 1px solid var(--sidebar-border);
+  left: 0;
 }
 
 /* --- Section helpers --- */

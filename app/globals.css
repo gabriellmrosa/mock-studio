@@ -40,6 +40,7 @@
   --control-input-border: #7a7369;
   --control-reset-border: #7a7369;
   --icon-fg: var(--white-true);
+  --editor-sidebar-width: 19rem;
 }
 
 /* =====================================================

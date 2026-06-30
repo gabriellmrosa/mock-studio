@@ -134,6 +134,7 @@ Checklist:
 - duplicated layers also reuse the anti-overlap spawn logic on the same plane
 - export uses a floating resolution menu with `1920x1080`, `2560x1440` and `3840x2160` presets, all active
 - PNG export renders offscreen at 2x internally (SSAA) and downscales, for sharp edges without visible canvas distortion during capture
+- side panels overlay the canvas (`position: absolute`) so the 3D scene spans the full viewport behind them and never resizes or re-fits the camera when panels toggle
 - `Hide UI` hides every panel and floating control except the canvas; its toggle can be dragged and snaps to the nearest corner, remembered via `localStorage`
 - changing the model of an existing layer preserves its current transform
 - floating menus and list rows use stronger hover contrast in dark mode

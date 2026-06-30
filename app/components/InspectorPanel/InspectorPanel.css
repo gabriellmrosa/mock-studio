@@ -4,6 +4,7 @@
 
 .inspector-sidebar {
   border-left: 1px solid var(--sidebar-border);
+  right: 0;
 }
 
 .inspector-sidebar-scroll {
