@@ -32,6 +32,10 @@ export type ExportPreset = {
   height: number;
   label: string;
   width: number;
+  // Quando true, o PNG é exportado com a cor de fundo do canvas (backgroundColor).
+  // Quando false/omitido, o fundo fica transparente (comportamento padrão).
+  includeBackground?: boolean;
+  backgroundColor?: string;
 };
 
 type MockupCanvasProps = {
@@ -149,12 +153,12 @@ function SceneBridge({
   }
 
   useEffect(() => {
-    onExportReady(async ({ height, label, width }) => {
+    onExportReady(async ({ height, label, width, includeBackground, backgroundColor }) => {
       await exportCanvasPhoto({
         camera,
         gl,
         gridRef,
-        preset: { height, label, width },
+        preset: { height, label, width, includeBackground, backgroundColor },
         scene,
       });
     });
@@ -486,18 +490,27 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     setLoadingObjectIds((current) => current.filter((currentId) => currentId !== id));
   }
 
-  async function handleTakePhoto(resolution: { width: number; height: number }) {
+  async function handleTakePhoto(resolution: {
+    width: number;
+    height: number;
+    includeBackground: boolean;
+  }) {
     const exportHandler = exportHandlerRef.current;
 
     if (!exportHandler || isExporting) {
       return;
     }
 
+    // Cor de fundo efetiva do canvas (a mesma exibida no editor).
+    const backgroundColor = canvasBgColor ?? DEFAULT_BG[props.uiTheme];
+
     try {
       setIsExporting(true);
       await exportHandler({
         width: resolution.width,
         height: resolution.height,
+        includeBackground: resolution.includeBackground,
+        backgroundColor,
         label: `mock-photo-${resolution.width}x${resolution.height}-${formatTimestampForFilename(new Date())}`,
       });
       props.onNotify?.("success", props.copy.photoExportSuccess);

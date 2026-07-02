@@ -9,6 +9,7 @@ import {
   ArrowRight,
   ArrowUp,
   Camera,
+  Check,
   Download,
   Eye,
   EyeOff,
@@ -30,7 +31,11 @@ type FloatingCanvasControlsProps = {
   onPanLeft: () => void;
   onPanRight: () => void;
   onPanUp: () => void;
-  onTakePhoto: (resolution: { width: number; height: number }) => void;
+  onTakePhoto: (resolution: {
+    width: number;
+    height: number;
+    includeBackground: boolean;
+  }) => void;
   onToggleUiHidden: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -52,6 +57,7 @@ const DEFAULT_BG: Record<UiTheme, string> = {
 type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 const HIDE_UI_CORNER_KEY = "mock-photo-hide-ui-corner";
+const EXPORT_BG_KEY = "mock-photo-export-bg";
 const DRAG_THRESHOLD = 6;
 
 function isCorner(value: string | null): value is Corner {
@@ -94,14 +100,68 @@ export default function FloatingCanvasControls({
     uiTheme === "dark"
       ? "1.5px solid rgba(255,255,255,0.28)"
       : "1.5px solid rgba(0,0,0,0.18)";
+
+  // Modo de fundo do export: false = transparente (padrão), true = com fundo.
+  const [exportWithBg, setExportWithBg] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(EXPORT_BG_KEY) === "1";
+  });
+
+  function chooseExportBg(value: boolean) {
+    setExportWithBg(value);
+    window.localStorage.setItem(EXPORT_BG_KEY, value ? "1" : "0");
+  }
+
   const exportMenuItems: ContextMenuItem[] = EXPORT_OPTIONS.map((option) => ({
     type: "action",
     label: option.label,
     badgeLabel: option.enabled ? undefined : "Em breve",
     disabled: !option.enabled,
-    onClick: () => onTakePhoto({ width: option.width, height: option.height }),
+    onClick: () =>
+      onTakePhoto({
+        width: option.width,
+        height: option.height,
+        includeBackground: exportWithBg,
+      }),
     trailingIcon: option.enabled ? <Download size={14} /> : undefined,
   }));
+
+  const exportHeader = (
+    <div className="export-bg-toggle">
+      <span className="export-bg-toggle-label">{copy.exportBackgroundLabel}</span>
+      <div
+        className="export-bg-seg"
+        role="radiogroup"
+        aria-label={copy.exportBackgroundLabel}
+      >
+        <button
+          type="button"
+          role="radio"
+          aria-checked={!exportWithBg}
+          className={`export-bg-seg-btn${!exportWithBg ? " is-active" : ""}`}
+          onClick={() => chooseExportBg(false)}
+        >
+          <span className="export-swatch export-swatch-transparent" />
+          <span className="export-bg-seg-label">{copy.exportTransparent}</span>
+          {!exportWithBg ? <Check size={13} className="export-bg-seg-check" /> : null}
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={exportWithBg}
+          className={`export-bg-seg-btn${exportWithBg ? " is-active" : ""}`}
+          onClick={() => chooseExportBg(true)}
+        >
+          <span
+            className="export-swatch"
+            style={{ background: displayColor, border: circleBorder }}
+          />
+          <span className="export-bg-seg-label">{copy.exportWithBackground}</span>
+          {exportWithBg ? <Check size={13} className="export-bg-seg-check" /> : null}
+        </button>
+      </div>
+    </div>
+  );
 
   const hideUiLabel = isUiHidden ? copy.showUiButton : copy.hideUiButton;
 
@@ -271,6 +331,7 @@ export default function FloatingCanvasControls({
 
         <ContextMenu
           items={exportMenuItems}
+          headerContent={exportHeader}
           panelPlacement="top-end"
           panelClassName="canvas-export-context-menu"
           triggerAriaLabel={copy.takePhotoButton}

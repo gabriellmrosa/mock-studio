@@ -64,11 +64,19 @@ export async function exportCanvasPhoto({
   let blob: Blob | null = null;
 
   try {
-    gl.setClearColor(previousClearColor, 0);
+    if (preset.includeBackground) {
+      // Preenche o fundo com a cor do canvas (alpha 1 → PNG opaco nessa área).
+      gl.setClearColor(new THREE.Color(preset.backgroundColor ?? "#000000"), 1);
+    } else {
+      // Fundo transparente (padrão).
+      gl.setClearColor(previousClearColor, 0);
+    }
     scene.background = null;
 
+    // O grid do chão entra apenas no export com fundo (cena completa).
+    // No modo transparente ele fica fora, para um recorte limpo.
     if (gridRef.current) {
-      gridRef.current.visible = false;
+      gridRef.current.visible = preset.includeBackground === true;
     }
 
     if (camera instanceof THREE.PerspectiveCamera) {

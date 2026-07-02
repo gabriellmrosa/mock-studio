@@ -33,6 +33,12 @@
   width: 8.5rem;
 }
 
+.context-menu-header {
+  border-bottom: 1px solid var(--panel-border);
+  margin-bottom: 0.25rem;
+  padding: 0.15rem 0.1rem 0.4rem;
+}
+
 .context-menu-row {
   align-items: center;
   background: transparent;

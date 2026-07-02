@@ -81,6 +81,85 @@
   width: 12.75rem;
 }
 
+/* Export background mode toggle (header of the export menu) */
+.export-bg-toggle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.export-bg-toggle-label {
+  color: var(--sidebar-muted);
+  font-size: 0.62rem;
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.06em;
+  padding: 0 0.4rem;
+  text-transform: uppercase;
+}
+
+.export-bg-seg {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.export-bg-seg-btn {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--foreground);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.75rem;
+  gap: var(--space-2);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  transition: background 100ms ease;
+  width: 100%;
+}
+
+.export-bg-seg-label {
+  flex: 1 1 auto;
+}
+
+.export-bg-seg-check {
+  color: var(--foreground);
+  flex-shrink: 0;
+}
+
+.export-bg-seg-btn:hover {
+  background: var(--surface-hover);
+}
+
+[data-theme="dark"] .export-bg-seg-btn:hover {
+  background: color-mix(in srgb, var(--foreground) 12%, var(--surface-raised));
+}
+
+.export-bg-seg-btn.is-active {
+  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  font-weight: var(--font-semibold);
+}
+
+.export-swatch {
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+  height: 0.95rem;
+  width: 0.95rem;
+}
+
+.export-swatch-transparent {
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(45deg, #b8b8b8 25%, transparent 25%),
+    linear-gradient(-45deg, #b8b8b8 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #b8b8b8 75%),
+    linear-gradient(-45deg, transparent 75%, #b8b8b8 75%);
+  background-size: 6px 6px;
+  background-position: 0 0, 0 3px, 3px -3px, -3px 0;
+  border: 1px solid var(--panel-border);
+}
+
 /* Hide UI standalone button — draggable, snaps to a canvas corner */
 .canvas-hide-ui-fab {
   position: absolute;

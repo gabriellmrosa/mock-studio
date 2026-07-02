@@ -19,6 +19,9 @@ export type AppCopy = {
   english: string;
   resetCameraButton: string;
   takePhotoButton: string;
+  exportBackgroundLabel: string;
+  exportWithBackground: string;
+  exportTransparent: string;
   deleteObject: string;
   duplicateObject: string;
   renameObject: string;
@@ -97,7 +100,10 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     portuguese: "PT-BR",
     english: "EN-US",
     resetCameraButton: "Resetar visão",
-    takePhotoButton: "Exportar PNG",
+    takePhotoButton: "Exportar",
+    exportBackgroundLabel: "Fundo",
+    exportWithBackground: "Com fundo",
+    exportTransparent: "Transparente",
     deleteObject: "Excluir",
     duplicateObject: "Duplicar",
     renameObject: "Renomear",
@@ -184,7 +190,10 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     portuguese: "PT-BR",
     english: "EN-US",
     resetCameraButton: "Reset view",
-    takePhotoButton: "Export PNG",
+    takePhotoButton: "Export",
+    exportBackgroundLabel: "Background",
+    exportWithBackground: "With background",
+    exportTransparent: "Transparent",
     deleteObject: "Delete",
     duplicateObject: "Duplicate",
     renameObject: "Rename",

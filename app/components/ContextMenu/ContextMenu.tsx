@@ -33,6 +33,9 @@ export type ContextMenuItem = ContextMenuActionItem | ContextMenuSubmenuItem;
 
 type ContextMenuProps = {
   items: ContextMenuItem[];
+  // Conteúdo fixo renderizado no topo do painel (ex.: um seletor). Interagir com
+  // ele não fecha o menu, pois cliques dentro do painel são ignorados.
+  headerContent?: ReactNode;
   panelPlacement?: "bottom-start" | "top-end";
   panelClassName?: string;
   triggerAriaLabel: string;
@@ -49,6 +52,7 @@ type PanelPosition = { top: number; left: number };
 
 export default function ContextMenu({
   items,
+  headerContent,
   panelPlacement = "bottom-start",
   panelClassName,
   triggerAriaLabel,
@@ -215,6 +219,9 @@ export default function ContextMenu({
             onMouseEnter={cancelCloseSubmenu}
             onMouseLeave={scheduleCloseSubmenu}
           >
+            {headerContent ? (
+              <div className="context-menu-header">{headerContent}</div>
+            ) : null}
             {items.map((item, index) => {
               if (item.type === "action") {
                 return (
