@@ -23,13 +23,13 @@
   <a href="#project-structure">Project Structure</a>
 </p>
 
-Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose marketing shots, product screens and device scenes with per-object controls, layered editing and transparent PNG export.
+Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose marketing shots, product screens and device scenes with per-object controls, layered editing and PNG export with an optional canvas background.
 
 ## Highlights
 
 - compose multiple devices in one scene with independent transforms and uploaded screens
 - switch between themes, semantic part colors and model-specific placeholders
-- export transparent PNGs at `1080p`, `1440p` or `4K` directly from the canvas
+- export PNGs at `1080p`, `1440p` or `4K` — transparent, or with the canvas background and floor grid
 - hide the entire interface for clean, full-canvas captures
 - manage layers with selection, duplication and inspector-driven editing
 - support `pt-BR` and `en-US` UI modes
@@ -41,7 +41,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - per-object image upload with model-specific placeholders
 - per-object transform controls for position, rotation and scale
 - device themes plus manual color customization by semantic part
-- transparent PNG export from the canvas
+- PNG export in two modes from the `Export` menu: transparent, or with the canvas background color and floor grid baked in
 - export resolution menu with `1920x1080`, `2560x1440` and `3840x2160` presets
 - supersampled (SSAA) rendering for sharper, screenshot-grade exports
 - export feedback chip while the PNG is being prepared
@@ -132,7 +132,8 @@ Checklist:
 - placeholders are model-specific and no longer tied to locale
 - new layers spawn after the rightmost object on the default plane, even when models differ
 - duplicated layers also reuse the anti-overlap spawn logic on the same plane
-- export uses a floating resolution menu with `1920x1080`, `2560x1440` and `3840x2160` presets, all active
+- the `Export` menu has a background mode selector (transparent vs. canvas background) above the `1920x1080`, `2560x1440` and `3840x2160` resolution presets, all active; the chosen mode is remembered via `localStorage`
+- exporting with the canvas background also bakes in the floor grid; transparent exports omit both for a clean cutout
 - PNG export renders offscreen at 2x internally (SSAA) and downscales, for sharp edges without visible canvas distortion during capture
 - side panels overlay the canvas (`position: absolute`) so the 3D scene spans the full viewport behind them and never resizes or re-fits the camera when panels toggle
 - `Hide UI` hides every panel and floating control except the canvas; its toggle can be dragged and snaps to the nearest corner, remembered via `localStorage`
