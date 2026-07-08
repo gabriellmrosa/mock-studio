@@ -46,6 +46,16 @@ const MODEL_PLACEHOLDER_SIZES: Record<DeviceModelId, [number, number]> = {
   tablet: [1668, 2388],
 };
 
+// Fração da altura usada como fonte no placeholder. O padrão (0.042) deixa o
+// texto uniforme na maioria dos modelos; smartwatch e notebook têm a tela
+// ocupando menos do enquadramento, então recebem um valor maior para o texto
+// renderizado aparecer no mesmo tamanho visual.
+const DEFAULT_PLACEHOLDER_FONT_SCALE = 0.042;
+const MODEL_PLACEHOLDER_FONT_SCALE: Partial<Record<DeviceModelId, number>> = {
+  smartwatch: 0.078,
+  notebook: 0.066,
+};
+
 // Sentinel usado quando o canvas 2D não está disponível (SSR/jsdom); no
 // browser a textura nunca vê esse valor porque o cache é preenchido no client.
 const PLACEHOLDER_URL_PREFIX = "placeholder://";
@@ -61,8 +71,10 @@ export function getPlaceholderImageUrl(modelId: DeviceModelId = "smartphone") {
   }
 
   const [width, height] = MODEL_PLACEHOLDER_SIZES[modelId];
+  const fontScale =
+    MODEL_PLACEHOLDER_FONT_SCALE[modelId] ?? DEFAULT_PLACEHOLDER_FONT_SCALE;
   const url =
-    createPlaceholderDataUrl(width, height) ??
+    createPlaceholderDataUrl(width, height, fontScale) ??
     `${PLACEHOLDER_URL_PREFIX}${modelId}`;
 
   placeholderUrlCache.set(modelId, url);

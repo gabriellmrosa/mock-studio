@@ -3,7 +3,6 @@
 import * as THREE from "three";
 import React, { JSX, useEffect, useMemo } from "react";
 import { useTexture } from "@react-three/drei";
-import { useControls } from "leva";
 import {
   buildScreenCanvas,
   MAX_TEXTURE_SIZE,
@@ -53,7 +52,7 @@ type TabletDimensions = {
   screenRadius: number;
 };
 
-// Valores padrão calibrados no editor (painel de debug abaixo).
+// Dimensões calibradas no editor (debug leva removido).
 const TABLET_DIMENSIONS: TabletDimensions = {
   width: 358,
   height: 500,
@@ -63,27 +62,6 @@ const TABLET_DIMENSIONS: TabletDimensions = {
   bezelWidth: 14,
   screenRadius: 22,
 };
-
-// ===========================================================================
-// DEBUG TEMPORÁRIO — painel flutuante (leva) para regular as dimensões ao vivo.
-// Para remover depois: trocar o corpo de useTabletDimensions por
-// `return TABLET_DIMENSIONS;`, apagar este bloco e o import do leva.
-// ===========================================================================
-const TABLET_DEBUG = true;
-
-function useTabletDimensions(): TabletDimensions {
-  const dims = useControls("Tablet — dimensões", {
-    width: { value: TABLET_DIMENSIONS.width, min: 200, max: 700, step: 1 },
-    height: { value: TABLET_DIMENSIONS.height, min: 200, max: 700, step: 1 },
-    depth: { value: TABLET_DIMENSIONS.depth, min: 4, max: 60, step: 0.5 },
-    cornerRadius: { value: TABLET_DIMENSIONS.cornerRadius, min: 0, max: 80, step: 1 },
-    edgeRadius: { value: TABLET_DIMENSIONS.edgeRadius, min: 0, max: 10, step: 0.25 },
-    bezelWidth: { value: TABLET_DIMENSIONS.bezelWidth, min: 2, max: 60, step: 0.5 },
-    screenRadius: { value: TABLET_DIMENSIONS.screenRadius, min: 0, max: 60, step: 1 },
-  });
-
-  return TABLET_DEBUG ? dims : TABLET_DIMENSIONS;
-}
 
 type TabletProps = JSX.IntrinsicElements["group"] & {
   imageUrl?: string;
@@ -171,7 +149,7 @@ function TabletImpl({
   void _ss;
   void _sr;
 
-  const dims = useTabletDimensions();
+  const dims = TABLET_DIMENSIONS;
 
   const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("tablet");
   const sourceTexture = useTexture(effectiveImageUrl);

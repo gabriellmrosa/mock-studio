@@ -12,6 +12,11 @@ const FONT_FAMILY = '"Helvetica Neue", Helvetica, Arial, sans-serif';
 export function createPlaceholderDataUrl(
   width: number,
   height: number,
+  // Fração da altura usada como tamanho da fonte. É por modelo porque a tela
+  // de alguns aparelhos (smartwatch, notebook) ocupa uma fração menor do
+  // enquadramento, então precisam de um valor maior para o texto renderizado
+  // aparecer no mesmo tamanho visual dos demais.
+  fontScale = 0.042,
 ): string | null {
   if (typeof document === "undefined") {
     return null;
@@ -39,7 +44,10 @@ export function createPlaceholderDataUrl(
       }
     }
 
-    const fontSize = Math.round(Math.min(width, height) * 0.09);
+    // Proporcional à ALTURA (não ao menor lado): como cada modelo é
+    // enquadrado pela altura na cena, isso faz o texto aparecer no mesmo
+    // tamanho visual em todos os placeholders, independente do aspecto.
+    const fontSize = Math.round(height * fontScale);
     context.fillStyle = TEXT_COLOR;
     context.font = `500 ${fontSize}px ${FONT_FAMILY}`;
     context.textAlign = "center";
