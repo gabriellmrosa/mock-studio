@@ -135,6 +135,7 @@ Checklist:
 ## Technical Notes
 
 - screen placeholders are generated at runtime on a canvas (checker pattern + recommended size in the UI body font), one per model — there are no static placeholder PNGs to maintain
+- placeholder text size is a fraction of the image height so it reads at a consistent visual size across models; `smartwatch` and `notebook` use a larger fraction because their screen is a smaller part of the framed device
 - new objects spawn after the rightmost object on the default plane, even when models differ
 - duplicated objects also reuse the anti-overlap spawn logic on the same plane
 - the `Export` menu has a background mode selector (transparent vs. canvas background) above the `1920x1080`, `2560x1440` and `3840x2160` resolution presets, all active; the chosen mode is remembered via `localStorage`
