@@ -36,7 +36,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 
 ## Features
 
-- multi-object composition with `smartphone`, `smartphone2`, `smartphone3`, `smartwatch` and `notebook`
+- multi-object composition with `smartphone`, `smartphone2`, `smartphone3`, `smartwatch`, `notebook` and `tablet`
 - layer duplication that preserves transform, image and inspector settings
 - per-object image upload with model-specific placeholders
 - per-object transform controls for position, rotation and scale
@@ -101,8 +101,11 @@ To see traffic data in production:
 | smartphone3 | smartphone.glb | [1, 1, 1] | [0, 0, 0] | [0, 0, 0] | 1290x2755 | generic phone |
 | smartwatch | smartwatch.glb | [19.44, 19.44, 19.44] | [0, -π/2, 0] | [130, 40, 270] | 1290x1452 | |
 | notebook | notebook.glb | [2311, 2311, 2311] | [0, π, 0] | [120, 100, 0] | 2755x1684 | |
+| tablet | — (procedural) | [1, 1, 1] | [0, π, 0] | [0, 0, 0] | 1668x2388 | fully code-drawn, no GLB asset |
 
 The `smartphone` (default) and `smartphone2` share the same iPhone GLB. `smartphone` hides the notched screen mesh and covers the molded notch with a generated clean rounded-rectangle screen plane pushed slightly in front; `smartphone2` keeps the original notch.
+
+The `tablet` has no GLB: its body is an extruded rounded rectangle with beveled edges, and the bezel and screen are generated rounded planes in front of it — the same clean-screen technique used by the smartphones. Toggling off the device body leaves just the floating screen.
 
 ## Project Structure
 
@@ -154,6 +157,7 @@ Checklist:
 
 - [scripts/extract-orange-iphone.mjs](scripts/extract-orange-iphone.mjs): isolates the cropped iPhone node used by the app from the source GLB
 - [scripts/extract-iphone-textures.mjs](scripts/extract-iphone-textures.mjs): exports selected textures from the original GLB into `tmp/`
+- [scripts/generate-tablet-placeholder.mjs](scripts/generate-tablet-placeholder.mjs): generates `public/placeholder-1668x2388.png` with a dependency-free PNG encoder (reusable for future placeholders)
 
 These scripts are development utilities for asset preparation and are not part of the normal app runtime.
 

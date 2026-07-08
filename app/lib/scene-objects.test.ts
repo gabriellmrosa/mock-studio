@@ -20,6 +20,7 @@ describe("scene-objects", () => {
     "smartphone2",
     "smartwatch",
     "notebook",
+    "tablet",
   ] as const)(
     "creates model-specific defaults for %s",
     (modelId: DeviceModelId) => {

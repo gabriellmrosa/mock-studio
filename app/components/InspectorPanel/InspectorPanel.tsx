@@ -11,7 +11,7 @@ import {
   InspectorPanelHeader,
   PanelSection,
 } from "../EditorPrimitives/EditorPrimitives";
-import { Laptop, RotateCcw, Smartphone, Upload, Video, Watch } from "lucide-react";
+import { Laptop, RotateCcw, Smartphone, Tablet, Upload, Video, Watch } from "lucide-react";
 
 const NOTEBOOK_SCREEN_ONLY_COLOR_KEYS = new Set([
   "screenBackCover",
@@ -90,6 +90,8 @@ export default function InspectorPanel({
           <Smartphone size={14} />
         ) : device.id === "smartwatch" ? (
           <Watch size={14} />
+        ) : device.id === "tablet" ? (
+          <Tablet size={14} />
         ) : (
           <Laptop size={14} />
         ),

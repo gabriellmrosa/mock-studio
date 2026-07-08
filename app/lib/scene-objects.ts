@@ -39,6 +39,7 @@ const MODEL_PLACEHOLDERS: Record<DeviceModelId, string> = {
   smartphone3: "/placeholder-1290x2755.png",
   smartwatch: "/placeholder-1290x1452.png",
   notebook: "/placeholder-2755x1684.png",
+  tablet: "/placeholder-1668x2388.png",
 };
 
 const SPAWN_GAP_WORLD_X = 28;

@@ -18,6 +18,12 @@ import {
 } from "../lib/3d-tokens/smartphone3";
 import { Smartwatch, type SmartwatchDebugPartKey } from "../components/Smartwatch";
 import { Notebook, type NotebookDebugPartKey } from "../components/Notebook";
+import { Tablet, type TabletDebugPartKey } from "../components/Tablet";
+import {
+  TABLET_DEFAULT_THEME,
+  TABLET_THEMES,
+  buildTabletColorsFromPrimary,
+} from "../lib/3d-tokens/tablet";
 import {
   SMARTPHONE_DEFAULT_THEME,
   SMARTPHONE_THEMES,
@@ -39,7 +45,8 @@ export type DeviceModelId =
   | "smartphone2"
   | "smartphone3"
   | "smartwatch"
-  | "notebook";
+  | "notebook"
+  | "tablet";
 
 export type DeviceThemeOption = {
   id: string;
@@ -60,7 +67,8 @@ export type DeviceModelDefinition = {
     | typeof Smartphone2
     | typeof Smartphone3
     | typeof Smartwatch
-    | typeof Notebook;
+    | typeof Notebook
+    | typeof Tablet;
   defaultTheme: string;
   id: DeviceModelId;
   initialDebugColors: Record<string, string>;
@@ -383,6 +391,29 @@ const NOTEBOOK_DEBUG_COLORS: Record<NotebookDebugPartKey, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Tablet — modelo procedural (sem GLB), desenhado em Tablet.tsx.
+// ---------------------------------------------------------------------------
+const TABLET_THEME_OPTIONS: DeviceThemeOption[] = [
+  { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
+  { id: "black",      label: "Preto",      preview: "#1C1C1E" },
+  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
+  { id: "blood",      label: "Red",        preview: "#6a2525" },
+];
+
+const TABLET_CUSTOMIZABLE_COLOR_KEYS = ["body", "bezel"];
+
+const TABLET_CUSTOMIZABLE_COLOR_LABELS: Record<string, string> = {
+  body: "Corpo",
+  bezel: "Moldura da tela",
+};
+
+const TABLET_DEBUG_COLORS: Record<TabletDebugPartKey, string> = {
+  body: "#cc00ff",
+  bezel: "#00ff99",
+  screen: "#ffffff",
+};
+
+// ---------------------------------------------------------------------------
 export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
   // Modelo principal/default = variante SEM notch (GLB do iPhone).
   smartphone: {
@@ -502,6 +533,30 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     spawnFootprintWidth: 720.41,
     themeOptions: NOTEBOOK_THEME_OPTIONS,
     themes: NOTEBOOK_THEMES,
+  },
+  tablet: {
+    customizableColorKeys: TABLET_CUSTOMIZABLE_COLOR_KEYS,
+    customizableColorLabels: TABLET_CUSTOMIZABLE_COLOR_LABELS,
+    primaryColorKey: "body",
+    // Geometria construída com a tela voltada para +Z; PI em Y compensa o
+    // rotationY=180 do transform padrão para nascer de frente para a câmera.
+    baseRotation: [0, Math.PI, 0],
+    buildColorsFromPrimary: buildTabletColorsFromPrimary,
+    component: Tablet,
+    defaultTheme: TABLET_DEFAULT_THEME,
+    id: "tablet",
+    initialDebugColors: TABLET_DEBUG_COLORS,
+    // Procedural em world units diretas (altura ~500, como os smartphones).
+    modelScale: [1, 1, 1],
+    modelSpawnOffset: [0, 0, 0],
+    name: "Tablet",
+    pivotOffset: [0, 0, 0],
+    recommendedUploadSize: "1668x2388",
+    screenPosition: [0, 0, 0],
+    screenSize: [0, 0],
+    spawnFootprintWidth: 358,
+    themeOptions: TABLET_THEME_OPTIONS,
+    themes: TABLET_THEMES,
   },
 };
 
