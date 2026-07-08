@@ -25,10 +25,10 @@ jest.mock("../ContextMenu/ContextMenu", () => ({
 }));
 
 const copy: AppCopy = {
-  addObject: "Add layer",
+  addObject: "Add object",
   appTitle: "Mock Studio",
   appSubtitle: "Visual mockup editor",
-  baseObject: "Base layer",
+  baseObject: "Base object",
   bodyColorLabel: "Customize",
   backgroundColorButton: "Background color",
   hideUiButton: "Hide UI",
@@ -64,8 +64,9 @@ const copy: AppCopy = {
   hideObject: "Hide",
   hiddenObjectLabel: "Hidden",
   keyboardToggleLabel: "Keyboard",
+  tabletBezelToggleLabel: "Screen bezel",
   languageLabel: "Language",
-  layersSectionTitle: "Layers",
+  layersSectionTitle: "Objects",
   lightMode: "Light",
   matteColorLabel: "Matte",
   moveDownButton: "Move down",
@@ -73,7 +74,7 @@ const copy: AppCopy = {
   moveRightButton: "Move right",
   moveUpButton: "Move up",
   modelLabel: "Model",
-  objectOptionsLabel: "Layer options",
+  objectOptionsLabel: "Object options",
   positionX: "Position X",
   positionY: "Position Y",
   positionZ: "Position Z",

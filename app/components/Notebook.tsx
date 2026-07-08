@@ -10,6 +10,7 @@ import {
   MAX_TEXTURE_SIZE,
 } from "../lib/mockup-image";
 import { createRoundedScreenGeometryFromMesh } from "../lib/rounded-screen";
+import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import { createSimpleFinishMaterial } from "../lib/simple-finish-material";
 
 // ---------------------------------------------------------------------------
@@ -83,6 +84,7 @@ type NotebookProps = React.ComponentPropsWithoutRef<"group"> & {
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
   showNotebookKeyboard?: boolean;
+  showTabletBezel?: boolean;
   screenPosition?: [number, number, number];
   screenSize?: [number, number];
 };
@@ -113,7 +115,7 @@ function NotebookImpl({
   const { scene } = useGLTF("/models/notebook.glb");
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   useGraph(clone) as unknown as GLTFResult;
-  const effectiveImageUrl = imageUrl ?? "/placeholder-2755x1684.png";
+  const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("notebook");
   const sourceTexture = useTexture(effectiveImageUrl);
 
   const screenTexture = useMemo(() => {

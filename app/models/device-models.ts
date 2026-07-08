@@ -548,7 +548,11 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     initialDebugColors: TABLET_DEBUG_COLORS,
     // Procedural em world units diretas (altura ~500, como os smartphones).
     modelScale: [1, 1, 1],
-    modelSpawnOffset: [0, 0, 0],
+    // Geometria centrada na origem; o smartphone default (iPhone) tem centro
+    // visual em ≈(125, 307, 183) world (offset interno 2.5 × scale 122.9 +
+    // rotações). Igualamos para trocas de modelo manterem o alinhamento —
+    // mesma calibração já feita no smartwatch (x=130) e notebook (x=120).
+    modelSpawnOffset: [125, 307, 183],
     name: "Tablet",
     pivotOffset: [0, 0, 0],
     recommendedUploadSize: "1668x2388",

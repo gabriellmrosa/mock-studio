@@ -8,6 +8,7 @@ import {
   buildScreenCanvas,
   MAX_TEXTURE_SIZE,
 } from "../lib/mockup-image";
+import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import { createSimpleFinishMaterial } from "../lib/simple-finish-material";
 import {
   TABLET_DEFAULT_THEME,
@@ -91,6 +92,7 @@ type TabletProps = JSX.IntrinsicElements["group"] & {
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
   showNotebookKeyboard?: boolean;
+  showTabletBezel?: boolean;
   screenPosition?: [number, number, number];
   screenSize?: [number, number];
   screenRotation?: [number, number, number];
@@ -159,6 +161,7 @@ function TabletImpl({
   matteColors = true,
   debugPartColors,
   showDeviceShell = true,
+  showTabletBezel = true,
   screenPosition: _sp,
   screenSize: _ss,
   screenRotation: _sr,
@@ -170,7 +173,7 @@ function TabletImpl({
 
   const dims = useTabletDimensions();
 
-  const effectiveImageUrl = imageUrl ?? "/placeholder-1668x2388.png";
+  const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("tablet");
   const sourceTexture = useTexture(effectiveImageUrl);
   const resolvedColors: TabletColors =
     (colors as TabletColors) ?? TABLET_THEMES[TABLET_DEFAULT_THEME];
@@ -321,12 +324,14 @@ function TabletImpl({
             geometry={bodyGeometry}
             material={debugMaterials?.body ?? bodyMaterial}
           />
-          <mesh
-            name="bezel"
-            geometry={bezelGeometry}
-            material={debugMaterials?.bezel ?? bezelMaterial}
-            position={[0, 0, frontZ + 0.3]}
-          />
+          {showTabletBezel ? (
+            <mesh
+              name="bezel"
+              geometry={bezelGeometry}
+              material={debugMaterials?.bezel ?? bezelMaterial}
+              position={[0, 0, frontZ + 0.3]}
+            />
+          ) : null}
         </>
       ) : null}
       <mesh

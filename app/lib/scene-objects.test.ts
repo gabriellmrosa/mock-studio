@@ -41,6 +41,7 @@ describe("scene-objects", () => {
       expect(object.debugMode).toBe(false);
       expect(object.showDeviceShell).toBe(true);
       expect(object.showNotebookKeyboard).toBe(true);
+      expect(object.showTabletBezel).toBe(true);
       expect(object).toMatchObject(DEFAULT_OBJECT_TRANSFORM);
     },
   );
@@ -58,7 +59,7 @@ describe("scene-objects", () => {
     expect(object.showDeviceShell).toBe(true);
     expect(object.showNotebookKeyboard).toBe(true);
     expect(object.matteColors).toBe(true);
-    expect(object.imageUrl).toBe("/placeholder-1290x2748.png");
+    expect(object.imageUrl).toBe(getPlaceholderImageUrl("smartphone"));
     expect(object.deviceTheme).toBe(DEVICE_MODELS.smartphone.defaultTheme);
   });
 

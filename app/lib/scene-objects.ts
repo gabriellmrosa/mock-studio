@@ -8,6 +8,7 @@ import {
   DEFAULT_OBJECT_TRANSFORM,
   OBJECT_POSITION_MULTIPLIER,
 } from "./scene-presets";
+import { createPlaceholderDataUrl } from "./placeholder-image";
 
 export type SceneObject = {
   colors: Record<string, string>;
@@ -31,25 +32,49 @@ export type SceneObject = {
   scale: number;
   showDeviceShell: boolean;
   showNotebookKeyboard: boolean;
+  showTabletBezel: boolean;
 };
 
-const MODEL_PLACEHOLDERS: Record<DeviceModelId, string> = {
-  smartphone: "/placeholder-1290x2748.png",
-  smartphone2: "/placeholder-1290x2748.png",
-  smartphone3: "/placeholder-1290x2755.png",
-  smartwatch: "/placeholder-1290x1452.png",
-  notebook: "/placeholder-2755x1684.png",
-  tablet: "/placeholder-1668x2388.png",
+// Placeholders são gerados em runtime (canvas) no tamanho de upload
+// recomendado de cada modelo — não há mais PNGs estáticos em public/.
+const MODEL_PLACEHOLDER_SIZES: Record<DeviceModelId, [number, number]> = {
+  smartphone: [1290, 2748],
+  smartphone2: [1290, 2748],
+  smartphone3: [1290, 2755],
+  smartwatch: [1290, 1452],
+  notebook: [2755, 1684],
+  tablet: [1668, 2388],
 };
+
+// Sentinel usado quando o canvas 2D não está disponível (SSR/jsdom); no
+// browser a textura nunca vê esse valor porque o cache é preenchido no client.
+const PLACEHOLDER_URL_PREFIX = "placeholder://";
+
+const placeholderUrlCache = new Map<DeviceModelId, string>();
 
 const SPAWN_GAP_WORLD_X = 28;
 
 export function getPlaceholderImageUrl(modelId: DeviceModelId = "smartphone") {
-  return MODEL_PLACEHOLDERS[modelId];
+  const cached = placeholderUrlCache.get(modelId);
+  if (cached) {
+    return cached;
+  }
+
+  const [width, height] = MODEL_PLACEHOLDER_SIZES[modelId];
+  const url =
+    createPlaceholderDataUrl(width, height) ??
+    `${PLACEHOLDER_URL_PREFIX}${modelId}`;
+
+  placeholderUrlCache.set(modelId, url);
+  return url;
 }
 
 export function isPlaceholderImageUrl(imageUrl: string) {
-  return Object.values(MODEL_PLACEHOLDERS).includes(imageUrl);
+  if (imageUrl.startsWith(PLACEHOLDER_URL_PREFIX)) {
+    return true;
+  }
+
+  return [...placeholderUrlCache.values()].includes(imageUrl);
 }
 
 function hasSameModelAtTransform(
@@ -183,6 +208,7 @@ export function createSceneObject({
     ...DEFAULT_OBJECT_TRANSFORM,
     showDeviceShell: true,
     showNotebookKeyboard: true,
+    showTabletBezel: true,
   };
 }
 
@@ -239,5 +265,6 @@ export function changeSceneObjectModel(
     matteColors: true,
     showDeviceShell: true,
     showNotebookKeyboard: true,
+    showTabletBezel: true,
   };
 }

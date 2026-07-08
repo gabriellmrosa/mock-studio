@@ -235,6 +235,7 @@ function SceneBridge({
                         screenSize={model.screenSize}
                         showDeviceShell={object.showDeviceShell}
                         showNotebookKeyboard={object.showNotebookKeyboard}
+                        showTabletBezel={object.showTabletBezel}
                       />
                       </group>
                     </group>

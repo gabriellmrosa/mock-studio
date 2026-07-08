@@ -121,7 +121,7 @@ describe("Home page layers and selection flow", () => {
       "Object 1 :: smartphone :: x=0.00",
     );
 
-    fireEvent.click(screen.getByLabelText("Add layer"));
+    fireEvent.click(screen.getByLabelText("Add object"));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
       "Object 2 :: smartphone :: x=1.95",
@@ -132,7 +132,7 @@ describe("Home page layers and selection flow", () => {
   it("selects an object from the mocked canvas", () => {
     render(<Home />);
 
-    fireEvent.click(screen.getByLabelText("Add layer"));
+    fireEvent.click(screen.getByLabelText("Add object"));
     fireEvent.click(screen.getByRole("button", { name: "select-Object 1" }));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
@@ -143,7 +143,7 @@ describe("Home page layers and selection flow", () => {
   it("toggles visibility from the layer eye button", () => {
     render(<Home />);
 
-    fireEvent.click(screen.getByLabelText("Add layer"));
+    fireEvent.click(screen.getByLabelText("Add object"));
 
     const secondLayer = screen.getByText("Object 2").closest('[role="button"]');
 
@@ -158,10 +158,10 @@ describe("Home page layers and selection flow", () => {
   it("falls back to the base object when the selected object is removed", () => {
     render(<Home />);
 
-    fireEvent.click(screen.getByLabelText("Add layer"));
+    fireEvent.click(screen.getByLabelText("Add object"));
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Object 2");
 
-    const objectOptionsButtons = screen.getAllByLabelText("Layer options");
+    const objectOptionsButtons = screen.getAllByLabelText("Object options");
     fireEvent.click(objectOptionsButtons[1]);
 
     const deleteButtons = screen.getAllByText("Delete");
@@ -175,7 +175,7 @@ describe("Home page layers and selection flow", () => {
   it("duplicates a layer preserving its state and selects the copy", () => {
     render(<Home />);
 
-    const objectOptionsButtons = screen.getAllByLabelText("Layer options");
+    const objectOptionsButtons = screen.getAllByLabelText("Object options");
     fireEvent.click(objectOptionsButtons[0]);
     fireEvent.click(screen.getByText("Duplicate"));
 
@@ -193,7 +193,7 @@ describe("Home page layers and selection flow", () => {
       "Object 1 :: smartwatch :: x=0.00",
     );
 
-    fireEvent.click(screen.getByLabelText("Add layer"));
+    fireEvent.click(screen.getByLabelText("Add object"));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
       "Object 2 :: smartphone :: x=1.65",

@@ -31,6 +31,7 @@ export type AppCopy = {
   modelLabel: string;
   sceneSectionHint: string;
   keyboardToggleLabel: string;
+  tabletBezelToggleLabel: string;
   screenSectionTitle: string;
   uploadImage: string;
   screenSectionHintPrefix: string;
@@ -86,8 +87,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
   "pt-BR": {
     appTitle: "Mock Studio",
     appSubtitle: "Composição visual de mockups",
-    addObject: "Adicionar camada",
-    baseObject: "Camada base",
+    addObject: "Adicionar objeto",
+    baseObject: "Objeto base",
     hideObject: "Ocultar",
     showObject: "Mostrar",
     hiddenObjectLabel: "Oculto",
@@ -107,12 +108,13 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     deleteObject: "Excluir",
     duplicateObject: "Duplicar",
     renameObject: "Renomear",
-    layersSectionTitle: "Camadas",
-    objectOptionsLabel: "Opções da camada",
+    layersSectionTitle: "Objetos",
+    objectOptionsLabel: "Opções do objeto",
     propertiesEyebrow: "Propriedades",
     modelLabel: "Dispositivo",
     sceneSectionHint: "Corpo do dispositivo",
     keyboardToggleLabel: "Teclado",
+    tabletBezelToggleLabel: "Moldura da tela",
     screenSectionTitle: "Tela",
     uploadImage: "Substituir imagem",
     screenSectionHintPrefix: "Tamanho ideal:",
@@ -176,8 +178,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
   "en-US": {
     appTitle: "Mock Studio",
     appSubtitle: "Visual mockup composition",
-    addObject: "Add layer",
-    baseObject: "Base layer",
+    addObject: "Add object",
+    baseObject: "Base object",
     hideObject: "Hide",
     showObject: "Show",
     hiddenObjectLabel: "Hidden",
@@ -197,12 +199,13 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     deleteObject: "Delete",
     duplicateObject: "Duplicate",
     renameObject: "Rename",
-    layersSectionTitle: "Layers",
-    objectOptionsLabel: "Layer options",
+    layersSectionTitle: "Objects",
+    objectOptionsLabel: "Object options",
     propertiesEyebrow: "Properties",
     modelLabel: "Device",
     sceneSectionHint: "Device body",
     keyboardToggleLabel: "Keyboard",
+    tabletBezelToggleLabel: "Screen bezel",
     screenSectionTitle: "Screen",
     uploadImage: "Replace image",
     screenSectionHintPrefix: "Ideal size:",

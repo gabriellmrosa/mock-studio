@@ -144,6 +144,7 @@ type Smartphone3Props = JSX.IntrinsicElements["group"] & {
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
   showNotebookKeyboard?: boolean;
+  showTabletBezel?: boolean;
 };
 
 function createFlatColorMaterial(color: string) {

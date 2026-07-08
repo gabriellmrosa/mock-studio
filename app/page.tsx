@@ -346,6 +346,11 @@ export default function Home() {
             showNotebookKeyboard: !selectedObject?.showNotebookKeyboard,
           })
         }
+        onToggleTabletBezel={() =>
+          selectedObject && updateSceneObject(selectedObject.id, {
+            showTabletBezel: !selectedObject?.showTabletBezel,
+          })
+        }
         onToggleMatteColors={() =>
           selectedObject && updateSceneObject(selectedObject.id, {
             matteColors: !selectedObject?.matteColors,

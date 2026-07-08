@@ -32,6 +32,7 @@ type InspectorPanelProps = {
   onToggleCustomColors: () => void;
   onToggleDeviceShell: () => void;
   onToggleNotebookKeyboard: () => void;
+  onToggleTabletBezel: () => void;
   onToggleMatteColors: () => void;
   onUpdateRotation: (
     patch: Pick<SceneObject, "rotationX" | "rotationY" | "rotationZ">,
@@ -55,6 +56,7 @@ export default function InspectorPanel({
   onToggleCustomColors,
   onToggleDeviceShell,
   onToggleNotebookKeyboard,
+  onToggleTabletBezel,
   onToggleMatteColors,
   onUpdatePosition,
   onUpdateRotation,
@@ -144,6 +146,18 @@ export default function InspectorPanel({
                 onChange={onToggleNotebookKeyboard}
                 className="inspector-checkbox"
                 aria-label={copy.keyboardToggleLabel}
+              />
+            </label>
+          ) : null}
+          {object.modelId === "tablet" ? (
+            <label className="inspector-inline-toggle">
+              <span className="inspector-inline-toggle-text">{copy.tabletBezelToggleLabel}</span>
+              <input
+                type="checkbox"
+                checked={object.showTabletBezel}
+                onChange={onToggleTabletBezel}
+                className="inspector-checkbox"
+                aria-label={copy.tabletBezelToggleLabel}
               />
             </label>
           ) : null}

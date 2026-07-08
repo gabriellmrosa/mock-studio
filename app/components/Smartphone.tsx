@@ -9,6 +9,7 @@ import {
   buildScreenCanvas,
   MAX_TEXTURE_SIZE,
 } from "../lib/mockup-image";
+import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import { createSimpleFinishMaterial } from "../lib/simple-finish-material";
 import {
   SMARTPHONE_DEFAULT_THEME,
@@ -80,6 +81,7 @@ type SmartphoneProps = JSX.IntrinsicElements["group"] & {
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
   showNotebookKeyboard?: boolean;
+  showTabletBezel?: boolean;
   screenPosition?: [number, number, number];
   screenSize?: [number, number];
   screenRotation?: [number, number, number];
@@ -139,7 +141,7 @@ function SmartphoneImpl({
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   useGraph(clone) as unknown as GLTFResult;
 
-  const effectiveImageUrl = imageUrl ?? "/placeholder-1290x2748.png";
+  const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("smartphone");
   const sourceTexture = useTexture(effectiveImageUrl);
   const resolvedColors: SmartphoneColors =
     (colors as SmartphoneColors) ??

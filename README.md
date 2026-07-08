@@ -31,14 +31,15 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - switch between themes, semantic part colors and model-specific placeholders
 - export PNGs at `1080p`, `1440p` or `4K` — transparent, or with the canvas background and floor grid
 - hide the entire interface for clean, full-canvas captures
-- manage layers with selection, duplication and inspector-driven editing
+- manage objects with selection, duplication and inspector-driven editing
 - support `pt-BR` and `en-US` UI modes
 
 ## Features
 
 - multi-object composition with `smartphone`, `smartphone2`, `smartphone3`, `smartwatch`, `notebook` and `tablet`
-- layer duplication that preserves transform, image and inspector settings
-- per-object image upload with model-specific placeholders
+- object duplication that preserves transform, image and inspector settings
+- per-object image upload with model-specific placeholders generated at runtime
+- per-model options like the device body toggle, the notebook keyboard and the tablet screen bezel
 - per-object transform controls for position, rotation and scale
 - device themes plus manual color customization by semantic part
 - PNG export in two modes from the `Export` menu: transparent, or with the canvas background color and floor grid baked in
@@ -101,17 +102,17 @@ To see traffic data in production:
 | smartphone3 | smartphone.glb | [1, 1, 1] | [0, 0, 0] | [0, 0, 0] | 1290x2755 | generic phone |
 | smartwatch | smartwatch.glb | [19.44, 19.44, 19.44] | [0, -π/2, 0] | [130, 40, 270] | 1290x1452 | |
 | notebook | notebook.glb | [2311, 2311, 2311] | [0, π, 0] | [120, 100, 0] | 2755x1684 | |
-| tablet | — (procedural) | [1, 1, 1] | [0, π, 0] | [0, 0, 0] | 1668x2388 | fully code-drawn, no GLB asset |
+| tablet | — (procedural) | [1, 1, 1] | [0, π, 0] | [125, 307, 183] | 1668x2388 | fully code-drawn, no GLB asset |
 
 The `smartphone` (default) and `smartphone2` share the same iPhone GLB. `smartphone` hides the notched screen mesh and covers the molded notch with a generated clean rounded-rectangle screen plane pushed slightly in front; `smartphone2` keeps the original notch.
 
-The `tablet` has no GLB: its body is an extruded rounded rectangle with beveled edges, and the bezel and screen are generated rounded planes in front of it — the same clean-screen technique used by the smartphones. Toggling off the device body leaves just the floating screen.
+The `tablet` has no GLB: its body is an extruded rounded rectangle with beveled edges, and the bezel and screen are generated rounded planes in front of it — the same clean-screen technique used by the smartphones. Toggling off the device body leaves just the floating screen, and a dedicated `Screen bezel` toggle removes the black frame around the screen.
 
 ## Project Structure
 
 - [app/page.tsx](app/page.tsx): main editor state, object list and selection
 - [app/components/MockupCanvas/](app/components/MockupCanvas/): 3D canvas, camera, export and render flow
-- [app/components/LayersPanel/](app/components/LayersPanel/): layers list and global preferences
+- [app/components/LayersPanel/](app/components/LayersPanel/): objects list (renders the left "Objects" panel) and global preferences
 - [app/components/InspectorPanel/](app/components/InspectorPanel/): controls for the selected object
 - [app/models/device-models.ts](app/models/device-models.ts): device catalog and model metadata
 - [app/lib/scene-objects.ts](app/lib/scene-objects.ts): object creation, reset and model switching
@@ -128,19 +129,20 @@ Checklist:
 - add a new entry to `app/models/device-models.ts`
 - update the `DeviceModelId` union
 - map semantic parts with `debugPartColors` and `debugMode`
-- define a model-specific placeholder and final themes
+- register the placeholder size in `MODEL_PLACEHOLDER_SIZES` (the image is generated at runtime) and define the final themes
+- if the model's pivot sits at the origin, align it with the siblings via `modelSpawnOffset` (visual center ≈ [125, 307, 183] world units)
 
 ## Technical Notes
 
-- placeholders are model-specific and no longer tied to locale
-- new layers spawn after the rightmost object on the default plane, even when models differ
-- duplicated layers also reuse the anti-overlap spawn logic on the same plane
+- screen placeholders are generated at runtime on a canvas (checker pattern + recommended size in the UI body font), one per model — there are no static placeholder PNGs to maintain
+- new objects spawn after the rightmost object on the default plane, even when models differ
+- duplicated objects also reuse the anti-overlap spawn logic on the same plane
 - the `Export` menu has a background mode selector (transparent vs. canvas background) above the `1920x1080`, `2560x1440` and `3840x2160` resolution presets, all active; the chosen mode is remembered via `localStorage`
 - exporting with the canvas background also bakes in the floor grid; transparent exports omit both for a clean cutout
 - PNG export renders offscreen at 2x internally (SSAA) and downscales, for sharp edges without visible canvas distortion during capture
 - side panels overlay the canvas (`position: absolute`) so the 3D scene spans the full viewport behind them and never resizes or re-fits the camera when panels toggle
 - `Hide UI` hides every panel and floating control except the canvas; its toggle can be dragged and snaps to the nearest corner, remembered via `localStorage`
-- changing the model of an existing layer preserves its current transform
+- changing the model of an existing object preserves its current transform
 - floating menus and list rows use stronger hover contrast in dark mode
 - the infinite grid now stays visible longer during zoom-out before fading
 - `Credits` in the UI contains attribution for the third-party 3D assets used by the project
@@ -149,7 +151,7 @@ Checklist:
 
 - do not couple placeholders to language; placeholder choice belongs to the model definition
 - floating menus should reuse the shared flyout infrastructure to keep portal, outside-click and contrast behavior consistent
-- when adding layers, initial transform values must prevent visual overlap across the whole default plane or the editor can look broken even when state changed correctly
+- when adding objects, initial transform values must prevent visual overlap across the whole default plane or the editor can look broken even when state changed correctly
 - automatic anti-overlap logic should apply only when creating a new layer, not when editing an existing one
 - dark mode hover states for flyouts need stronger local contrast than the base panel token alone
 
@@ -157,7 +159,6 @@ Checklist:
 
 - [scripts/extract-orange-iphone.mjs](scripts/extract-orange-iphone.mjs): isolates the cropped iPhone node used by the app from the source GLB
 - [scripts/extract-iphone-textures.mjs](scripts/extract-iphone-textures.mjs): exports selected textures from the original GLB into `tmp/`
-- [scripts/generate-tablet-placeholder.mjs](scripts/generate-tablet-placeholder.mjs): generates `public/placeholder-1668x2388.png` with a dependency-free PNG encoder (reusable for future placeholders)
 
 These scripts are development utilities for asset preparation and are not part of the normal app runtime.
 
