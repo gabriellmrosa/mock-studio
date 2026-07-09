@@ -164,6 +164,14 @@ const copy: AppCopy = {
     gray: "Gray",
     "light-gray": "Light Gray",
   },
+  colorPartLabels: {
+    keyboardBaseOuter: "Base do teclado",
+    screenBackCover: "Tampa traseira",
+    screenBezel: "Moldura da tela",
+    screenRubberSeal: "Borracha da tela",
+    lowerHingeBar: "Barra da dobradica",
+    hingeRubberSeal: "Borracha da dobradica",
+  },
 };
 
 function renderInspector(

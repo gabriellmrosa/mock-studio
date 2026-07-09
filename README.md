@@ -131,6 +131,7 @@ Checklist:
 - add a new entry to `app/models/device-models.ts`
 - update the `DeviceModelId` union
 - map semantic parts with `debugPartColors` and `debugMode`
+- list the customizable part keys in the model's `customizableColorKeys`, and add their display labels to `colorPartLabels` in `app/lib/i18n.ts` for both locales (labels live in i18n, not in the model definition)
 - register the placeholder size in `MODEL_PLACEHOLDER_SIZES` (the image is generated at runtime) and define the final themes
 - set `pivotOffset` to the negative of the visible bounding-box center (GLTF units) so the model is centered on its pivot — rotation then happens around the visual center and alignment with the other models is automatic
 

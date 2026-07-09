@@ -109,6 +109,7 @@ const copy: AppCopy = {
     gray: "Gray",
     "light-gray": "Light Gray",
   },
+  colorPartLabels: {},
 };
 
 describe("LayersPanel", () => {

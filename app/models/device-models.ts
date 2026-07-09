@@ -58,7 +58,6 @@ export type DeviceModelDefinition = {
   // Chave do objeto colors que representa a cor primária — exibida no color picker do InspectorPanel.
   // undefined = modelo ainda sem temas definidos, color picker não aparece.
   customizableColorKeys: string[];
-  customizableColorLabels: Record<string, string>;
   primaryColorKey?: string;
   baseRotation: [number, number, number];
   buildColorsFromPrimary: (hex: string) => Record<string, string>;
@@ -114,19 +113,6 @@ const SMARTPHONE_CUSTOMIZABLE_COLOR_KEYS = [
   "cameraSideDetail",
 ];
 
-const SMARTPHONE_CUSTOMIZABLE_COLOR_LABELS: Record<string, string> = {
-  body: "Corpo",
-  sideCuts: "Recortes laterais",
-  topCutout: "Recorte superior",
-  frame: "Frame",
-  rearInset: "Area traseira",
-  cameraMicroPart: "Detalhe da camera",
-  cameraBlock: "Bloco da camera",
-  cameraBlockInner: "Miolo da camera",
-  cameraLensHighlight: "Brilho da lente",
-  cameraSideDetail: "Detalhe lateral",
-};
-
 const SMARTPHONE_DEBUG_COLORS: Record<DebugPartKey, string> = {
   topCutout: "#ff6600",
   frame: "#00ff99",
@@ -178,19 +164,6 @@ const SMARTPHONE2_CUSTOMIZABLE_COLOR_KEYS = [
   "cameraSideDetail",
 ];
 
-const SMARTPHONE2_CUSTOMIZABLE_COLOR_LABELS: Record<string, string> = {
-  body: "Corpo",
-  sideCuts: "Recortes laterais",
-  topCutout: "Recorte superior",
-  frame: "Frame",
-  rearInset: "Area traseira",
-  cameraMicroPart: "Detalhe da camera",
-  cameraBlock: "Bloco da camera",
-  cameraBlockInner: "Miolo da camera",
-  cameraLensHighlight: "Brilho da lente",
-  cameraSideDetail: "Detalhe lateral",
-};
-
 // ---------------------------------------------------------------------------
 // Smartphone 3 — modelo genérico (smartphone.glb), antigo "Smartphone".
 // ---------------------------------------------------------------------------
@@ -211,17 +184,6 @@ const SMARTPHONE3_CUSTOMIZABLE_COLOR_KEYS = [
   "CircleTopRight",
   "CircleTopRightMiddle",
 ];
-
-const SMARTPHONE3_CUSTOMIZABLE_COLOR_LABELS: Record<string, string> = {
-  gradientSound: "Alto-falante",
-  smartphoneBody: "Corpo",
-  rightBigSideButton: "Botao lateral direito",
-  leftSmallSideButton: "Botao lateral esquerdo",
-  CircleTopLeft: "Anel camera sup. esquerdo",
-  CircleTopLeftMiddle: "Anel camera centro esquerdo",
-  CircleTopRight: "Anel camera sup. direito",
-  CircleTopRightMiddle: "Anel camera centro direito",
-};
 
 const SMARTPHONE3_DEBUG_COLORS: Record<Smartphone3DebugPartKey, string> = {
   smartphoneBody: "#cc00ff",
@@ -287,19 +249,6 @@ const SMARTWATCH_CUSTOMIZABLE_COLOR_KEYS = [
   "bodyBackground",
 ];
 
-const SMARTWATCH_CUSTOMIZABLE_COLOR_LABELS: Record<string, string> = {
-  body: "Corpo",
-  twoSideButtons: "Botoes laterais duplos",
-  oneSideButton: "Botao lateral",
-  bandClasp: "Fecho da pulseira",
-  crownDetail: "Detalhe da coroa",
-  bandTop: "Pulseira superior",
-  bandBottom: "Pulseira inferior",
-  bandDetails: "Detalhes da pulseira",
-  bandDetails2: "Detalhes extras",
-  bodyBackground: "Fundo interno",
-};
-
 const NOTEBOOK_THEME_OPTIONS = [
   { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
   { id: "black",      label: "Preto",      preview: "#1C1C1E" },
@@ -324,24 +273,6 @@ const NOTEBOOK_CUSTOMIZABLE_COLOR_KEYS = [
   "lowerHingeBar",
   "hingeRubberSeal",
 ];
-
-const NOTEBOOK_CUSTOMIZABLE_COLOR_LABELS: Record<string, string> = {
-  keyboardBaseOuter: "Base do teclado",
-  keyboardDeck: "Mesa do teclado",
-  bodyBottom: "Base inferior",
-  screenBackCover: "Tampa traseira",
-  touchpad: "Touchpad",
-  touchpadBorder: "Borda do touchpad",
-  powerButtonInner: "Botao power",
-  speakerGrilles: "Saidas de som",
-  keyboardKeys: "Teclas",
-  keyboardBacklight: "Backlight do teclado",
-  laptopOpenNotch: "Recorte de abertura",
-  screenBezel: "Moldura da tela",
-  screenRubberSeal: "Borracha da tela",
-  lowerHingeBar: "Barra da dobradica",
-  hingeRubberSeal: "Borracha da dobradica",
-};
 
 const NOTEBOOK_DEBUG_COLORS: Record<NotebookDebugPartKey, string> = {
   touchpadBorder: "#ffffff",
@@ -402,11 +333,6 @@ const TABLET_THEME_OPTIONS: DeviceThemeOption[] = [
 
 const TABLET_CUSTOMIZABLE_COLOR_KEYS = ["body", "bezel"];
 
-const TABLET_CUSTOMIZABLE_COLOR_LABELS: Record<string, string> = {
-  body: "Corpo",
-  bezel: "Moldura da tela",
-};
-
 const TABLET_DEBUG_COLORS: Record<TabletDebugPartKey, string> = {
   body: "#cc00ff",
   bezel: "#00ff99",
@@ -418,7 +344,6 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
   // Modelo principal/default = variante SEM notch (GLB do iPhone).
   smartphone: {
     customizableColorKeys: SMARTPHONE_CUSTOMIZABLE_COLOR_KEYS,
-    customizableColorLabels: SMARTPHONE_CUSTOMIZABLE_COLOR_LABELS,
     primaryColorKey: "body",
     baseRotation: [0, (90.5 * Math.PI) / 180, 0],
     buildColorsFromPrimary: buildSmartphoneColorsFromPrimary,
@@ -441,7 +366,6 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
   },
   smartphone2: {
     customizableColorKeys: SMARTPHONE2_CUSTOMIZABLE_COLOR_KEYS,
-    customizableColorLabels: SMARTPHONE2_CUSTOMIZABLE_COLOR_LABELS,
     primaryColorKey: "body",
     baseRotation: [0, (90.5 * Math.PI) / 180, 0],
     buildColorsFromPrimary: buildSmartphone2ColorsFromPrimary,
@@ -464,7 +388,6 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
   // Smartphone 3 = modelo genérico (smartphone.glb), antigo "Smartphone".
   smartphone3: {
     customizableColorKeys: SMARTPHONE3_CUSTOMIZABLE_COLOR_KEYS,
-    customizableColorLabels: SMARTPHONE3_CUSTOMIZABLE_COLOR_LABELS,
     primaryColorKey: "smartphoneBody",
     baseRotation: [0, 0, 0],
     buildColorsFromPrimary: buildSmartphone3ColorsFromPrimary,
@@ -486,7 +409,6 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
   },
   smartwatch: {
     customizableColorKeys: SMARTWATCH_CUSTOMIZABLE_COLOR_KEYS,
-    customizableColorLabels: SMARTWATCH_CUSTOMIZABLE_COLOR_LABELS,
     primaryColorKey: "body",
     // GLTF tem -PI/2 X baked. +PI/2 X cancela → modelo nativo deitado.
     // Z -PI/2 ergue o relógio do chão; Y PI enfrenta a câmera.
@@ -517,7 +439,6 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
   },
   notebook: {
     customizableColorKeys: NOTEBOOK_CUSTOMIZABLE_COLOR_KEYS,
-    customizableColorLabels: NOTEBOOK_CUSTOMIZABLE_COLOR_LABELS,
     primaryColorKey: "keyboardBaseOuter",
     // Notebook está de costas com baseRotation=[0,0,0] — mesma correção do smartphone2.
     baseRotation: [0, Math.PI, 0],
@@ -542,7 +463,6 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
   },
   tablet: {
     customizableColorKeys: TABLET_CUSTOMIZABLE_COLOR_KEYS,
-    customizableColorLabels: TABLET_CUSTOMIZABLE_COLOR_LABELS,
     primaryColorKey: "body",
     // Geometria construída com a tela voltada para +Z; PI em Y compensa o
     // rotationY=180 do transform padrão para nascer de frente para a câmera.

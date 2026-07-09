@@ -81,6 +81,10 @@ export type AppCopy = {
   creditsFooterThanks: string;
   creditsFooterRemoval: string;
   themeNames: Record<string, string>;
+  // Rótulos das partes de cor customizável (color picker do Inspector),
+  // por chave de parte. As chaves são únicas entre modelos, então um mapa
+  // plano por idioma cobre todos os dispositivos.
+  colorPartLabels: Record<string, string>;
 };
 
 export const APP_COPY: Record<Locale, AppCopy> = {
@@ -174,6 +178,56 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "light-gray": "Cinza Claro",
       blood: "Vermelho",
     },
+    colorPartLabels: {
+      // Smartphone / Smartphone 2
+      body: "Corpo",
+      sideCuts: "Recortes laterais",
+      topCutout: "Recorte superior",
+      frame: "Frame",
+      rearInset: "Area traseira",
+      cameraMicroPart: "Detalhe da camera",
+      cameraBlock: "Bloco da camera",
+      cameraBlockInner: "Miolo da camera",
+      cameraLensHighlight: "Brilho da lente",
+      cameraSideDetail: "Detalhe lateral",
+      // Smartphone 3 (generico)
+      gradientSound: "Alto-falante",
+      smartphoneBody: "Corpo",
+      rightBigSideButton: "Botao lateral direito",
+      leftSmallSideButton: "Botao lateral esquerdo",
+      CircleTopLeft: "Anel camera sup. esquerdo",
+      CircleTopLeftMiddle: "Anel camera centro esquerdo",
+      CircleTopRight: "Anel camera sup. direito",
+      CircleTopRightMiddle: "Anel camera centro direito",
+      // Smartwatch
+      twoSideButtons: "Botoes laterais duplos",
+      oneSideButton: "Botao lateral",
+      bandClasp: "Fecho da pulseira",
+      crownDetail: "Detalhe da coroa",
+      bandTop: "Pulseira superior",
+      bandBottom: "Pulseira inferior",
+      bandDetails: "Detalhes da pulseira",
+      bandDetails2: "Detalhes extras",
+      bodyBackground: "Fundo interno",
+      // Notebook
+      keyboardBaseOuter: "Base do teclado",
+      keyboardDeck: "Mesa do teclado",
+      bodyBottom: "Base inferior",
+      screenBackCover: "Tampa traseira",
+      touchpad: "Touchpad",
+      touchpadBorder: "Borda do touchpad",
+      powerButtonInner: "Botao power",
+      speakerGrilles: "Saidas de som",
+      keyboardKeys: "Teclas",
+      keyboardBacklight: "Backlight do teclado",
+      laptopOpenNotch: "Recorte de abertura",
+      screenBezel: "Moldura da tela",
+      screenRubberSeal: "Borracha da tela",
+      lowerHingeBar: "Barra da dobradica",
+      hingeRubberSeal: "Borracha da dobradica",
+      // Tablet
+      bezel: "Moldura da tela",
+    },
   },
   "en-US": {
     appTitle: "Mock Studio",
@@ -264,6 +318,56 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       black: "Black",
       "light-gray": "Light Gray",
       blood: "Red",
+    },
+    colorPartLabels: {
+      // Smartphone / Smartphone 2
+      body: "Body",
+      sideCuts: "Side cuts",
+      topCutout: "Top cutout",
+      frame: "Frame",
+      rearInset: "Rear inset",
+      cameraMicroPart: "Camera detail",
+      cameraBlock: "Camera block",
+      cameraBlockInner: "Camera core",
+      cameraLensHighlight: "Lens highlight",
+      cameraSideDetail: "Side detail",
+      // Smartphone 3 (generic)
+      gradientSound: "Speaker",
+      smartphoneBody: "Body",
+      rightBigSideButton: "Right side button",
+      leftSmallSideButton: "Left side button",
+      CircleTopLeft: "Top-left camera ring",
+      CircleTopLeftMiddle: "Center-left camera ring",
+      CircleTopRight: "Top-right camera ring",
+      CircleTopRightMiddle: "Center-right camera ring",
+      // Smartwatch
+      twoSideButtons: "Dual side buttons",
+      oneSideButton: "Side button",
+      bandClasp: "Band clasp",
+      crownDetail: "Crown detail",
+      bandTop: "Top band",
+      bandBottom: "Bottom band",
+      bandDetails: "Band details",
+      bandDetails2: "Extra details",
+      bodyBackground: "Inner background",
+      // Notebook
+      keyboardBaseOuter: "Keyboard base",
+      keyboardDeck: "Keyboard deck",
+      bodyBottom: "Bottom base",
+      screenBackCover: "Back cover",
+      touchpad: "Touchpad",
+      touchpadBorder: "Touchpad border",
+      powerButtonInner: "Power button",
+      speakerGrilles: "Speaker grilles",
+      keyboardKeys: "Keys",
+      keyboardBacklight: "Keyboard backlight",
+      laptopOpenNotch: "Opening notch",
+      screenBezel: "Screen bezel",
+      screenRubberSeal: "Screen rubber seal",
+      lowerHingeBar: "Hinge bar",
+      hingeRubberSeal: "Hinge rubber seal",
+      // Tablet
+      bezel: "Screen bezel",
     },
   },
 };

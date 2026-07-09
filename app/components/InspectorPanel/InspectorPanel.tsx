@@ -79,7 +79,7 @@ export default function InspectorPanel({
       ? NOTEBOOK_SCREEN_ONLY_COLOR_KEYS.has(part)
       : true,
   );
-  const customizableColorLabels = model?.customizableColorLabels ?? {};
+  const customizableColorLabels = copy.colorPartLabels;
   const positionXRange = Math.max(5, Math.ceil(Math.abs(object.positionX)) + 1);
   const modelOptions: CustomSelectOption[] = [
     ...DEVICE_MODEL_LIST.map((device) => ({
