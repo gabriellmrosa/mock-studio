@@ -52,7 +52,7 @@ const MODEL_PLACEHOLDER_SIZES: Record<DeviceModelId, [number, number]> = {
 // renderizado aparecer no mesmo tamanho visual.
 const DEFAULT_PLACEHOLDER_FONT_SCALE = 0.042;
 const MODEL_PLACEHOLDER_FONT_SCALE: Partial<Record<DeviceModelId, number>> = {
-  smartwatch: 0.078,
+  smartwatch: 0.098,
   notebook: 0.066,
 };
 

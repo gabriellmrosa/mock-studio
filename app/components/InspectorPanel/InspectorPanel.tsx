@@ -351,8 +351,8 @@ export default function InspectorPanel({
                     rotationZ: value,
                   })
                 }
-                min={-25}
-                max={25}
+                min={-360}
+                max={360}
               />
             </div>
 

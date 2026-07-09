@@ -49,7 +49,7 @@ export function createPlaceholderDataUrl(
     // tamanho visual em todos os placeholders, independente do aspecto.
     const fontSize = Math.round(height * fontScale);
     context.fillStyle = TEXT_COLOR;
-    context.font = `500 ${fontSize}px ${FONT_FAMILY}`;
+    context.font = `400 ${fontSize}px ${FONT_FAMILY}`;
     context.textAlign = "center";
     context.textBaseline = "middle";
     context.fillText(`${width}×${height}`, width / 2, height / 2);

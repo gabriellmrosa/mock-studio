@@ -95,14 +95,16 @@ To see traffic data in production:
 
 ## Model Catalog
 
-| Model | GLB file | modelScale | baseRotation | modelSpawnOffset | Recommended upload | Notes |
+| Model | GLB file | modelScale | baseRotation | pivotOffset | Recommended upload | Notes |
 |---|---|---|---|---|---|---|
-| smartphone | apple_iphone_14_pro_orange.glb | [122.9, 122.9, 122.9] | [0, 90.5°, 0] | [0, 0, 0] | 1290x2748 | default model, notch removed (clean full screen) |
-| smartphone2 | apple_iphone_14_pro_orange.glb | [122.9, 122.9, 122.9] | [0, 90.5°, 0] | [0, 0, 0] | 1290x2748 | same GLB, keeps the notch |
-| smartphone3 | smartphone.glb | [1, 1, 1] | [0, 0, 0] | [0, 0, 0] | 1290x2755 | generic phone |
-| smartwatch | smartwatch.glb | [19.44, 19.44, 19.44] | [0, -π/2, 0] | [130, 40, 270] | 1290x1452 | |
-| notebook | notebook.glb | [2311, 2311, 2311] | [0, π, 0] | [120, 100, 0] | 2755x1684 | |
-| tablet | — (procedural) | [1, 1, 1] | [0, π, 0] | [125, 307, 183] | 1668x2388 | fully code-drawn, no GLB asset |
+| smartphone | apple_iphone_14_pro_orange.glb | [122.9, 122.9, 122.9] | [0, 90.5°, 0] | [-1.5, -2.5, 1.0] | 1290x2748 | default model, notch removed (clean full screen) |
+| smartphone2 | apple_iphone_14_pro_orange.glb | [122.9, 122.9, 122.9] | [0, 90.5°, 0] | [-1.5, -2.5, 1.0] | 1290x2748 | same GLB, keeps the notch |
+| smartphone3 | smartphone.glb | [1, 1, 1] | [0, 0, 0] | [125.09, -314.71, 180.11] | 1290x2755 | generic phone |
+| smartwatch | smartwatch.glb | [19.44, 19.44, 19.44] | [0, -π/2, 0] | [-7.3, -14.48, 0.08] | 1290x1452 | |
+| notebook | notebook.glb | [2311, 2311, 2311] | [0, π, 0] | [0, -0.0964, 0.0397] | 2755x1684 | |
+| tablet | — (procedural) | [1, 1, 1] | [0, π, 0] | [0, 0, 0] | 1668x2388 | fully code-drawn, no GLB asset |
+
+Every model's `pivotOffset` (GLTF units, applied inside the scaled group) centers its visible geometry on the group origin, so Inspector rotations pivot around the visual center and all models align with each other by construction — `modelSpawnOffset` is now `[0, 0, 0]` everywhere and reserved for intentional offsets.
 
 The `smartphone` (default) and `smartphone2` share the same iPhone GLB. `smartphone` hides the notched screen mesh and covers the molded notch with a generated clean rounded-rectangle screen plane pushed slightly in front; `smartphone2` keeps the original notch.
 
@@ -130,7 +132,7 @@ Checklist:
 - update the `DeviceModelId` union
 - map semantic parts with `debugPartColors` and `debugMode`
 - register the placeholder size in `MODEL_PLACEHOLDER_SIZES` (the image is generated at runtime) and define the final themes
-- if the model's pivot sits at the origin, align it with the siblings via `modelSpawnOffset` (visual center ≈ [125, 307, 183] world units)
+- set `pivotOffset` to the negative of the visible bounding-box center (GLTF units) so the model is centered on its pivot — rotation then happens around the visual center and alignment with the other models is automatic
 
 ## Technical Notes
 
@@ -144,6 +146,7 @@ Checklist:
 - side panels overlay the canvas (`position: absolute`) so the 3D scene spans the full viewport behind them and never resizes or re-fits the camera when panels toggle
 - `Hide UI` hides every panel and floating control except the canvas; its toggle can be dragged and snaps to the nearest corner, remembered via `localStorage`
 - changing the model of an existing object preserves its current transform
+- Inspector rotation values are plain degrees (1 unit = 1°); rotation Z supports full turns from `-360` to `360`, pivoting around the model's visual center
 - floating menus and list rows use stronger hover contrast in dark mode
 - the infinite grid now stays visible longer during zoom-out before fading
 - `Credits` in the UI contains attribution for the third-party 3D assets used by the project

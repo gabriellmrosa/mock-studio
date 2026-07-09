@@ -429,7 +429,9 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     modelScale: [122.9, 122.9, 122.9],
     modelSpawnOffset: [0, 0, 0],
     name: "Smartphone",
-    pivotOffset: [0, 0, 0],
+    // Cancela o offset interno [1.5, 2.5, -1] do componente (GLB já é centrado),
+    // colocando o centro visual na origem do pivô — rotação gira no centro.
+    pivotOffset: [-1.5, -2.5, 1.0],
     recommendedUploadSize: "1290x2748",
     screenPosition: [0, 0, 0],
     screenSize: [0, 0],
@@ -450,7 +452,8 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     modelScale: [122.9, 122.9, 122.9],
     modelSpawnOffset: [0, 0, 0],
     name: "Smartphone 2",
-    pivotOffset: [0, 0, 0],
+    // Mesmo GLB/estrutura do smartphone — cancela o offset interno do componente.
+    pivotOffset: [-1.5, -2.5, 1.0],
     recommendedUploadSize: "1290x2748",
     screenPosition: [0, 0, 0],
     screenSize: [0, 0],
@@ -472,7 +475,8 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     modelScale: [1, 1, 1],
     modelSpawnOffset: [0, 0, 0],
     name: "Smartphone 3",
-    pivotOffset: [0, 0, 0],
+    // Centro do bbox medido em runtime: (-125.09, 314.71, -180.11) GLTF units.
+    pivotOffset: [125.09, -314.71, 180.11],
     recommendedUploadSize: "1290x2755",
     screenPosition: [-125, 314.85, -195],
     screenSize: [220, 470],
@@ -495,9 +499,10 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     // GLTF bounding box: [14.509, 8.231, 15.128]. Após -PI/2 X baked na cena:
     // altura Three.js = 15.128. Scale alvo: ~490 / 15.128 ≈ 32.4
     modelScale: [19.44, 19.44, 19.44],
-    modelSpawnOffset: [130, 40, 270],
+    modelSpawnOffset: [0, 0, 0],
     name: "Smartwatch",
-    pivotOffset: [0, 0, 0],
+    // Centro do bbox medido em runtime: (7.30, 14.48, -0.08) GLTF units.
+    pivotOffset: [-7.3, -14.48, 0.08],
     recommendedUploadSize: "1290x1452",
     // Calibrado a partir do bbox do scene graph do miolo frontal (Object_11),
     // já com a rotação baked do GLB aplicada:
@@ -524,9 +529,10 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     // GLTF com scale=0.01 baked. Bounds efetivos: [0.312, 0.300, 0.212] world units.
     // Após PI/2 X rotation: altura = 0.212. Scale alvo: ~490 / 0.212 ≈ 2311
     modelScale: [2311, 2311, 2311],
-    modelSpawnOffset: [120, 100, 0],
+    modelSpawnOffset: [0, 0, 0],
     name: "Notebook",
-    pivotOffset: [0, 0, 0],
+    // Centro do bbox medido em runtime: (0, 0.0964, -0.0397) GLTF units.
+    pivotOffset: [0, -0.0964, 0.0397],
     recommendedUploadSize: "2755x1684",
     screenPosition: [0, 0, 0],
     screenSize: [0, 0],
@@ -548,11 +554,9 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     initialDebugColors: TABLET_DEBUG_COLORS,
     // Procedural em world units diretas (altura ~500, como os smartphones).
     modelScale: [1, 1, 1],
-    // Geometria centrada na origem; o smartphone default (iPhone) tem centro
-    // visual em ≈(125, 307, 183) world (offset interno 2.5 × scale 122.9 +
-    // rotações). Igualamos para trocas de modelo manterem o alinhamento —
-    // mesma calibração já feita no smartwatch (x=130) e notebook (x=120).
-    modelSpawnOffset: [125, 307, 183],
+    // Geometria já centrada na origem — com todos os modelos centrados via
+    // pivotOffset, o alinhamento entre eles dispensa offsets de spawn.
+    modelSpawnOffset: [0, 0, 0],
     name: "Tablet",
     pivotOffset: [0, 0, 0],
     recommendedUploadSize: "1668x2388",
