@@ -13,6 +13,12 @@ import type { SceneObject } from "./scene-objects";
  * economizar estado, mas acoplava as abas: reordenar keyframes reescrevia o
  * Static, e editar o keyframe 1 mudava o objeto parado.
  *
+ * Cada objeto tem ainda um atraso de início (`motionDelayMs`): o tempo que ele
+ * espera, na pose do primeiro keyframe, antes de começar. É o que permite
+ * coordenar vários objetos numa cena — sem ele toda timeline começaria em zero.
+ * Campo próprio de propósito: reaproveitar o `durationMs` do primeiro keyframe,
+ * que é ignorado, daria dois significados ao mesmo dado.
+ *
  * A câmera não é animada: ela é ferramenta de visualização, e mantê-la fora
  * evita ter que arbitrar precedência com o auto-fit, o "Enquadrar cena" e a
  * pose guardada nos templates.
@@ -22,6 +28,7 @@ export const MAX_KEYFRAMES = 4;
 export const DEFAULT_SEGMENT_MS = 800;
 export const MIN_SEGMENT_MS = 100;
 export const MAX_SEGMENT_MS = 10000;
+export const MAX_DELAY_MS = 10000;
 
 export const EASING_IDS = [
   "linear",
@@ -176,11 +183,31 @@ export function updateKeyframe(
   );
 }
 
-/** Duração total: a soma dos trechos, ignorando o primeiro keyframe. */
+/** Duração da animação em si: a soma dos trechos, ignorando o primeiro keyframe. */
 export function getMotionDuration(keyframes: Keyframe[]): number {
   return keyframes
     .slice(1)
     .reduce((total, keyframe) => total + keyframe.durationMs, 0);
+}
+
+/** Instante em que este objeto termina de se mover, contando o atraso. */
+export function getObjectMotionEnd(object: SceneObject): number {
+  if (!hasMotion(object)) {
+    return 0;
+  }
+
+  return object.motionDelayMs + getMotionDuration(object.keyframes);
+}
+
+/**
+ * Duração da cena: o fim do objeto que termina por último. É o eixo da timeline
+ * e, mais adiante, a duração do vídeo exportado.
+ */
+export function getSceneMotionDuration(objects: SceneObject[]): number {
+  return objects.reduce(
+    (longest, object) => Math.max(longest, getObjectMotionEnd(object)),
+    0,
+  );
 }
 
 export function hasMotion(object: SceneObject): boolean {
@@ -222,7 +249,10 @@ export function sampleMotion(
 
   const transforms = object.keyframes.map((keyframe) => keyframe.transform);
 
-  if (timeMs <= 0) {
+  // Durante o atraso o objeto fica parado na pose inicial.
+  const localTime = timeMs - object.motionDelayMs;
+
+  if (localTime <= 0) {
     return transforms[0];
   }
 
@@ -232,11 +262,11 @@ export function sampleMotion(
     const keyframe = object.keyframes[index];
     const segmentEnd = elapsed + keyframe.durationMs;
 
-    if (timeMs <= segmentEnd) {
+    if (localTime <= segmentEnd) {
       const progress =
         keyframe.durationMs === 0
           ? 1
-          : (timeMs - elapsed) / keyframe.durationMs;
+          : (localTime - elapsed) / keyframe.durationMs;
 
       return lerpTransform(
         transforms[index - 1],

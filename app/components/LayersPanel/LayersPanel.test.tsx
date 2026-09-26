@@ -123,6 +123,7 @@ const copy: AppCopy = {
   motionPlay: "Play",
   motionStop: "Stop",
   motionDuration: "Duration (s)",
+  motionDelay: "Delay (s)",
   motionEasing: "Easing",
   motionEasingLabels: {},
 

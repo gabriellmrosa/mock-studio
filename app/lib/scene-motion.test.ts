@@ -5,6 +5,8 @@ import {
   applyEasing,
   captureTransform,
   getMotionDuration,
+  getObjectMotionEnd,
+  getSceneMotionDuration,
   hasMotion,
   moveKeyframe,
   removeKeyframe,
@@ -175,6 +177,54 @@ describe("scene-motion", () => {
     expect(moveKeyframe(keyframes, keyframes[0].id, -1)).toBeNull();
     expect(moveKeyframe(keyframes, keyframes[1].id, 1)).toBeNull();
     expect(moveKeyframe(keyframes, "inexistente", 1)).toBeNull();
+  });
+
+  it("holds the first pose during the start delay", () => {
+    const base = makeObject();
+    const object = {
+      ...base,
+      motionDelayMs: 500,
+      keyframes: [
+        {
+          durationMs: 0,
+          easing: "linear" as const,
+          id: "a",
+          transform: { ...captureTransform(base), positionX: 0 },
+        },
+        {
+          durationMs: 1000,
+          easing: "linear" as const,
+          id: "b",
+          transform: { ...captureTransform(base), positionX: 10 },
+        },
+      ],
+    };
+
+    // Ainda parado durante o atraso...
+    expect(sampleMotion(object, 0)?.positionX).toBe(0);
+    expect(sampleMotion(object, 499)?.positionX).toBe(0);
+    // ...e o movimento só então começa a contar.
+    expect(sampleMotion(object, 1000)?.positionX).toBeCloseTo(5);
+    expect(sampleMotion(object, 1500)?.positionX).toBeCloseTo(10);
+  });
+
+  it("counts the delay in the object's end time", () => {
+    const object = { ...withMotion(), motionDelayMs: 300 };
+
+    expect(getMotionDuration(object.keyframes)).toBe(800);
+    expect(getObjectMotionEnd(object)).toBe(1100);
+  });
+
+  it("reports zero end time for objects without motion", () => {
+    expect(getObjectMotionEnd({ ...makeObject(), motionDelayMs: 900 })).toBe(0);
+  });
+
+  it("takes the scene duration from whichever object ends last", () => {
+    const short = { ...withMotion(), motionDelayMs: 0 };
+    const late = { ...withMotion(), motionDelayMs: 2000 };
+
+    expect(getSceneMotionDuration([short, late])).toBe(2800);
+    expect(getSceneMotionDuration([makeObject()])).toBe(0);
   });
 
   it("returns null for objects without motion", () => {

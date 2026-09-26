@@ -52,3 +52,11 @@
 - applying a template rebuilds objects with an empty keyframe list
 - including keyframes means bumping `TEMPLATE_SCHEMA_VERSION`, and the version check discards templates saved under the old schema
 - decide on a migration before bumping, so saved templates survive
+
+## 9. Timeline for coordinating motion across objects
+
+- the goal is composing short videos of several objects moving to a final arrangement, which the per-object keyframe list cannot show: you have to open each object and overlay the timings mentally
+- one track per object, not per property — a keyframe here is a whole pose, which avoids the per-property tracks that make After Effects heavy
+- v1 scope: blocks per segment, markers at keyframes, a draggable playhead, dragging a track to set its delay and dragging a block edge to change duration
+- dragging a keyframe marker is a paired adjustment of the two neighbouring segment durations, so segment durations stay the model and absolute keyframe times are not needed
+- `motionDelayMs` already landed, which is the piece the timeline needs to have anything to coordinate

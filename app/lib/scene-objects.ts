@@ -23,6 +23,8 @@ export type SceneObject = {
   isVisible: boolean;
   /** Vazio = objeto estático. Ver [scene-motion.ts](app/lib/scene-motion.ts). */
   keyframes: Keyframe[];
+  /** Espera antes de a animação deste objeto começar, em ms. */
+  motionDelayMs: number;
   modelId: DeviceModelId;
   name: string;
   matteColors: boolean;
@@ -218,6 +220,7 @@ export function createSceneObject({
     imageUrl: getPlaceholderImageUrl(modelId),
     isVisible: true,
     keyframes: [],
+    motionDelayMs: 0,
     modelId,
     name,
     matteColors: true,

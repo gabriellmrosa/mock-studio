@@ -121,6 +121,7 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       debugPartColors: { ...model.initialDebugColors },
       deletable: index > 0,
       keyframes: [],
+      motionDelayMs: 0,
       deviceTheme: object.deviceTheme,
       id: crypto.randomUUID(),
       imageUrl: getPlaceholderImageUrl(object.modelId),

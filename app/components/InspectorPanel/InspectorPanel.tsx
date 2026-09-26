@@ -9,6 +9,7 @@ import type { SceneObject } from "../../lib/scene-objects";
 import {
   EASING_IDS,
   MAX_KEYFRAMES,
+  MAX_DELAY_MS,
   MAX_SEGMENT_MS,
   MIN_SEGMENT_MS,
   hasMotion,
@@ -72,6 +73,7 @@ type InspectorPanelProps = {
   onAddKeyframe: () => void;
   onMoveKeyframe: (id: string, direction: -1 | 1) => void;
   onRemoveKeyframe: (id: string) => void;
+  onUpdateMotionDelay: (delayMs: number) => void;
   onUpdateKeyframeMeta: (
     id: string,
     patch: { durationMs?: number; easing?: EasingId },
@@ -106,6 +108,7 @@ export default function InspectorPanel({
   onAddKeyframe,
   onRemoveKeyframe,
   onMoveKeyframe,
+  onUpdateMotionDelay,
   onUpdateKeyframeMeta,
   isMotionPlaying,
   onToggleMotionPlayback,
@@ -356,6 +359,7 @@ export default function InspectorPanel({
               object={object}
               onAddKeyframe={onAddKeyframe}
               onMoveKeyframe={onMoveKeyframe}
+              onUpdateMotionDelay={onUpdateMotionDelay}
               onRemoveKeyframe={onRemoveKeyframe}
               onSelectKeyframe={onSelectKeyframe}
               onStartMotion={onStartMotion}
@@ -486,6 +490,7 @@ function MotionPanel({
   onMoveKeyframe,
   onRemoveKeyframe,
   onSelectKeyframe,
+  onUpdateMotionDelay,
   onStartMotion,
   onTogglePlayback,
   onUpdateKeyframeMeta,
@@ -498,6 +503,7 @@ function MotionPanel({
   onMoveKeyframe: (id: string, direction: -1 | 1) => void;
   onRemoveKeyframe: (id: string) => void;
   onSelectKeyframe: (id: string) => void;
+  onUpdateMotionDelay: (delayMs: number) => void;
   onStartMotion: () => void;
   onTogglePlayback: () => void;
   onUpdateKeyframeMeta: (
@@ -542,6 +548,19 @@ function MotionPanel({
         {isPlaying ? <Square size={13} /> : <Play size={13} />}
         {isPlaying ? copy.motionStop : copy.motionPlay}
       </button>
+
+      <div className="motion-delay">
+        <Control
+          label={copy.motionDelay}
+          value={object.motionDelayMs / 1000}
+          setValue={(value) =>
+            onUpdateMotionDelay(Math.round(value * 1000))
+          }
+          min={0}
+          max={MAX_DELAY_MS / 1000}
+          step={0.1}
+        />
+      </div>
 
       <div className="motion-keyframes">
         {object.keyframes.map((keyframe, index) => (

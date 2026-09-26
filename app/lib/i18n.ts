@@ -64,6 +64,7 @@ export type AppCopy = {
   motionPlay: string;
   motionStop: string;
   motionDuration: string;
+  motionDelay: string;
   motionEasing: string;
   motionEasingLabels: Record<string, string>;
   resetObjectButton: string;
@@ -177,6 +178,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionPlay: "Reproduzir",
     motionStop: "Parar",
     motionDuration: "Duração (s)",
+    motionDelay: "Atraso (s)",
     motionEasing: "Suavização",
     motionEasingLabels: {
       linear: "Linear",
@@ -349,6 +351,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionPlay: "Play",
     motionStop: "Stop",
     motionDuration: "Duration (s)",
+    motionDelay: "Delay (s)",
     motionEasing: "Easing",
     motionEasingLabels: {
       linear: "Linear",

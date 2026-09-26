@@ -50,7 +50,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - export feedback chip while the PNG is being prepared
 - scene templates stored in `localStorage`: composition, background color and camera pose, saved from the `Templates` section or as a checkbox in the `Export` menu
 - template management with inline rename, delete and `Restore framing`, which returns the camera to the pose saved with that template without touching the objects
-- per-object motion: the `Transform` section splits into `Static` and `Motion` tabs, with up to four keyframes, per-segment duration and easing, reordering and in-editor playback
+- per-object motion: the `Transform` section splits into `Static` and `Motion` tabs, with up to four keyframes, per-segment duration and easing, reordering, a start delay and in-editor playback
 - framing actions split by scope: `Fit scene` in the toolbar, `Frame object` in each object's menu
 - distraction-free `Hide UI` mode with a toggle you can drag to any canvas corner, animating between the toolbar and the corner it snaps to
 - layered selection flow via list and direct interaction in the 3D scene
@@ -167,6 +167,8 @@ Checklist:
 - a keyframe preview is a display override passed to the canvas, the same shape as the template camera pose, so looking at a keyframe never mutates the object
 - playback writes straight to the 3D group through `useFrame` instead of going through React state, which would re-render the tree 60 times per second, and it reuses the same position resolution as the static render so the preview cannot drift from the resting view
 - easing uses power-of-two curves rather than the CSS cubic-beziers: indistinguishable in motion and no bezier solving per frame
+- each object carries its own `motionDelayMs`, the time it waits on the first keyframe pose before moving, which is what lets several objects be staggered against each other; the scene duration is the latest object end, delay included, and it drives playback
+- the delay is a field of its own rather than a reuse of the first keyframe's unused `durationMs`: one datum, one meaning
 - motion is capped at four keyframes per object, and the camera is never animated — it stays a viewing tool, which keeps the auto-fit, `Fit scene` and template poses free of precedence rules
 - range and number inputs carry an `aria-label` and show a `:focus-visible` ring, so keyboard focus is visible without drawing an outline on mouse clicks
 - `Credits` in the UI contains attribution for the third-party 3D assets used by the project

@@ -382,3 +382,10 @@
   flex-direction: column;
   gap: var(--space-2);
 }
+
+/* Atraso de início: propriedade da timeline do objeto, não de um keyframe —
+   por isso fica acima da lista, separado dela. */
+.motion-delay {
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: var(--space-3);
+}

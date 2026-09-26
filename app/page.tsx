@@ -26,7 +26,7 @@ import { readFileAsDataUrl } from "./lib/mockup-image";
 import {
   MAX_KEYFRAMES,
   addKeyframe,
-  getMotionDuration,
+  getSceneMotionDuration,
   hasMotion,
   removeKeyframe,
   moveKeyframe,
@@ -425,6 +425,12 @@ export default function Home() {
     setSelectedKeyframeId(keyframes[keyframes.length - 1]?.id ?? "");
   }
 
+  function handleUpdateMotionDelay(motionDelayMs: number) {
+    if (!selectedObject) return;
+
+    updateSceneObject(selectedObject.id, { motionDelayMs });
+  }
+
   function handleMoveKeyframe(id: string, direction: -1 | 1) {
     if (!selectedObject) return;
 
@@ -476,20 +482,14 @@ export default function Home() {
     setMotionStartedAt((current) => (current === null ? Date.now() : null));
   }
 
-  // O preview para sozinho no fim da cena — a duração é a do objeto com a
-  // timeline mais longa, já que os demais apenas seguram a última pose.
+  // O preview para sozinho no fim da cena — vale o objeto que termina por
+  // último, contando o atraso de início dele.
   useEffect(() => {
     if (motionStartedAt === null) {
       return;
     }
 
-    const duration = sceneObjects
-      .filter(hasMotion)
-      .reduce(
-        (longest, object) =>
-          Math.max(longest, getMotionDuration(object.keyframes)),
-        0,
-      );
+    const duration = getSceneMotionDuration(sceneObjects);
 
     const timeoutId = window.setTimeout(
       () => setMotionStartedAt(null),
@@ -658,6 +658,7 @@ export default function Home() {
         onAddKeyframe={handleAddKeyframe}
         onRemoveKeyframe={handleRemoveKeyframe}
         onMoveKeyframe={handleMoveKeyframe}
+        onUpdateMotionDelay={handleUpdateMotionDelay}
         onUpdateKeyframeMeta={handleUpdateKeyframeMeta}
         isMotionPlaying={isMotionPlaying}
         onToggleMotionPlayback={handleToggleMotionPlayback}

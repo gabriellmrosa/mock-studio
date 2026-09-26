@@ -178,6 +178,7 @@ const copy: AppCopy = {
   motionPlay: "Play",
   motionStop: "Stop",
   motionDuration: "Duration (s)",
+  motionDelay: "Delay (s)",
   motionEasing: "Easing",
   motionEasingLabels: {},
 
@@ -233,6 +234,7 @@ function renderInspector(
       onAddKeyframe={jest.fn()}
       onRemoveKeyframe={jest.fn()}
       onMoveKeyframe={jest.fn()}
+      onUpdateMotionDelay={jest.fn()}
       onUpdateKeyframeMeta={jest.fn()}
       isMotionPlaying={false}
       onToggleMotionPlayback={jest.fn()}
