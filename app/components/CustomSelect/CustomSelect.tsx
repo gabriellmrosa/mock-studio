@@ -158,7 +158,7 @@ export default function CustomSelect({
       moveHighlight(-1);
     }
 
-    if (event.key === "Enter" || event.key === " ") {
+    if (event.key === "Enter") {
       event.preventDefault();
       if (!isOpen) {
         open();

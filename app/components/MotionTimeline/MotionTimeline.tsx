@@ -13,9 +13,11 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Check, Diamond, Play, Square } from "lucide-react";
+import BezierEditor from "./BezierEditor";
 import type { AppCopy } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
 import {
+  DEFAULT_BEZIER,
   EASING_IDS,
   findKeyframeAt,
   moveKeyframeTo,
@@ -75,7 +77,8 @@ type DragState =
 
 type MenuState =
   | {
-      kind: "easing";
+      /** "bezier" é o editor de curva, aberto a partir do menu de transição. */
+      kind: "easing" | "bezier";
       keyframeId: string;
       objectId: string;
       x: number;
@@ -250,14 +253,29 @@ export default function MotionTimeline({
   );
 
   function setEasing(easing: EasingId) {
-    if (menuObject && menuKeyframe) {
+    if (!menuObject || !menuKeyframe || !menu) {
+      return;
+    }
+
+    if (easing !== "cubic-bezier") {
       onChangeKeyframes(
         menuObject.id,
         updateKeyframe(menuObject.keyframes, menuKeyframe.id, { easing }),
       );
+      setMenu(null);
+      return;
     }
 
-    setMenu(null);
+    // A curva não se escolhe num clique: troca o menu pelo editor, no mesmo
+    // lugar, partindo da curva que o trecho já tinha ou do padrão.
+    onChangeKeyframes(
+      menuObject.id,
+      updateKeyframe(menuObject.keyframes, menuKeyframe.id, {
+        bezier: menuKeyframe.bezier ?? [...DEFAULT_BEZIER],
+        easing,
+      }),
+    );
+    setMenu({ ...menu, kind: "bezier" });
   }
 
   return (
@@ -461,8 +479,27 @@ export default function MotionTimeline({
       )}
 
       {menu && menuKeyframe ? (
-        <TimelineMenu x={menu.x} y={menu.y} onClose={() => setMenu(null)}>
-          {menu.kind === "easing" ? (
+        <TimelineMenu
+          className={menu.kind === "bezier" ? "is-bezier" : undefined}
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+        >
+          {menu.kind === "bezier" && menuObject ? (
+            <BezierEditor
+              copy={copy}
+              value={menuKeyframe.bezier ?? DEFAULT_BEZIER}
+              onChange={(bezier) =>
+                onChangeKeyframes(
+                  menuObject.id,
+                  updateKeyframe(menuObject.keyframes, menuKeyframe.id, {
+                    bezier,
+                  }),
+                )
+              }
+              onDone={() => setMenu(null)}
+            />
+          ) : menu.kind === "easing" ? (
             <>
               <p className="context-menu-header motion-timeline-menu-title">
                 {copy.motionEasing}
@@ -477,7 +514,9 @@ export default function MotionTimeline({
                   onClick={() => setEasing(easing)}
                 >
                   <span className="context-menu-row-label">
-                    {copy.motionEasingLabels[easing] ?? easing}
+                    {`${copy.motionEasingLabels[easing] ?? easing}${
+                      easing === "cubic-bezier" ? "…" : ""
+                    }`}
                   </span>
                   {menuKeyframe.easing === easing ? (
                     <Check size={12} className="context-menu-check" />
@@ -513,11 +552,13 @@ export default function MotionTimeline({
  */
 function TimelineMenu({
   children,
+  className,
   onClose,
   x,
   y,
 }: {
   children: ReactNode;
+  className?: string;
   onClose: () => void;
   x: number;
   y: number;
@@ -538,7 +579,7 @@ function TimelineMenu({
     panel.style.top = `${
       y + rect.height > window.innerHeight - 8 ? y - rect.height : y
     }px`;
-  }, [x, y]);
+  }, [x, y, className]);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent) {
@@ -568,7 +609,7 @@ function TimelineMenu({
     <div
       ref={panelRef}
       role="menu"
-      className="context-menu-panel"
+      className={`context-menu-panel motion-timeline-menu ${className ?? ""}`.trim()}
       style={{ left: x, top: y }}
       onContextMenu={(event) => event.preventDefault()}
     >

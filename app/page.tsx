@@ -14,6 +14,7 @@ import type {
   ScaleOverrides,
   SpawnOverrides,
 } from "./components/MockupCanvas/MockupCanvas";
+import AlertDialog from "./components/AlertDialog/AlertDialog";
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
 import MotionTimeline from "./components/MotionTimeline/MotionTimeline";
@@ -45,6 +46,8 @@ import {
   applySceneTemplate,
   createSceneTemplate,
   getNextTemplateName,
+  getTemplateSnapshot,
+  getTemplatesForMode,
   loadTemplates,
   persistTemplates,
   removeTemplate,
@@ -52,8 +55,22 @@ import {
   upsertTemplate,
   type CameraPose,
   type SceneTemplate,
+  type TemplateMode,
 } from "./lib/scene-templates";
 import { DEVICE_MODELS } from "./models/device-models";
+
+/** Cena de um modo guardada enquanto o outro está ativo. */
+type ModeScene = {
+  backgroundColor: string | null;
+  objects: SceneObject[];
+  savedSnapshot: string;
+  selectedObjectId: string;
+};
+
+/** Ações que descartam o trabalho atual e por isso passam pelo aviso. */
+type PendingAction =
+  | { kind: "mode"; mode: TemplateMode }
+  | { kind: "template"; templateId: string };
 
 const MIN_DESKTOP_WIDTH = 1280;
 const MIN_DESKTOP_HEIGHT = 800;
@@ -100,7 +117,7 @@ export default function Home() {
     }),
   ]);
   const [selectedObjectId, setSelectedObjectId] = useState("");
-  const [motionTab, setMotionTab] = useState<"static" | "motion">("static");
+  const [motionTab, setMotionTab] = useState<TemplateMode>("static");
   const [selectedKeyframeId, setSelectedKeyframeId] = useState("");
   // Instante em que o preview começou; null = parado.
   const [motionStartedAt, setMotionStartedAt] = useState<number | null>(null);
@@ -112,6 +129,20 @@ export default function Home() {
   // capturada e restaurada junto com os templates.
   const [canvasBgColor, setCanvasBgColor] = useState<string | null>(null);
   const [templates, setTemplates] = useState<SceneTemplate[]>([]);
+  // O que o modo atual tinha da última vez que ficou "limpo": ao entrar nele,
+  // ao salvar ou ao aplicar um template. Diferente disso = alteração não salva.
+  const [savedSnapshot, setSavedSnapshot] = useState(() =>
+    getTemplateSnapshot(sceneObjects, "static", null),
+  );
+  // Cada modo tem a sua cena. A do modo ativo vive nos estados acima; a do
+  // outro fica guardada aqui até voltarmos para ele.
+  const [parkedScenes, setParkedScenes] = useState<
+    Partial<Record<TemplateMode, ModeScene>>
+  >({});
+  // Ação que o usuário pediu e que espera o aviso de alterações não salvas.
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(
+    null,
+  );
   // Enquanto não for null, o canvas fica bloqueado aplicando o template.
   const [pendingCameraPose, setPendingCameraPose] = useState<CameraPose | null>(
     null,
@@ -345,20 +376,75 @@ export default function Home() {
     return true;
   }
 
+  // Estático e Movimento são ambientes separados: cada um salva e lista só os
+  // próprios templates, e só os de Movimento guardam keyframes.
+  const modeTemplates = getTemplatesForMode(templates, motionTab);
+
+  const currentSnapshot = getTemplateSnapshot(
+    sceneObjects,
+    motionTab,
+    canvasBgColor,
+  );
+  const hasUnsavedChanges = currentSnapshot !== savedSnapshot;
+
   function handleSaveTemplate() {
     const template = createSceneTemplate({
       backgroundColor: canvasBgColor,
       camera: cameraApiRef.current?.getPose() ?? null,
-      name: getNextTemplateName(templates),
+      mode: motionTab,
+      name: getNextTemplateName(modeTemplates),
       objects: sceneObjects,
     });
 
-    if (persistAndSetTemplates(upsertTemplate(templates, template))) {
-      notify("success", copy.templateSavedMessage);
+    if (!persistAndSetTemplates(upsertTemplate(templates, template))) {
+      return false;
     }
+
+    setSavedSnapshot(currentSnapshot);
+    notify("success", copy.templateSavedMessage);
+    return true;
   }
 
-  function handleApplyTemplate(id: string) {
+  /**
+   * Estático e Movimento são ambientes separados, cada um com a sua cena:
+   * sair guarda a cena atual e entrar restaura a do outro modo. Na primeira
+   * entrada no Movimento não há o que restaurar, e ele parte de uma cópia do
+   * Estático — para animar o que já foi montado. Daí em diante são
+   * independentes.
+   *
+   * `savedSnapshot` vem por parâmetro porque, em "salvar e sair", o estado
+   * ainda não foi atualizado quando a cena é guardada.
+   */
+  function switchMode(mode: TemplateMode, snapshotToPark = savedSnapshot) {
+    const target = parkedScenes[mode];
+
+    setParkedScenes((current) => ({
+      ...current,
+      [motionTab]: {
+        backgroundColor: canvasBgColor,
+        objects: sceneObjects,
+        savedSnapshot: snapshotToPark,
+        selectedObjectId,
+      },
+    }));
+
+    if (target) {
+      setSceneObjects(target.objects);
+      setSelectedObjectId(target.selectedObjectId);
+      setCanvasBgColor(target.backgroundColor);
+      setSavedSnapshot(target.savedSnapshot);
+    } else {
+      // Mesmos ids de propósito: só uma cena é montada por vez, e manter os
+      // ids evita recarregar os modelos e re-enquadrar a câmera na troca.
+      setSavedSnapshot(getTemplateSnapshot(sceneObjects, mode, canvasBgColor));
+    }
+
+    setMotionTab(mode);
+    setMotionStartedAt(null);
+    setSelectedKeyframeId("");
+  }
+
+  function applyTemplate(id: string) {
     const template = templates.find((item) => item.id === id);
 
     if (!template) {
@@ -369,12 +455,63 @@ export default function Home() {
 
     setSceneObjects(nextObjects);
     setSelectedObjectId(nextObjects[0]?.id ?? "");
+    // Os keyframes antigos deixaram de existir: nada de seleção pendurada nem
+    // playback correndo sobre a cena anterior.
+    setSelectedKeyframeId("");
+    setMotionStartedAt(null);
+    setPlayheadMs(0);
     setCanvasBgColor(template.backgroundColor);
+    setSavedSnapshot(
+      getTemplateSnapshot(nextObjects, template.mode, template.backgroundColor),
+    );
     // A câmera é o último passo: fica pendente até a cena assentar.
     setPendingCameraPose(template.camera);
 
     if (!template.camera) {
       notify("success", copy.templateAppliedMessage);
+    }
+  }
+
+  function runAction(action: PendingAction, snapshotToPark?: string) {
+    setPendingAction(null);
+
+    if (action.kind === "mode") {
+      switchMode(action.mode, snapshotToPark);
+    } else {
+      applyTemplate(action.templateId);
+    }
+  }
+
+  // Trocar de modo ou abrir um template tira o trabalho atual da tela; se ele
+  // não está em nenhum template, pergunta antes.
+  function requestAction(action: PendingAction) {
+    if (hasUnsavedChanges) {
+      setPendingAction(action);
+      return;
+    }
+
+    runAction(action);
+  }
+
+  function handleModeChange(mode: TemplateMode) {
+    if (mode !== motionTab) {
+      requestAction({ kind: "mode", mode });
+    }
+  }
+
+  function handleApplyTemplate(id: string) {
+    requestAction({ kind: "template", templateId: id });
+  }
+
+  // Estável: o AlertDialog reassina o Esc quando o callback muda.
+  const handleCancelPendingAction = useCallback(
+    () => setPendingAction(null),
+    [],
+  );
+
+  function handleSaveAndContinue() {
+    if (pendingAction && handleSaveTemplate()) {
+      runAction(pendingAction, currentSnapshot);
     }
   }
 
@@ -494,16 +631,17 @@ export default function Home() {
     setMotionStartedAt(Date.now() - from);
   }
 
-  // Barra de espaço dá play/stop no modo movimento, como em editor de vídeo.
-  // Vale mesmo com um botão em foco — senão, depois de clicar no ◆+, o espaço
-  // criaria outro keyframe em vez de tocar. Só campos de texto ficam de fora.
-  const onPlaybackShortcut = useEffectEvent(handleToggleMotionPlayback);
+  // A barra de espaço é reservada ao play do Movimento, como em editor de
+  // vídeo: ela não aciona botões nem itens de lista em nenhum modo (Enter
+  // continua acionando). Sem isso, depois de clicar no ◆+ o espaço criaria
+  // outro keyframe em vez de tocar. Ficam de fora campos de texto e o diálogo.
+  const onPlaybackShortcut = useEffectEvent(() => {
+    if (motionTab === "motion") {
+      handleToggleMotionPlayback();
+    }
+  });
 
   useEffect(() => {
-    if (motionTab !== "motion") {
-      return;
-    }
-
     function isSpaceOutsideTextField(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null;
 
@@ -512,7 +650,10 @@ export default function Home() {
         !event.metaKey &&
         !event.ctrlKey &&
         !event.altKey &&
-        !target?.closest("input, textarea, select, [contenteditable='true']")
+        // Com um diálogo aberto o espaço é dos botões dele.
+        !target?.closest(
+          "input, textarea, select, [contenteditable='true'], [role='alertdialog']",
+        )
       );
     }
 
@@ -541,7 +682,7 @@ export default function Home() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [motionTab]);
+  }, []);
 
   // O preview para sozinho no fim da cena — vale o objeto que termina por
   // último.
@@ -634,7 +775,12 @@ export default function Home() {
           onRenameTemplate={handleRenameTemplate}
           onSaveTemplate={handleSaveTemplate}
           selectedObjectId={selectedObject?.id ?? ""}
-          templates={templates}
+          templates={modeTemplates}
+          templatesEmptyHint={
+            motionTab === "motion"
+              ? copy.templatesEmptyHintMotion
+              : copy.templatesEmptyHint
+          }
           uiTheme={uiTheme}
         />
       )}
@@ -662,7 +808,7 @@ export default function Home() {
         pendingCameraPose={pendingCameraPose}
         isMotionMode={motionTab === "motion"}
         onMotionModeChange={(isMotionMode) =>
-          setMotionTab(isMotionMode ? "motion" : "static")
+          handleModeChange(isMotionMode ? "motion" : "static")
         }
         motionPlayheadMs={motionPlayheadMs}
         motionStartedAt={motionStartedAt}
@@ -734,6 +880,38 @@ export default function Home() {
       />
       )}
       </main>
+      <AlertDialog
+        isOpen={pendingAction !== null}
+        title={
+          pendingAction?.kind === "template"
+            ? copy.templateOpenTitle
+            : copy.modeSwitchTitle
+        }
+        description={
+          motionTab === "motion"
+            ? copy.modeSwitchBodyMotion
+            : copy.modeSwitchBodyStatic
+        }
+        cancelLabel={copy.modeSwitchCancel}
+        onCancel={handleCancelPendingAction}
+        actions={[
+          {
+            label:
+              pendingAction?.kind === "template"
+                ? copy.templateOpenDiscard
+                : copy.modeSwitchDiscard,
+            onClick: () => pendingAction && runAction(pendingAction),
+          },
+          {
+            label:
+              pendingAction?.kind === "template"
+                ? copy.templateOpenSave
+                : copy.modeSwitchSave,
+            onClick: handleSaveAndContinue,
+            variant: "primary",
+          },
+        ]}
+      />
       <Snackbar
         dismissLabel={copy.dismissSnackbar}
         notification={notification}

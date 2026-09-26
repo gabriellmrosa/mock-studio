@@ -34,11 +34,32 @@ export const EASING_IDS = [
   "ease-in",
   "ease-out",
   "ease-in-out",
+  "cubic-bezier",
 ] as const;
 
 export type EasingId = (typeof EASING_IDS)[number];
 
 export const DEFAULT_EASING: EasingId = "ease-in-out";
+
+/** Pontos de controle P1 e P2 da curva, como no `cubic-bezier()` do CSS. */
+export type CubicBezier = [x1: number, y1: number, x2: number, y2: number];
+
+/** O `ease` do CSS: ponto de partida neutro ao abrir o editor de curva. */
+export const DEFAULT_BEZIER: CubicBezier = [0.25, 0.1, 0.25, 1];
+
+/**
+ * Y livre permite overshoot (a curva passa do destino e volta), como no CSS.
+ * X fica em [0, 1]: fora disso a curva deixaria de ser uma função do tempo.
+ */
+export const BEZIER_Y_RANGE = [-0.5, 1.5] as const;
+
+export function clampBezier([x1, y1, x2, y2]: CubicBezier): CubicBezier {
+  const clampX = (value: number) => Math.min(1, Math.max(0, value));
+  const clampY = (value: number) =>
+    Math.min(BEZIER_Y_RANGE[1], Math.max(BEZIER_Y_RANGE[0], value));
+
+  return [clampX(x1), clampY(y1), clampX(x2), clampY(y2)];
+}
 
 export type MotionTransform = {
   positionX: number;
@@ -51,6 +72,8 @@ export type MotionTransform = {
 };
 
 export type Keyframe = {
+  /** Curva do trecho, quando `easing` é "cubic-bezier". */
+  bezier?: CubicBezier;
   /** Suavização do trecho que chega neste keyframe. Ignorada no primeiro. */
   easing: EasingId;
   id: string;
@@ -60,10 +83,14 @@ export type Keyframe = {
 };
 
 /**
- * Curvas em potência de 2 em vez das cubic-bezier do CSS: a diferença é
- * imperceptível no movimento e dispensa resolver bezier a cada quadro.
+ * Presets em potência de 2 em vez das cubic-bezier do CSS: a diferença é
+ * imperceptível no movimento e dispensa resolver bezier a cada quadro. Quem
+ * quer uma curva exata escolhe "cubic-bezier".
  */
-const EASING_FUNCTIONS: Record<EasingId, (t: number) => number> = {
+const EASING_FUNCTIONS: Record<
+  Exclude<EasingId, "cubic-bezier">,
+  (t: number) => number
+> = {
   linear: (t) => t,
   "ease-in": (t) => t * t,
   "ease-out": (t) => 1 - (1 - t) * (1 - t),
@@ -71,10 +98,78 @@ const EASING_FUNCTIONS: Record<EasingId, (t: number) => number> = {
     t < 0.5 ? 2 * t * t : 1 - 2 * (1 - t) * (1 - t),
 };
 
-export function applyEasing(easing: EasingId, t: number): number {
+/**
+ * Progresso da curva no instante `x` (tempo normalizado). A bezier é
+ * paramétrica — x(s) e y(s) —, então primeiro acha o `s` cujo x(s) = x:
+ * Newton converge em poucas iterações e a bisseção cobre os casos em que a
+ * derivada some. É o mesmo método dos navegadores para o `cubic-bezier()`.
+ */
+export function solveCubicBezier(
+  [x1, y1, x2, y2]: CubicBezier,
+  x: number,
+): number {
+  const curve = (a: number, b: number, s: number) =>
+    3 * a * s * (1 - s) ** 2 + 3 * b * s * s * (1 - s) + s ** 3;
+  const slope = (a: number, b: number, s: number) =>
+    3 * a * (1 - s) ** 2 + 6 * (b - a) * s * (1 - s) + 3 * (1 - b) * s * s;
+
+  let s = x;
+
+  for (let i = 0; i < 8; i += 1) {
+    const error = curve(x1, x2, s) - x;
+    const derivative = slope(x1, x2, s);
+
+    if (Math.abs(error) < 1e-6) {
+      return curve(y1, y2, s);
+    }
+
+    if (Math.abs(derivative) < 1e-6) {
+      break;
+    }
+
+    s -= error / derivative;
+  }
+
+  let low = 0;
+  let high = 1;
+
+  s = x;
+
+  for (let i = 0; i < 40; i += 1) {
+    const value = curve(x1, x2, s);
+
+    if (Math.abs(value - x) < 1e-6) {
+      break;
+    }
+
+    if (value < x) {
+      low = s;
+    } else {
+      high = s;
+    }
+
+    s = (low + high) / 2;
+  }
+
+  return curve(y1, y2, s);
+}
+
+export function applyEasing(
+  easing: EasingId,
+  t: number,
+  bezier: CubicBezier = DEFAULT_BEZIER,
+): number {
   const clamped = Math.min(1, Math.max(0, t));
 
-  return EASING_FUNCTIONS[easing](clamped);
+  // As pontas são exatas em qualquer curva: sem isso, o solver devolveria
+  // 0,9999… e o objeto nunca chegaria de fato ao keyframe.
+  if (clamped === 0 || clamped === 1) {
+    return clamped;
+  }
+
+  return easing === "cubic-bezier"
+    ? solveCubicBezier(bezier, clamped)
+    : EASING_FUNCTIONS[easing](clamped);
 }
 
 export function captureTransform(object: SceneObject): MotionTransform {
@@ -199,6 +294,7 @@ export function updateKeyframe(
 export function cloneKeyframes(keyframes: Keyframe[]): Keyframe[] {
   return keyframes.map((keyframe) => ({
     ...keyframe,
+    ...(keyframe.bezier ? { bezier: [...keyframe.bezier] as CubicBezier } : {}),
     id: crypto.randomUUID(),
     transform: { ...keyframe.transform },
   }));
@@ -274,7 +370,7 @@ export function sampleMotion(
       return lerpTransform(
         from.transform,
         to.transform,
-        applyEasing(to.easing, progress),
+        applyEasing(to.easing, progress, to.bezier),
       );
     }
   }

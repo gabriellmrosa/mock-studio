@@ -47,11 +47,13 @@
 - format is the catch: Chrome and Firefox record WebM, Safari records MP4, and universal MP4 would need `ffmpeg.wasm` in the bundle
 - the export is the larger half of the work — fixed frame rate, deterministic playback and coexisting with the offscreen SSAA render path
 
-## 8. Templates do not capture motion
+## 8. Templates do not capture motion — done
 
-- applying a template rebuilds objects with an empty keyframe list
-- including keyframes means bumping `TEMPLATE_SCHEMA_VERSION`, and the version check discards templates saved under the old schema
-- decide on a migration before bumping, so saved templates survive
+- [x] templates carry a `mode`; `Motion` templates store every keyframe (time, pose, easing and cubic-bezier curve), `Static` ones store none
+- [x] each mode lists only its own templates, and each mode keeps its own scene
+- [x] no schema bump: `mode` and `keyframes` are optional, so templates saved before them load as `Static` and an older cached app keeps reading the list
+- [x] keyframe ids are not stored and are regenerated on every apply, since timeline selection looks them up scene-wide
+- [x] switching modes or opening a template with unsaved changes asks first (`AlertDialog`)
 
 ## 9. Timeline for coordinating motion across objects — done
 
@@ -64,4 +66,4 @@
 - [x] drag a marker to retime or reorder it, drag a segment to shift the whole track, right-click a segment to pick its transition, `Delete` or right-click to remove a marker
 - [x] no keyframe limit, and a single keyframe is valid (the object holds that pose)
 - [x] playback starts from the playhead, the playhead follows it, and `Space` toggles it in `Motion`
-- templates still do not carry keyframes (see item 8)
+- [x] transitions include a `cubic-bezier` curve editor, with overshoot

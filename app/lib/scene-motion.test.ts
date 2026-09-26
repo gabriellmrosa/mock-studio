@@ -1,7 +1,10 @@
 import { createSceneObject, duplicateSceneObject } from "./scene-objects";
 import {
+  DEFAULT_BEZIER,
   applyEasing,
   captureTransform,
+  clampBezier,
+  solveCubicBezier,
   createKeyframe,
   findKeyframeAt,
   getObjectMotionEnd,
@@ -230,5 +233,42 @@ describe("scene-motion", () => {
   it("eases in slower than linear at the start", () => {
     expect(applyEasing("ease-in", 0.25)).toBeLessThan(0.25);
     expect(applyEasing("ease-out", 0.25)).toBeGreaterThan(0.25);
+  });
+
+  describe("cubic-bezier", () => {
+    it("matches the CSS curve at known points", () => {
+      // Valores de referência do cubic-bezier() dos navegadores.
+      expect(solveCubicBezier([0, 0, 1, 1], 0.3)).toBeCloseTo(0.3, 4);
+      expect(solveCubicBezier(DEFAULT_BEZIER, 0.5)).toBeCloseTo(0.8024, 3);
+      expect(solveCubicBezier([0.42, 0, 1, 1], 0.5)).toBeCloseTo(0.3153, 3);
+    });
+
+    it("keeps the endpoints exact and allows overshoot in between", () => {
+      const overshoot = [0.3, 1.5, 0.7, 1.5] as const;
+
+      expect(applyEasing("cubic-bezier", 0, [...overshoot])).toBe(0);
+      expect(applyEasing("cubic-bezier", 1, [...overshoot])).toBe(1);
+      expect(applyEasing("cubic-bezier", 0.6, [...overshoot])).toBeGreaterThan(1);
+    });
+
+    it("drives sampling with the keyframe's own curve", () => {
+      const object = withKeyframes([
+        [0, 0],
+        [1000, 10],
+      ]);
+      const curved = {
+        ...object,
+        keyframes: updateKeyframe(object.keyframes, "k1", {
+          bezier: [0.42, 0, 1, 1],
+          easing: "cubic-bezier",
+        }),
+      };
+
+      expect(sampleMotion(curved, 500)?.positionX).toBeCloseTo(3.153, 2);
+    });
+
+    it("clamps x to the unit interval and y to the overshoot range", () => {
+      expect(clampBezier([-0.2, -3, 1.4, 9])).toEqual([0, -0.5, 1, 1.5]);
+    });
   });
 });

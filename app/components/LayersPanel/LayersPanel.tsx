@@ -37,6 +37,8 @@ type LayersPanelProps = {
   onUiThemeChange: (theme: UiTheme) => void;
   selectedObjectId: string;
   templates?: SceneTemplate[];
+  /** Texto do estado vazio; muda com o modo, já que cada um tem sua lista. */
+  templatesEmptyHint?: string;
   uiTheme: UiTheme;
 };
 
@@ -63,6 +65,7 @@ export default function LayersPanel({
   onUiThemeChange,
   selectedObjectId,
   templates = [],
+  templatesEmptyHint,
   uiTheme,
 }: LayersPanelProps) {
   const [editingObjectId, setEditingObjectId] = useState<string | null>(null);
@@ -224,7 +227,7 @@ export default function LayersPanel({
                     key={object.id}
                     onClick={() => onSelectObject(object.id)}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
+                      if (event.key === "Enter") {
                         event.preventDefault();
                         onSelectObject(object.id);
                       }
@@ -338,7 +341,7 @@ export default function LayersPanel({
               <div className="templates-dock-body">
               {templates.length === 0 ? (
                 <p className="editor-sidebar-muted templates-empty-hint">
-                  {copy.templatesEmptyHint}
+                  {templatesEmptyHint ?? copy.templatesEmptyHint}
                 </p>
               ) : null}
               <div className="layers-stack">
@@ -347,7 +350,7 @@ export default function LayersPanel({
                     key={template.id}
                     onClick={() => onApplyTemplate?.(template.id)}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") {
+                      if (event.key === "Enter") {
                         event.preventDefault();
                         onApplyTemplate?.(template.id);
                       }

@@ -32,7 +32,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - export PNGs at `1080p`, `1440p` or `4K` — transparent, or with the canvas background and floor grid
 - hide the entire interface for clean, full-canvas captures
 - manage objects with selection, duplication and inspector-driven editing
-- save a composition as a local template and rebuild it later, camera framing included
+- save a composition or an animation as a local template and rebuild it later, camera framing included
 - animate an object between poses with keyframes, previewed in the editor
 - support `pt-BR` and `en-US` UI modes
 
@@ -48,9 +48,11 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - export resolution menu with `1920x1080`, `2560x1440` and `3840x2160` presets
 - supersampled (SSAA) rendering for sharper, screenshot-grade exports
 - export feedback chip while the PNG is being prepared
-- scene templates stored in `localStorage`: composition, background color and camera pose, saved from the `Templates` section or as a checkbox in the `Export` menu
+- scene templates stored in `localStorage`: composition, background color and camera pose — plus every keyframe when saved in `Motion` — saved from the `Templates` section or as a checkbox in the `Export` menu
+- `Static` and `Motion` are separate environments: each keeps its own scene and its own template list, and the first visit to `Motion` starts from a copy of the static scene
+- switching environments or opening a template with unsaved changes asks first, offering to save a template before leaving
 - template management with inline rename, delete and `Restore framing`, which returns the camera to the pose saved with that template without touching the objects
-- per-object motion: a `Static` / `Motion` switch on the canvas and a timeline with one track per visible object — create a keyframe at the playhead with the track's ◆+ button, drag keyframes in time or shift a whole track, right-click between two keyframes to pick the transition, edit the selected keyframe's pose in the Inspector, and press `Space` to play
+- per-object motion: a `Static` / `Motion` switch on the canvas and a timeline with one track per visible object — create a keyframe at the playhead with the track's ◆+ button, drag keyframes in time or shift a whole track, right-click between two keyframes to pick the transition (presets or a `cubic-bezier` curve editor with overshoot), edit the selected keyframe's pose in the Inspector, and press `Space` to play
 - framing actions split by scope: `Fit scene` in the toolbar, `Frame object` in each object's menu
 - distraction-free `Hide UI` mode with a toggle you can drag to any canvas corner, animating between the toolbar and the corner it snaps to
 - layered selection flow via list and direct interaction in the 3D scene
@@ -118,10 +120,12 @@ The `tablet` has no GLB: its body is an extruded rounded rectangle with beveled 
 
 ## Project Structure
 
-- [app/page.tsx](app/page.tsx): main editor state, object list and selection
+- [app/page.tsx](app/page.tsx): main editor state, object list and selection, and the per-mode scenes
 - [app/components/MockupCanvas/](app/components/MockupCanvas/): 3D canvas, camera, export and render flow
 - [app/components/LayersPanel/](app/components/LayersPanel/): objects list (renders the left "Objects" panel) and global preferences
 - [app/components/InspectorPanel/](app/components/InspectorPanel/): controls for the selected object
+- [app/components/MotionTimeline/](app/components/MotionTimeline/): motion timeline, keyframe tracks and the cubic-bezier curve editor
+- [app/components/AlertDialog/](app/components/AlertDialog/): confirmation dialog for actions that leave unsaved work behind
 - [app/models/device-models.ts](app/models/device-models.ts): device catalog and model metadata
 - [app/lib/scene-objects.ts](app/lib/scene-objects.ts): object creation, reset and model switching
 - [app/lib/scene-templates.ts](app/lib/scene-templates.ts): template capture, rebuild and `localStorage` persistence
@@ -163,13 +167,16 @@ Checklist:
 - applying a template is object-first and camera-last: the canvas takes a `pendingCameraPose` and uses it instead of the auto-fit, keeping the scene under a blocking overlay until every object has resolved
 - `Fit scene` and `Frame object` inflate the measured bounding box by 9% per side, because `fitToBox` hugs the content while the initial auto-fit breathes through `<Bounds margin={1.18}>`
 - the collapsible `Templates` section animates the height of a clipping container whose inner content is absolutely positioned, so the body keeps its natural layout instead of reflowing mid-transition; both heights are measured with a `ResizeObserver` rather than hardcoded
-- `Static` and `Motion` are fully independent: the object's transform is the static pose and only `Static` writes to it, while each keyframe carries its own transform and only `Motion` writes to those; the first keyframe is born as a copy of the static pose and then lives its own life
-- a keyframe preview is a display override passed to the canvas, the same shape as the template camera pose, so looking at a keyframe never mutates the object
+- `Static` and `Motion` are independent: the object's transform is the static pose and only `Static` writes to it, while each keyframe carries its own transform and only `Motion` writes to those; a keyframe is born with the pose shown at the playhead and then lives its own life
+- each environment owns a scene; the inactive one is parked in `page.tsx` with its selection, background and unsaved-changes baseline. The first `Motion` scene reuses the static object ids on purpose, so switching never reloads models or re-fits the camera
+- "unsaved" means the scene differs from what the current mode's template would store, compared through a snapshot that leaves out the camera and uploaded images
+- in `Motion` the canvas shows the scene at the playhead instant — a display override, so looking at a keyframe never mutates the object
 - playback writes straight to the 3D group through `useFrame` instead of going through React state, which would re-render the tree 60 times per second, and it reuses the same position resolution as the static render so the preview cannot drift from the resting view
-- easing uses power-of-two curves rather than the CSS cubic-beziers: indistinguishable in motion and no bezier solving per frame
-- each object carries its own `motionDelayMs`, the time it waits on the first keyframe pose before moving, which is what lets several objects be staggered against each other; the scene duration is the latest object end, delay included, and it drives playback
-- the delay is a field of its own rather than a reuse of the first keyframe's unused `durationMs`: one datum, one meaning
-- motion is capped at four keyframes per object, and the camera is never animated — it stays a viewing tool, which keeps the auto-fit, `Fit scene` and template poses free of precedence rules
+- keyframes store an absolute `timeMs` rather than per-segment durations: dragging, inserting mid-segment and shifting a track are each a change to one number, and an object's start delay is simply its first keyframe's time; the scene duration is the latest keyframe and it drives playback
+- the easing presets use power-of-two curves, indistinguishable from the CSS ones in motion and cheap per frame; the `cubic-bezier` option solves the curve the way browsers do (Newton's method with a bisection fallback), with y free in `[-0.5, 1.5]` for overshoot
+- there is no keyframe limit, a single keyframe simply holds its pose, and the camera is never animated — it stays a viewing tool, which keeps the auto-fit, `Fit scene` and template poses free of precedence rules
+- templates stay on schema version 1: `mode` and `keyframes` are optional fields, so templates saved before them load as static, and an older cached copy of the app (PWA) still reads the list instead of discarding it and overwriting it on the next save
+- `Space` is reserved for playback: it never activates buttons or list items in either mode (`Enter` does), so it cannot double as "click the focused ◆+"
 - range and number inputs carry an `aria-label` and show a `:focus-visible` ring, so keyboard focus is visible without drawing an outline on mouse clicks
 - `Credits` in the UI contains attribution for the third-party 3D assets used by the project
 

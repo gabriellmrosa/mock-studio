@@ -27,6 +27,16 @@ export type AppCopy = {
   saveAsTemplate: string;
   templatesSectionTitle: string;
   templatesEmptyHint: string;
+  templatesEmptyHintMotion: string;
+  modeSwitchTitle: string;
+  modeSwitchBodyStatic: string;
+  modeSwitchBodyMotion: string;
+  modeSwitchSave: string;
+  modeSwitchDiscard: string;
+  modeSwitchCancel: string;
+  templateOpenTitle: string;
+  templateOpenSave: string;
+  templateOpenDiscard: string;
   saveTemplate: string;
   templateOptionsLabel: string;
   templateSavedMessage: string;
@@ -64,6 +74,9 @@ export type AppCopy = {
   motionStop: string;
   motionEasing: string;
   motionEasingLabels: Record<string, string>;
+  motionBezierTitle: string;
+  motionBezierReset: string;
+  motionBezierDone: string;
   resetObjectButton: string;
   positionX: string;
   positionY: string;
@@ -138,6 +151,16 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     saveAsTemplate: "Salvar como template",
     templatesSectionTitle: "Templates",
     templatesEmptyHint: "Salve a cena atual para reutilizar depois.",
+    templatesEmptyHintMotion: "Salve a animação atual para reutilizar depois.",
+    modeSwitchTitle: "Sair sem salvar template?",
+    modeSwitchBodyStatic: "A cena do modo Estático tem alterações que não estão salvas em nenhum template.",
+    modeSwitchBodyMotion: "A animação tem alterações que não estão salvas em nenhum template.",
+    modeSwitchSave: "Salvar template e sair",
+    modeSwitchDiscard: "Sair sem salvar",
+    modeSwitchCancel: "Cancelar",
+    templateOpenTitle: "Abrir template sem salvar o trabalho atual?",
+    templateOpenSave: "Salvar e abrir",
+    templateOpenDiscard: "Abrir sem salvar",
     saveTemplate: "Salvar template",
     templateOptionsLabel: "Opções do template",
     templateSavedMessage: "Template salvo.",
@@ -174,11 +197,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionPlay: "Reproduzir",
     motionStop: "Parar",
     motionEasing: "Transição",
+    motionBezierTitle: "Curva da transição",
+    motionBezierReset: "Restaurar padrão",
+    motionBezierDone: "Pronto",
     motionEasingLabels: {
       linear: "Linear",
       "ease-in": "Ease in",
       "ease-out": "Ease out",
       "ease-in-out": "Ease in-out",
+      "cubic-bezier": "Cubic bezier",
     },
     resetObjectButton: "Resetar transformação",
     positionX: "Posição X",
@@ -308,6 +335,16 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     saveAsTemplate: "Save as template",
     templatesSectionTitle: "Templates",
     templatesEmptyHint: "Save the current scene to reuse it later.",
+    templatesEmptyHintMotion: "Save the current animation to reuse it later.",
+    modeSwitchTitle: "Leave without saving a template?",
+    modeSwitchBodyStatic: "The Static scene has changes that are not saved in any template.",
+    modeSwitchBodyMotion: "The animation has changes that are not saved in any template.",
+    modeSwitchSave: "Save template and leave",
+    modeSwitchDiscard: "Leave without saving",
+    modeSwitchCancel: "Cancel",
+    templateOpenTitle: "Open the template without saving your current work?",
+    templateOpenSave: "Save and open",
+    templateOpenDiscard: "Open without saving",
     saveTemplate: "Save template",
     templateOptionsLabel: "Template options",
     templateSavedMessage: "Template saved.",
@@ -344,11 +381,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionPlay: "Play",
     motionStop: "Stop",
     motionEasing: "Transition",
+    motionBezierTitle: "Transition curve",
+    motionBezierReset: "Reset to default",
+    motionBezierDone: "Done",
     motionEasingLabels: {
       linear: "Linear",
       "ease-in": "Ease in",
       "ease-out": "Ease out",
       "ease-in-out": "Ease in-out",
+      "cubic-bezier": "Cubic bezier",
     },
     resetObjectButton: "Reset transform",
     positionX: "Position X",

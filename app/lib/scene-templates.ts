@@ -5,6 +5,12 @@ import {
   getPlaceholderImageUrl,
   type SceneObject,
 } from "./scene-objects";
+import {
+  EASING_IDS,
+  type CubicBezier,
+  type EasingId,
+  type MotionTransform,
+} from "./scene-motion";
 
 // ---------------------------------------------------------------------------
 // Templates de cena — composição reutilizável salva no localStorage.
@@ -14,14 +20,36 @@ import {
 // cada tela volta ao placeholder. Isso mantém o peso em ~2KB por template,
 // bem longe da cota do localStorage, já que uma única imagem em base64
 // costuma passar de 1MB.
+//
+// Estático e Movimento são ambientes separados, cada um com a sua lista: o
+// template guarda o `mode` em que foi salvo e a UI só lista os do modo atual.
+// Só os de Movimento carregam keyframes (~150 bytes cada).
+//
+// Por que o schema continua na versão 1: `mode` e `keyframes` são campos
+// opcionais — template sem `mode` é Estático, objeto sem `keyframes` não tem
+// animação. Subir a versão faria uma cópia antiga do app (o PWA pode servir
+// uma do cache) ler zero templates e, ao salvar, sobrescrever a lista
+// inteira. Com campos opcionais ela apenas ignora o que não conhece.
 // ---------------------------------------------------------------------------
 
 const TEMPLATES_STORAGE_KEY = "mock-photo-templates";
 const TEMPLATE_SCHEMA_VERSION = 1;
 
+export type TemplateMode = "static" | "motion";
+
 export type CameraPose = {
   position: [number, number, number];
   target: [number, number, number];
+};
+
+// Keyframe salvo sem id: ids são recriados a cada aplicação, porque a seleção
+// da timeline os procura na cena toda e aplicar o mesmo template duas vezes
+// não pode repeti-los.
+export type TemplateKeyframe = {
+  bezier?: CubicBezier;
+  easing: EasingId;
+  timeMs: number;
+  transform: MotionTransform;
 };
 
 // Campos do SceneObject preservados no template. Ficam de fora `id` (recriado
@@ -32,6 +60,8 @@ export type TemplateObject = {
   customColorsEnabled: boolean;
   deviceTheme: string;
   isVisible: boolean;
+  /** Só em templates de Movimento. */
+  keyframes?: TemplateKeyframe[];
   matteColors: boolean;
   modelId: DeviceModelId;
   name: string;
@@ -52,6 +82,7 @@ export type SceneTemplate = {
   camera: CameraPose | null;
   createdAt: number;
   id: string;
+  mode: TemplateMode;
   name: string;
   objects: TemplateObject[];
 };
@@ -61,8 +92,23 @@ type StoredTemplates = {
   version: number;
 };
 
-function toTemplateObject(object: SceneObject): TemplateObject {
+function toTemplateObject(
+  object: SceneObject,
+  mode: TemplateMode,
+): TemplateObject {
   return {
+    ...(mode === "motion"
+      ? {
+          keyframes: object.keyframes.map(
+            ({ bezier, easing, timeMs, transform }) => ({
+              ...(bezier ? { bezier: [...bezier] as CubicBezier } : {}),
+              easing,
+              timeMs,
+              transform: { ...transform },
+            }),
+          ),
+        }
+      : {}),
     colors: { ...object.colors },
     customColorsEnabled: object.customColorsEnabled,
     deviceTheme: object.deviceTheme,
@@ -87,12 +133,14 @@ export function createSceneTemplate({
   backgroundColor = null,
   camera = null,
   id,
+  mode = "static",
   name,
   objects,
 }: {
   backgroundColor?: string | null;
   camera?: CameraPose | null;
   id?: string;
+  mode?: TemplateMode;
   name: string;
   objects: SceneObject[];
 }): SceneTemplate {
@@ -101,15 +149,15 @@ export function createSceneTemplate({
     camera,
     createdAt: Date.now(),
     id: id ?? crypto.randomUUID(),
+    mode,
     name,
-    objects: objects.map(toTemplateObject),
+    objects: objects.map((object) => toTemplateObject(object, mode)),
   };
 }
 
 // Reconstrói os objetos da cena a partir do template. O primeiro objeto herda
 // `deletable: false` para preservar o invariante de sempre haver uma camada.
-// Keyframes de motion não entram no template nesta versão: incluí-los exigiria
-// subir o schema, e a checagem de versão descartaria os templates já salvos.
+// Templates estáticos reconstroem os objetos sem keyframes.
 export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
   return template.objects.map((object, index) => {
     const model = DEVICE_MODELS[object.modelId];
@@ -120,7 +168,14 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       debugMode: false,
       debugPartColors: { ...model.initialDebugColors },
       deletable: index > 0,
-      keyframes: [],
+      keyframes: (object.keyframes ?? []).map((keyframe) => ({
+        ...keyframe,
+        ...(keyframe.bezier
+          ? { bezier: [...keyframe.bezier] as CubicBezier }
+          : {}),
+        id: crypto.randomUUID(),
+        transform: { ...keyframe.transform },
+      })),
       deviceTheme: object.deviceTheme,
       id: crypto.randomUUID(),
       imageUrl: getPlaceholderImageUrl(object.modelId),
@@ -142,6 +197,30 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
   });
 }
 
+/**
+ * Impressão digital do que um template deste modo guardaria da cena. Serve
+ * para saber se há alterações não salvas: câmera e imagens ficam de fora de
+ * propósito — a câmera mexe o tempo todo e as imagens nunca entram no template.
+ */
+export function getTemplateSnapshot(
+  objects: SceneObject[],
+  mode: TemplateMode,
+  backgroundColor: string | null,
+) {
+  return JSON.stringify({
+    backgroundColor,
+    objects: objects.map((object) => toTemplateObject(object, mode)),
+  });
+}
+
+export function getTemplatesForMode(
+  templates: SceneTemplate[],
+  mode: TemplateMode,
+) {
+  return templates.filter((template) => template.mode === mode);
+}
+
+/** Recebe só a lista do modo atual: cada ambiente numera os seus. */
 export function getNextTemplateName(templates: SceneTemplate[]) {
   return `Template ${templates.length + 1}`;
 }
@@ -169,6 +248,65 @@ function isValidTemplateObject(value: unknown): value is TemplateObject {
     typeof object.rotationZ === "number" &&
     typeof object.scale === "number"
   );
+}
+
+const TRANSFORM_KEYS: Array<keyof MotionTransform> = [
+  "positionX",
+  "positionY",
+  "positionZ",
+  "rotationX",
+  "rotationY",
+  "rotationZ",
+  "scale",
+];
+
+function isValidKeyframe(value: unknown): value is TemplateKeyframe {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const keyframe = value as Partial<TemplateKeyframe>;
+  const transform = keyframe.transform as Record<string, unknown> | undefined;
+
+  return (
+    typeof keyframe.timeMs === "number" &&
+    keyframe.timeMs >= 0 &&
+    EASING_IDS.includes(keyframe.easing as EasingId) &&
+    (keyframe.bezier === undefined ||
+      (Array.isArray(keyframe.bezier) &&
+        keyframe.bezier.length === 4 &&
+        keyframe.bezier.every((value) => typeof value === "number"))) &&
+    !!transform &&
+    TRANSFORM_KEYS.every((key) => typeof transform[key] === "number")
+  );
+}
+
+/**
+ * Completa o que os campos opcionais deixam de fora. Keyframes corrompidos
+ * derrubam só a animação daquele objeto, não o template inteiro.
+ */
+function normalizeTemplate(template: SceneTemplate): SceneTemplate {
+  const mode: TemplateMode = template.mode === "motion" ? "motion" : "static";
+
+  return {
+    ...template,
+    mode,
+    objects: template.objects.map((object) => {
+      const { keyframes, ...rest } = object;
+
+      if (mode !== "motion") {
+        return rest;
+      }
+
+      return {
+        ...rest,
+        keyframes:
+          Array.isArray(keyframes) && keyframes.every(isValidKeyframe)
+            ? [...keyframes].sort((a, b) => a.timeMs - b.timeMs)
+            : [],
+      };
+    }),
+  };
 }
 
 function isValidTemplate(value: unknown): value is SceneTemplate {
@@ -204,7 +342,7 @@ export function loadTemplates(): SceneTemplate[] {
     }
 
     return Array.isArray(parsed.templates)
-      ? parsed.templates.filter(isValidTemplate)
+      ? parsed.templates.filter(isValidTemplate).map(normalizeTemplate)
       : [];
   } catch {
     return [];

@@ -2,6 +2,8 @@ import {
   applySceneTemplate,
   createSceneTemplate,
   getNextTemplateName,
+  getTemplateSnapshot,
+  getTemplatesForMode,
   loadTemplates,
   persistTemplates,
   removeTemplate,
@@ -10,6 +12,7 @@ import {
   type SceneTemplate,
 } from "./scene-templates";
 import { createSceneObject, getPlaceholderImageUrl } from "./scene-objects";
+import { captureTransform, insertKeyframe } from "./scene-motion";
 
 const STORAGE_KEY = "mock-photo-templates";
 
@@ -36,6 +39,37 @@ function buildScene() {
       showTabletBezel: false,
     },
   ];
+}
+
+/** Cena com dois keyframes no primeiro objeto (0s e 1,5s). */
+function buildAnimatedScene() {
+  const [first, second] = buildScene();
+  let animated = {
+    ...first,
+    keyframes: insertKeyframe(first, 0).keyframes,
+  };
+
+  animated = {
+    ...animated,
+    keyframes: insertKeyframe(animated, 1500).keyframes.map((keyframe) =>
+      keyframe.timeMs === 1500
+        ? {
+            ...keyframe,
+            easing: "ease-out" as const,
+            transform: { ...keyframe.transform, positionX: 4 },
+          }
+        : keyframe,
+    ),
+  };
+
+  return [animated, second];
+}
+
+function storeRaw(templates: unknown[]) {
+  window.localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ templates, version: 1 }),
+  );
 }
 
 describe("scene-templates", () => {
@@ -198,5 +232,163 @@ describe("scene-templates", () => {
 
     expect(getNextTemplateName([])).toBe("Template 1");
     expect(getNextTemplateName([template])).toBe("Template 2");
+  });
+
+  describe("static and motion templates", () => {
+    it("keeps keyframes out of static templates", () => {
+      const template = createSceneTemplate({
+        name: "Template 1",
+        objects: buildAnimatedScene(),
+      });
+
+      expect(template.mode).toBe("static");
+      expect(template.objects[0]).not.toHaveProperty("keyframes");
+      expect(applySceneTemplate(template)[0].keyframes).toEqual([]);
+    });
+
+    it("round-trips keyframes through a motion template with fresh ids", () => {
+      const scene = buildAnimatedScene();
+      const template = createSceneTemplate({
+        mode: "motion",
+        name: "Template 1",
+        objects: scene,
+      });
+
+      expect(template.objects[0].keyframes?.[0]).not.toHaveProperty("id");
+      expect(persistTemplates([template])).toBe(true);
+
+      const [loaded] = loadTemplates();
+      const first = applySceneTemplate(loaded)[0];
+      const again = applySceneTemplate(loaded)[0];
+
+      expect(loaded.mode).toBe("motion");
+      expect(first.keyframes.map((keyframe) => keyframe.timeMs)).toEqual([
+        0, 1500,
+      ]);
+      expect(first.keyframes[1]).toMatchObject({ easing: "ease-out" });
+      expect(first.keyframes[1].transform.positionX).toBe(4);
+      // Aplicar duas vezes não pode repetir ids: a timeline os procura na cena.
+      expect(first.keyframes[0].id).not.toBe(again.keyframes[0].id);
+      expect(first.keyframes[0].id).not.toBe(scene[0].keyframes[0].id);
+    });
+
+    it("keeps a keyframe's cubic-bezier curve", () => {
+      const [first, second] = buildAnimatedScene();
+      const curved = {
+        ...first,
+        keyframes: first.keyframes.map((keyframe, index) =>
+          index === 1
+            ? {
+                ...keyframe,
+                bezier: [0.3, 1.4, 0.6, 1] as [number, number, number, number],
+                easing: "cubic-bezier" as const,
+              }
+            : keyframe,
+        ),
+      };
+
+      persistTemplates([
+        createSceneTemplate({
+          mode: "motion",
+          name: "Curve",
+          objects: [curved, second],
+        }),
+      ]);
+
+      const [loaded] = loadTemplates();
+      const rebuilt = applySceneTemplate(loaded)[0].keyframes[1];
+
+      expect(rebuilt).toMatchObject({
+        bezier: [0.3, 1.4, 0.6, 1],
+        easing: "cubic-bezier",
+      });
+    });
+
+    it("reads templates saved before modes existed as static", () => {
+      const legacy = createSceneTemplate({
+        name: "Legacy",
+        objects: buildScene(),
+      }) as Partial<SceneTemplate>;
+
+      delete legacy.mode;
+      storeRaw([legacy]);
+
+      const [loaded] = loadTemplates();
+
+      expect(loaded.mode).toBe("static");
+    });
+
+    it("drops only the animation of an object with corrupted keyframes", () => {
+      const template = createSceneTemplate({
+        mode: "motion",
+        name: "Template 1",
+        objects: buildAnimatedScene(),
+      });
+
+      storeRaw([
+        {
+          ...template,
+          objects: [
+            {
+              ...template.objects[0],
+              keyframes: [{ easing: "wobble", timeMs: 0, transform: {} }],
+            },
+            template.objects[1],
+          ],
+        },
+      ]);
+
+      const [loaded] = loadTemplates();
+
+      expect(loaded.name).toBe("Template 1");
+      expect(loaded.objects[0].keyframes).toEqual([]);
+    });
+
+    it("lists and numbers each mode's templates on their own", () => {
+      const templates = [
+        createSceneTemplate({ name: "Template 1", objects: buildScene() }),
+        createSceneTemplate({
+          mode: "motion",
+          name: "Template 1",
+          objects: buildScene(),
+        }),
+        createSceneTemplate({ name: "Template 2", objects: buildScene() }),
+      ];
+
+      const motion = getTemplatesForMode(templates, "motion");
+
+      expect(getTemplatesForMode(templates, "static")).toHaveLength(2);
+      expect(motion).toHaveLength(1);
+      expect(getNextTemplateName(motion)).toBe("Template 2");
+    });
+
+    it("fingerprints only what the mode's template would store", () => {
+      const scene = buildAnimatedScene();
+      const withImage = [{ ...scene[0], imageUrl: "data:other" }, scene[1]];
+      const keyframesMoved = [
+        {
+          ...scene[0],
+          keyframes: scene[0].keyframes.map((keyframe) => ({
+            ...keyframe,
+            transform: { ...captureTransform(scene[0]), positionX: 9 },
+          })),
+        },
+        scene[1],
+      ];
+
+      const staticBase = getTemplateSnapshot(scene, "static", null);
+      const motionBase = getTemplateSnapshot(scene, "motion", null);
+
+      // Imagens nunca entram no template, então não contam como alteração.
+      expect(getTemplateSnapshot(withImage, "static", null)).toBe(staticBase);
+      // Keyframes só importam para o ambiente de Movimento.
+      expect(getTemplateSnapshot(keyframesMoved, "static", null)).toBe(
+        staticBase,
+      );
+      expect(getTemplateSnapshot(keyframesMoved, "motion", null)).not.toBe(
+        motionBase,
+      );
+      expect(getTemplateSnapshot(scene, "static", "#fff")).not.toBe(staticBase);
+    });
   });
 });

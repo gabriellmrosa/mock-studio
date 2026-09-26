@@ -252,3 +252,99 @@
   top: 0;
   width: 0.4rem;
 }
+
+/* =========================================
+   Editor de curva cubic-bezier (popover do menu de transição)
+   ========================================= */
+
+.motion-timeline-menu.is-bezier {
+  padding: var(--space-3);
+  width: 15rem;
+}
+
+.bezier-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.bezier-editor-graph {
+  display: block;
+  overflow: visible;
+  touch-action: none;
+  width: 100%;
+}
+
+/* Quadrado unitário: tempo e progresso de 0 a 1. Fora dele é overshoot. */
+.bezier-editor-unit {
+  fill: color-mix(in srgb, var(--foreground) 5%, transparent);
+  stroke: var(--panel-border);
+  stroke-width: 1;
+}
+
+.bezier-editor-linear {
+  stroke: var(--panel-border);
+  stroke-dasharray: 3 3;
+  stroke-width: 1;
+}
+
+.bezier-editor-arm {
+  stroke: var(--sidebar-muted);
+  stroke-width: 1;
+}
+
+.bezier-editor-curve {
+  fill: none;
+  stroke: var(--foreground);
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+.bezier-editor-handle {
+  cursor: grab;
+  fill: var(--surface-raised);
+  stroke: var(--foreground);
+  stroke-width: 2;
+}
+
+.bezier-editor-handle:active {
+  cursor: grabbing;
+}
+
+/* 2×2: P1 na primeira linha, P2 na segunda — cada linha é uma alça. */
+.bezier-editor-values {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.bezier-editor-field {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.bezier-editor-field span {
+  color: var(--sidebar-muted);
+  flex-shrink: 0;
+  font-size: var(--font-size-100);
+  letter-spacing: 0.04em;
+}
+
+.bezier-editor-input {
+  font-size: var(--font-size-150);
+  min-width: 0;
+  padding: var(--space-1);
+  text-align: center;
+  width: 100%;
+}
+
+.bezier-editor-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.bezier-editor-actions .editor-button-outline {
+  padding: var(--space-2);
+  white-space: nowrap;
+}
