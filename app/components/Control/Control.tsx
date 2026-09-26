@@ -28,6 +28,7 @@ export default function Control({
       <div className="transform-control-row">
         <input
           type="range"
+          aria-label={label}
           min={min}
           max={max}
           step={step}
@@ -43,7 +44,8 @@ export default function Control({
 
         <input
           type="number"
-          className="editor-input transform-value-input focus:outline-none"
+          aria-label={label}
+          className="editor-input transform-value-input"
           value={resolvedDisplayValue}
           step={step}
           min={min}
