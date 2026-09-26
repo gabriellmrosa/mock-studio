@@ -1,234 +1,221 @@
-import { createSceneObject } from "./scene-objects";
+import { createSceneObject, duplicateSceneObject } from "./scene-objects";
 import {
-  MAX_KEYFRAMES,
-  addKeyframe,
   applyEasing,
   captureTransform,
-  getMotionDuration,
+  createKeyframe,
+  findKeyframeAt,
   getObjectMotionEnd,
   getSceneMotionDuration,
   hasMotion,
-  moveKeyframe,
+  insertKeyframe,
+  moveKeyframeTo,
   removeKeyframe,
-  resolveKeyframeTransform,
   sampleMotion,
-  startMotion,
+  shiftKeyframes,
   updateKeyframe,
+  type EasingId,
 } from "./scene-motion";
 
 function makeObject() {
   return createSceneObject({ id: "object-1", name: "Object 1" });
 }
 
-function withMotion() {
-  const object = makeObject();
+/** Objeto com keyframes em X nos instantes dados: [[timeMs, positionX], ...]. */
+function withKeyframes(
+  points: Array<[number, number]>,
+  easing: EasingId = "linear",
+) {
+  const base = makeObject();
 
-  return { ...object, keyframes: startMotion(object) };
+  return {
+    ...base,
+    keyframes: points.map(([timeMs, positionX], index) => ({
+      easing,
+      id: `k${index}`,
+      timeMs,
+      transform: { ...captureTransform(base), positionX },
+    })),
+  };
 }
 
 describe("scene-motion", () => {
-  it("starts motion with two keyframes copied from the static pose", () => {
+  it("creates the first keyframe from the static pose", () => {
     const object = { ...makeObject(), positionX: 4 };
-    const keyframes = startMotion(object);
+    const { id, keyframes } = insertKeyframe(object, 1200);
 
-    expect(keyframes).toHaveLength(2);
+    expect(keyframes).toHaveLength(1);
+    expect(keyframes[0].id).toBe(id);
+    expect(keyframes[0].timeMs).toBe(1200);
     expect(keyframes[0].transform).toEqual(captureTransform(object));
-    expect(keyframes[1].transform).toEqual(captureTransform(object));
+  });
+
+  it("treats a single keyframe as motion that holds its pose", () => {
+    const object = withKeyframes([[500, 7]]);
+
+    expect(hasMotion(object)).toBe(true);
+    expect(sampleMotion(object, 0)?.positionX).toBe(7);
+    expect(sampleMotion(object, 9999)?.positionX).toBe(7);
+  });
+
+  it("inserts mid-segment with the interpolated pose, so nothing jumps", () => {
+    const object = withKeyframes([
+      [0, 0],
+      [1000, 10],
+    ]);
+    const { id, keyframes } = insertKeyframe(object, 500);
+
+    expect(keyframes.map((keyframe) => keyframe.id)).toEqual(["k0", id, "k1"]);
+    expect(keyframes[1].transform.positionX).toBeCloseTo(5);
+  });
+
+  it("reuses the keyframe already sitting at that instant", () => {
+    const object = withKeyframes([
+      [0, 0],
+      [1000, 10],
+    ]);
+    const result = insertKeyframe(object, 1000);
+
+    expect(result.id).toBe("k1");
+    expect(result.keyframes).toBe(object.keyframes);
+    expect(findKeyframeAt(object.keyframes, 1000)?.id).toBe("k1");
+    expect(findKeyframeAt(object.keyframes, 999)).toBeNull();
   });
 
   it("keeps the first keyframe independent from the static pose", () => {
-    const object = withMotion();
+    const object = withKeyframes([[0, 0]]);
     // Mexer no objeto parado não pode arrastar o keyframe junto.
     const moved = { ...object, positionX: 12 };
 
-    expect(resolveKeyframeTransform(moved, 0).positionX).toBe(0);
-    expect(moved.positionX).toBe(12);
+    expect(sampleMotion(moved, 0)?.positionX).toBe(0);
   });
 
-  it("caps the keyframe count", () => {
-    let object = withMotion();
+  it("has no keyframe limit", () => {
+    let object = makeObject();
 
-    for (let i = 0; i < 10; i += 1) {
-      object = { ...object, keyframes: addKeyframe(object) };
+    for (let i = 0; i < 12; i += 1) {
+      object = { ...object, keyframes: insertKeyframe(object, i * 100).keyframes };
     }
 
-    expect(object.keyframes).toHaveLength(MAX_KEYFRAMES);
+    expect(object.keyframes).toHaveLength(12);
   });
 
-  it("turns motion off when removing would leave a single keyframe", () => {
-    const object = withMotion();
-    const next = removeKeyframe(object.keyframes, object.keyframes[1].id);
-
-    expect(next).toEqual([]);
-    expect(hasMotion({ ...object, keyframes: next })).toBe(false);
-  });
-
-  it("drops the removed keyframe and keeps the rest untouched", () => {
-    let object = withMotion();
-    object = { ...object, keyframes: addKeyframe(object) };
-
-    const next = removeKeyframe(object.keyframes, object.keyframes[0].id);
-
-    expect(next).toHaveLength(2);
-    expect(next.map((keyframe) => keyframe.id)).toEqual([
-      object.keyframes[1].id,
-      object.keyframes[2].id,
+  it("can remove down to one keyframe or none", () => {
+    const object = withKeyframes([
+      [0, 0],
+      [1000, 10],
     ]);
+    const one = removeKeyframe(object.keyframes, "k1");
+
+    expect(one.map((keyframe) => keyframe.id)).toEqual(["k0"]);
+    expect(removeKeyframe(one, "k0")).toEqual([]);
   });
 
-  it("sums only the segments that follow the first keyframe", () => {
-    const object = withMotion();
-    const keyframes = updateKeyframe(object.keyframes, object.keyframes[1].id, {
-      durationMs: 1200,
-    });
+  it("reorders by time when a keyframe is dragged past its neighbour", () => {
+    const object = withKeyframes([
+      [0, 1],
+      [1000, 9],
+    ]);
+    const next = moveKeyframeTo(object.keyframes, "k0", 1500);
 
-    expect(getMotionDuration(keyframes)).toBe(1200);
+    expect(next.map((keyframe) => keyframe.id)).toEqual(["k1", "k0"]);
+    expect(next[1].transform.positionX).toBe(1);
+    expect(next[1].timeMs).toBe(1500);
   });
 
-  it("interpolates between the resting pose and the next keyframe", () => {
-    const base = makeObject();
-    const object = {
-      ...base,
-      positionX: 0,
-      keyframes: [
-        {
-          durationMs: 0,
-          easing: "linear" as const,
-          id: "a",
-          transform: { ...captureTransform(base), positionX: 0 },
-        },
-        {
-          durationMs: 1000,
-          easing: "linear" as const,
-          id: "b",
-          transform: { ...captureTransform(base), positionX: 10 },
-        },
-      ],
+  it("never moves a keyframe before zero", () => {
+    const object = withKeyframes([[500, 0]]);
+
+    expect(moveKeyframeTo(object.keyframes, "k0", -300)[0].timeMs).toBe(0);
+  });
+
+  it("shifts the whole track keeping the gaps, stopping at zero", () => {
+    const object = withKeyframes([
+      [400, 0],
+      [1000, 10],
+    ]);
+
+    expect(
+      shiftKeyframes(object.keyframes, 250).map((keyframe) => keyframe.timeMs),
+    ).toEqual([650, 1250]);
+    expect(
+      shiftKeyframes(object.keyframes, -900).map((keyframe) => keyframe.timeMs),
+    ).toEqual([0, 600]);
+  });
+
+  it("changes the easing of the segment that arrives at a keyframe", () => {
+    const object = withKeyframes([
+      [0, 0],
+      [1000, 10],
+    ]);
+    const eased = {
+      ...object,
+      keyframes: updateKeyframe(object.keyframes, "k1", { easing: "ease-in" }),
     };
 
+    expect(sampleMotion(object, 250)?.positionX).toBeCloseTo(2.5);
+    expect(sampleMotion(eased, 250)?.positionX).toBeCloseTo(0.625);
+  });
+
+  it("interpolates between keyframes on absolute time", () => {
+    const object = withKeyframes([
+      [500, 0],
+      [1500, 10],
+    ]);
+
+    // Antes do primeiro keyframe o objeto segura a pose dele...
     expect(sampleMotion(object, 0)?.positionX).toBe(0);
-    expect(sampleMotion(object, 500)?.positionX).toBeCloseTo(5);
-    expect(sampleMotion(object, 1000)?.positionX).toBeCloseTo(10);
-  });
-
-  it("holds the last pose past the end instead of looping", () => {
-    const base = makeObject();
-    const object = {
-      ...base,
-      keyframes: [
-        {
-          durationMs: 0,
-          easing: "linear" as const,
-          id: "a",
-          transform: captureTransform(base),
-        },
-        {
-          durationMs: 500,
-          easing: "linear" as const,
-          id: "b",
-          transform: { ...captureTransform(base), scale: 3 },
-        },
-      ],
-    };
-
-    expect(sampleMotion(object, 99999)?.scale).toBe(3);
-  });
-
-  it("swaps a keyframe with its neighbour, poses and all", () => {
-    const base = makeObject();
-    const keyframes = [
-      {
-        durationMs: 800,
-        easing: "linear" as const,
-        id: "a",
-        transform: { ...captureTransform(base), positionX: 1 },
-      },
-      {
-        durationMs: 1200,
-        easing: "ease-out" as const,
-        id: "b",
-        transform: { ...captureTransform(base), positionX: 9 },
-      },
-    ];
-
-    const next = moveKeyframe(keyframes, "b", -1);
-
-    expect(next?.map((keyframe) => keyframe.id)).toEqual(["b", "a"]);
-    expect(next?.[0].transform.positionX).toBe(9);
-    expect(next?.[1].transform.positionX).toBe(1);
-  });
-
-  it("carries duration and easing along with the keyframe", () => {
-    const object = withMotion();
-    const keyframes = updateKeyframe(object.keyframes, object.keyframes[1].id, {
-      durationMs: 1200,
-      easing: "ease-out",
-    });
-
-    const next = moveKeyframe(keyframes, keyframes[1].id, -1);
-
-    expect(next?.[0].durationMs).toBe(1200);
-    expect(next?.[0].easing).toBe("ease-out");
-  });
-
-  it("refuses to move past either end", () => {
-    const { keyframes } = withMotion();
-
-    expect(moveKeyframe(keyframes, keyframes[0].id, -1)).toBeNull();
-    expect(moveKeyframe(keyframes, keyframes[1].id, 1)).toBeNull();
-    expect(moveKeyframe(keyframes, "inexistente", 1)).toBeNull();
-  });
-
-  it("holds the first pose during the start delay", () => {
-    const base = makeObject();
-    const object = {
-      ...base,
-      motionDelayMs: 500,
-      keyframes: [
-        {
-          durationMs: 0,
-          easing: "linear" as const,
-          id: "a",
-          transform: { ...captureTransform(base), positionX: 0 },
-        },
-        {
-          durationMs: 1000,
-          easing: "linear" as const,
-          id: "b",
-          transform: { ...captureTransform(base), positionX: 10 },
-        },
-      ],
-    };
-
-    // Ainda parado durante o atraso...
-    expect(sampleMotion(object, 0)?.positionX).toBe(0);
-    expect(sampleMotion(object, 499)?.positionX).toBe(0);
-    // ...e o movimento só então começa a contar.
+    expect(sampleMotion(object, 500)?.positionX).toBe(0);
+    // ...e o movimento acontece entre os dois instantes.
     expect(sampleMotion(object, 1000)?.positionX).toBeCloseTo(5);
     expect(sampleMotion(object, 1500)?.positionX).toBeCloseTo(10);
   });
 
-  it("counts the delay in the object's end time", () => {
-    const object = { ...withMotion(), motionDelayMs: 300 };
+  it("holds the last pose past the end instead of looping", () => {
+    const object = withKeyframes([
+      [0, 0],
+      [500, 3],
+    ]);
 
-    expect(getMotionDuration(object.keyframes)).toBe(800);
-    expect(getObjectMotionEnd(object)).toBe(1100);
+    expect(sampleMotion(object, 99999)?.positionX).toBe(3);
   });
 
-  it("reports zero end time for objects without motion", () => {
-    expect(getObjectMotionEnd({ ...makeObject(), motionDelayMs: 900 })).toBe(0);
+  it("returns null for objects without keyframes", () => {
+    expect(sampleMotion(makeObject(), 100)).toBeNull();
+    expect(hasMotion(makeObject())).toBe(false);
   });
 
-  it("takes the scene duration from whichever object ends last", () => {
-    const short = { ...withMotion(), motionDelayMs: 0 };
-    const late = { ...withMotion(), motionDelayMs: 2000 };
+  it("takes the scene duration from whichever keyframe comes last", () => {
+    const short = withKeyframes([
+      [0, 0],
+      [800, 1],
+    ]);
+    const late = withKeyframes([
+      [2000, 0],
+      [2800, 1],
+    ]);
 
+    expect(getObjectMotionEnd(late)).toBe(2800);
     expect(getSceneMotionDuration([short, late])).toBe(2800);
     expect(getSceneMotionDuration([makeObject()])).toBe(0);
   });
 
-  it("returns null for objects without motion", () => {
-    expect(sampleMotion(makeObject(), 100)).toBeNull();
+  it("gives duplicated objects their own keyframe ids", () => {
+    const source = withKeyframes([
+      [0, 0],
+      [1000, 10],
+    ]);
+    const copy = duplicateSceneObject({
+      name: "Object 2",
+      objects: [source],
+      source,
+    });
+
+    expect(copy.keyframes.map((keyframe) => keyframe.timeMs)).toEqual([0, 1000]);
+    expect(copy.keyframes[0].id).not.toBe(source.keyframes[0].id);
+  });
+
+  it("rounds keyframe times to whole milliseconds", () => {
+    expect(createKeyframe(12.6, captureTransform(makeObject())).timeMs).toBe(13);
   });
 
   it("clamps easing input and keeps the endpoints exact", () => {

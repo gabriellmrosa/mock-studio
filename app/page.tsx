@@ -5,6 +5,7 @@ import {
   startTransition,
   useCallback,
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
 } from "react";
@@ -15,6 +16,7 @@ import type {
 } from "./components/MockupCanvas/MockupCanvas";
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
+import MotionTimeline from "./components/MotionTimeline/MotionTimeline";
 import MockupCanvas from "./components/MockupCanvas/MockupCanvas";
 import Snackbar, {
   type SnackbarNotification,
@@ -24,16 +26,12 @@ import { buildNextDeviceColors } from "./lib/device-colors";
 import { APP_COPY, type Locale, type UiTheme } from "./lib/i18n";
 import { readFileAsDataUrl } from "./lib/mockup-image";
 import {
-  MAX_KEYFRAMES,
-  addKeyframe,
+  findKeyframeAt,
   getSceneMotionDuration,
-  hasMotion,
+  insertKeyframe,
   removeKeyframe,
-  moveKeyframe,
-  resolveKeyframeTransform,
-  startMotion,
   updateKeyframe,
-  type EasingId,
+  type Keyframe,
 } from "./lib/scene-motion";
 import {
   changeSceneObjectModel,
@@ -106,6 +104,7 @@ export default function Home() {
   const [selectedKeyframeId, setSelectedKeyframeId] = useState("");
   // Instante em que o preview começou; null = parado.
   const [motionStartedAt, setMotionStartedAt] = useState<number | null>(null);
+  const [playheadMs, setPlayheadMs] = useState(0);
   const [isUiHidden, setIsUiHidden] = useState(false);
   const [scaleOverrides] = useState<ScaleOverrides>({});
   const [spawnOverrides] = useState<SpawnOverrides>({});
@@ -381,152 +380,207 @@ export default function Home() {
 
 
   // --- Motion -------------------------------------------------------------
-  // As abas são independentes: Static mexe no transform do objeto, Motion mexe
-  // nos keyframes. Nenhuma das duas escreve na outra.
-  const selectedKeyframeIndex = selectedObject
-    ? selectedObject.keyframes.findIndex(
-        (keyframe) => keyframe.id === selectedKeyframeId,
-      )
-    : -1;
+  // O modo Estático mexe no transform do objeto; o Movimento mexe nos
+  // keyframes. Nenhum dos dois escreve no outro. Keyframes nascem, morrem e se
+  // movem na timeline; o Inspector só edita a pose do keyframe selecionado.
+  const selectedKeyframe =
+    selectedObject?.keyframes.find(
+      (keyframe) => keyframe.id === selectedKeyframeId,
+    ) ?? null;
 
   const isMotionPlaying = motionStartedAt !== null;
 
-  // Preview de exibição: mostra a pose do keyframe escolhido sem tocar nos
-  // campos do objeto, que seguem sendo a pose estática.
-  const motionPreview =
-    !isMotionPlaying &&
-    motionTab === "motion" &&
-    selectedObject &&
-    selectedKeyframeIndex >= 0
-      ? {
-          objectId: selectedObject.id,
-          transform: resolveKeyframeTransform(
-            selectedObject,
-            selectedKeyframeIndex,
-          ),
-        }
-      : null;
+  const sceneMotionDuration = getSceneMotionDuration(sceneObjects);
 
-  function updateKeyframes(
-    object: SceneObject,
-    keyframes: SceneObject["keyframes"],
-  ) {
-    updateSceneObject(object.id, { keyframes });
-    return keyframes;
+  // Em modo movimento a cena mostra o instante do playhead; fora dele, a pose
+  // estática. Selecionar um keyframe move o playhead para o tempo dele, então
+  // "ver um keyframe" e "parar num instante" são a mesma coisa.
+  const motionPlayheadMs =
+    !isMotionPlaying && motionTab === "motion" ? playheadMs : null;
+
+  function findObject(objectId: string) {
+    return sceneObjects.find((object) => object.id === objectId) ?? null;
   }
 
-  function handleStartMotion() {
-    if (!selectedObject) return;
+  /** Seleciona o keyframe e o objeto dele, e leva o playhead até o instante. */
+  function selectKeyframe(objectId: string, keyframe: Keyframe) {
+    setSelectedObjectId(objectId);
+    setSelectedKeyframeId(keyframe.id);
+    setPlayheadMs(keyframe.timeMs);
+  }
 
-    const keyframes = updateKeyframes(
-      selectedObject,
-      startMotion(selectedObject),
+  function handleSelectKeyframe(objectId: string, keyframeId: string) {
+    const keyframe = findObject(objectId)?.keyframes.find(
+      (item) => item.id === keyframeId,
     );
-    setSelectedKeyframeId(keyframes[keyframes.length - 1]?.id ?? "");
-  }
 
-  function handleUpdateMotionDelay(motionDelayMs: number) {
-    if (!selectedObject) return;
-
-    updateSceneObject(selectedObject.id, { motionDelayMs });
-  }
-
-  function handleMoveKeyframe(id: string, direction: -1 | 1) {
-    if (!selectedObject) return;
-
-    const keyframes = moveKeyframe(selectedObject.keyframes, id, direction);
-
-    if (keyframes) {
-      updateKeyframes(selectedObject, keyframes);
+    if (keyframe) {
+      selectKeyframe(objectId, keyframe);
     }
   }
 
-  function handleAddKeyframe() {
-    if (!selectedObject || selectedObject.keyframes.length >= MAX_KEYFRAMES) {
+  // Clicar no vazio da timeline é escolher um instante, não um keyframe: a
+  // seleção sai, como no Premiere. Sem isso o Inspector mostraria um keyframe
+  // enquanto a cena mostra outro instante.
+  function handleScrub(timeMs: number) {
+    setPlayheadMs(timeMs);
+    setSelectedKeyframeId("");
+  }
+
+  function handleToggleKeyframeAtPlayhead(objectId: string) {
+    const target = findObject(objectId);
+
+    if (!target) return;
+
+    const existing = findKeyframeAt(target.keyframes, playheadMs);
+
+    if (existing) {
+      handleRemoveKeyframe(objectId, existing.id);
       return;
     }
 
-    const keyframes = updateKeyframes(
-      selectedObject,
-      addKeyframe(selectedObject),
-    );
-    setSelectedKeyframeId(keyframes[keyframes.length - 1]?.id ?? "");
-  }
+    const { id, keyframes } = insertKeyframe(target, playheadMs);
+    const created = keyframes.find((keyframe) => keyframe.id === id);
 
-  function handleRemoveKeyframe(id: string) {
-    if (!selectedObject) return;
+    updateSceneObject(objectId, { keyframes });
 
-    const keyframes = updateKeyframes(
-      selectedObject,
-      removeKeyframe(selectedObject.keyframes, id),
-    );
-
-    if (id === selectedKeyframeId) {
-      setSelectedKeyframeId(keyframes[0]?.id ?? "");
+    if (created) {
+      selectKeyframe(objectId, created);
     }
   }
 
-  function handleUpdateKeyframeMeta(
-    id: string,
-    patch: { durationMs?: number; easing?: EasingId },
-  ) {
-    if (!selectedObject) return;
+  function handleRemoveKeyframe(objectId: string, keyframeId: string) {
+    const target = findObject(objectId);
 
-    updateKeyframes(
-      selectedObject,
-      updateKeyframe(selectedObject.keyframes, id, patch),
+    if (!target) return;
+
+    updateSceneObject(objectId, {
+      keyframes: removeKeyframe(target.keyframes, keyframeId),
+    });
+
+    if (keyframeId === selectedKeyframeId) {
+      setSelectedKeyframeId("");
+    }
+  }
+
+  // Arrastos da timeline e troca de transição. Se o keyframe selecionado se
+  // moveu, o playhead vai junto para a cena seguir mostrando a pose dele.
+  function handleChangeKeyframes(objectId: string, keyframes: Keyframe[]) {
+    updateSceneObject(objectId, { keyframes });
+
+    const moved = keyframes.find(
+      (keyframe) => keyframe.id === selectedKeyframeId,
     );
+
+    if (moved) {
+      setPlayheadMs(moved.timeMs);
+    }
   }
 
+  // O playback começa do playhead (ou do zero, se ele já estiver no fim) e,
+  // ao parar, deixa o playhead onde a reprodução estava.
   function handleToggleMotionPlayback() {
-    setMotionStartedAt((current) => (current === null ? Date.now() : null));
+    if (motionStartedAt !== null) {
+      setPlayheadMs(
+        Math.min(sceneMotionDuration, Date.now() - motionStartedAt),
+      );
+      setMotionStartedAt(null);
+      return;
+    }
+
+    const from = playheadMs >= sceneMotionDuration ? 0 : playheadMs;
+
+    setSelectedKeyframeId("");
+    setMotionStartedAt(Date.now() - from);
   }
+
+  // Barra de espaço dá play/stop no modo movimento, como em editor de vídeo.
+  // Vale mesmo com um botão em foco — senão, depois de clicar no ◆+, o espaço
+  // criaria outro keyframe em vez de tocar. Só campos de texto ficam de fora.
+  const onPlaybackShortcut = useEffectEvent(handleToggleMotionPlayback);
+
+  useEffect(() => {
+    if (motionTab !== "motion") {
+      return;
+    }
+
+    function isSpaceOutsideTextField(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+
+      return (
+        event.code === "Space" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !target?.closest("input, textarea, select, [contenteditable='true']")
+      );
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (!isSpaceOutsideTextField(event)) return;
+
+      event.preventDefault();
+
+      if (!event.repeat) {
+        onPlaybackShortcut();
+      }
+    }
+
+    // O botão em foco é acionado no keyup do espaço; barrar aqui evita que o
+    // atalho também clique nele.
+    function handleKeyUp(event: KeyboardEvent) {
+      if (isSpaceOutsideTextField(event)) {
+        event.preventDefault();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [motionTab]);
 
   // O preview para sozinho no fim da cena — vale o objeto que termina por
-  // último, contando o atraso de início dele.
+  // último.
   useEffect(() => {
     if (motionStartedAt === null) {
       return;
     }
 
     const duration = getSceneMotionDuration(sceneObjects);
+    const remaining = Math.max(0, duration - (Date.now() - motionStartedAt));
 
-    const timeoutId = window.setTimeout(
-      () => setMotionStartedAt(null),
-      duration + 80,
-    );
+    const timeoutId = window.setTimeout(() => {
+      setPlayheadMs(duration);
+      setMotionStartedAt(null);
+    }, remaining + 80);
 
     return () => window.clearTimeout(timeoutId);
   }, [motionStartedAt, sceneObjects]);
 
-  // Na aba Motion os controles editam o keyframe selecionado; na Static, a
-  // pose do objeto. Cada aba escreve só no seu lado.
+  // Em Movimento os controles editam o keyframe selecionado; em Estático, a
+  // pose do objeto. Cada modo escreve só no seu lado.
   function updateTransform(patch: Partial<SceneObject>) {
     if (!selectedObject) return;
 
-    const editingKeyframe =
-      motionTab === "motion" &&
-      hasMotion(selectedObject) &&
-      selectedKeyframeIndex >= 0;
-
-    if (!editingKeyframe) {
+    if (motionTab === "static") {
       updateSceneObject(selectedObject.id, patch);
       return;
     }
 
-    const current = resolveKeyframeTransform(
-      selectedObject,
-      selectedKeyframeIndex,
-    );
+    if (!selectedKeyframe) return;
 
-    updateKeyframes(
-      selectedObject,
-      updateKeyframe(
-        selectedObject.keyframes,
-        selectedKeyframeId,
-        { transform: { ...current, ...patch } },
-      ),
-    );
+    updateSceneObject(selectedObject.id, {
+      keyframes: updateKeyframe(selectedObject.keyframes, selectedKeyframe.id, {
+        transform: { ...selectedKeyframe.transform, ...patch },
+      }),
+    });
+
+    // Editar tem que ser o que se vê: o playhead volta ao keyframe editado.
+    setPlayheadMs(selectedKeyframe.timeMs);
   }
 
   function handleFitObject(id: string) {
@@ -606,8 +660,31 @@ export default function Home() {
         onTemplateApplied={handleTemplateApplied}
         onToggleUiHidden={() => setIsUiHidden((current) => !current)}
         pendingCameraPose={pendingCameraPose}
-        motionPreview={motionPreview}
+        isMotionMode={motionTab === "motion"}
+        onMotionModeChange={(isMotionMode) =>
+          setMotionTab(isMotionMode ? "motion" : "static")
+        }
+        motionPlayheadMs={motionPlayheadMs}
         motionStartedAt={motionStartedAt}
+        timeline={
+          <MotionTimeline
+            copy={copy}
+            isPlaying={isMotionPlaying}
+            objects={sceneObjects.filter((object) => object.isVisible)}
+            onChangeKeyframes={handleChangeKeyframes}
+            onRemoveKeyframe={handleRemoveKeyframe}
+            onScrub={handleScrub}
+            onSelectKeyframe={handleSelectKeyframe}
+            onSelectObject={setSelectedObjectId}
+            onToggleKeyframeAtPlayhead={handleToggleKeyframeAtPlayhead}
+            onTogglePlayback={handleToggleMotionPlayback}
+            playbackStartedAt={motionStartedAt}
+            playheadMs={playheadMs}
+            sceneDurationMs={sceneMotionDuration}
+            selectedKeyframeId={selectedKeyframeId}
+            selectedObjectId={selectedObject?.id ?? ""}
+          />
+        }
         scaleOverrides={scaleOverrides}
         spawnOverrides={spawnOverrides}
         uiTheme={uiTheme}
@@ -651,17 +728,7 @@ export default function Home() {
         onUpdateRotation={(rotationPatch) => updateTransform(rotationPatch)}
         onUpdateScale={(scale) => updateTransform({ scale })}
         motionTab={motionTab}
-        onMotionTabChange={setMotionTab}
         selectedKeyframeId={selectedKeyframeId}
-        onSelectKeyframe={setSelectedKeyframeId}
-        onStartMotion={handleStartMotion}
-        onAddKeyframe={handleAddKeyframe}
-        onRemoveKeyframe={handleRemoveKeyframe}
-        onMoveKeyframe={handleMoveKeyframe}
-        onUpdateMotionDelay={handleUpdateMotionDelay}
-        onUpdateKeyframeMeta={handleUpdateKeyframeMeta}
-        isMotionPlaying={isMotionPlaying}
-        onToggleMotionPlayback={handleToggleMotionPlayback}
         uiTheme={uiTheme}
         uploadError={uploadError}
       />

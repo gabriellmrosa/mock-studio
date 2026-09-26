@@ -9,7 +9,7 @@ import {
   OBJECT_POSITION_MULTIPLIER,
 } from "./scene-presets";
 import { createPlaceholderDataUrl } from "./placeholder-image";
-import type { Keyframe } from "./scene-motion";
+import { cloneKeyframes, type Keyframe } from "./scene-motion";
 
 export type SceneObject = {
   colors: Record<string, string>;
@@ -23,8 +23,6 @@ export type SceneObject = {
   isVisible: boolean;
   /** Vazio = objeto estático. Ver [scene-motion.ts](app/lib/scene-motion.ts). */
   keyframes: Keyframe[];
-  /** Espera antes de a animação deste objeto começar, em ms. */
-  motionDelayMs: number;
   modelId: DeviceModelId;
   name: string;
   matteColors: boolean;
@@ -220,7 +218,6 @@ export function createSceneObject({
     imageUrl: getPlaceholderImageUrl(modelId),
     isVisible: true,
     keyframes: [],
-    motionDelayMs: 0,
     modelId,
     name,
     matteColors: true,
@@ -254,6 +251,9 @@ export function duplicateSceneObject({
     ...source,
     deletable: true,
     id: id ?? crypto.randomUUID(),
+    // Ids de keyframe precisam ser únicos na cena: a seleção da timeline os
+    // procura sem saber de qual objeto são.
+    keyframes: cloneKeyframes(source.keyframes),
     name,
     ...spawnTransform,
   };

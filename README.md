@@ -50,7 +50,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - export feedback chip while the PNG is being prepared
 - scene templates stored in `localStorage`: composition, background color and camera pose, saved from the `Templates` section or as a checkbox in the `Export` menu
 - template management with inline rename, delete and `Restore framing`, which returns the camera to the pose saved with that template without touching the objects
-- per-object motion: the `Transform` section splits into `Static` and `Motion` tabs, with up to four keyframes, per-segment duration and easing, reordering, a start delay and in-editor playback
+- per-object motion: a `Static` / `Motion` switch on the canvas and a timeline with one track per visible object — create a keyframe at the playhead with the track's ◆+ button, drag keyframes in time or shift a whole track, right-click between two keyframes to pick the transition, edit the selected keyframe's pose in the Inspector, and press `Space` to play
 - framing actions split by scope: `Fit scene` in the toolbar, `Frame object` in each object's menu
 - distraction-free `Hide UI` mode with a toggle you can drag to any canvas corner, animating between the toolbar and the corner it snaps to
 - layered selection flow via list and direct interaction in the 3D scene

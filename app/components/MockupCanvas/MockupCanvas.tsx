@@ -1,7 +1,13 @@
 "use client";
 
 import "./MockupCanvas.css";
-import { Suspense, useEffect, useRef, useState } from "react";
+import {
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import * as THREE from "three";
 import {
   Canvas,
@@ -25,11 +31,7 @@ import {
   OBJECT_POSITION_MULTIPLIER,
   OBJECT_POSITION_MULTIPLIER_Z,
 } from "../../lib/scene-presets";
-import {
-  hasMotion,
-  sampleMotion,
-  type MotionTransform,
-} from "../../lib/scene-motion";
+import { hasMotion, sampleMotion } from "../../lib/scene-motion";
 import { DEVICE_MODELS } from "../../models/device-models";
 import FloatingCanvasControls from "../FloatingCanvasControls/FloatingCanvasControls";
 import {
@@ -65,16 +67,15 @@ type MockupCanvasProps = {
   pendingCameraPose: CameraPose | null;
   /** Instante inicial do preview de movimento; null = parado. */
   motionStartedAt: number | null;
-  motionPreview: MotionPreview | null;
+  /** Instante da cena a exibir quando parado; null = mostrar a pose estática. */
+  motionPlayheadMs: number | null;
+  isMotionMode: boolean;
+  onMotionModeChange: (isMotionMode: boolean) => void;
+  /** A timeline em si; o canvas só reserva o rodapé para ela. */
+  timeline: ReactNode;
   scaleOverrides: ScaleOverrides;
   spawnOverrides: SpawnOverrides;
   uiTheme: UiTheme;
-};
-
-/** Exibe um objeto com outro transform sem alterar o estado dele. */
-export type MotionPreview = {
-  objectId: string;
-  transform: MotionTransform;
 };
 
 export type CameraApi = {
@@ -171,7 +172,7 @@ function SceneBridge({
   onExportReady,
   onObjectLoadStateChange,
   onObjectResolved,
-  motionPreview,
+  motionPlayheadMs,
   motionStartedAt,
   onSelectObject,
   onTemplateApplied,
@@ -237,12 +238,13 @@ function SceneBridge({
         <group ref={sceneRef}>
           {objects.filter((object) => object.isVisible).map((object, index) => {
             const model = DEVICE_MODELS[object.modelId];
-            // Preview de keyframe é só exibição: o objeto em si continua na
-            // pose de repouso.
-            const displayed =
-              motionPreview?.objectId === object.id
-                ? { ...object, ...motionPreview.transform }
-                : object;
+            // Em modo movimento a cena inteira mostra o instante do playhead.
+            // É só exibição: o transform estático do objeto não é tocado.
+            const sampled =
+              motionPlayheadMs !== null
+                ? sampleMotion(object, motionPlayheadMs)
+                : null;
+            const displayed = sampled ? { ...object, ...sampled } : object;
 
             return (
               <Suspense
@@ -802,7 +804,30 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         </div>
       ) : null}
 
-      <div className="canvas-stage-overlay">
+      <div
+        className={`canvas-stage-overlay${
+          props.isMotionMode ? " with-timeline" : ""
+        }`}
+      >
+        {!props.isUiHidden ? (
+          <div className="canvas-mode-toggle" role="tablist">
+            {([false, true] as const).map((mode) => (
+              <button
+                key={String(mode)}
+                type="button"
+                role="tab"
+                aria-selected={props.isMotionMode === mode}
+                className={`canvas-mode-tab${
+                  props.isMotionMode === mode ? " is-active" : ""
+                }`}
+                onClick={() => props.onMotionModeChange(mode)}
+              >
+                {mode ? props.copy.transformMotionTab : props.copy.transformStaticTab}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         {isInitialSceneLoading ? (
           <ActivityNotice label={props.copy.canvasInitialLoadingLabel} />
         ) : null}
@@ -835,6 +860,8 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           takePhotoDisabled={!isExportReady || isExporting}
           uiTheme={props.uiTheme}
         />
+
+        {props.isMotionMode && !props.isUiHidden ? props.timeline : null}
       </div>
     </div>
   );

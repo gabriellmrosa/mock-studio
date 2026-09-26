@@ -1,0 +1,254 @@
+/* =========================================
+   MotionTimeline — barra fixa no rodapé do canvas
+   ========================================= */
+
+.motion-timeline {
+  background: var(--sidebar-bg);
+  border-top: 1px solid var(--sidebar-border);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: var(--motion-timeline-height);
+  left: var(--editor-sidebar-width);
+  padding: var(--space-3) var(--space-4);
+  pointer-events: auto;
+  position: absolute;
+  right: var(--editor-sidebar-width);
+  z-index: 3;
+}
+
+.motion-timeline-header {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-3);
+}
+
+.motion-timeline-clock {
+  color: var(--sidebar-muted);
+  font-size: var(--font-size-150);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+}
+
+.motion-timeline-empty {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  text-align: center;
+}
+
+.motion-timeline-body {
+  display: flex;
+  flex: 1;
+  gap: var(--space-3);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Rótulos fora da área de tempo: assim o eixo começa no zero de verdade. */
+.motion-timeline-labels {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--space-1);
+  width: 8rem;
+}
+
+.motion-timeline-ruler-spacer {
+  flex-shrink: 0;
+  height: 1rem;
+}
+
+.motion-timeline-label {
+  align-items: center;
+  border-radius: var(--radius-xs);
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--space-1);
+  height: 1.5rem;
+}
+
+.motion-timeline-label-name {
+  background: transparent;
+  border: none;
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  flex: 1;
+  font-size: var(--font-size-150);
+  min-width: 0;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.motion-timeline-label.is-active .motion-timeline-label-name,
+.motion-timeline-label-name:hover {
+  color: var(--foreground);
+}
+
+/* ◆+ da trilha: cheio quando o playhead está sobre um keyframe (aí remove). */
+.motion-timeline-add {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-xs);
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  display: flex;
+  flex-shrink: 0;
+  height: 1.25rem;
+  justify-content: center;
+  padding: 0;
+  width: 1.25rem;
+}
+
+.motion-timeline-add:hover:not(:disabled) {
+  color: var(--foreground);
+}
+
+.motion-timeline-add.is-on-keyframe {
+  color: var(--foreground);
+}
+
+.motion-timeline-add.is-on-keyframe svg {
+  fill: currentColor;
+}
+
+.motion-timeline-add:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+
+.motion-timeline-lanes {
+  cursor: col-resize;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: var(--space-1);
+  position: relative;
+  touch-action: none;
+}
+
+/* Régua de segundos: faz parte da área de scrub. */
+.motion-timeline-ruler {
+  flex-shrink: 0;
+  height: 1rem;
+  position: relative;
+}
+
+.motion-timeline-tick {
+  border-left: 1px solid var(--panel-border);
+  color: var(--sidebar-muted);
+  font-size: var(--font-size-100);
+  font-variant-numeric: tabular-nums;
+  height: 100%;
+  line-height: 1;
+  padding-left: 3px;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+}
+
+.motion-timeline-lane {
+  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  border-radius: var(--radius-xs);
+  flex-shrink: 0;
+  height: 1.5rem;
+  position: relative;
+}
+
+.motion-timeline-lane.is-active {
+  background: color-mix(in srgb, var(--foreground) 9%, transparent);
+}
+
+/* Trecho entre dois keyframes: arrastar desloca a trilha inteira, botão
+   direito escolhe a transição (à la interpolação do Flash). */
+.motion-timeline-segment {
+  align-items: center;
+  background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  cursor: grab;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  overflow: hidden;
+  position: absolute;
+  top: 0;
+}
+
+.motion-timeline-segment:active {
+  cursor: grabbing;
+}
+
+.motion-timeline-lane.is-active .motion-timeline-segment {
+  background: color-mix(in srgb, var(--foreground) 28%, transparent);
+}
+
+.motion-timeline-segment-label {
+  color: var(--sidebar-muted);
+  font-size: var(--font-size-100);
+  overflow: hidden;
+  padding: 0 var(--space-3);
+  pointer-events: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Keyframe: losango centrado no instante dele. */
+.motion-timeline-marker {
+  background: var(--foreground);
+  border: 1px solid var(--sidebar-bg);
+  cursor: ew-resize;
+  height: 0.6rem;
+  opacity: 0.6;
+  padding: 0;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  width: 0.6rem;
+  z-index: 2;
+}
+
+.motion-timeline-marker:hover,
+.motion-timeline-marker:focus-visible {
+  opacity: 1;
+}
+
+.motion-timeline-marker.is-active {
+  opacity: 1;
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.motion-timeline-menu-title {
+  color: var(--sidebar-muted);
+  font-size: var(--font-size-100);
+  letter-spacing: 0.04em;
+  margin: 0 0 0.25rem;
+  text-transform: uppercase;
+}
+
+.motion-timeline-playhead {
+  background: var(--foreground);
+  bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 1px;
+  z-index: 4;
+}
+
+.motion-timeline-playhead::before {
+  background: var(--foreground);
+  border-radius: 1px;
+  content: "";
+  height: 0.3rem;
+  left: -0.15rem;
+  position: absolute;
+  top: 0;
+  width: 0.4rem;
+}

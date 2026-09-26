@@ -6,32 +6,16 @@ import Control from "../Control/Control";
 import CustomSelect, { type CustomSelectOption } from "../CustomSelect/CustomSelect";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
-import {
-  EASING_IDS,
-  MAX_KEYFRAMES,
-  MAX_DELAY_MS,
-  MAX_SEGMENT_MS,
-  MIN_SEGMENT_MS,
-  hasMotion,
-  resolveKeyframeTransform,
-  type EasingId,
-} from "../../lib/scene-motion";
 import { DEVICE_MODEL_LIST } from "../../models/device-models";
 import {
   InspectorPanelHeader,
   PanelSection,
 } from "../EditorPrimitives/EditorPrimitives";
 import {
-  ChevronDown,
-  ChevronUp,
   Laptop,
-  Play,
-  Plus,
   RotateCcw,
   Smartphone,
-  Square,
   Tablet,
-  Trash2,
   Upload,
   Video,
   Watch,
@@ -66,20 +50,7 @@ type InspectorPanelProps = {
   ) => void;
   onUpdateScale: (scale: number) => void;
   motionTab: "static" | "motion";
-  onMotionTabChange: (tab: "static" | "motion") => void;
   selectedKeyframeId: string;
-  onSelectKeyframe: (id: string) => void;
-  onStartMotion: () => void;
-  onAddKeyframe: () => void;
-  onMoveKeyframe: (id: string, direction: -1 | 1) => void;
-  onRemoveKeyframe: (id: string) => void;
-  onUpdateMotionDelay: (delayMs: number) => void;
-  onUpdateKeyframeMeta: (
-    id: string,
-    patch: { durationMs?: number; easing?: EasingId },
-  ) => void;
-  isMotionPlaying: boolean;
-  onToggleMotionPlayback: () => void;
   uiTheme: UiTheme;
   uploadError: string;
 };
@@ -101,38 +72,24 @@ export default function InspectorPanel({
   onUpdateRotation,
   onUpdateScale,
   motionTab,
-  onMotionTabChange,
   selectedKeyframeId,
-  onSelectKeyframe,
-  onStartMotion,
-  onAddKeyframe,
-  onRemoveKeyframe,
-  onMoveKeyframe,
-  onUpdateMotionDelay,
-  onUpdateKeyframeMeta,
-  isMotionPlaying,
-  onToggleMotionPlayback,
   uiTheme,
   uploadError,
 }: InspectorPanelProps) {
-  const editedKeyframeIndex =
-    object && motionTab === "motion" && hasMotion(object)
-      ? object.keyframes.findIndex(
-          (keyframe) => keyframe.id === selectedKeyframeId,
-        )
-      : -1;
   if (!object) {
     return (
       <aside className="editor-sidebar editor-sidebar-shell inspector-sidebar" />
     );
   }
 
-  // Em Motion os controles editam o keyframe selecionado, então os valores
-  // exibidos vêm dele; na Static, da pose do objeto.
-  const editedTransform =
-    editedKeyframeIndex >= 0
-      ? resolveKeyframeTransform(object, editedKeyframeIndex)
-      : object;
+  // Em Movimento os controles editam o keyframe selecionado na timeline, então
+  // os valores exibidos vêm dele; em Estático, da pose do objeto. Sem keyframe
+  // selecionado deste objeto não há o que editar em Movimento.
+  const editedKeyframe =
+    motionTab === "motion"
+      ? object.keyframes.find((keyframe) => keyframe.id === selectedKeyframeId)
+      : undefined;
+  const editedTransform = editedKeyframe?.transform ?? object;
 
   const model = DEVICE_MODEL_LIST.find((item) => item.id === object.modelId);
   const uploadRecommendation = model?.recommendedUploadSize
@@ -314,7 +271,15 @@ export default function InspectorPanel({
         </PanelSection>
 
         <PanelSection
-          title={copy.transformSectionTitle}
+          title={
+            editedKeyframe
+              ? `${copy.transformSectionTitle} · ${copy.motionKeyframeLabel} ${(
+                  editedKeyframe.timeMs / 1000
+                ).toFixed(2)}s`
+              : motionTab === "motion"
+                ? `${copy.transformSectionTitle} · ${copy.transformMotionTab}`
+                : copy.transformSectionTitle
+          }
           className="transform-section"
           action={
             motionTab === "motion" ? undefined : (
@@ -333,43 +298,11 @@ export default function InspectorPanel({
             )
           }
         >
-          {/* Em Motion os controles editam o keyframe selecionado, então os
-              valores exibidos precisam vir dele — e não da pose estática. */}
-          <div className="transform-tabs" role="tablist">
-            {(["static", "motion"] as const).map((tab) => (
-              <button
-                key={tab}
-                type="button"
-                role="tab"
-                aria-selected={motionTab === tab}
-                className={`transform-tab${motionTab === tab ? " is-active" : ""}`}
-                onClick={() => onMotionTabChange(tab)}
-              >
-                {tab === "static"
-                  ? copy.transformStaticTab
-                  : copy.transformMotionTab}
-              </button>
-            ))}
-          </div>
-
-          {motionTab === "motion" ? (
-            <MotionPanel
-              copy={copy}
-              isPlaying={isMotionPlaying}
-              object={object}
-              onAddKeyframe={onAddKeyframe}
-              onMoveKeyframe={onMoveKeyframe}
-              onUpdateMotionDelay={onUpdateMotionDelay}
-              onRemoveKeyframe={onRemoveKeyframe}
-              onSelectKeyframe={onSelectKeyframe}
-              onStartMotion={onStartMotion}
-              onTogglePlayback={onToggleMotionPlayback}
-              onUpdateKeyframeMeta={onUpdateKeyframeMeta}
-              selectedKeyframeId={selectedKeyframeId}
-            />
-          ) : null}
-
-          {motionTab === "motion" && !hasMotion(object) ? null : (
+          {motionTab === "motion" && !editedKeyframe ? (
+            <p className="editor-sidebar-muted motion-empty-hint">
+              {copy.motionEmptyHint}
+            </p>
+          ) : (
           <div className="transform-groups">
             <div className="transform-group">
               <Control
@@ -475,190 +408,6 @@ export default function InspectorPanel({
 
       </div>
     </aside>
-  );
-}
-
-/**
- * Lista de keyframes do objeto. O primeiro é a pose de repouso: não tem
- * duração nem suavização próprias, porque nada chega até ele.
- */
-function MotionPanel({
-  copy,
-  isPlaying,
-  object,
-  onAddKeyframe,
-  onMoveKeyframe,
-  onRemoveKeyframe,
-  onSelectKeyframe,
-  onUpdateMotionDelay,
-  onStartMotion,
-  onTogglePlayback,
-  onUpdateKeyframeMeta,
-  selectedKeyframeId,
-}: {
-  copy: AppCopy;
-  isPlaying: boolean;
-  object: SceneObject;
-  onAddKeyframe: () => void;
-  onMoveKeyframe: (id: string, direction: -1 | 1) => void;
-  onRemoveKeyframe: (id: string) => void;
-  onSelectKeyframe: (id: string) => void;
-  onUpdateMotionDelay: (delayMs: number) => void;
-  onStartMotion: () => void;
-  onTogglePlayback: () => void;
-  onUpdateKeyframeMeta: (
-    id: string,
-    patch: { durationMs?: number; easing?: EasingId },
-  ) => void;
-  selectedKeyframeId: string;
-}) {
-  if (!hasMotion(object)) {
-    return (
-      <div className="motion-empty">
-        <p className="editor-sidebar-muted">{copy.motionEmptyHint}</p>
-        <button
-          type="button"
-          className="editor-button-outline"
-          onClick={onStartMotion}
-        >
-          <Plus size={14} />
-          {copy.motionStart}
-        </button>
-      </div>
-    );
-  }
-
-  const selectedIndex = object.keyframes.findIndex(
-    (keyframe) => keyframe.id === selectedKeyframeId,
-  );
-  const selected = object.keyframes[selectedIndex];
-
-  const easingOptions: CustomSelectOption[] = EASING_IDS.map((easing) => ({
-    label: copy.motionEasingLabels[easing] ?? easing,
-    value: easing,
-  }));
-
-  return (
-    <div className="motion-panel">
-      <button
-        type="button"
-        className="editor-button-outline"
-        onClick={onTogglePlayback}
-      >
-        {isPlaying ? <Square size={13} /> : <Play size={13} />}
-        {isPlaying ? copy.motionStop : copy.motionPlay}
-      </button>
-
-      <div className="motion-delay">
-        <Control
-          label={copy.motionDelay}
-          value={object.motionDelayMs / 1000}
-          setValue={(value) =>
-            onUpdateMotionDelay(Math.round(value * 1000))
-          }
-          min={0}
-          max={MAX_DELAY_MS / 1000}
-          step={0.1}
-        />
-      </div>
-
-      <div className="motion-keyframes">
-        {object.keyframes.map((keyframe, index) => (
-          <div
-            key={keyframe.id}
-            className={`motion-keyframe${
-              keyframe.id === selectedKeyframeId ? " is-active" : ""
-            }`}
-          >
-            <button
-              type="button"
-              className="motion-keyframe-select"
-              aria-pressed={keyframe.id === selectedKeyframeId}
-              onClick={() => onSelectKeyframe(keyframe.id)}
-            >
-              <span>{`${copy.motionKeyframeLabel} ${index + 1}`}</span>
-              {index === 0 ? (
-                <span className="motion-keyframe-tag">
-                  {copy.motionFirstKeyframe}
-                </span>
-              ) : (
-                <span className="motion-keyframe-tag">
-                  {`${(keyframe.durationMs / 1000).toFixed(1)}s`}
-                </span>
-              )}
-            </button>
-            <button
-              type="button"
-              className="editor-icon-button motion-keyframe-action"
-              aria-label={copy.motionMoveKeyframeUp}
-              title={copy.motionMoveKeyframeUp}
-              disabled={index === 0}
-              onClick={() => onMoveKeyframe(keyframe.id, -1)}
-            >
-              <ChevronUp size={12} />
-            </button>
-            <button
-              type="button"
-              className="editor-icon-button motion-keyframe-action"
-              aria-label={copy.motionMoveKeyframeDown}
-              title={copy.motionMoveKeyframeDown}
-              disabled={index === object.keyframes.length - 1}
-              onClick={() => onMoveKeyframe(keyframe.id, 1)}
-            >
-              <ChevronDown size={12} />
-            </button>
-            <button
-              type="button"
-              className="editor-icon-button motion-keyframe-action"
-              aria-label={copy.motionRemoveKeyframe}
-              title={copy.motionRemoveKeyframe}
-              onClick={() => onRemoveKeyframe(keyframe.id)}
-            >
-              <Trash2 size={12} />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      {object.keyframes.length < MAX_KEYFRAMES ? (
-        <button
-          type="button"
-          className="editor-button-outline"
-          onClick={onAddKeyframe}
-        >
-          <Plus size={14} />
-          {copy.motionAddKeyframe}
-        </button>
-      ) : null}
-
-      {selected && selectedIndex > 0 ? (
-        <div className="motion-segment">
-          <Control
-            label={copy.motionDuration}
-            value={selected.durationMs / 1000}
-            setValue={(value) =>
-              onUpdateKeyframeMeta(selected.id, {
-                durationMs: Math.round(value * 1000),
-              })
-            }
-            min={MIN_SEGMENT_MS / 1000}
-            max={MAX_SEGMENT_MS / 1000}
-            step={0.1}
-          />
-          <div className="motion-easing">
-            <span className="editor-sidebar-label">{copy.motionEasing}</span>
-            <CustomSelect
-              ariaLabel={copy.motionEasing}
-              options={easingOptions}
-              value={selected.easing}
-              onChange={(value) =>
-                onUpdateKeyframeMeta(selected.id, { easing: value as EasingId })
-              }
-            />
-          </div>
-        </div>
-      ) : null}
-    </div>
   );
 }
 

@@ -53,10 +53,15 @@
 - including keyframes means bumping `TEMPLATE_SCHEMA_VERSION`, and the version check discards templates saved under the old schema
 - decide on a migration before bumping, so saved templates survive
 
-## 9. Timeline for coordinating motion across objects
+## 9. Timeline for coordinating motion across objects — done
 
-- the goal is composing short videos of several objects moving to a final arrangement, which the per-object keyframe list cannot show: you have to open each object and overlay the timings mentally
+- the goal is composing short videos of several objects moving to a final arrangement, which the per-object keyframe list could not show: you had to open each object and overlay the timings mentally
 - one track per object, not per property — a keyframe here is a whole pose, which avoids the per-property tracks that make After Effects heavy
-- v1 scope: blocks per segment, markers at keyframes, a draggable playhead, dragging a track to set its delay and dragging a block edge to change duration
-- dragging a keyframe marker is a paired adjustment of the two neighbouring segment durations, so segment durations stay the model and absolute keyframe times are not needed
-- `motionDelayMs` already landed, which is the piece the timeline needs to have anything to coordinate
+- [x] the `Static` / `Motion` switch moved from the Inspector to the canvas, and the timeline docks at the bottom of the canvas in `Motion`
+- [x] every visible object gets a track, animated or not, so a single-object scene opens with its track ready
+- [x] keyframes are created on the timeline (the track's ◆+ button, at the playhead) instead of in the Inspector; the Inspector only edits the pose of the selected keyframe
+- [x] keyframes store an absolute `timeMs` instead of per-segment durations plus a per-object `motionDelayMs`: dragging a marker, inserting mid-segment and shifting a track each become a change to one number, and the start delay is simply the first keyframe's time
+- [x] drag a marker to retime or reorder it, drag a segment to shift the whole track, right-click a segment to pick its transition, `Delete` or right-click to remove a marker
+- [x] no keyframe limit, and a single keyframe is valid (the object holds that pose)
+- [x] playback starts from the playhead, the playhead follows it, and `Space` toggles it in `Motion`
+- templates still do not carry keyframes (see item 8)

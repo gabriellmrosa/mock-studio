@@ -1,34 +1,33 @@
 import type { SceneObject } from "./scene-objects";
 
 /**
- * Motion por objeto: uma lista curta de keyframes, cada um um retrato dos sete
- * números de transform que o Inspector já edita.
+ * Motion por objeto: uma lista de keyframes, cada um um retrato dos sete
+ * números de transform que o Inspector já edita, preso a um instante da cena.
  *
- * Decisão central: **as abas Static e Motion são independentes**. O transform
- * do objeto é a pose estática e só a aba Static mexe nele; os keyframes guardam
- * cada um o seu transform e só a aba Motion mexe neles. O primeiro keyframe
- * nasce como cópia da pose estática e a partir daí segue a própria vida.
+ * Decisão central: **a pose estática e os keyframes são independentes**. O
+ * transform do objeto é a pose estática e só o modo Estático mexe nele; os
+ * keyframes guardam cada um o seu transform e só o modo Movimento mexe neles.
+ * Um keyframe criado num objeto sem motion nasce como cópia da pose estática e
+ * a partir daí segue a própria vida.
  *
- * Tratar o primeiro keyframe como um apelido para a pose estática parecia
- * economizar estado, mas acoplava as abas: reordenar keyframes reescrevia o
- * Static, e editar o keyframe 1 mudava o objeto parado.
+ * O tempo é **absoluto** (`timeMs`, contado do início da cena), como numa
+ * timeline de editor de vídeo. Arrastar um keyframe, inserir um no meio de um
+ * trecho ou deslocar a trilha inteira viram mudanças num número só. O modelo
+ * anterior guardava durações relativas por trecho mais um atraso por objeto, e
+ * cada uma dessas operações precisava redistribuir durações entre vizinhos.
+ * Consequência: não existe mais "atraso de início" — ele é o tempo do primeiro
+ * keyframe.
  *
- * Cada objeto tem ainda um atraso de início (`motionDelayMs`): o tempo que ele
- * espera, na pose do primeiro keyframe, antes de começar. É o que permite
- * coordenar vários objetos numa cena — sem ele toda timeline começaria em zero.
- * Campo próprio de propósito: reaproveitar o `durationMs` do primeiro keyframe,
- * que é ignorado, daria dois significados ao mesmo dado.
+ * A lista vive sempre ordenada por tempo. A suavização de um keyframe vale para
+ * o trecho que **chega** nele, então é ignorada no primeiro.
+ *
+ * Um keyframe sozinho é válido: o objeto fica parado naquela pose durante toda
+ * a cena. É o passo intermediário natural de quem cria keyframes na timeline.
  *
  * A câmera não é animada: ela é ferramenta de visualização, e mantê-la fora
  * evita ter que arbitrar precedência com o auto-fit, o "Enquadrar cena" e a
  * pose guardada nos templates.
  */
-
-export const MAX_KEYFRAMES = 4;
-export const DEFAULT_SEGMENT_MS = 800;
-export const MIN_SEGMENT_MS = 100;
-export const MAX_SEGMENT_MS = 10000;
-export const MAX_DELAY_MS = 10000;
 
 export const EASING_IDS = [
   "linear",
@@ -38,6 +37,8 @@ export const EASING_IDS = [
 ] as const;
 
 export type EasingId = (typeof EASING_IDS)[number];
+
+export const DEFAULT_EASING: EasingId = "ease-in-out";
 
 export type MotionTransform = {
   positionX: number;
@@ -53,8 +54,8 @@ export type Keyframe = {
   /** Suavização do trecho que chega neste keyframe. Ignorada no primeiro. */
   easing: EasingId;
   id: string;
-  /** Duração em ms do trecho que chega neste keyframe. Ignorada no primeiro. */
-  durationMs: number;
+  /** Instante do keyframe em ms, contado do início da cena. */
+  timeMs: number;
   transform: MotionTransform;
 };
 
@@ -88,130 +89,139 @@ export function captureTransform(object: SceneObject): MotionTransform {
   };
 }
 
-/** Transform de um keyframe, caindo para a pose estática se o índice não existir. */
-export function resolveKeyframeTransform(
-  object: SceneObject,
-  index: number,
-): MotionTransform {
-  return object.keyframes[index]?.transform ?? captureTransform(object);
+function sortByTime(keyframes: Keyframe[]): Keyframe[] {
+  return [...keyframes].sort((a, b) => a.timeMs - b.timeMs);
 }
 
 export function createKeyframe(
+  timeMs: number,
   transform: MotionTransform,
-  overrides: Partial<Omit<Keyframe, "id" | "transform">> = {},
+  easing: EasingId = DEFAULT_EASING,
 ): Keyframe {
   return {
-    durationMs: overrides.durationMs ?? DEFAULT_SEGMENT_MS,
-    easing: overrides.easing ?? "ease-in-out",
+    easing,
     id: crypto.randomUUID(),
+    timeMs: Math.max(0, Math.round(timeMs)),
     transform,
   };
 }
 
-/**
- * Liga o motion do objeto. Os dois keyframes nascem copiando a pose estática —
- * um ponto só não é animação, então já entra um trecho editável.
- */
-export function startMotion(object: SceneObject): Keyframe[] {
-  if (object.keyframes.length > 0) {
-    return object.keyframes;
-  }
+/** Keyframe que ocupa exatamente este instante, se houver. */
+export function findKeyframeAt(
+  keyframes: Keyframe[],
+  timeMs: number,
+): Keyframe | null {
+  const rounded = Math.round(timeMs);
 
-  const resting = captureTransform(object);
-
-  return [createKeyframe({ ...resting }), createKeyframe({ ...resting })];
-}
-
-export function addKeyframe(object: SceneObject): Keyframe[] {
-  if (object.keyframes.length >= MAX_KEYFRAMES) {
-    return object.keyframes;
-  }
-
-  const last = object.keyframes[object.keyframes.length - 1];
-  const transform = last?.transform ?? captureTransform(object);
-
-  return [...object.keyframes, createKeyframe({ ...transform })];
+  return keyframes.find((keyframe) => keyframe.timeMs === rounded) ?? null;
 }
 
 /**
- * Remover deixa no máximo um keyframe sozinho; nesse caso o motion é desligado
- * por inteiro, já que um ponto só não é animação.
+ * Cria um keyframe no instante pedido com a pose que o objeto exibe ali — o
+ * valor interpolado, se cair no meio de um trecho, ou a pose estática, se o
+ * objeto ainda não tiver motion. Assim criar um keyframe nunca faz o objeto
+ * pular. Se já houver um keyframe nesse instante, devolve ele em vez de
+ * empilhar dois no mesmo ponto.
  */
+export function insertKeyframe(
+  object: SceneObject,
+  timeMs: number,
+): { id: string; keyframes: Keyframe[] } {
+  const existing = findKeyframeAt(object.keyframes, timeMs);
+
+  if (existing) {
+    return { id: existing.id, keyframes: object.keyframes };
+  }
+
+  const transform = sampleMotion(object, timeMs) ?? captureTransform(object);
+  const keyframe = createKeyframe(timeMs, { ...transform });
+
+  return {
+    id: keyframe.id,
+    keyframes: sortByTime([...object.keyframes, keyframe]),
+  };
+}
+
+/** Pode deixar a lista com um keyframe só ou vazia; ambos são estados válidos. */
 export function removeKeyframe(
   keyframes: Keyframe[],
   id: string,
 ): Keyframe[] {
-  const next = keyframes.filter((keyframe) => keyframe.id !== id);
-
-  return next.length < 2 ? [] : next;
+  return keyframes.filter((keyframe) => keyframe.id !== id);
 }
 
 /**
- * Troca um keyframe de lugar com o vizinho. Como cada keyframe carrega o
- * próprio transform, isso é uma troca pura no array — e nada acontece com a
- * pose estática do objeto.
- *
- * Duração e suavização viajam junto com o keyframe, não ficam presas ao slot:
- * "este keyframe leva 1,2s para ser alcançado" é propriedade da pose.
+ * Leva um keyframe para outro instante. Ele pode cruzar os vizinhos — é assim
+ * que se reordena — e a pose, a suavização e o id viajam junto.
  */
-export function moveKeyframe(
+export function moveKeyframeTo(
   keyframes: Keyframe[],
   id: string,
-  direction: -1 | 1,
-): Keyframe[] | null {
-  const index = keyframes.findIndex((keyframe) => keyframe.id === id);
-  const target = index + direction;
+  timeMs: number,
+): Keyframe[] {
+  return sortByTime(
+    keyframes.map((keyframe) =>
+      keyframe.id === id
+        ? { ...keyframe, timeMs: Math.max(0, Math.round(timeMs)) }
+        : keyframe,
+    ),
+  );
+}
 
-  if (index < 0 || target < 0 || target >= keyframes.length) {
-    return null;
-  }
+/**
+ * Desloca a trilha inteira mantendo os intervalos entre os keyframes. Não deixa
+ * o primeiro passar do zero, senão os intervalos se deformariam no clamp.
+ */
+export function shiftKeyframes(
+  keyframes: Keyframe[],
+  deltaMs: number,
+): Keyframe[] {
+  const first = keyframes[0]?.timeMs ?? 0;
+  const applied = Math.max(-first, Math.round(deltaMs));
 
-  const next = [...keyframes];
-
-  [next[index], next[target]] = [next[target], next[index]];
-
-  return next;
+  return keyframes.map((keyframe) => ({
+    ...keyframe,
+    timeMs: keyframe.timeMs + applied,
+  }));
 }
 
 export function updateKeyframe(
   keyframes: Keyframe[],
   id: string,
-  patch: Partial<Omit<Keyframe, "id">>,
+  patch: Partial<Omit<Keyframe, "id" | "timeMs">>,
 ): Keyframe[] {
   return keyframes.map((keyframe) =>
     keyframe.id === id ? { ...keyframe, ...patch } : keyframe,
   );
 }
 
-/** Duração da animação em si: a soma dos trechos, ignorando o primeiro keyframe. */
-export function getMotionDuration(keyframes: Keyframe[]): number {
-  return keyframes
-    .slice(1)
-    .reduce((total, keyframe) => total + keyframe.durationMs, 0);
+/** Mesmos keyframes com ids novos — para duplicar um objeto sem compartilhar ids. */
+export function cloneKeyframes(keyframes: Keyframe[]): Keyframe[] {
+  return keyframes.map((keyframe) => ({
+    ...keyframe,
+    id: crypto.randomUUID(),
+    transform: { ...keyframe.transform },
+  }));
 }
 
-/** Instante em que este objeto termina de se mover, contando o atraso. */
-export function getObjectMotionEnd(object: SceneObject): number {
-  if (!hasMotion(object)) {
-    return 0;
-  }
+export function hasMotion(object: SceneObject): boolean {
+  return object.keyframes.length > 0;
+}
 
-  return object.motionDelayMs + getMotionDuration(object.keyframes);
+/** Instante em que este objeto termina de se mover: o último keyframe. */
+export function getObjectMotionEnd(object: SceneObject): number {
+  return object.keyframes[object.keyframes.length - 1]?.timeMs ?? 0;
 }
 
 /**
- * Duração da cena: o fim do objeto que termina por último. É o eixo da timeline
- * e, mais adiante, a duração do vídeo exportado.
+ * Duração da cena: o fim do objeto que termina por último. É o fim do
+ * playback e, mais adiante, a duração do vídeo exportado.
  */
 export function getSceneMotionDuration(objects: SceneObject[]): number {
   return objects.reduce(
     (longest, object) => Math.max(longest, getObjectMotionEnd(object)),
     0,
   );
-}
-
-export function hasMotion(object: SceneObject): boolean {
-  return object.keyframes.length >= 2;
 }
 
 function lerp(from: number, to: number, t: number): number {
@@ -235,48 +245,39 @@ function lerpTransform(
 }
 
 /**
- * Transform do objeto em um instante da animação. Antes do início devolve o
- * primeiro keyframe e, depois do fim, segura o último — objetos com timelines
- * mais curtas simplesmente param, em vez de voltar ao começo sozinhos.
+ * Transform do objeto em um instante da cena. Antes do primeiro keyframe segura
+ * a pose dele e, depois do último, segura a final — objetos com trilhas mais
+ * curtas simplesmente param, em vez de voltar ao começo sozinhos.
  */
 export function sampleMotion(
   object: SceneObject,
   timeMs: number,
 ): MotionTransform | null {
-  if (!hasMotion(object)) {
+  const { keyframes } = object;
+
+  if (keyframes.length === 0) {
     return null;
   }
 
-  const transforms = object.keyframes.map((keyframe) => keyframe.transform);
-
-  // Durante o atraso o objeto fica parado na pose inicial.
-  const localTime = timeMs - object.motionDelayMs;
-
-  if (localTime <= 0) {
-    return transforms[0];
+  if (timeMs <= keyframes[0].timeMs) {
+    return keyframes[0].transform;
   }
 
-  let elapsed = 0;
+  for (let index = 1; index < keyframes.length; index += 1) {
+    const from = keyframes[index - 1];
+    const to = keyframes[index];
 
-  for (let index = 1; index < object.keyframes.length; index += 1) {
-    const keyframe = object.keyframes[index];
-    const segmentEnd = elapsed + keyframe.durationMs;
-
-    if (localTime <= segmentEnd) {
-      const progress =
-        keyframe.durationMs === 0
-          ? 1
-          : (localTime - elapsed) / keyframe.durationMs;
+    if (timeMs <= to.timeMs) {
+      const span = to.timeMs - from.timeMs;
+      const progress = span === 0 ? 1 : (timeMs - from.timeMs) / span;
 
       return lerpTransform(
-        transforms[index - 1],
-        transforms[index],
-        applyEasing(keyframe.easing, progress),
+        from.transform,
+        to.transform,
+        applyEasing(to.easing, progress),
       );
     }
-
-    elapsed = segmentEnd;
   }
 
-  return transforms[transforms.length - 1];
+  return keyframes[keyframes.length - 1].transform;
 }

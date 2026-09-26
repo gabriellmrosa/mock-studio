@@ -166,19 +166,16 @@ const copy: AppCopy = {
   themesSectionTitle: "Themes",
   transformSectionTitle: "Transform",
   transformStaticTab: "Static",
+  motionTimeline: "Timeline",
+  motionTimelineEmpty: "No animated objects yet.",
+  motionModeToggle: "Motion mode",
   transformMotionTab: "Motion",
   motionEmptyHint: "Animate this object between poses.",
-  motionStart: "Create keyframes",
   motionAddKeyframe: "Add keyframe",
   motionKeyframeLabel: "Keyframe",
-  motionFirstKeyframe: "Start",
   motionRemoveKeyframe: "Remove keyframe",
-  motionMoveKeyframeUp: "Move keyframe up",
-  motionMoveKeyframeDown: "Move keyframe down",
   motionPlay: "Play",
   motionStop: "Stop",
-  motionDuration: "Duration (s)",
-  motionDelay: "Delay (s)",
   motionEasing: "Easing",
   motionEasingLabels: {},
 
@@ -227,17 +224,7 @@ function renderInspector(
       object={object}
       uiTheme="dark"
       motionTab="static"
-      onMotionTabChange={jest.fn()}
       selectedKeyframeId=""
-      onSelectKeyframe={jest.fn()}
-      onStartMotion={jest.fn()}
-      onAddKeyframe={jest.fn()}
-      onRemoveKeyframe={jest.fn()}
-      onMoveKeyframe={jest.fn()}
-      onUpdateMotionDelay={jest.fn()}
-      onUpdateKeyframeMeta={jest.fn()}
-      isMotionPlaying={false}
-      onToggleMotionPlayback={jest.fn()}
       uploadError=""
       {...handlers}
     />,

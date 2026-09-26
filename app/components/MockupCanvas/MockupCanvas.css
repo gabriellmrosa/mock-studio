@@ -79,3 +79,49 @@
   line-height: 1.5;
   margin-top: var(--space-2);
 }
+
+/* Toggle de modo: fica no topo do canvas porque movimento é estado da cena,
+   não de um objeto. */
+.canvas-mode-toggle {
+  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-full);
+  box-shadow: var(--canvas-shadow);
+  display: flex;
+  gap: 2px;
+  left: 50%;
+  padding: 3px;
+  pointer-events: auto;
+  position: absolute;
+  top: var(--space-6);
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.canvas-mode-tab {
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  font-size: var(--font-size-150);
+  padding: var(--space-2) var(--space-4);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.canvas-mode-tab:hover {
+  color: var(--foreground);
+}
+
+.canvas-mode-tab.is-active {
+  background: var(--button-active-bg);
+  color: var(--button-active-fg);
+  font-weight: var(--font-semibold);
+}
+
+/* Com a timeline aberta a barra flutuante sobe, para não ficar por baixo. */
+.canvas-stage-overlay.with-timeline .canvas-floating-toolbar {
+  bottom: calc(var(--motion-timeline-height) + var(--space-4));
+}

@@ -52,19 +52,16 @@ export type AppCopy = {
   debugSectionTitle: string;
   transformSectionTitle: string;
   transformStaticTab: string;
+  motionTimeline: string;
+  motionTimelineEmpty: string;
+  motionModeToggle: string;
   transformMotionTab: string;
   motionEmptyHint: string;
-  motionStart: string;
   motionAddKeyframe: string;
   motionKeyframeLabel: string;
-  motionFirstKeyframe: string;
   motionRemoveKeyframe: string;
-  motionMoveKeyframeUp: string;
-  motionMoveKeyframeDown: string;
   motionPlay: string;
   motionStop: string;
-  motionDuration: string;
-  motionDelay: string;
   motionEasing: string;
   motionEasingLabels: Record<string, string>;
   resetObjectButton: string;
@@ -166,20 +163,17 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transformação",
     transformStaticTab: "Estático",
+    motionTimeline: "Linha do tempo",
+    motionTimelineEmpty: "Nenhum objeto visível na cena.",
+    motionModeToggle: "Modo movimento",
     transformMotionTab: "Movimento",
-    motionEmptyHint: "Anime este objeto entre poses. A primeira é a posição de repouso dele.",
-    motionStart: "Criar keyframes",
+    motionEmptyHint: "Selecione um keyframe na linha do tempo para editar a pose dele, ou crie um no instante do playhead com o ◆+ da trilha.",
     motionAddKeyframe: "Adicionar keyframe",
     motionKeyframeLabel: "Keyframe",
-    motionFirstKeyframe: "Início",
     motionRemoveKeyframe: "Remover keyframe",
-    motionMoveKeyframeUp: "Mover keyframe para cima",
-    motionMoveKeyframeDown: "Mover keyframe para baixo",
     motionPlay: "Reproduzir",
     motionStop: "Parar",
-    motionDuration: "Duração (s)",
-    motionDelay: "Atraso (s)",
-    motionEasing: "Suavização",
+    motionEasing: "Transição",
     motionEasingLabels: {
       linear: "Linear",
       "ease-in": "Ease in",
@@ -339,20 +333,17 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transform",
     transformStaticTab: "Static",
+    motionTimeline: "Timeline",
+    motionTimelineEmpty: "No visible objects in the scene.",
+    motionModeToggle: "Motion mode",
     transformMotionTab: "Motion",
-    motionEmptyHint: "Animate this object between poses. The first one is its resting position.",
-    motionStart: "Create keyframes",
+    motionEmptyHint: "Select a keyframe in the timeline to edit its pose, or create one at the playhead with the track's ◆+ button.",
     motionAddKeyframe: "Add keyframe",
     motionKeyframeLabel: "Keyframe",
-    motionFirstKeyframe: "Start",
     motionRemoveKeyframe: "Remove keyframe",
-    motionMoveKeyframeUp: "Move keyframe up",
-    motionMoveKeyframeDown: "Move keyframe down",
     motionPlay: "Play",
     motionStop: "Stop",
-    motionDuration: "Duration (s)",
-    motionDelay: "Delay (s)",
-    motionEasing: "Easing",
+    motionEasing: "Transition",
     motionEasingLabels: {
       linear: "Linear",
       "ease-in": "Ease in",
