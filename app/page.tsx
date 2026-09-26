@@ -24,6 +24,18 @@ import { buildNextDeviceColors } from "./lib/device-colors";
 import { APP_COPY, type Locale, type UiTheme } from "./lib/i18n";
 import { readFileAsDataUrl } from "./lib/mockup-image";
 import {
+  MAX_KEYFRAMES,
+  addKeyframe,
+  getMotionDuration,
+  hasMotion,
+  removeKeyframe,
+  moveKeyframe,
+  resolveKeyframeTransform,
+  startMotion,
+  updateKeyframe,
+  type EasingId,
+} from "./lib/scene-motion";
+import {
   changeSceneObjectModel,
   createSceneObject,
   duplicateSceneObject,
@@ -90,6 +102,10 @@ export default function Home() {
     }),
   ]);
   const [selectedObjectId, setSelectedObjectId] = useState("");
+  const [motionTab, setMotionTab] = useState<"static" | "motion">("static");
+  const [selectedKeyframeId, setSelectedKeyframeId] = useState("");
+  // Instante em que o preview começou; null = parado.
+  const [motionStartedAt, setMotionStartedAt] = useState<number | null>(null);
   const [isUiHidden, setIsUiHidden] = useState(false);
   const [scaleOverrides] = useState<ScaleOverrides>({});
   const [spawnOverrides] = useState<SpawnOverrides>({});
@@ -363,6 +379,156 @@ export default function Home() {
     }
   }
 
+
+  // --- Motion -------------------------------------------------------------
+  // As abas são independentes: Static mexe no transform do objeto, Motion mexe
+  // nos keyframes. Nenhuma das duas escreve na outra.
+  const selectedKeyframeIndex = selectedObject
+    ? selectedObject.keyframes.findIndex(
+        (keyframe) => keyframe.id === selectedKeyframeId,
+      )
+    : -1;
+
+  const isMotionPlaying = motionStartedAt !== null;
+
+  // Preview de exibição: mostra a pose do keyframe escolhido sem tocar nos
+  // campos do objeto, que seguem sendo a pose estática.
+  const motionPreview =
+    !isMotionPlaying &&
+    motionTab === "motion" &&
+    selectedObject &&
+    selectedKeyframeIndex >= 0
+      ? {
+          objectId: selectedObject.id,
+          transform: resolveKeyframeTransform(
+            selectedObject,
+            selectedKeyframeIndex,
+          ),
+        }
+      : null;
+
+  function updateKeyframes(
+    object: SceneObject,
+    keyframes: SceneObject["keyframes"],
+  ) {
+    updateSceneObject(object.id, { keyframes });
+    return keyframes;
+  }
+
+  function handleStartMotion() {
+    if (!selectedObject) return;
+
+    const keyframes = updateKeyframes(
+      selectedObject,
+      startMotion(selectedObject),
+    );
+    setSelectedKeyframeId(keyframes[keyframes.length - 1]?.id ?? "");
+  }
+
+  function handleMoveKeyframe(id: string, direction: -1 | 1) {
+    if (!selectedObject) return;
+
+    const keyframes = moveKeyframe(selectedObject.keyframes, id, direction);
+
+    if (keyframes) {
+      updateKeyframes(selectedObject, keyframes);
+    }
+  }
+
+  function handleAddKeyframe() {
+    if (!selectedObject || selectedObject.keyframes.length >= MAX_KEYFRAMES) {
+      return;
+    }
+
+    const keyframes = updateKeyframes(
+      selectedObject,
+      addKeyframe(selectedObject),
+    );
+    setSelectedKeyframeId(keyframes[keyframes.length - 1]?.id ?? "");
+  }
+
+  function handleRemoveKeyframe(id: string) {
+    if (!selectedObject) return;
+
+    const keyframes = updateKeyframes(
+      selectedObject,
+      removeKeyframe(selectedObject.keyframes, id),
+    );
+
+    if (id === selectedKeyframeId) {
+      setSelectedKeyframeId(keyframes[0]?.id ?? "");
+    }
+  }
+
+  function handleUpdateKeyframeMeta(
+    id: string,
+    patch: { durationMs?: number; easing?: EasingId },
+  ) {
+    if (!selectedObject) return;
+
+    updateKeyframes(
+      selectedObject,
+      updateKeyframe(selectedObject.keyframes, id, patch),
+    );
+  }
+
+  function handleToggleMotionPlayback() {
+    setMotionStartedAt((current) => (current === null ? Date.now() : null));
+  }
+
+  // O preview para sozinho no fim da cena — a duração é a do objeto com a
+  // timeline mais longa, já que os demais apenas seguram a última pose.
+  useEffect(() => {
+    if (motionStartedAt === null) {
+      return;
+    }
+
+    const duration = sceneObjects
+      .filter(hasMotion)
+      .reduce(
+        (longest, object) =>
+          Math.max(longest, getMotionDuration(object.keyframes)),
+        0,
+      );
+
+    const timeoutId = window.setTimeout(
+      () => setMotionStartedAt(null),
+      duration + 80,
+    );
+
+    return () => window.clearTimeout(timeoutId);
+  }, [motionStartedAt, sceneObjects]);
+
+  // Na aba Motion os controles editam o keyframe selecionado; na Static, a
+  // pose do objeto. Cada aba escreve só no seu lado.
+  function updateTransform(patch: Partial<SceneObject>) {
+    if (!selectedObject) return;
+
+    const editingKeyframe =
+      motionTab === "motion" &&
+      hasMotion(selectedObject) &&
+      selectedKeyframeIndex >= 0;
+
+    if (!editingKeyframe) {
+      updateSceneObject(selectedObject.id, patch);
+      return;
+    }
+
+    const current = resolveKeyframeTransform(
+      selectedObject,
+      selectedKeyframeIndex,
+    );
+
+    updateKeyframes(
+      selectedObject,
+      updateKeyframe(
+        selectedObject.keyframes,
+        selectedKeyframeId,
+        { transform: { ...current, ...patch } },
+      ),
+    );
+  }
+
   function handleFitObject(id: string) {
     cameraApiRef.current?.fitObject(id);
   }
@@ -440,6 +606,8 @@ export default function Home() {
         onTemplateApplied={handleTemplateApplied}
         onToggleUiHidden={() => setIsUiHidden((current) => !current)}
         pendingCameraPose={pendingCameraPose}
+        motionPreview={motionPreview}
+        motionStartedAt={motionStartedAt}
         scaleOverrides={scaleOverrides}
         spawnOverrides={spawnOverrides}
         uiTheme={uiTheme}
@@ -479,15 +647,20 @@ export default function Home() {
             matteColors: !selectedObject?.matteColors,
           })
         }
-        onUpdatePosition={(positionPatch) =>
-          selectedObject && updateSceneObject(selectedObject.id, positionPatch)
-        }
-        onUpdateRotation={(rotationPatch) =>
-          selectedObject && updateSceneObject(selectedObject.id, rotationPatch)
-        }
-        onUpdateScale={(scale) =>
-          selectedObject && updateSceneObject(selectedObject.id, { scale })
-        }
+        onUpdatePosition={(positionPatch) => updateTransform(positionPatch)}
+        onUpdateRotation={(rotationPatch) => updateTransform(rotationPatch)}
+        onUpdateScale={(scale) => updateTransform({ scale })}
+        motionTab={motionTab}
+        onMotionTabChange={setMotionTab}
+        selectedKeyframeId={selectedKeyframeId}
+        onSelectKeyframe={setSelectedKeyframeId}
+        onStartMotion={handleStartMotion}
+        onAddKeyframe={handleAddKeyframe}
+        onRemoveKeyframe={handleRemoveKeyframe}
+        onMoveKeyframe={handleMoveKeyframe}
+        onUpdateKeyframeMeta={handleUpdateKeyframeMeta}
+        isMotionPlaying={isMotionPlaying}
+        onToggleMotionPlayback={handleToggleMotionPlayback}
         uiTheme={uiTheme}
         uploadError={uploadError}
       />

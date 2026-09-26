@@ -39,3 +39,16 @@
 - adding two objects in fast succession produces two objects named `Object 2`
 - the spawn position uses a functional state updater, but the name is derived from a stale `sceneObjects.length`
 - derive the name inside the same functional updater that appends the object
+
+## 7. Give motion an output
+
+- per-object keyframes ship without any way to export the result: the animation only exists inside the editor
+- `canvas.captureStream()` + `MediaRecorder` is the browser-native path, available since January 2020
+- format is the catch: Chrome and Firefox record WebM, Safari records MP4, and universal MP4 would need `ffmpeg.wasm` in the bundle
+- the export is the larger half of the work — fixed frame rate, deterministic playback and coexisting with the offscreen SSAA render path
+
+## 8. Templates do not capture motion
+
+- applying a template rebuilds objects with an empty keyframe list
+- including keyframes means bumping `TEMPLATE_SCHEMA_VERSION`, and the version check discards templates saved under the old schema
+- decide on a migration before bumping, so saved templates survive

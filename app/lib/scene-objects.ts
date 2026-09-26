@@ -9,6 +9,7 @@ import {
   OBJECT_POSITION_MULTIPLIER,
 } from "./scene-presets";
 import { createPlaceholderDataUrl } from "./placeholder-image";
+import type { Keyframe } from "./scene-motion";
 
 export type SceneObject = {
   colors: Record<string, string>;
@@ -20,6 +21,8 @@ export type SceneObject = {
   id: string;
   imageUrl: string;
   isVisible: boolean;
+  /** Vazio = objeto estático. Ver [scene-motion.ts](app/lib/scene-motion.ts). */
+  keyframes: Keyframe[];
   modelId: DeviceModelId;
   name: string;
   matteColors: boolean;
@@ -214,6 +217,7 @@ export function createSceneObject({
     id: id ?? crypto.randomUUID(),
     imageUrl: getPlaceholderImageUrl(modelId),
     isVisible: true,
+    keyframes: [],
     modelId,
     name,
     matteColors: true,

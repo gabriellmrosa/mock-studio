@@ -51,6 +51,21 @@ export type AppCopy = {
   matteColorLabel: string;
   debugSectionTitle: string;
   transformSectionTitle: string;
+  transformStaticTab: string;
+  transformMotionTab: string;
+  motionEmptyHint: string;
+  motionStart: string;
+  motionAddKeyframe: string;
+  motionKeyframeLabel: string;
+  motionFirstKeyframe: string;
+  motionRemoveKeyframe: string;
+  motionMoveKeyframeUp: string;
+  motionMoveKeyframeDown: string;
+  motionPlay: string;
+  motionStop: string;
+  motionDuration: string;
+  motionEasing: string;
+  motionEasingLabels: Record<string, string>;
   resetObjectButton: string;
   positionX: string;
   positionY: string;
@@ -149,6 +164,26 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     matteColorLabel: "Acabamento fosco",
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transformação",
+    transformStaticTab: "Estático",
+    transformMotionTab: "Movimento",
+    motionEmptyHint: "Anime este objeto entre poses. A primeira é a posição de repouso dele.",
+    motionStart: "Criar keyframes",
+    motionAddKeyframe: "Adicionar keyframe",
+    motionKeyframeLabel: "Keyframe",
+    motionFirstKeyframe: "Início",
+    motionRemoveKeyframe: "Remover keyframe",
+    motionMoveKeyframeUp: "Mover keyframe para cima",
+    motionMoveKeyframeDown: "Mover keyframe para baixo",
+    motionPlay: "Reproduzir",
+    motionStop: "Parar",
+    motionDuration: "Duração (s)",
+    motionEasing: "Suavização",
+    motionEasingLabels: {
+      linear: "Linear",
+      "ease-in": "Ease in",
+      "ease-out": "Ease out",
+      "ease-in-out": "Ease in-out",
+    },
     resetObjectButton: "Resetar transformação",
     positionX: "Posição X",
     positionY: "Posição Y",
@@ -301,6 +336,26 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     matteColorLabel: "Matte finish",
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transform",
+    transformStaticTab: "Static",
+    transformMotionTab: "Motion",
+    motionEmptyHint: "Animate this object between poses. The first one is its resting position.",
+    motionStart: "Create keyframes",
+    motionAddKeyframe: "Add keyframe",
+    motionKeyframeLabel: "Keyframe",
+    motionFirstKeyframe: "Start",
+    motionRemoveKeyframe: "Remove keyframe",
+    motionMoveKeyframeUp: "Move keyframe up",
+    motionMoveKeyframeDown: "Move keyframe down",
+    motionPlay: "Play",
+    motionStop: "Stop",
+    motionDuration: "Duration (s)",
+    motionEasing: "Easing",
+    motionEasingLabels: {
+      linear: "Linear",
+      "ease-in": "Ease in",
+      "ease-out": "Ease out",
+      "ease-in-out": "Ease in-out",
+    },
     resetObjectButton: "Reset transform",
     positionX: "Position X",
     positionY: "Position Y",

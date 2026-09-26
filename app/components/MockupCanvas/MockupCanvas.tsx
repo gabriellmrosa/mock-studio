@@ -3,7 +3,12 @@
 import "./MockupCanvas.css";
 import { Suspense, useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { Canvas, type ThreeEvent, useThree } from "@react-three/fiber";
+import {
+  Canvas,
+  useFrame,
+  useThree,
+  type ThreeEvent,
+} from "@react-three/fiber";
 import {
   Bounds,
   CameraControls,
@@ -20,6 +25,11 @@ import {
   OBJECT_POSITION_MULTIPLIER,
   OBJECT_POSITION_MULTIPLIER_Z,
 } from "../../lib/scene-presets";
+import {
+  hasMotion,
+  sampleMotion,
+  type MotionTransform,
+} from "../../lib/scene-motion";
 import { DEVICE_MODELS } from "../../models/device-models";
 import FloatingCanvasControls from "../FloatingCanvasControls/FloatingCanvasControls";
 import {
@@ -53,9 +63,18 @@ type MockupCanvasProps = {
   // Enquadramento a restaurar ao aplicar um template. Enquanto não for null a
   // cena fica bloqueada por um loading, e a câmera é o último passo aplicado.
   pendingCameraPose: CameraPose | null;
+  /** Instante inicial do preview de movimento; null = parado. */
+  motionStartedAt: number | null;
+  motionPreview: MotionPreview | null;
   scaleOverrides: ScaleOverrides;
   spawnOverrides: SpawnOverrides;
   uiTheme: UiTheme;
+};
+
+/** Exibe um objeto com outro transform sem alterar o estado dele. */
+export type MotionPreview = {
+  objectId: string;
+  transform: MotionTransform;
 };
 
 export type CameraApi = {
@@ -152,6 +171,8 @@ function SceneBridge({
   onExportReady,
   onObjectLoadStateChange,
   onObjectResolved,
+  motionPreview,
+  motionStartedAt,
   onSelectObject,
   onTemplateApplied,
   onViewportControlsReady,
@@ -165,6 +186,9 @@ function SceneBridge({
   const controlsRef = useRef<CameraControlsImpl | null>(null);
   const gridRef = useRef<THREE.Mesh | null>(null);
   const sceneRef = useRef<THREE.Group | null>(null);
+  // Refs por objeto: o preview de movimento escreve no grupo direto, e eles
+  // nascem dentro de um .map, então não dá para ter um useRef por objeto.
+  const objectGroupsRef = useRef(new Map<string, THREE.Group>());
   const { camera, gl, scene, size } = useThree();
 
   function handleObjectDoubleClick(
@@ -213,6 +237,12 @@ function SceneBridge({
         <group ref={sceneRef}>
           {objects.filter((object) => object.isVisible).map((object, index) => {
             const model = DEVICE_MODELS[object.modelId];
+            // Preview de keyframe é só exibição: o objeto em si continua na
+            // pose de repouso.
+            const displayed =
+              motionPreview?.objectId === object.id
+                ? { ...object, ...motionPreview.transform }
+                : object;
 
             return (
               <Suspense
@@ -229,18 +259,34 @@ function SceneBridge({
                   modelId={object.modelId}
                   onObjectResolved={onObjectResolved}
                 />
+                {motionStartedAt !== null && hasMotion(object) ? (
+                  <MotionDriver
+                    groupsRef={objectGroupsRef}
+                    index={index}
+                    object={object}
+                    spawnOverrides={spawnOverrides}
+                    startedAt={motionStartedAt}
+                  />
+                ) : null}
                 <group
                   name={object.id}
+                  ref={(node) => {
+                    if (node) {
+                      objectGroupsRef.current.set(object.id, node);
+                    } else {
+                      objectGroupsRef.current.delete(object.id);
+                    }
+                  }}
                   onDoubleClick={(event) =>
                     handleObjectDoubleClick(event, object.id)
                   }
-                  position={getResolvedObjectPosition(object, index, spawnOverrides, model.modelSpawnOffset)}
+                  position={getResolvedObjectPosition(displayed, index, spawnOverrides, model.modelSpawnOffset)}
                   rotation={[
-                    (object.rotationX * Math.PI) / 180,
-                    (object.rotationY * Math.PI) / 180,
-                    (object.rotationZ * Math.PI) / 180,
+                    (displayed.rotationX * Math.PI) / 180,
+                    (displayed.rotationY * Math.PI) / 180,
+                    (displayed.rotationZ * Math.PI) / 180,
                   ]}
-                  scale={object.scale}
+                  scale={displayed.scale}
                 >
                   <group
                     rotation={model.baseRotation}
@@ -301,6 +347,60 @@ function SceneBridge({
       />
     </>
   );
+}
+
+/**
+ * Reproduz os keyframes de um objeto escrevendo direto no grupo 3D. Passar por
+ * estado do React a cada quadro re-renderizaria a árvore inteira 60x por
+ * segundo; aqui o React só sabe do início e do fim do preview.
+ */
+function MotionDriver({
+  groupsRef,
+  index,
+  object,
+  spawnOverrides,
+  startedAt,
+}: {
+  groupsRef: { current: Map<string, THREE.Group> };
+  index: number;
+  object: SceneObject;
+  spawnOverrides: SpawnOverrides;
+  startedAt: number;
+}) {
+  const model = DEVICE_MODELS[object.modelId];
+
+  useFrame(() => {
+    const group = groupsRef.current.get(object.id);
+
+    if (!group) {
+      return;
+    }
+
+    const sampled = sampleMotion(object, Date.now() - startedAt);
+
+    if (!sampled) {
+      return;
+    }
+
+    // Reusa a mesma resolução de posição do render estático para o preview não
+    // divergir do que o objeto mostra parado.
+    const [x, y, z] = getResolvedObjectPosition(
+      { ...object, ...sampled },
+      index,
+      spawnOverrides,
+      model.modelSpawnOffset,
+    );
+
+    group.position.set(x, y, z);
+    group.rotation.set(
+      (sampled.rotationX * Math.PI) / 180,
+      (sampled.rotationY * Math.PI) / 180,
+      (sampled.rotationZ * Math.PI) / 180,
+    );
+    group.scale.setScalar(sampled.scale);
+  });
+
+  return null;
 }
 
 function SceneObjectLoadingFallback({

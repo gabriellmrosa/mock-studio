@@ -165,6 +165,22 @@ const copy: AppCopy = {
   themeLabel: "Interface",
   themesSectionTitle: "Themes",
   transformSectionTitle: "Transform",
+  transformStaticTab: "Static",
+  transformMotionTab: "Motion",
+  motionEmptyHint: "Animate this object between poses.",
+  motionStart: "Create keyframes",
+  motionAddKeyframe: "Add keyframe",
+  motionKeyframeLabel: "Keyframe",
+  motionFirstKeyframe: "Start",
+  motionRemoveKeyframe: "Remove keyframe",
+  motionMoveKeyframeUp: "Move keyframe up",
+  motionMoveKeyframeDown: "Move keyframe down",
+  motionPlay: "Play",
+  motionStop: "Stop",
+  motionDuration: "Duration (s)",
+  motionEasing: "Easing",
+  motionEasingLabels: {},
+
   uploadImage: "Upload image",
   uploadImageError: "Upload failed",
   zoomInButton: "Zoom in",
@@ -209,6 +225,17 @@ function renderInspector(
       copy={copy}
       object={object}
       uiTheme="dark"
+      motionTab="static"
+      onMotionTabChange={jest.fn()}
+      selectedKeyframeId=""
+      onSelectKeyframe={jest.fn()}
+      onStartMotion={jest.fn()}
+      onAddKeyframe={jest.fn()}
+      onRemoveKeyframe={jest.fn()}
+      onMoveKeyframe={jest.fn()}
+      onUpdateKeyframeMeta={jest.fn()}
+      isMotionPlaying={false}
+      onToggleMotionPlayback={jest.fn()}
       uploadError=""
       {...handlers}
     />,

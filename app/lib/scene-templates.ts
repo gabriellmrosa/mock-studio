@@ -108,6 +108,8 @@ export function createSceneTemplate({
 
 // Reconstrói os objetos da cena a partir do template. O primeiro objeto herda
 // `deletable: false` para preservar o invariante de sempre haver uma camada.
+// Keyframes de motion não entram no template nesta versão: incluí-los exigiria
+// subir o schema, e a checagem de versão descartaria os templates já salvos.
 export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
   return template.objects.map((object, index) => {
     const model = DEVICE_MODELS[object.modelId];
@@ -118,6 +120,7 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       debugMode: false,
       debugPartColors: { ...model.initialDebugColors },
       deletable: index > 0,
+      keyframes: [],
       deviceTheme: object.deviceTheme,
       id: crypto.randomUUID(),
       imageUrl: getPlaceholderImageUrl(object.modelId),

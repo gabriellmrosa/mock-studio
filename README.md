@@ -33,6 +33,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - hide the entire interface for clean, full-canvas captures
 - manage objects with selection, duplication and inspector-driven editing
 - save a composition as a local template and rebuild it later, camera framing included
+- animate an object between poses with keyframes, previewed in the editor
 - support `pt-BR` and `en-US` UI modes
 
 ## Features
@@ -49,6 +50,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - export feedback chip while the PNG is being prepared
 - scene templates stored in `localStorage`: composition, background color and camera pose, saved from the `Templates` section or as a checkbox in the `Export` menu
 - template management with inline rename, delete and `Restore framing`, which returns the camera to the pose saved with that template without touching the objects
+- per-object motion: the `Transform` section splits into `Static` and `Motion` tabs, with up to four keyframes, per-segment duration and easing, reordering and in-editor playback
 - framing actions split by scope: `Fit scene` in the toolbar, `Frame object` in each object's menu
 - distraction-free `Hide UI` mode with a toggle you can drag to any canvas corner, animating between the toolbar and the corner it snaps to
 - layered selection flow via list and direct interaction in the 3D scene
@@ -123,6 +125,7 @@ The `tablet` has no GLB: its body is an extruded rounded rectangle with beveled 
 - [app/models/device-models.ts](app/models/device-models.ts): device catalog and model metadata
 - [app/lib/scene-objects.ts](app/lib/scene-objects.ts): object creation, reset and model switching
 - [app/lib/scene-templates.ts](app/lib/scene-templates.ts): template capture, rebuild and `localStorage` persistence
+- [app/lib/scene-motion.ts](app/lib/scene-motion.ts): keyframes, easing curves and transform sampling over time
 - [app/components/EditorPrimitives/](app/components/EditorPrimitives/): shared panel, button and collapsible-section primitives
 - [app/lib/3d-tokens/](app/lib/3d-tokens/): per-model themes and color tokens
 - [app/lib/i18n.ts](app/lib/i18n.ts): copy for `pt-BR` and `en-US`
@@ -160,6 +163,11 @@ Checklist:
 - applying a template is object-first and camera-last: the canvas takes a `pendingCameraPose` and uses it instead of the auto-fit, keeping the scene under a blocking overlay until every object has resolved
 - `Fit scene` and `Frame object` inflate the measured bounding box by 9% per side, because `fitToBox` hugs the content while the initial auto-fit breathes through `<Bounds margin={1.18}>`
 - the collapsible `Templates` section animates the height of a clipping container whose inner content is absolutely positioned, so the body keeps its natural layout instead of reflowing mid-transition; both heights are measured with a `ResizeObserver` rather than hardcoded
+- `Static` and `Motion` are fully independent: the object's transform is the static pose and only `Static` writes to it, while each keyframe carries its own transform and only `Motion` writes to those; the first keyframe is born as a copy of the static pose and then lives its own life
+- a keyframe preview is a display override passed to the canvas, the same shape as the template camera pose, so looking at a keyframe never mutates the object
+- playback writes straight to the 3D group through `useFrame` instead of going through React state, which would re-render the tree 60 times per second, and it reuses the same position resolution as the static render so the preview cannot drift from the resting view
+- easing uses power-of-two curves rather than the CSS cubic-beziers: indistinguishable in motion and no bezier solving per frame
+- motion is capped at four keyframes per object, and the camera is never animated — it stays a viewing tool, which keeps the auto-fit, `Fit scene` and template poses free of precedence rules
 - range and number inputs carry an `aria-label` and show a `:focus-visible` ring, so keyboard focus is visible without drawing an outline on mouse clicks
 - `Credits` in the UI contains attribution for the third-party 3D assets used by the project
 
@@ -173,6 +181,7 @@ Checklist:
 - an effect that schedules a `requestAnimationFrame` and cancels it on cleanup is silently disabled by any dependency whose identity changes every render — an unmemoized callback prop was enough to stop the camera auto-fit from ever running, with nothing in the console
 - `camera-controls` resolves the promise from `setLookAt` only when the next transition starts, not when the current one settles, so `saveState()` in a `.then()` never runs; store the framing you want to return to instead of relying on `reset()`
 - React portals bubble events through the component tree, not the DOM tree, so menu items rendered in a portal still fire the `onClick` of the card that owns the menu
+- aliasing two concepts to "save state" backfires: treating the first keyframe as a live alias for the static pose meant reordering keyframes rewrote the object's resting transform — giving each keyframe its own copy removed a whole class of coupling and shrank the reorder logic to an array swap
 - reading pixels back from the WebGL canvas returns a stale frame without `preserveDrawingBuffer`; validate any measurement instrument against a change you know happened before trusting it
 
 ## Asset Scripts
