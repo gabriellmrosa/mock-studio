@@ -230,11 +230,15 @@ export default function ContextMenu({
                     type="button"
                     className={`context-menu-row${item.variant === "danger" ? " context-menu-row-danger" : ""}${item.disabled ? " context-menu-row-disabled" : ""}`}
                     disabled={item.disabled}
-                    onClick={() => {
+                    onClick={(event) => {
                       if (item.disabled) {
                         return;
                       }
 
+                      // O painel vai para um portal, mas no React o evento sobe
+                      // pela árvore de componentes: sem isto, clicar num item do
+                      // menu também dispara o onClick do card que o contém.
+                      event.stopPropagation();
                       handleOptionClick(item.onClick);
                     }}
                   >
@@ -277,7 +281,10 @@ export default function ContextMenu({
                     key={opt.value}
                     type="button"
                     className="context-menu-row"
-                    onClick={() => handleOptionClick(opt.onClick)}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      handleOptionClick(opt.onClick);
+                    }}
                   >
                     <span className="context-menu-row-label">{opt.label}</span>
                     {opt.checked && (
