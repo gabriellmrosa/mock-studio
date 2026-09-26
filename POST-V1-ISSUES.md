@@ -25,8 +25,17 @@
 - clarify whether branding, project name and third-party assets have separate restrictions
 - add a short policy section to docs if needed
 
-## 5. Harden initial 3D loading and camera-fit behavior
+## 5. Harden initial 3D loading and camera-fit behavior — partially done
 
+- [x] fix the auto-fit never running: the effect's `requestAnimationFrame` was cancelled on every render by an unmemoized callback in its dependency array, leaving the camera at its initial `z=5` and the scene looking extremely zoomed in
+- [x] fix `Reset view` sending the camera inside the object, caused by relying on `camera-controls` `saveState()` inside a promise that never resolved
+- [x] stop the camera from drifting when object positions change (drei `<Center>` was re-centering the whole scene group)
 - review first-scene loading behavior in production
 - confirm camera fit remains correct under slower asset loading
 - add test coverage for delayed object resolution when feasible
+
+## 6. Duplicate object names when adding objects quickly
+
+- adding two objects in fast succession produces two objects named `Object 2`
+- the spawn position uses a functional state updater, but the name is derived from a stale `sceneObjects.length`
+- derive the name inside the same functional updater that appends the object

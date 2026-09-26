@@ -9,7 +9,9 @@ export type AppCopy = {
   hideObject: string;
   showObject: string;
   hiddenObjectLabel: string;
+  fitObjectButton: string;
   fitSceneButton: string;
+  restoreTemplateView: string;
   languageLabel: string;
   themeLabel: string;
   preferencesLabel: string;
@@ -17,11 +19,20 @@ export type AppCopy = {
   lightMode: string;
   portuguese: string;
   english: string;
-  resetCameraButton: string;
   takePhotoButton: string;
   exportBackgroundLabel: string;
   exportWithBackground: string;
   exportTransparent: string;
+  exportTemplateLabel: string;
+  saveAsTemplate: string;
+  templatesSectionTitle: string;
+  templatesEmptyHint: string;
+  saveTemplate: string;
+  templateOptionsLabel: string;
+  templateSavedMessage: string;
+  templateAppliedMessage: string;
+  templateSaveError: string;
+  canvasTemplateLoadingLabel: string;
   deleteObject: string;
   duplicateObject: string;
   renameObject: string;
@@ -96,7 +107,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     hideObject: "Ocultar",
     showObject: "Mostrar",
     hiddenObjectLabel: "Oculto",
-    fitSceneButton: "Enquadrar conteúdo",
+    fitObjectButton: "Enquadrar objeto",
+    fitSceneButton: "Enquadrar cena",
+    restoreTemplateView: "Restaurar enquadramento",
     languageLabel: "Idioma",
     themeLabel: "Interface",
     preferencesLabel: "Preferências",
@@ -104,11 +117,20 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     lightMode: "Claro",
     portuguese: "PT-BR",
     english: "EN-US",
-    resetCameraButton: "Resetar visão",
     takePhotoButton: "Exportar",
     exportBackgroundLabel: "Fundo",
     exportWithBackground: "Com fundo",
     exportTransparent: "Transparente",
+    exportTemplateLabel: "Template",
+    saveAsTemplate: "Salvar como template",
+    templatesSectionTitle: "Templates",
+    templatesEmptyHint: "Salve a cena atual para reutilizar depois.",
+    saveTemplate: "Salvar template",
+    templateOptionsLabel: "Opções do template",
+    templateSavedMessage: "Template salvo.",
+    templateAppliedMessage: "Template aplicado.",
+    templateSaveError: "Não foi possível salvar o template.",
+    canvasTemplateLoadingLabel: "Aplicando template",
     deleteObject: "Excluir",
     duplicateObject: "Duplicar",
     renameObject: "Renomear",
@@ -237,7 +259,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     hideObject: "Hide",
     showObject: "Show",
     hiddenObjectLabel: "Hidden",
-    fitSceneButton: "Fit to view",
+    fitObjectButton: "Frame object",
+    fitSceneButton: "Fit scene",
+    restoreTemplateView: "Restore framing",
     languageLabel: "Language",
     themeLabel: "Interface",
     preferencesLabel: "Preferences",
@@ -245,11 +269,20 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     lightMode: "Light",
     portuguese: "PT-BR",
     english: "EN-US",
-    resetCameraButton: "Reset view",
     takePhotoButton: "Export",
     exportBackgroundLabel: "Background",
     exportWithBackground: "With background",
     exportTransparent: "Transparent",
+    exportTemplateLabel: "Template",
+    saveAsTemplate: "Save as template",
+    templatesSectionTitle: "Templates",
+    templatesEmptyHint: "Save the current scene to reuse it later.",
+    saveTemplate: "Save template",
+    templateOptionsLabel: "Template options",
+    templateSavedMessage: "Template saved.",
+    templateAppliedMessage: "Template applied.",
+    templateSaveError: "Could not save the template.",
+    canvasTemplateLoadingLabel: "Applying template",
     deleteObject: "Delete",
     duplicateObject: "Duplicate",
     renameObject: "Rename",

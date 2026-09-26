@@ -197,3 +197,19 @@
   transform: translate(-50%, -50%);
   opacity: 0.9;
 }
+
+/* Bloco "Salvar como template" — ação paralela ao modo de fundo, separada
+   por uma divisória para não parecer parte do mesmo grupo de opções. */
+.export-template-block {
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-2);
+}
+
+.export-template-icon {
+  color: var(--sidebar-muted);
+  flex-shrink: 0;
+}

@@ -37,6 +37,21 @@
   z-index: 10;
 }
 
+/* Diferente do overlay acima, este captura os eventos: segura a interação
+   com a cena enquanto um template é aplicado. */
+.canvas-blocking-overlay {
+  align-items: center;
+  backdrop-filter: blur(2px);
+  background: color-mix(in srgb, var(--background) 55%, transparent);
+  cursor: progress;
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  pointer-events: auto;
+  position: absolute;
+  z-index: 20;
+}
+
 .canvas-stage-hint {
   background: var(--canvas-overlay);
   border: 1px solid color-mix(in srgb, var(--panel-border) 60%, transparent);

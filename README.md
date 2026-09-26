@@ -32,6 +32,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - export PNGs at `1080p`, `1440p` or `4K` — transparent, or with the canvas background and floor grid
 - hide the entire interface for clean, full-canvas captures
 - manage objects with selection, duplication and inspector-driven editing
+- save a composition as a local template and rebuild it later, camera framing included
 - support `pt-BR` and `en-US` UI modes
 
 ## Features
@@ -46,7 +47,10 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - export resolution menu with `1920x1080`, `2560x1440` and `3840x2160` presets
 - supersampled (SSAA) rendering for sharper, screenshot-grade exports
 - export feedback chip while the PNG is being prepared
-- distraction-free `Hide UI` mode with a toggle you can drag to any canvas corner
+- scene templates stored in `localStorage`: composition, background color and camera pose, saved from the `Templates` section or as a checkbox in the `Export` menu
+- template management with inline rename, delete and `Restore framing`, which returns the camera to the pose saved with that template without touching the objects
+- framing actions split by scope: `Fit scene` in the toolbar, `Frame object` in each object's menu
+- distraction-free `Hide UI` mode with a toggle you can drag to any canvas corner, animating between the toolbar and the corner it snaps to
 - layered selection flow via list and direct interaction in the 3D scene
 - `pt-BR` and `en-US` UI support
 - dark and light themes
@@ -118,6 +122,8 @@ The `tablet` has no GLB: its body is an extruded rounded rectangle with beveled 
 - [app/components/InspectorPanel/](app/components/InspectorPanel/): controls for the selected object
 - [app/models/device-models.ts](app/models/device-models.ts): device catalog and model metadata
 - [app/lib/scene-objects.ts](app/lib/scene-objects.ts): object creation, reset and model switching
+- [app/lib/scene-templates.ts](app/lib/scene-templates.ts): template capture, rebuild and `localStorage` persistence
+- [app/components/EditorPrimitives/](app/components/EditorPrimitives/): shared panel, button and collapsible-section primitives
 - [app/lib/3d-tokens/](app/lib/3d-tokens/): per-model themes and color tokens
 - [app/lib/i18n.ts](app/lib/i18n.ts): copy for `pt-BR` and `en-US`
 
@@ -150,6 +156,11 @@ Checklist:
 - Inspector rotation values are plain degrees (1 unit = 1°); rotation Z supports full turns from `-360` to `360`, pivoting around the model's visual center
 - floating menus and list rows use stronger hover contrast in dark mode
 - the infinite grid now stays visible longer during zoom-out before fading
+- templates store composition, background and camera pose but never the uploaded images: `imageUrl` is the original file as a base64 data URL, so two or three uploads would blow past the ~5MB `localStorage` quota — without images a whole template weighs about 660 bytes, and applying one restores every screen to its placeholder
+- applying a template is object-first and camera-last: the canvas takes a `pendingCameraPose` and uses it instead of the auto-fit, keeping the scene under a blocking overlay until every object has resolved
+- `Fit scene` and `Frame object` inflate the measured bounding box by 9% per side, because `fitToBox` hugs the content while the initial auto-fit breathes through `<Bounds margin={1.18}>`
+- the collapsible `Templates` section animates the height of a clipping container whose inner content is absolutely positioned, so the body keeps its natural layout instead of reflowing mid-transition; both heights are measured with a `ResizeObserver` rather than hardcoded
+- range and number inputs carry an `aria-label` and show a `:focus-visible` ring, so keyboard focus is visible without drawing an outline on mouse clicks
 - `Credits` in the UI contains attribution for the third-party 3D assets used by the project
 
 ## Learned Lessons
@@ -159,6 +170,10 @@ Checklist:
 - when adding objects, initial transform values must prevent visual overlap across the whole default plane or the editor can look broken even when state changed correctly
 - automatic anti-overlap logic should apply only when creating a new layer, not when editing an existing one
 - dark mode hover states for flyouts need stronger local contrast than the base panel token alone
+- an effect that schedules a `requestAnimationFrame` and cancels it on cleanup is silently disabled by any dependency whose identity changes every render — an unmemoized callback prop was enough to stop the camera auto-fit from ever running, with nothing in the console
+- `camera-controls` resolves the promise from `setLookAt` only when the next transition starts, not when the current one settles, so `saveState()` in a `.then()` never runs; store the framing you want to return to instead of relying on `reset()`
+- React portals bubble events through the component tree, not the DOM tree, so menu items rendered in a portal still fire the `onClick` of the card that owns the menu
+- reading pixels back from the WebGL canvas returns a stale frame without `preserveDrawingBuffer`; validate any measurement instrument against a change you know happened before trusting it
 
 ## Asset Scripts
 

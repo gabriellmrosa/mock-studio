@@ -23,6 +23,16 @@
   display: flex;
   flex: 1;
   flex-direction: column;
+  /* Objetos em cima, doca de templates colada embaixo. O scroll saiu daqui e
+     foi para o bloco de objetos: só ele rola, a doca fica sempre visível. */
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.layers-body-top {
+  /* Ocupa a folga do painel, empurrando a doca de templates para o rodapé. */
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
 }
 
@@ -211,3 +221,41 @@
   padding: var(--space-3) var(--space-4) var(--space-4);
   text-transform: uppercase;
 }
+
+/* Estado vazio da seção de templates */
+.templates-empty-hint {
+  line-height: 1.4;
+  margin: 0 0 var(--space-2);
+}
+
+/* Botão de salvar template: fica sempre no corpo da seção, inclusive com a
+   lista cheia — se vivesse só no empty state não haveria como salvar o
+   segundo template. O espaçamento vem do gap do grupo. */
+
+/* --- Doca de templates ---
+   Fica no fluxo normal, no fim do painel. Ao abrir, ela cresce e quem cede
+   espaço é a lista de objetos, que encurta e passa a rolar — por isso nada
+   aqui é posicionado de forma absoluta. */
+.layers-templates-dock {
+  border-top: 1px solid var(--sidebar-border);
+  flex-shrink: 0;
+}
+
+.templates-dock-body {
+  display: flex;
+  flex-direction: column;
+  /* Texto do empty state e botão lidos como um grupo. */
+  gap: var(--space-3);
+  padding: var(--space-6) 0;
+}
+
+.templates-dock-body .templates-empty-hint {
+  text-align: center;
+}
+
+/* Com muitos templates a lista rola dentro da doca em vez de crescer sem fim. */
+.layers-templates-dock .layers-stack {
+  max-height: 40vh;
+  overflow-y: auto;
+}
+

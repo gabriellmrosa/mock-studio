@@ -7,7 +7,6 @@ import { Canvas, type ThreeEvent, useThree } from "@react-three/fiber";
 import {
   Bounds,
   CameraControls,
-  Center,
   Environment,
   Grid,
   useBounds,
@@ -15,6 +14,7 @@ import {
 import CameraControlsImpl from "camera-controls";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
+import type { CameraPose } from "../../lib/scene-templates";
 import {
   AUTO_OBJECT_POSITIONS,
   OBJECT_POSITION_MULTIPLIER,
@@ -39,15 +39,29 @@ export type ExportPreset = {
 };
 
 type MockupCanvasProps = {
+  bgColor: string | null;
   copy: AppCopy;
   isUiHidden: boolean;
   objects: SceneObject[];
+  onBgColorChange: (color: string | null) => void;
+  onCameraApiReady: (api: CameraApi | null) => void;
   onNotify?: (tone: "error" | "success", message: string) => void;
+  onSaveTemplate?: () => void;
   onSelectObject: (id: string) => void;
+  onTemplateApplied: () => void;
   onToggleUiHidden: () => void;
+  // Enquadramento a restaurar ao aplicar um template. Enquanto não for null a
+  // cena fica bloqueada por um loading, e a câmera é o último passo aplicado.
+  pendingCameraPose: CameraPose | null;
   scaleOverrides: ScaleOverrides;
   spawnOverrides: SpawnOverrides;
   uiTheme: UiTheme;
+};
+
+export type CameraApi = {
+  fitObject: (id: string) => void;
+  getPose: () => CameraPose | null;
+  setPose: (pose: CameraPose) => void;
 };
 
 type ViewportControlsApi = {
@@ -56,7 +70,6 @@ type ViewportControlsApi = {
   panLeft: () => void;
   panRight: () => void;
   panUp: () => void;
-  resetToInitial: () => void;
   zoomIn: () => void;
   zoomOut: () => void;
 };
@@ -66,6 +79,9 @@ export type ScaleOverrides = Record<number, number>;
 
 type SceneBridgeProps = MockupCanvasProps & {
   canvasBgColor: string | null;
+  // true quando todos os objetos visíveis já resolveram — só então a pose
+  // pendente é considerada aplicada em definitivo.
+  isSceneSettled: boolean;
   onExportReady: (
     handler: ((preset: ExportPreset) => Promise<void>) | null,
   ) => void;
@@ -93,6 +109,9 @@ function getGridColors(bgHex: string | null, uiTheme: UiTheme) {
 
 const CAMERA_POSITION: [number, number, number] = [0, 0, 5];
 const CAMERA_FOV = 45;
+// Passo das setas de pan, como fração da distância da câmera ao alvo — o
+// deslocamento acompanha o zoom em vez de ser fixo em pixels.
+const PAN_STEP_RATIO = 0.04;
 const ANGLE_LIMITS = {
   maxAzimuthAngle: 0.85,
   maxPolarAngle: Math.PI * 0.68,
@@ -127,12 +146,16 @@ function getResolvedObjectPosition(
 }
 
 function SceneBridge({
+  isSceneSettled,
   objects,
+  onCameraApiReady,
   onExportReady,
   onObjectLoadStateChange,
   onObjectResolved,
   onSelectObject,
+  onTemplateApplied,
   onViewportControlsReady,
+  pendingCameraPose,
   scaleOverrides,
   sceneFitKey,
   spawnOverrides,
@@ -187,66 +210,69 @@ function SceneBridge({
         infiniteGrid
       />
       <Bounds margin={1.18}>
-        <Center>
-          <group ref={sceneRef}>
-            {objects.filter((object) => object.isVisible).map((object, index) => {
-              const model = DEVICE_MODELS[object.modelId];
+        <group ref={sceneRef}>
+          {objects.filter((object) => object.isVisible).map((object, index) => {
+            const model = DEVICE_MODELS[object.modelId];
 
-              return (
-                <Suspense
-                  key={object.id}
-                  fallback={
-                    <SceneObjectLoadingFallback
-                      id={object.id}
-                      onObjectLoadStateChange={onObjectLoadStateChange}
-                    />
-                  }
-                >
-                  <SceneObjectResolvedReporter
+            return (
+              <Suspense
+                key={object.id}
+                fallback={
+                  <SceneObjectLoadingFallback
                     id={object.id}
-                    modelId={object.modelId}
-                    onObjectResolved={onObjectResolved}
+                    onObjectLoadStateChange={onObjectLoadStateChange}
                   />
+                }
+              >
+                <SceneObjectResolvedReporter
+                  id={object.id}
+                  modelId={object.modelId}
+                  onObjectResolved={onObjectResolved}
+                />
+                <group
+                  name={object.id}
+                  onDoubleClick={(event) =>
+                    handleObjectDoubleClick(event, object.id)
+                  }
+                  position={getResolvedObjectPosition(object, index, spawnOverrides, model.modelSpawnOffset)}
+                  rotation={[
+                    (object.rotationX * Math.PI) / 180,
+                    (object.rotationY * Math.PI) / 180,
+                    (object.rotationZ * Math.PI) / 180,
+                  ]}
+                  scale={object.scale}
+                >
                   <group
-                    onDoubleClick={(event) =>
-                      handleObjectDoubleClick(event, object.id)
-                    }
-                    position={getResolvedObjectPosition(object, index, spawnOverrides, model.modelSpawnOffset)}
-                    rotation={[
-                      (object.rotationX * Math.PI) / 180,
-                      (object.rotationY * Math.PI) / 180,
-                      (object.rotationZ * Math.PI) / 180,
-                    ]}
-                    scale={object.scale}
+                    rotation={model.baseRotation}
+                    scale={model.modelScale.map((s) => s * (scaleOverrides[index] ?? 1)) as [number, number, number]}
                   >
-                    <group
-                      rotation={model.baseRotation}
-                      scale={model.modelScale.map((s) => s * (scaleOverrides[index] ?? 1)) as [number, number, number]}
-                    >
-                      <group position={model.pivotOffset}>
-                      <model.component
-                        colors={object.colors}
-                        matteColors={object.matteColors}
-                        debugPartColors={
-                          object.debugMode ? object.debugPartColors : undefined
-                        }
-                        imageUrl={object.imageUrl}
-                        screenPosition={model.screenPosition}
-                        screenSize={model.screenSize}
-                        showDeviceShell={object.showDeviceShell}
-                        showNotebookKeyboard={object.showNotebookKeyboard}
-                        showTabletBezel={object.showTabletBezel}
-                      />
-                      </group>
+                    <group position={model.pivotOffset}>
+                    <model.component
+                      colors={object.colors}
+                      matteColors={object.matteColors}
+                      debugPartColors={
+                        object.debugMode ? object.debugPartColors : undefined
+                      }
+                      imageUrl={object.imageUrl}
+                      screenPosition={model.screenPosition}
+                      screenSize={model.screenSize}
+                      showDeviceShell={object.showDeviceShell}
+                      showNotebookKeyboard={object.showNotebookKeyboard}
+                      showTabletBezel={object.showTabletBezel}
+                    />
                     </group>
                   </group>
-                </Suspense>
-              );
-            })}
-          </group>
-        </Center>
+                </group>
+              </Suspense>
+            );
+          })}
+        </group>
         <BoundsResetController
           controlsRef={controlsRef}
+          isSceneSettled={isSceneSettled}
+          onCameraApiReady={onCameraApiReady}
+          onTemplateApplied={onTemplateApplied}
+          pendingCameraPose={pendingCameraPose}
           sceneFitKey={sceneFitKey}
           onViewportControlsReady={onViewportControlsReady}
           sceneRef={sceneRef}
@@ -311,19 +337,54 @@ function SceneObjectResolvedReporter({
   return null;
 }
 
+// O fitToBox encosta o conteúdo nas bordas. O auto-fit inicial respira por
+// causa do <Bounds margin={1.18}>, então aqui inflamos a caixa em 9% de cada
+// lado para os dois enquadramentos ficarem visualmente iguais.
+function fitWithMargin(
+  controls: CameraControlsImpl,
+  target: THREE.Object3D,
+) {
+  const box = new THREE.Box3().setFromObject(target);
+  const size = box.getSize(new THREE.Vector3());
+
+  box.expandByVector(size.multiplyScalar(0.09));
+  controls.fitToBox(box, true);
+}
+
 function BoundsResetController({
   controlsRef,
+  isSceneSettled,
+  onCameraApiReady,
+  onTemplateApplied,
+  pendingCameraPose,
   sceneFitKey,
   onViewportControlsReady,
   sceneRef,
 }: {
   controlsRef: { current: CameraControlsImpl | null };
+  isSceneSettled: boolean;
+  onCameraApiReady: (api: CameraApi | null) => void;
+  onTemplateApplied: () => void;
+  pendingCameraPose: CameraPose | null;
   sceneFitKey: string;
   onViewportControlsReady: (api: ViewportControlsApi | null) => void;
   sceneRef: { current: THREE.Group | null };
 }) {
   const bounds = useBounds();
   const { camera } = useThree();
+  // Cena cuja câmera veio de um template. Sem isso, limpar a pose pendente
+  // (que está nas deps do effect) dispararia um auto-fit logo depois de
+  // restaurar a câmera, desfazendo a restauração.
+  const restoredPoseKeyRef = useRef<string | null>(null);
+  // O callback vem do page em cada render. Se entrasse nas dependências do
+  // effect abaixo, ele reiniciaria a cada render e o cleanup cancelaria o
+  // requestAnimationFrame antes de o quadro chegar — nem o enquadramento
+  // salvo nem o auto-fit chegariam a rodar.
+  const onTemplateAppliedRef = useRef(onTemplateApplied);
+
+  useEffect(() => {
+    onTemplateAppliedRef.current = onTemplateApplied;
+  }, [onTemplateApplied]);
 
   useEffect(() => {
     const controls = controlsRef.current;
@@ -344,6 +405,34 @@ function BoundsResetController({
       camera.far = distance * 100;
       camera.updateProjectionMatrix();
 
+      // Com um template em aplicação, o enquadramento salvo substitui o
+      // auto-fit — sem transição, já que a cena está coberta pelo loading.
+      // Reaplicamos a cada passada (os objetos resolvem um a um) e só
+      // liberamos quando a cena inteira assentou, garantindo que a câmera
+      // seja de fato o último passo.
+      if (pendingCameraPose) {
+        const [px, py, pz] = pendingCameraPose.position;
+        const [tx, ty, tz] = pendingCameraPose.target;
+
+        restoredPoseKeyRef.current = sceneFitKey;
+
+        void controls.setLookAt(px, py, pz, tx, ty, tz, false).then(() => {
+          controls.saveState();
+
+          if (isSceneSettled) {
+            onTemplateAppliedRef.current();
+          }
+        });
+
+        return;
+      }
+
+      // A câmera desta cena veio de um template: não sobrescreve com o
+      // auto-fit quando o effect roda de novo ao limpar a pose pendente.
+      if (restoredPoseKeyRef.current === sceneFitKey) {
+        return;
+      }
+
       void controls.setLookAt(
         center.x, center.y, center.z + distance,
         center.x, center.y, center.z,
@@ -356,7 +445,58 @@ function BoundsResetController({
     return () => {
       cancelAnimationFrame(frameId);
     };
-  }, [bounds, camera, controlsRef, sceneFitKey, sceneRef]);
+  }, [
+    bounds,
+    camera,
+    controlsRef,
+    isSceneSettled,
+    pendingCameraPose,
+    sceneFitKey,
+    sceneRef,
+  ]);
+
+  // Expõe a leitura do enquadramento atual para salvar em um template.
+  useEffect(() => {
+    const controls = controlsRef.current;
+
+    if (!controls) {
+      return;
+    }
+
+    onCameraApiReady({
+      // Enquadra um objeto específico — acionado pelo menu do card, então o id
+      // vem de quem clicou e não depende da seleção atual.
+      fitObject: (id) => {
+        const sceneGroup = sceneRef.current;
+        const target = sceneGroup?.getObjectByName(id);
+
+        if (!target) {
+          return;
+        }
+
+        fitWithMargin(controls, target);
+      },
+      getPose: () => {
+        const position = controls.getPosition(new THREE.Vector3());
+        const target = controls.getTarget(new THREE.Vector3());
+
+        return {
+          position: [position.x, position.y, position.z],
+          target: [target.x, target.y, target.z],
+        };
+      },
+      setPose: (pose) => {
+        const [px, py, pz] = pose.position;
+        const [tx, ty, tz] = pose.target;
+
+        void controls.setLookAt(px, py, pz, tx, ty, tz, true);
+      },
+    });
+
+    return () => {
+      onCameraApiReady(null);
+    };
+  }, [controlsRef, onCameraApiReady, sceneRef]);
 
   useEffect(() => {
     const controls = controlsRef.current;
@@ -365,11 +505,9 @@ function BoundsResetController({
       return;
     }
 
-    const resetToInitial = () => {
-      void controls.reset(true);
-    };
-
     onViewportControlsReady({
+      // Enquadra todos os objetos visíveis, recalculado na hora — ao contrário
+      // do sceneFitKey, que só reage a entrar/sair objeto e ignora posição.
       fitToScene: () => {
         const sceneGroup = sceneRef.current;
 
@@ -377,15 +515,12 @@ function BoundsResetController({
           return;
         }
 
-        const box = new THREE.Box3().setFromObject(sceneGroup);
-
-        controls.fitToBox(box, true);
+        fitWithMargin(controls, sceneGroup);
       },
-      panDown: () => controls.truck(0, -controls.distance * 0.08, false),
-      panLeft: () => controls.truck(-controls.distance * 0.08, 0, false),
-      panRight: () => controls.truck(controls.distance * 0.08, 0, false),
-      panUp: () => controls.truck(0, controls.distance * 0.08, false),
-      resetToInitial,
+      panDown: () => controls.truck(0, -controls.distance * PAN_STEP_RATIO, false),
+      panLeft: () => controls.truck(-controls.distance * PAN_STEP_RATIO, 0, false),
+      panRight: () => controls.truck(controls.distance * PAN_STEP_RATIO, 0, false),
+      panUp: () => controls.truck(0, controls.distance * PAN_STEP_RATIO, false),
       zoomIn: () => controls.dolly(controls.distance * 0.138, false),
       zoomOut: () => controls.dolly(-controls.distance * 0.138, false),
     });
@@ -401,7 +536,9 @@ function BoundsResetController({
 export default function MockupCanvas(props: MockupCanvasProps) {
   const [viewportControls, setViewportControls] =
     useState<ViewportControlsApi | null>(null);
-  const [canvasBgColor, setCanvasBgColor] = useState<string | null>(null);
+  // A cor de fundo é controlada pelo page para poder entrar nos templates.
+  const canvasBgColor = props.bgColor;
+  const setCanvasBgColor = props.onBgColorChange;
   const exportHandlerRef =
     useRef<((preset: ExportPreset) => Promise<void>) | null>(null);
   const [isExportReady, setIsExportReady] = useState(false);
@@ -453,6 +590,11 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const activeResolvedObjectIds = resolvedObjectIds.filter((id) => currentObjectIds.has(id));
   const isInitialSceneLoading =
     visibleObjectCount > 0 && activeResolvedObjectIds.length === 0;
+  // Todos os objetos visíveis já carregaram: a cena parou de se mexer.
+  const isSceneSettled =
+    visibleObjectCount > 0 &&
+    activeResolvedObjectIds.length === visibleObjectCount;
+  const isApplyingTemplate = props.pendingCameraPose !== null;
   const isIncrementalObjectLoading =
     activeLoadingObjectIds.length > 0 && activeResolvedObjectIds.length > 0;
   const showIncrementalLoading =
@@ -539,6 +681,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         <SceneBridge
           {...props}
           canvasBgColor={canvasBgColor}
+          isSceneSettled={isSceneSettled}
           onExportReady={(handler) => {
             exportHandlerRef.current = handler;
             setIsExportReady(Boolean(handler));
@@ -550,6 +693,14 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           sceneFitKey={sceneFitKey}
         />
       </Canvas>
+
+      {/* Enquanto o template assenta, bloqueia a interação com a cena para
+          que um arraste acidental não estrague o enquadramento restaurado. */}
+      {isApplyingTemplate ? (
+        <div className="canvas-blocking-overlay">
+          <ActivityNotice label={props.copy.canvasTemplateLoadingLabel} />
+        </div>
+      ) : null}
 
       <div className="canvas-stage-overlay">
         {isInitialSceneLoading ? (
@@ -570,11 +721,11 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           isUiHidden={props.isUiHidden}
           onBgColorChange={setCanvasBgColor}
           onFitToScene={() => viewportControls?.fitToScene()}
-          onResetCamera={() => viewportControls?.resetToInitial()}
           onPanDown={() => viewportControls?.panDown()}
           onPanLeft={() => viewportControls?.panLeft()}
           onPanRight={() => viewportControls?.panRight()}
           onPanUp={() => viewportControls?.panUp()}
+          onSaveTemplate={props.onSaveTemplate}
           onTakePhoto={(resolution) => {
             void handleTakePhoto(resolution);
           }}

@@ -1,7 +1,18 @@
 "use client";
 
-import { ChangeEvent, startTransition, useEffect, useRef, useState } from "react";
-import type { ScaleOverrides, SpawnOverrides } from "./components/MockupCanvas/MockupCanvas";
+import {
+  ChangeEvent,
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import type {
+  CameraApi,
+  ScaleOverrides,
+  SpawnOverrides,
+} from "./components/MockupCanvas/MockupCanvas";
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
 import MockupCanvas from "./components/MockupCanvas/MockupCanvas";
@@ -20,6 +31,18 @@ import {
   resetSceneObject,
   type SceneObject,
 } from "./lib/scene-objects";
+import {
+  applySceneTemplate,
+  createSceneTemplate,
+  getNextTemplateName,
+  loadTemplates,
+  persistTemplates,
+  removeTemplate,
+  renameTemplate,
+  upsertTemplate,
+  type CameraPose,
+  type SceneTemplate,
+} from "./lib/scene-templates";
 import { DEVICE_MODELS } from "./models/device-models";
 
 const MIN_DESKTOP_WIDTH = 1280;
@@ -70,6 +93,15 @@ export default function Home() {
   const [isUiHidden, setIsUiHidden] = useState(false);
   const [scaleOverrides] = useState<ScaleOverrides>({});
   const [spawnOverrides] = useState<SpawnOverrides>({});
+  // Cor de fundo do canvas: mora aqui (e não no MockupCanvas) para poder ser
+  // capturada e restaurada junto com os templates.
+  const [canvasBgColor, setCanvasBgColor] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<SceneTemplate[]>([]);
+  // Enquanto não for null, o canvas fica bloqueado aplicando o template.
+  const [pendingCameraPose, setPendingCameraPose] = useState<CameraPose | null>(
+    null,
+  );
+  const cameraApiRef = useRef<CameraApi | null>(null);
   const copy = APP_COPY[locale];
   const minViewportLabel = `${MIN_DESKTOP_WIDTH} x ${MIN_DESKTOP_HEIGHT} px`;
   const selectedObject =
@@ -92,6 +124,8 @@ export default function Home() {
         ? storedUiTheme
         : detectBrowserTheme(),
     );
+
+    setTemplates(loadTemplates());
 
     isInitialized.current = true;
   }, []);
@@ -282,6 +316,80 @@ export default function Home() {
     );
   }
 
+  function notify(tone: "error" | "success", message: string) {
+    setNotification({ id: Date.now(), message, tone });
+  }
+
+  function persistAndSetTemplates(nextTemplates: SceneTemplate[]) {
+    if (!persistTemplates(nextTemplates)) {
+      notify("error", copy.templateSaveError);
+      return false;
+    }
+
+    setTemplates(nextTemplates);
+    return true;
+  }
+
+  function handleSaveTemplate() {
+    const template = createSceneTemplate({
+      backgroundColor: canvasBgColor,
+      camera: cameraApiRef.current?.getPose() ?? null,
+      name: getNextTemplateName(templates),
+      objects: sceneObjects,
+    });
+
+    if (persistAndSetTemplates(upsertTemplate(templates, template))) {
+      notify("success", copy.templateSavedMessage);
+    }
+  }
+
+  function handleApplyTemplate(id: string) {
+    const template = templates.find((item) => item.id === id);
+
+    if (!template) {
+      return;
+    }
+
+    const nextObjects = applySceneTemplate(template);
+
+    setSceneObjects(nextObjects);
+    setSelectedObjectId(nextObjects[0]?.id ?? "");
+    setCanvasBgColor(template.backgroundColor);
+    // A câmera é o último passo: fica pendente até a cena assentar.
+    setPendingCameraPose(template.camera);
+
+    if (!template.camera) {
+      notify("success", copy.templateAppliedMessage);
+    }
+  }
+
+  function handleFitObject(id: string) {
+    cameraApiRef.current?.fitObject(id);
+  }
+
+  // Devolve a câmera ao enquadramento guardado naquele template, sem mexer nos
+  // objetos — é só a câmera, não uma reaplicação.
+  function handleRestoreTemplateView(id: string) {
+    const template = templates.find((item) => item.id === id);
+
+    if (template?.camera) {
+      cameraApiRef.current?.setPose(template.camera);
+    }
+  }
+
+  const handleTemplateApplied = useCallback(() => {
+    setPendingCameraPose(null);
+    notify("success", copy.templateAppliedMessage);
+  }, [copy.templateAppliedMessage]);
+
+  function handleRenameTemplate(id: string, name: string) {
+    persistAndSetTemplates(renameTemplate(templates, id, name));
+  }
+
+  function handleRemoveTemplate(id: string) {
+    persistAndSetTemplates(removeTemplate(templates, id));
+  }
+
   return (
     <>
       <main className="app-shell app-desktop-shell min-h-screen relative flex">
@@ -299,15 +407,27 @@ export default function Home() {
           onSelectObject={setSelectedObjectId}
           onToggleObjectVisibility={handleToggleObjectVisibility}
           onUiThemeChange={setUiTheme}
+          onApplyTemplate={handleApplyTemplate}
+          onFitObject={handleFitObject}
+          onRestoreTemplateView={handleRestoreTemplateView}
+          onRemoveTemplate={handleRemoveTemplate}
+          onRenameTemplate={handleRenameTemplate}
+          onSaveTemplate={handleSaveTemplate}
           selectedObjectId={selectedObject?.id ?? ""}
+          templates={templates}
           uiTheme={uiTheme}
         />
       )}
 
       <MockupCanvas
+        bgColor={canvasBgColor}
         copy={copy}
         isUiHidden={isUiHidden}
         objects={sceneObjects}
+        onBgColorChange={setCanvasBgColor}
+        onCameraApiReady={(api) => {
+          cameraApiRef.current = api;
+        }}
         onNotify={(tone, message) =>
           setNotification({
             id: Date.now(),
@@ -315,8 +435,11 @@ export default function Home() {
             tone,
           })
         }
+        onSaveTemplate={handleSaveTemplate}
         onSelectObject={setSelectedObjectId}
+        onTemplateApplied={handleTemplateApplied}
         onToggleUiHidden={() => setIsUiHidden((current) => !current)}
+        pendingCameraPose={pendingCameraPose}
         scaleOverrides={scaleOverrides}
         spawnOverrides={spawnOverrides}
         uiTheme={uiTheme}

@@ -1,15 +1,16 @@
 "use client";
 
 import "./LayersPanel.css";
-import { KeyboardEvent, useState } from "react";
+import { KeyboardEvent, useEffect, useState } from "react";
 import type { AppCopy, Locale, UiTheme } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
+import type { SceneTemplate } from "../../lib/scene-templates";
 import {
   IconButton,
   LayersPanelHeader,
   PanelSection,
 } from "../EditorPrimitives/EditorPrimitives";
-import { Eye, EyeOff, Github, MoreVertical, Plus } from "lucide-react";
+import { Bookmark, Eye, EyeOff, Github, MoreVertical, Plus } from "lucide-react";
 import ContextMenu from "../ContextMenu/ContextMenu";
 import CreditsModal from "../CreditsModal/CreditsModal";
 
@@ -21,16 +22,25 @@ type LayersPanelProps = {
   locale: Locale;
   objects: SceneObject[];
   onAddObject: () => void;
+  onApplyTemplate?: (id: string) => void;
+  onFitObject?: (id: string) => void;
+  onRestoreTemplateView?: (id: string) => void;
   onDuplicateObject: (id: string) => void;
   onLocaleChange: (locale: Locale) => void;
+  onRemoveTemplate?: (id: string) => void;
   onRenameObject: (id: string, name: string) => void;
+  onRenameTemplate?: (id: string, name: string) => void;
   onRemoveObject: (id: string) => void;
+  onSaveTemplate?: () => void;
   onSelectObject: (id: string) => void;
   onToggleObjectVisibility: (id: string) => void;
   onUiThemeChange: (theme: UiTheme) => void;
   selectedObjectId: string;
+  templates?: SceneTemplate[];
   uiTheme: UiTheme;
 };
+
+const TEMPLATES_OPEN_KEY = "mock-photo-templates-open";
 
 export default function LayersPanel({
   appMeta,
@@ -38,19 +48,62 @@ export default function LayersPanel({
   locale,
   objects,
   onAddObject,
+  onApplyTemplate,
+  onFitObject,
+  onRestoreTemplateView,
   onDuplicateObject,
   onLocaleChange,
+  onRemoveTemplate,
   onRenameObject,
+  onRenameTemplate,
   onRemoveObject,
+  onSaveTemplate,
   onSelectObject,
   onToggleObjectVisibility,
   onUiThemeChange,
   selectedObjectId,
+  templates = [],
   uiTheme,
 }: LayersPanelProps) {
   const [editingObjectId, setEditingObjectId] = useState<string | null>(null);
+
+  // Começa fechado e só então adota a escolha salva do usuário. Ler o
+  // localStorage no inicializador do useState (como faz o FloatingCanvasControls,
+  // que não é renderizado no servidor) quebraria a hidratação aqui: o servidor
+  // emitiria aria-expanded="false" e o cliente "true".
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+
+  useEffect(() => {
+    // Sincronizar com um sistema externo no mount é justamente o uso previsto
+    // para effects; a regra abaixo mira cascatas de render, que não é o caso.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsTemplatesOpen(window.localStorage.getItem(TEMPLATES_OPEN_KEY) === "1");
+  }, []);
+
+  function toggleTemplatesOpen() {
+    setIsTemplatesOpen((current) => {
+      const next = !current;
+      window.localStorage.setItem(TEMPLATES_OPEN_KEY, next ? "1" : "0");
+      return next;
+    });
+  }
   const [draftName, setDraftName] = useState("");
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
+  const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
+    null,
+  );
+  const [templateDraftName, setTemplateDraftName] = useState("");
+
+  function startEditingTemplate(template: SceneTemplate) {
+    setEditingTemplateId(template.id);
+    setTemplateDraftName(template.name);
+  }
+
+  function commitEditingTemplate(template: SceneTemplate) {
+    onRenameTemplate?.(template.id, templateDraftName.trim() || template.name);
+    setEditingTemplateId(null);
+    setTemplateDraftName("");
+  }
 
   function startEditing(object: SceneObject) {
     setEditingObjectId(object.id);
@@ -148,6 +201,7 @@ export default function LayersPanel({
         </div>
 
         <div className="layers-body">
+          <div className="layers-body-top">
           <PanelSection
             title={copy.layersSectionTitle}
             className="section-objects"
@@ -236,6 +290,11 @@ export default function LayersPanel({
                         items={[
                           {
                             type: "action",
+                            label: copy.fitObjectButton,
+                            onClick: () => onFitObject?.(object.id),
+                          },
+                          {
+                            type: "action",
                             label: copy.duplicateObject,
                             onClick: () => onDuplicateObject(object.id),
                           },
@@ -267,6 +326,122 @@ export default function LayersPanel({
               })}
             </div>
           </PanelSection>
+          </div>
+
+          <PanelSection
+              title={copy.templatesSectionTitle}
+              className={`layers-templates-dock${isTemplatesOpen ? " is-open" : ""}`}
+              collapsible
+              isOpen={isTemplatesOpen}
+              onToggleOpen={toggleTemplatesOpen}
+            >
+              <div className="templates-dock-body">
+              {templates.length === 0 ? (
+                <p className="editor-sidebar-muted templates-empty-hint">
+                  {copy.templatesEmptyHint}
+                </p>
+              ) : null}
+              <div className="layers-stack">
+                {templates.map((template) => (
+                  <div
+                    key={template.id}
+                    onClick={() => onApplyTemplate?.(template.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onApplyTemplate?.(template.id);
+                      }
+                    }}
+                    className="layer-card layer-card-inactive"
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="layer-card-main">
+                      <div className="layer-title-row">
+                        {editingTemplateId === template.id ? (
+                          <input
+                            autoFocus
+                            type="text"
+                            value={templateDraftName}
+                            onBlur={() => commitEditingTemplate(template)}
+                            onChange={(event) =>
+                              setTemplateDraftName(event.target.value)
+                            }
+                            onClick={(event) => event.stopPropagation()}
+                            onDoubleClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                commitEditingTemplate(template);
+                                return;
+                              }
+
+                              if (event.key === "Escape") {
+                                setEditingTemplateId(null);
+                                setTemplateDraftName("");
+                              }
+                            }}
+                            className="editor-input layer-card-name-input"
+                          />
+                        ) : (
+                          <p
+                            className="layer-card-title"
+                            onDoubleClick={(event) => {
+                              event.stopPropagation();
+                              startEditingTemplate(template);
+                            }}
+                          >
+                            {template.name}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="layer-actions">
+                      <ContextMenu
+                        items={[
+                          {
+                            type: "action",
+                            label: copy.renameObject,
+                            onClick: () => startEditingTemplate(template),
+                          },
+                          ...(template.camera
+                            ? [
+                                {
+                                  type: "action" as const,
+                                  label: copy.restoreTemplateView,
+                                  onClick: () =>
+                                    onRestoreTemplateView?.(template.id),
+                                },
+                              ]
+                            : []),
+                          {
+                            type: "action",
+                            label: copy.deleteObject,
+                            variant: "danger",
+                            onClick: () => onRemoveTemplate?.(template.id),
+                          },
+                        ]}
+                        triggerAriaLabel={copy.templateOptionsLabel}
+                        triggerClassName="layer-menu-trigger context-menu-trigger-quiet editor-icon-button-no-hover-bg"
+                        triggerStopPropagation
+                        triggerTitle={copy.templateOptionsLabel}
+                        triggerIcon={<MoreVertical size={12} />}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className="editor-button-outline templates-save-button"
+                onClick={onSaveTemplate}
+                title={copy.saveTemplate}
+              >
+                <Bookmark size={14} />
+                {copy.saveTemplate}
+              </button>
+              </div>
+            </PanelSection>
         </div>
 
         <footer className="sidebar-footer">

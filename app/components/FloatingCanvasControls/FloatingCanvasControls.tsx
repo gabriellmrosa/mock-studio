@@ -1,19 +1,24 @@
 "use client";
 
 import "./FloatingCanvasControls.css";
-import { useRef, useState, type PointerEvent } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+} from "react";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
 import {
   ArrowDown,
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  Bookmark,
   Camera,
   Check,
   Download,
   Eye,
   EyeOff,
-  RotateCcw,
   ScanSearch,
   ZoomIn,
   ZoomOut,
@@ -26,11 +31,11 @@ type FloatingCanvasControlsProps = {
   isUiHidden: boolean;
   onBgColorChange: (color: string) => void;
   onFitToScene: () => void;
-  onResetCamera: () => void;
   onPanDown: () => void;
   onPanLeft: () => void;
   onPanRight: () => void;
   onPanUp: () => void;
+  onSaveTemplate?: () => void;
   onTakePhoto: (resolution: {
     width: number;
     height: number;
@@ -81,11 +86,11 @@ export default function FloatingCanvasControls({
   isUiHidden,
   onBgColorChange,
   onFitToScene,
-  onResetCamera,
   onPanDown,
   onPanLeft,
   onPanRight,
   onPanUp,
+  onSaveTemplate,
   onTakePhoto,
   onToggleUiHidden,
   onZoomIn,
@@ -112,17 +117,26 @@ export default function FloatingCanvasControls({
     window.localStorage.setItem(EXPORT_BG_KEY, value ? "1" : "0");
   }
 
+  // Salvar a cena como template junto do export é uma ação paralela: não muda
+  // o PNG gerado, apenas guarda a composição para reutilizar depois.
+  const [saveTemplateOnExport, setSaveTemplateOnExport] = useState(false);
+
   const exportMenuItems: ContextMenuItem[] = EXPORT_OPTIONS.map((option) => ({
     type: "action",
     label: option.label,
     badgeLabel: option.enabled ? undefined : "Em breve",
     disabled: !option.enabled,
-    onClick: () =>
+    onClick: () => {
       onTakePhoto({
         width: option.width,
         height: option.height,
         includeBackground: exportWithBg,
-      }),
+      });
+
+      if (saveTemplateOnExport) {
+        onSaveTemplate?.();
+      }
+    },
     trailingIcon: option.enabled ? <Download size={14} /> : undefined,
   }));
 
@@ -160,6 +174,25 @@ export default function FloatingCanvasControls({
           {exportWithBg ? <Check size={13} className="export-bg-seg-check" /> : null}
         </button>
       </div>
+
+      <div className="export-template-block">
+        <span className="export-bg-toggle-label">
+          {copy.exportTemplateLabel}
+        </span>
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={saveTemplateOnExport}
+          className={`export-bg-seg-btn${saveTemplateOnExport ? " is-active" : ""}`}
+          onClick={() => setSaveTemplateOnExport((current) => !current)}
+        >
+          <Bookmark size={14} className="export-template-icon" />
+          <span className="export-bg-seg-label">{copy.saveAsTemplate}</span>
+          {saveTemplateOnExport ? (
+            <Check size={13} className="export-bg-seg-check" />
+          ) : null}
+        </button>
+      </div>
     </div>
   );
 
@@ -174,7 +207,61 @@ export default function FloatingCanvasControls({
   const dragStart = useRef<{ x: number; y: number } | null>(null);
   const didDrag = useRef(false);
 
+  // Ao esconder a interface o olho troca de elemento: sai do botão da toolbar
+  // e nasce no fab do canto. Guardamos a posição de origem no clique e animamos
+  // dela até a nova (FLIP), senão o botão "salta" de um canto ao outro.
+  const toolbarEyeRef = useRef<HTMLButtonElement>(null);
+  const cornerEyeRef = useRef<HTMLButtonElement>(null);
+  const toggleOriginRef = useRef<DOMRect | null>(null);
+
+  function toggleUiHidden() {
+    const source = isUiHidden ? cornerEyeRef.current : toolbarEyeRef.current;
+    toggleOriginRef.current = source?.getBoundingClientRect() ?? null;
+    onToggleUiHidden();
+  }
+
+  useLayoutEffect(() => {
+    const origin = toggleOriginRef.current;
+    toggleOriginRef.current = null;
+
+    if (!origin) {
+      return;
+    }
+
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const target = isUiHidden ? cornerEyeRef.current : toolbarEyeRef.current;
+
+    if (!target) {
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const dx = origin.left - rect.left;
+    const dy = origin.top - rect.top;
+
+    if (dx === 0 && dy === 0) {
+      return;
+    }
+
+    const animation = target.animate(
+      [
+        { transform: `translate(${dx}px, ${dy}px)` },
+        { transform: "translate(0, 0)" },
+      ],
+      { duration: 240, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+    );
+
+    return () => {
+      animation.cancel();
+    };
+  }, [isUiHidden]);
+
   function handleHideUiPointerDown(event: PointerEvent<HTMLButtonElement>) {
+    // Se o fab ainda está voando para o canto, o arrasto assume o controle.
+    event.currentTarget.getAnimations().forEach((animation) => animation.cancel());
     dragStart.current = { x: event.clientX, y: event.clientY };
     didDrag.current = false;
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -211,7 +298,7 @@ export default function FloatingCanvasControls({
       didDrag.current = false;
       return;
     }
-    onToggleUiHidden();
+    toggleUiHidden();
   }
 
   return (
@@ -220,22 +307,14 @@ export default function FloatingCanvasControls({
       <div className="canvas-floating-toolbar">
       <div className="canvas-floating-cluster">
         <button
-          type="button"
-          className="editor-fab mr-4"
-          aria-label={copy.resetCameraButton}
-          title={copy.resetCameraButton}
-          onClick={onResetCamera}
-        >
-          <RotateCcw size={16} />
-        </button>
-        <button
+          ref={toolbarEyeRef}
           type="button"
           className="editor-fab"
           role="switch"
           aria-checked={isUiHidden}
           aria-label={hideUiLabel}
           title={hideUiLabel}
-          onClick={onToggleUiHidden}
+          onClick={toggleUiHidden}
         >
           <EyeOff size={16} />
         </button>
@@ -351,6 +430,7 @@ export default function FloatingCanvasControls({
 
       {isUiHidden && (
         <button
+          ref={cornerEyeRef}
           type="button"
           className={`editor-fab canvas-hide-ui-fab corner-${corner}${
             dragPos ? " is-dragging" : ""
