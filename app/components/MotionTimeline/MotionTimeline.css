@@ -166,6 +166,26 @@
   background: color-mix(in srgb, var(--foreground) 9%, transparent);
 }
 
+/* Vídeo da tela: faixa no pé da trilha, abaixo dos trechos e losangos. Fica
+   por cima dos trechos só na altura dela, para os dois serem arrastáveis. */
+.motion-timeline-video {
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--foreground) 45%, transparent) 0 4px,
+    color-mix(in srgb, var(--foreground) 25%, transparent) 4px 8px
+  );
+  border-radius: 2px;
+  bottom: 0;
+  cursor: grab;
+  height: 0.35rem;
+  position: absolute;
+  z-index: 1;
+}
+
+.motion-timeline-video:active {
+  cursor: grabbing;
+}
+
 /* Trecho entre dois keyframes: arrastar desloca a trilha inteira, botão
    direito escolhe a transição (à la interpolação do Flash). */
 .motion-timeline-segment {

@@ -11,7 +11,7 @@ type CropArea = {
   srcH: number;
 };
 
-function getCoverCrop(
+export function getCoverCrop(
   sourceWidth: number,
   sourceHeight: number,
   targetWidth: number,
@@ -93,5 +93,65 @@ export function readFileAsDataUrl(file: File) {
     };
     reader.onerror = () => reject(new Error("Não foi possível ler a imagem enviada."));
     reader.readAsDataURL(file);
+  });
+}
+
+/** Tempo máximo para o navegador decodificar o primeiro quadro do vídeo. */
+const VIDEO_PROBE_TIMEOUT_MS = 10000;
+
+/**
+ * Confere se o navegador consegue mostrar o vídeo antes de aceitá-lo.
+ * `canPlayType` não serve: no Chrome do Mac ele responde "" para HEVC e o
+ * vídeo toca mesmo assim, via decodificação por hardware — e em outra máquina
+ * a mesma resposta pode ser verdade. O teste confiável é decodificar o
+ * primeiro quadro, exigindo largura: um vídeo sem suporte pode carregar só a
+ * trilha de áudio.
+ */
+export function probeVideoFile(file: File) {
+  const url = URL.createObjectURL(file);
+  const video = document.createElement("video");
+
+  video.muted = true;
+  video.preload = "auto";
+
+  return new Promise<{ durationMs: number; url: string }>((resolve, reject) => {
+    const timeoutId = window.setTimeout(
+      () => fail(new Error("Tempo esgotado ao ler o vídeo.")),
+      VIDEO_PROBE_TIMEOUT_MS,
+    );
+
+    function cleanup() {
+      window.clearTimeout(timeoutId);
+      video.removeAttribute("src");
+      video.load();
+    }
+
+    function fail(error: Error) {
+      cleanup();
+      URL.revokeObjectURL(url);
+      reject(error);
+    }
+
+    video.addEventListener(
+      "loadeddata",
+      () => {
+        if (!video.videoWidth || !Number.isFinite(video.duration)) {
+          fail(new Error("O navegador não decodifica este vídeo."));
+          return;
+        }
+
+        const durationMs = Math.round(video.duration * 1000);
+
+        cleanup();
+        resolve({ durationMs, url });
+      },
+      { once: true },
+    );
+    video.addEventListener(
+      "error",
+      () => fail(new Error("O navegador não decodifica este vídeo.")),
+      { once: true },
+    );
+    video.src = url;
   });
 }

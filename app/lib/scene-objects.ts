@@ -11,6 +11,36 @@ import {
 import { createPlaceholderDataUrl } from "./placeholder-image";
 import { cloneKeyframes, type Keyframe } from "./scene-motion";
 
+/**
+ * Gravação de tela enviada pelo usuário. Fica como blob URL (não data URL,
+ * como a imagem): um vídeo em base64 pesaria dezenas de MB na memória. Não é
+ * revogado ao ser trocado — o mesmo vídeo pode estar num objeto duplicado ou
+ * na cena do outro modo, e um blob de arquivo só referencia o arquivo em
+ * disco, então mantê-lo custa pouco. Como as imagens, não entra em templates.
+ */
+export type ScreenVideo = {
+  durationMs: number;
+  /** Quadro mostrado no modo Estático — e o que sai no PNG. */
+  frameMs: number;
+  name: string;
+  /** Instante da cena em que o vídeo começa a tocar, no modo Movimento. */
+  startMs: number;
+  url: string;
+};
+
+/**
+ * Tempo do vídeo num instante da cena. Antes do início segura o primeiro
+ * quadro e depois do fim o último, como os keyframes fazem.
+ */
+export function getScreenVideoTime(video: ScreenVideo, sceneTimeMs: number) {
+  return Math.min(video.durationMs, Math.max(0, sceneTimeMs - video.startMs));
+}
+
+/** Vídeo que a tela mostra de fato: o enviado, e só se for a fonte escolhida. */
+export function getActiveScreenVideo(object: SceneObject) {
+  return object.screenSource === "video" ? object.screenVideo : null;
+}
+
 export type SceneObject = {
   colors: Record<string, string>;
   customColorsEnabled: boolean;
@@ -21,6 +51,12 @@ export type SceneObject = {
   id: string;
   imageUrl: string;
   isVisible: boolean;
+  /**
+   * O que a tela mostra. Imagem e vídeo são guardados lado a lado: trocar de
+   * fonte não apaga a outra. Com "video" e sem vídeo enviado, vale a imagem.
+   */
+  screenSource: "image" | "video";
+  screenVideo: ScreenVideo | null;
   /** Vazio = objeto estático. Ver [scene-motion.ts](app/lib/scene-motion.ts). */
   keyframes: Keyframe[];
   modelId: DeviceModelId;
@@ -217,6 +253,8 @@ export function createSceneObject({
     id: id ?? crypto.randomUUID(),
     imageUrl: getPlaceholderImageUrl(modelId),
     isVisible: true,
+    screenSource: "image",
+    screenVideo: null,
     keyframes: [],
     modelId,
     name,
@@ -282,6 +320,8 @@ export function changeSceneObjectModel(
     imageUrl: getPlaceholderImageUrl(modelId),
     modelId,
     matteColors: true,
+    screenSource: "image",
+    screenVideo: null,
     showDeviceShell: true,
     showNotebookKeyboard: true,
     showTabletBezel: true,

@@ -24,7 +24,12 @@ import {
 } from "@react-three/drei";
 import CameraControlsImpl from "camera-controls";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
-import type { SceneObject } from "../../lib/scene-objects";
+import {
+  getActiveScreenVideo,
+  getScreenVideoTime,
+  type SceneObject,
+} from "../../lib/scene-objects";
+import { getScreenVideoElement } from "../../lib/screen-texture";
 import type { CameraPose } from "../../lib/scene-templates";
 import {
   AUTO_OBJECT_POSITIONS,
@@ -302,6 +307,8 @@ function SceneBridge({
                         object.debugMode ? object.debugPartColors : undefined
                       }
                       imageUrl={object.imageUrl}
+                      videoUrl={getActiveScreenVideo(object)?.url ?? null}
+                      videoKey={object.id}
                       screenPosition={model.screenPosition}
                       screenSize={model.screenSize}
                       showDeviceShell={object.showDeviceShell}
@@ -315,6 +322,11 @@ function SceneBridge({
             );
           })}
         </group>
+        <ScreenVideoController
+          motionPlayheadMs={motionPlayheadMs}
+          motionStartedAt={motionStartedAt}
+          objects={objects}
+        />
         <BoundsResetController
           controlsRef={controlsRef}
           isSceneSettled={isSceneSettled}
@@ -356,6 +368,83 @@ function SceneBridge({
  * estado do React a cada quadro re-renderizaria a árvore inteira 60x por
  * segundo; aqui o React só sabe do início e do fim do preview.
  */
+/** Desvio tolerado no play antes de corrigir com um seek, em segundos. */
+const VIDEO_DRIFT_TOLERANCE_S = 0.12;
+/** Diferença mínima para valer um seek com o vídeo parado: ~meio quadro. */
+const VIDEO_SEEK_EPSILON_S = 0.015;
+
+/**
+ * Dono do tempo dos vídeos das telas. A cada quadro decide, por objeto, em que
+ * instante o vídeo deve estar:
+ * - Estático: parado no quadro escolhido no Inspector;
+ * - Movimento parado: no instante do playhead;
+ * - Movimento tocando: tocando junto com o relógio da cena, corrigido por seek
+ *   só quando se desvia — seek a cada quadro travaria a decodificação.
+ * Mesmo padrão do MotionDriver: escreve direto no elemento, sem estado React.
+ */
+function ScreenVideoController({
+  motionPlayheadMs,
+  motionStartedAt,
+  objects,
+}: {
+  motionPlayheadMs: number | null;
+  motionStartedAt: number | null;
+  objects: SceneObject[];
+}) {
+  useFrame(() => {
+    for (const object of objects) {
+      const video = getActiveScreenVideo(object);
+      const element = video ? getScreenVideoElement(object.id) : null;
+
+      if (!video || !element || element.readyState < 1) {
+        continue;
+      }
+
+      const isPlaying = motionStartedAt !== null;
+      const sceneTimeMs = isPlaying
+        ? Date.now() - motionStartedAt
+        : motionPlayheadMs;
+      const targetMs =
+        sceneTimeMs === null
+          ? Math.min(video.frameMs, video.durationMs)
+          : getScreenVideoTime(video, sceneTimeMs);
+      // O último quadro fica um pouco antes do fim: em `duration` exato alguns
+      // navegadores mostram preto.
+      const targetS = Math.min(targetMs, video.durationMs - 20) / 1000;
+      const insideVideo =
+        isPlaying &&
+        sceneTimeMs !== null &&
+        sceneTimeMs >= video.startMs &&
+        sceneTimeMs < video.startMs + video.durationMs;
+
+      if (insideVideo) {
+        if (Math.abs(element.currentTime - targetS) > VIDEO_DRIFT_TOLERANCE_S) {
+          element.currentTime = Math.max(0, targetS);
+        }
+
+        if (element.paused) {
+          void element.play().catch(() => undefined);
+        }
+
+        continue;
+      }
+
+      if (!element.paused) {
+        element.pause();
+      }
+
+      if (
+        !element.seeking &&
+        Math.abs(element.currentTime - targetS) > VIDEO_SEEK_EPSILON_S
+      ) {
+        element.currentTime = Math.max(0, targetS);
+      }
+    }
+  });
+
+  return null;
+}
+
 function MotionDriver({
   groupsRef,
   index,

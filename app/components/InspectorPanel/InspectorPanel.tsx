@@ -5,13 +5,14 @@ import ColorRow from "../ColorRow/ColorRow";
 import Control from "../Control/Control";
 import CustomSelect, { type CustomSelectOption } from "../CustomSelect/CustomSelect";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
-import type { SceneObject } from "../../lib/scene-objects";
+import type { SceneObject, ScreenVideo } from "../../lib/scene-objects";
 import { DEVICE_MODEL_LIST } from "../../models/device-models";
 import {
   InspectorPanelHeader,
   PanelSection,
 } from "../EditorPrimitives/EditorPrimitives";
 import {
+  Image as ImageIcon,
   Laptop,
   RotateCcw,
   Smartphone,
@@ -33,6 +34,11 @@ type InspectorPanelProps = {
   copy: AppCopy;
   object: SceneObject | null;
   onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onVideoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onScreenSourceChange: (source: SceneObject["screenSource"]) => void;
+  onUpdateScreenVideo: (
+    patch: Partial<Pick<ScreenVideo, "frameMs" | "startMs">>,
+  ) => void;
   onModelChange: (modelId: SceneObject["modelId"]) => void;
   onResetObject: () => void;
   onThemeColorChange: (part: string, hex: string) => void;
@@ -59,6 +65,9 @@ export default function InspectorPanel({
   copy,
   object,
   onImageUpload,
+  onVideoUpload,
+  onScreenSourceChange,
+  onUpdateScreenVideo,
   onModelChange,
   onResetObject,
   onThemeColorChange,
@@ -119,13 +128,6 @@ export default function InspectorPanel({
           <Laptop size={14} />
         ),
     })),
-    {
-      value: "video-mp4",
-      label: "Video MP4",
-      badgeLabel: "Em breve",
-      disabled: true,
-      icon: <Video size={14} />,
-    },
   ];
 
   return (
@@ -188,20 +190,116 @@ export default function InspectorPanel({
           title={copy.screenSectionTitle}
           className="--without-border-bottom"
         >
-          <label className="upload-card">
-            <Upload size={16} />
-            {copy.uploadImage}
-            <input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              aria-label={copy.uploadImage}
-              onChange={onImageUpload}
-              className="hidden"
-            />
-          </label>
-          <p className="editor-sidebar-muted inspector-meta-note">
-            {uploadRecommendation}
-          </p>
+          <div className="screen-source-tabs" role="tablist">
+            {(["image", "video"] as const).map((source) => (
+              <button
+                key={source}
+                type="button"
+                role="tab"
+                aria-selected={object.screenSource === source}
+                className={`screen-source-tab${
+                  object.screenSource === source ? " is-active" : ""
+                }`}
+                onClick={() => onScreenSourceChange(source)}
+              >
+                {source === "image" ? (
+                  <ImageIcon size={13} />
+                ) : (
+                  <Video size={13} />
+                )}
+                {source === "image"
+                  ? copy.screenSourceImage
+                  : copy.screenSourceVideo}
+              </button>
+            ))}
+          </div>
+
+          {object.screenSource === "image" ? (
+            <>
+              <label className="upload-card">
+                <Upload size={16} />
+                {copy.uploadImage}
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  aria-label={copy.uploadImage}
+                  onChange={onImageUpload}
+                  className="hidden"
+                />
+              </label>
+              <p className="editor-sidebar-muted inspector-meta-note">
+                {uploadRecommendation}
+              </p>
+            </>
+          ) : (
+            <>
+              <label className="upload-card">
+                <Upload size={16} />
+                {object.screenVideo ? copy.replaceVideo : copy.uploadVideo}
+                <input
+                  type="file"
+                  accept="video/mp4,video/quicktime,video/webm,.mov"
+                  aria-label={
+                    object.screenVideo ? copy.replaceVideo : copy.uploadVideo
+                  }
+                  onChange={onVideoUpload}
+                  className="hidden"
+                />
+              </label>
+              {object.screenVideo ? (
+                <div className="screen-video-timing">
+                  {/* Cada modo tem o seu tempo: o Estático congela um quadro
+                      (o do PNG); o Movimento posiciona o vídeo na cena. */}
+                  {motionTab === "static" ? (
+                    <Control
+                      label={copy.screenVideoFrame}
+                      value={object.screenVideo.frameMs / 1000}
+                      setValue={(value) =>
+                        onUpdateScreenVideo({
+                          frameMs: Math.round(value * 1000),
+                        })
+                      }
+                      min={0}
+                      max={object.screenVideo.durationMs / 1000}
+                      step={0.01}
+                    />
+                  ) : (
+                    <Control
+                      label={copy.screenVideoStart}
+                      value={object.screenVideo.startMs / 1000}
+                      setValue={(value) =>
+                        onUpdateScreenVideo({
+                          startMs: Math.max(0, Math.round(value * 1000)),
+                        })
+                      }
+                      min={0}
+                      max={Math.max(
+                        10,
+                        Math.ceil(object.screenVideo.startMs / 1000) + 5,
+                      )}
+                      step={0.05}
+                    />
+                  )}
+                </div>
+              ) : null}
+              {object.screenVideo ? (
+                <p
+                  className="screen-video-file"
+                  title={object.screenVideo.name}
+                >
+                  <span className="screen-video-name">
+                    {object.screenVideo.name}
+                  </span>
+                  <span className="screen-video-duration">
+                    {`${(object.screenVideo.durationMs / 1000).toFixed(1)}s`}
+                  </span>
+                </p>
+              ) : null}
+              <p className="editor-sidebar-muted inspector-meta-note">
+                {copy.screenVideoHint}
+              </p>
+            </>
+          )}
           {uploadError ? (
             <p className="inspector-error-note">{uploadError}</p>
           ) : null}

@@ -193,6 +193,14 @@ const copy: AppCopy = {
   motionBezierDone: "Done",
 
   uploadImage: "Upload image",
+  screenSourceImage: "Image",
+  screenSourceVideo: "Video",
+  uploadVideo: "Upload video",
+  replaceVideo: "Replace video",
+  screenVideoHint: "MP4, MOV or WebM.",
+  uploadVideoError: "This browser can't play that video.",
+  screenVideoFrame: "Frame (s)",
+  screenVideoStart: "Scene start (s)",
   uploadImageError: "Upload failed",
   zoomInButton: "Zoom in",
   zoomOutButton: "Zoom out",
@@ -217,6 +225,9 @@ function renderInspector(
 ) {
   const handlers = {
     onImageUpload: jest.fn(),
+    onVideoUpload: jest.fn(),
+    onScreenSourceChange: jest.fn(),
+    onUpdateScreenVideo: jest.fn(),
     onModelChange: jest.fn(),
     onResetObject: jest.fn(),
     onThemeColorChange: jest.fn(),
@@ -253,6 +264,42 @@ describe("InspectorPanel", () => {
     fireEvent.click(screen.getByLabelText("Model"));
 
     expect(handlers.onModelChange).toHaveBeenCalledWith("notebook");
+  });
+
+  it("switches the screen between image and video", () => {
+    const handlers = renderInspector();
+
+    expect(screen.getByLabelText("Upload image")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: "Video" }));
+
+    expect(handlers.onScreenSourceChange).toHaveBeenCalledWith("video");
+  });
+
+  it("shows the video upload and the current file on the video source", () => {
+    renderInspector({
+      ...createSceneObject({ id: "object-1", name: "Object 1" }),
+      screenSource: "video",
+      screenVideo: {
+        durationMs: 12400,
+        frameMs: 0,
+        name: "recording.mov",
+        startMs: 0,
+        url: "blob:x",
+      },
+    });
+
+    expect(screen.getByLabelText("Replace video")).toBeInTheDocument();
+    expect(screen.getByText("recording.mov")).toBeInTheDocument();
+    expect(screen.getByText("12.4s")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Upload image")).not.toBeInTheDocument();
+  });
+
+  it("no longer lists video as a device model", () => {
+    renderInspector();
+    fireEvent.click(screen.getByLabelText("Model"));
+
+    expect(screen.queryByText("Video MP4")).not.toBeInTheDocument();
   });
 
   it("calls reset object from the reset action", () => {

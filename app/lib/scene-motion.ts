@@ -1,4 +1,4 @@
-import type { SceneObject } from "./scene-objects";
+import { getActiveScreenVideo, type SceneObject } from "./scene-objects";
 
 /**
  * Motion por objeto: uma lista de keyframes, cada um um retrato dos sete
@@ -304,9 +304,15 @@ export function hasMotion(object: SceneObject): boolean {
   return object.keyframes.length > 0;
 }
 
-/** Instante em que este objeto termina de se mover: o último keyframe. */
+/**
+ * Instante em que este objeto termina: o último keyframe ou o fim do vídeo da
+ * tela, o que vier depois — senão o play cortaria a gravação no meio.
+ */
 export function getObjectMotionEnd(object: SceneObject): number {
-  return object.keyframes[object.keyframes.length - 1]?.timeMs ?? 0;
+  const lastKeyframe = object.keyframes[object.keyframes.length - 1]?.timeMs ?? 0;
+  const video = getActiveScreenVideo(object);
+
+  return Math.max(lastKeyframe, video ? video.startMs + video.durationMs : 0);
 }
 
 /**

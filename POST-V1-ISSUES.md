@@ -67,3 +67,12 @@
 - [x] no keyframe limit, and a single keyframe is valid (the object holds that pose)
 - [x] playback starts from the playhead, the playhead follows it, and `Space` toggles it in `Motion`
 - [x] transitions include a `cubic-bezier` curve editor, with overshoot
+
+## 10. Screen recordings on device screens — done
+
+- [x] one `useScreenTexture` hook replaces the texture code duplicated across the six models
+- [x] the `Screen` section switches between `Image` and `Video`, each keeping its own file; the disabled "Video MP4 · coming soon" device option is gone
+- [x] uploads accept MP4, MOV and WebM, validated by decoding the first frame
+- [x] `Static` holds a chosen frame, which is what the PNG export captures; `Motion` ties the video to the playhead, with a draggable start strip on the track
+- verify on a regular browser whether starting playback stalls for a moment: in the in-app test browser the first ~0.2–1s of `requestAnimationFrame` stalls on play, with images as well as videos, so it is not caused by the video work
+- HTML on screens stays out of scope until the HTML-in-Canvas API leaves Chrome's origin trial

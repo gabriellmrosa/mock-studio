@@ -114,6 +114,27 @@ body {
    APP SHELL
    ===================================================== */
 
+/* Rótulos, botões, listas e a timeline são interface, não texto: arrastar
+   sobre um slider, o canvas ou a timeline não deve pintar rótulos de azul.
+   Vale para o editor e para o que ele abre por portal fora dele (menus,
+   snackbar). Os modais ficam de fora — os créditos têm texto para copiar. */
+.app-desktop-shell,
+.context-menu-panel,
+.snackbar-root {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Campos continuam editáveis e selecionáveis: no Safari, o `none` herdado do
+   pai chega a impedir a seleção dentro de inputs. Mensagens de erro também,
+   para poderem ser copiadas num relato de bug. */
+.app-desktop-shell :is(input, textarea, [contenteditable="true"]),
+.context-menu-panel :is(input, textarea),
+.inspector-error-note {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 .app-shell {
   background:
     radial-gradient(

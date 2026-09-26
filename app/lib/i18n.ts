@@ -55,6 +55,14 @@ export type AppCopy = {
   tabletBezelToggleLabel: string;
   screenSectionTitle: string;
   uploadImage: string;
+  screenSourceImage: string;
+  screenSourceVideo: string;
+  uploadVideo: string;
+  replaceVideo: string;
+  screenVideoHint: string;
+  uploadVideoError: string;
+  screenVideoFrame: string;
+  screenVideoStart: string;
   screenSectionHintPrefix: string;
   themesSectionTitle: string;
   bodyColorLabel: string;
@@ -179,6 +187,14 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     tabletBezelToggleLabel: "Moldura da tela",
     screenSectionTitle: "Tela",
     uploadImage: "Substituir imagem",
+    screenSourceImage: "Imagem",
+    screenSourceVideo: "Vídeo",
+    uploadVideo: "Enviar vídeo",
+    replaceVideo: "Substituir vídeo",
+    screenVideoHint: "MP4, MOV ou WebM. Uma gravação de tela do celular já vem no formato certo.",
+    screenVideoFrame: "Quadro (s)",
+    screenVideoStart: "Início na cena (s)",
+    uploadVideoError: "Este navegador não consegue reproduzir esse vídeo. Gravações de iPhone costumam usar HEVC: tente o Safari ou exporte em H.264.",
     screenSectionHintPrefix: "Tamanho ideal:",
     themesSectionTitle: "Aparência",
     bodyColorLabel: "Cores personalizadas",
@@ -363,6 +379,14 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     tabletBezelToggleLabel: "Screen bezel",
     screenSectionTitle: "Screen",
     uploadImage: "Replace image",
+    screenSourceImage: "Image",
+    screenSourceVideo: "Video",
+    uploadVideo: "Upload video",
+    replaceVideo: "Replace video",
+    screenVideoHint: "MP4, MOV or WebM. A phone screen recording already has the right shape.",
+    screenVideoFrame: "Frame (s)",
+    screenVideoStart: "Scene start (s)",
+    uploadVideoError: "This browser can't play that video. iPhone recordings often use HEVC: try Safari or export as H.264.",
     screenSectionHintPrefix: "Ideal size:",
     themesSectionTitle: "Appearance",
     bodyColorLabel: "Custom colors",

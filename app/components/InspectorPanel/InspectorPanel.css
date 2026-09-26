@@ -280,3 +280,74 @@
   font-size: var(--font-size-150);
   padding: var(--space-2) 0;
 }
+
+/* --- Tela: fonte imagem / vídeo --- */
+.screen-source-tabs {
+  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: 2px;
+  margin-bottom: var(--space-3);
+  padding: 2px;
+}
+
+.screen-source-tab {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  font-size: var(--font-size-150);
+  gap: var(--space-2);
+  justify-content: center;
+  padding: var(--space-2);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.screen-source-tab:hover {
+  color: var(--foreground);
+}
+
+.screen-source-tab.is-active {
+  background: var(--surface-raised);
+  color: var(--foreground);
+  font-weight: var(--font-semibold);
+}
+
+.screen-source-tab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 1px;
+}
+
+/* Arquivo de vídeo atual: nome truncado e duração alinhada à direita. */
+.screen-video-file {
+  align-items: center;
+  display: flex;
+  font-size: var(--font-size-150);
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+}
+
+.screen-video-name {
+  color: var(--foreground);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.screen-video-duration {
+  color: var(--sidebar-muted);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.screen-video-timing {
+  margin-top: var(--space-3);
+}

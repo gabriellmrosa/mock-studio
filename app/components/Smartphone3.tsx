@@ -2,14 +2,13 @@
 
 import * as THREE from "three";
 import React, { JSX, useEffect, useMemo } from "react";
-import { useGLTF, useTexture } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { GLTF } from "three-stdlib";
 import {
-  buildScreenCanvas,
-  MAX_TEXTURE_SIZE,
   SCREEN_HEIGHT,
   SCREEN_WIDTH,
 } from "../lib/mockup-image";
+import { useScreenTexture } from "../lib/screen-texture";
 import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import { createSimpleFinishMaterial } from "../lib/simple-finish-material";
 import {
@@ -136,6 +135,10 @@ type GLTFResult = GLTF & {
 
 type Smartphone3Props = JSX.IntrinsicElements["group"] & {
   imageUrl?: string;
+  /** Gravação de tela; quando presente, substitui a imagem. */
+  videoUrl?: string | null;
+  /** Identifica o objeto para o controlador de vídeo do canvas. */
+  videoKey?: string;
   screenPosition?: [number, number, number];
   screenSize?: [number, number];
   screenRotation?: [number, number, number];
@@ -177,63 +180,26 @@ function createAccentMaterial(color: string, matte: boolean) {
 // ---------------------------------------------------------------------------
 function ScreenWithTexture({
   imageUrl,
+  videoUrl,
+  videoKey,
   screenGeometry,
   screenPosition,
   screenRotation,
 }: {
   imageUrl: string;
+  videoUrl?: string | null;
+  /** Identifica o objeto para o controlador de vídeo do canvas. */
+  videoKey?: string;
   screenGeometry: THREE.ShapeGeometry;
   screenPosition: [number, number, number];
   screenRotation: [number, number, number];
 }) {
-  const sourceTexture = useTexture(imageUrl);
-
-  const texture = useMemo(() => {
-    const img = sourceTexture.image as
-      | HTMLImageElement
-      | HTMLCanvasElement
-      | undefined;
-
-    if (!img) {
-      return sourceTexture;
-    }
-
-    const imgW =
-      img instanceof HTMLImageElement
-        ? img.naturalWidth || img.width
-        : img.width;
-    const imgH =
-      img instanceof HTMLImageElement
-        ? img.naturalHeight || img.height
-        : img.height;
-    const canvas = buildScreenCanvas(
-      img,
-      imgW,
-      imgH,
-      SCREEN_WIDTH,
-      SCREEN_HEIGHT,
-      MAX_TEXTURE_SIZE,
-    );
-    const nextTexture = sourceTexture.clone();
-
-    nextTexture.image = canvas;
-    nextTexture.colorSpace = THREE.SRGBColorSpace;
-    nextTexture.flipY = true;
-    nextTexture.minFilter = THREE.LinearMipmapLinearFilter;
-    nextTexture.magFilter = THREE.LinearFilter;
-    nextTexture.anisotropy = 16;
-    nextTexture.wrapS = THREE.ClampToEdgeWrapping;
-    nextTexture.wrapT = THREE.ClampToEdgeWrapping;
-    nextTexture.needsUpdate = true;
-
-    return nextTexture;
-  }, [sourceTexture]);
-
-  useEffect(() => {
-    if (texture !== sourceTexture) {
-      return () => texture.dispose();
-    }
-  }, [sourceTexture, texture]);
+  const texture = useScreenTexture(
+    videoUrl
+      ? { kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
+      : { kind: "image", url: imageUrl },
+    { cropWidth: SCREEN_WIDTH, cropHeight: SCREEN_HEIGHT, flipY: true },
+  );
 
   return (
     <mesh
@@ -255,6 +221,8 @@ function ScreenWithTexture({
 // ---------------------------------------------------------------------------
 function Smartphone3Impl({
   imageUrl,
+  videoUrl,
+  videoKey,
   screenPosition = [-125, 315, -195],
   screenSize = [220, 470],
   screenRotation = [0, 0, 0],
@@ -465,6 +433,8 @@ function Smartphone3Impl({
 
       <ScreenWithTexture
         imageUrl={effectiveImageUrl}
+        videoUrl={videoUrl}
+        videoKey={videoKey}
         screenGeometry={screenGeometry}
         screenPosition={screenPosition}
         screenRotation={screenRotation}

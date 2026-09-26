@@ -15,7 +15,10 @@ import { createPortal } from "react-dom";
 import { Check, Diamond, Play, Square } from "lucide-react";
 import BezierEditor from "./BezierEditor";
 import type { AppCopy } from "../../lib/i18n";
-import type { SceneObject } from "../../lib/scene-objects";
+import {
+  getActiveScreenVideo,
+  type SceneObject,
+} from "../../lib/scene-objects";
 import {
   DEFAULT_BEZIER,
   EASING_IDS,
@@ -43,6 +46,7 @@ type MotionTimelineProps = {
   /** Cria um keyframe no playhead; se já houver um ali, remove. */
   onToggleKeyframeAtPlayhead: (objectId: string) => void;
   onChangeKeyframes: (objectId: string, keyframes: Keyframe[]) => void;
+  onChangeVideoStart: (objectId: string, startMs: number) => void;
   onRemoveKeyframe: (objectId: string, keyframeId: string) => void;
   onScrub: (timeMs: number) => void;
   onSelectKeyframe: (objectId: string, keyframeId: string) => void;
@@ -63,6 +67,13 @@ type DragState =
       moved: boolean;
       objectId: string;
       startKeyframes: Keyframe[];
+      startX: number;
+    }
+  | {
+      kind: "video";
+      moved: boolean;
+      objectId: string;
+      startMs: number;
       startX: number;
     }
   | {
@@ -105,6 +116,7 @@ export default function MotionTimeline({
   isPlaying,
   objects,
   onChangeKeyframes,
+  onChangeVideoStart,
   onRemoveKeyframe,
   onScrub,
   onSelectKeyframe,
@@ -123,7 +135,9 @@ export default function MotionTimeline({
   // de escala no meio do gesto, o keyframe fugiria do cursor.
   const [frozenAxisMs, setFrozenAxisMs] = useState<number | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
-  const [livePlayheadMs, setLivePlayheadMs] = useState(0);
+  // Guarda de qual play veio o valor: sem isso, o primeiro quadro de um novo
+  // play mostraria o instante em que o anterior terminou.
+  const [livePlayhead, setLivePlayhead] = useState({ ms: 0, startedAt: 0 });
 
   const axisMs =
     frozenAxisMs ??
@@ -142,7 +156,10 @@ export default function MotionTimeline({
     let frame = 0;
 
     const tick = () => {
-      setLivePlayheadMs(Date.now() - playbackStartedAt);
+      setLivePlayhead({
+        ms: Date.now() - playbackStartedAt,
+        startedAt: playbackStartedAt,
+      });
       frame = requestAnimationFrame(tick);
     };
 
@@ -151,9 +168,10 @@ export default function MotionTimeline({
     return () => cancelAnimationFrame(frame);
   }, [playbackStartedAt]);
 
-  const displayedPlayheadMs = isPlaying
-    ? Math.min(livePlayheadMs, sceneDurationMs)
-    : playheadMs;
+  const displayedPlayheadMs =
+    isPlaying && livePlayhead.startedAt === playbackStartedAt
+      ? Math.min(livePlayhead.ms, sceneDurationMs)
+      : playheadMs;
 
   const toPercent = (timeMs: number) => `${(timeMs / axisMs) * 100}%`;
 
@@ -212,6 +230,11 @@ export default function MotionTimeline({
     drag.moved = true;
 
     const deltaMs = msFromDeltaX(deltaX);
+
+    if (drag.kind === "video") {
+      onChangeVideoStart(drag.objectId, Math.max(0, snap(drag.startMs + deltaMs)));
+      return;
+    }
 
     if (drag.kind === "track") {
       onChangeKeyframes(
@@ -371,6 +394,39 @@ export default function MotionTimeline({
                   object.id === selectedObjectId ? " is-active" : ""
                 }`}
               >
+                {(() => {
+                  const video = getActiveScreenVideo(object);
+
+                  if (!video) {
+                    return null;
+                  }
+
+                  // Faixa fina no pé da trilha: o trecho em que a gravação
+                  // toca. Arrastar muda o início dela na cena.
+                  return (
+                    <div
+                      className="motion-timeline-video"
+                      title={`${copy.screenSourceVideo} · ${video.name}`}
+                      style={{
+                        left: toPercent(video.startMs),
+                        width: toPercent(video.durationMs),
+                      }}
+                      onPointerDown={(event) =>
+                        beginDrag(event, {
+                          kind: "video",
+                          moved: false,
+                          objectId: object.id,
+                          startMs: video.startMs,
+                          startX: event.clientX,
+                        })
+                      }
+                      onPointerMove={handleDragMove}
+                      onPointerUp={endDrag}
+                      onPointerCancel={endDrag}
+                    />
+                  );
+                })()}
+
                 {object.keyframes.slice(1).map((keyframe, offset) => {
                   const previous = object.keyframes[offset];
 

@@ -2,13 +2,10 @@
 
 import * as THREE from "three";
 import React, { useEffect, useMemo } from "react";
-import { useGLTF, useTexture } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
 import { GLTF, SkeletonUtils } from "three-stdlib";
-import {
-  buildScreenCanvas,
-  MAX_TEXTURE_SIZE,
-} from "../lib/mockup-image";
+import { useScreenTexture } from "../lib/screen-texture";
 import { createRoundedScreenGeometryFromMesh } from "../lib/rounded-screen";
 import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import { createSimpleFinishMaterial } from "../lib/simple-finish-material";
@@ -79,6 +76,10 @@ type GLTFResult = GLTF & {
 
 type NotebookProps = React.ComponentPropsWithoutRef<"group"> & {
   imageUrl?: string;
+  /** Gravação de tela; quando presente, substitui a imagem. */
+  videoUrl?: string | null;
+  /** Identifica o objeto para o controlador de vídeo do canvas. */
+  videoKey?: string;
   colors?: Record<string, string>;
   matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
@@ -101,6 +102,8 @@ const NOTEBOOK_DISPLAY_ASSEMBLY_PARTS = new Set<keyof typeof NOTEBOOK_MESH_SEMAN
 // ---------------------------------------------------------------------------
 function NotebookImpl({
   imageUrl,
+  videoUrl,
+  videoKey,
   colors,
   matteColors = true,
   debugPartColors,
@@ -116,40 +119,12 @@ function NotebookImpl({
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   useGraph(clone) as unknown as GLTFResult;
   const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("notebook");
-  const sourceTexture = useTexture(effectiveImageUrl);
-
-  const screenTexture = useMemo(() => {
-    const img = sourceTexture.image as HTMLImageElement | HTMLCanvasElement | undefined;
-    if (!img) return sourceTexture;
-
-    const imgW = img instanceof HTMLImageElement ? (img.naturalWidth || img.width) : img.width;
-    const imgH = img instanceof HTMLImageElement ? (img.naturalHeight || img.height) : img.height;
-    const canvas = buildScreenCanvas(
-      img,
-      imgW,
-      imgH,
-      NOTEBOOK_SCREEN_CROP_W,
-      NOTEBOOK_SCREEN_CROP_H,
-      MAX_TEXTURE_SIZE,
-    );
-    const nextTexture = sourceTexture.clone();
-    nextTexture.image = canvas;
-    nextTexture.colorSpace = THREE.SRGBColorSpace;
-    nextTexture.flipY = false;
-    nextTexture.minFilter = THREE.LinearMipmapLinearFilter;
-    nextTexture.magFilter = THREE.LinearFilter;
-    nextTexture.anisotropy = 16;
-    nextTexture.wrapS = THREE.ClampToEdgeWrapping;
-    nextTexture.wrapT = THREE.ClampToEdgeWrapping;
-    nextTexture.needsUpdate = true;
-    return nextTexture;
-  }, [sourceTexture]);
-
-  useEffect(() => {
-    if (screenTexture !== sourceTexture) {
-      return () => screenTexture.dispose();
-    }
-  }, [screenTexture, sourceTexture]);
+  const screenTexture = useScreenTexture(
+    videoUrl
+      ? { kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
+      : { kind: "image", url: effectiveImageUrl },
+    { cropWidth: NOTEBOOK_SCREEN_CROP_W, cropHeight: NOTEBOOK_SCREEN_CROP_H, flipY: false },
+  );
 
   const screenMaterial = useMemo(
     () => new THREE.MeshBasicMaterial({

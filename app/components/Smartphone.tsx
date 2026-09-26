@@ -2,13 +2,10 @@
 
 import * as THREE from "three";
 import React, { JSX, useEffect, useMemo } from "react";
-import { useGLTF, useTexture } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
 import { GLTF, SkeletonUtils } from "three-stdlib";
-import {
-  buildScreenCanvas,
-  MAX_TEXTURE_SIZE,
-} from "../lib/mockup-image";
+import { useScreenTexture } from "../lib/screen-texture";
 import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import { createSimpleFinishMaterial } from "../lib/simple-finish-material";
 import {
@@ -76,6 +73,10 @@ type GLTFResult = GLTF & {
 
 type SmartphoneProps = JSX.IntrinsicElements["group"] & {
   imageUrl?: string;
+  /** Gravação de tela; quando presente, substitui a imagem. */
+  videoUrl?: string | null;
+  /** Identifica o objeto para o controlador de vídeo do canvas. */
+  videoKey?: string;
   colors?: Record<string, string>;
   matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
@@ -122,6 +123,8 @@ function getRoundedRectangleShape(
 
 function SmartphoneImpl({
   imageUrl,
+  videoUrl,
+  videoKey,
   colors,
   matteColors = true,
   debugPartColors,
@@ -142,50 +145,16 @@ function SmartphoneImpl({
   useGraph(clone) as unknown as GLTFResult;
 
   const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("smartphone");
-  const sourceTexture = useTexture(effectiveImageUrl);
   const resolvedColors: SmartphoneColors =
     (colors as SmartphoneColors) ??
     SMARTPHONE_THEMES[SMARTPHONE_DEFAULT_THEME];
 
-  const screenTexture = useMemo(() => {
-    const img =
-      sourceTexture.image as HTMLImageElement | HTMLCanvasElement | undefined;
-
-    if (!img) return sourceTexture;
-
-    const imgW =
-      img instanceof HTMLImageElement ? (img.naturalWidth || img.width) : img.width;
-    const imgH =
-      img instanceof HTMLImageElement ? (img.naturalHeight || img.height) : img.height;
-
-    const canvas = buildScreenCanvas(
-      img,
-      imgW,
-      imgH,
-      SCREEN_CROP_W,
-      SCREEN_CROP_H,
-      MAX_TEXTURE_SIZE,
-    );
-
-    const nextTexture = sourceTexture.clone();
-    nextTexture.image = canvas;
-    nextTexture.colorSpace = THREE.SRGBColorSpace;
-    nextTexture.flipY = true;
-    nextTexture.minFilter = THREE.LinearMipmapLinearFilter;
-    nextTexture.magFilter = THREE.LinearFilter;
-    nextTexture.anisotropy = 16;
-    nextTexture.wrapS = THREE.ClampToEdgeWrapping;
-    nextTexture.wrapT = THREE.ClampToEdgeWrapping;
-    nextTexture.needsUpdate = true;
-
-    return nextTexture;
-  }, [sourceTexture]);
-
-  useEffect(() => {
-    if (screenTexture !== sourceTexture) {
-      return () => screenTexture.dispose();
-    }
-  }, [screenTexture, sourceTexture]);
+  const screenTexture = useScreenTexture(
+    videoUrl
+      ? { kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
+      : { kind: "image", url: effectiveImageUrl },
+    { cropWidth: SCREEN_CROP_W, cropHeight: SCREEN_CROP_H, flipY: true },
+  );
 
   const screenMaterial = useMemo(
     () =>

@@ -182,6 +182,8 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       isVisible: object.isVisible,
       matteColors: object.matteColors,
       modelId: object.modelId,
+      screenSource: "image",
+      screenVideo: null,
       name: object.name,
       positionX: object.positionX,
       positionY: object.positionY,

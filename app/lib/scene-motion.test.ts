@@ -1,4 +1,8 @@
-import { createSceneObject, duplicateSceneObject } from "./scene-objects";
+import {
+  createSceneObject,
+  duplicateSceneObject,
+  getScreenVideoTime,
+} from "./scene-objects";
 import {
   DEFAULT_BEZIER,
   applyEasing,
@@ -269,6 +273,45 @@ describe("scene-motion", () => {
 
     it("clamps x to the unit interval and y to the overshoot range", () => {
       expect(clampBezier([-0.2, -3, 1.4, 9])).toEqual([0, -0.5, 1, 1.5]);
+    });
+  });
+
+  describe("screen video", () => {
+    const video = {
+      durationMs: 4000,
+      frameMs: 0,
+      name: "recording.mp4",
+      startMs: 1000,
+      url: "blob:x",
+    };
+
+    it("holds the first frame before the start and the last after the end", () => {
+      expect(getScreenVideoTime(video, 0)).toBe(0);
+      expect(getScreenVideoTime(video, 2500)).toBe(1500);
+      expect(getScreenVideoTime(video, 99999)).toBe(4000);
+    });
+
+    it("extends the scene to the end of the video", () => {
+      const object = {
+        ...withKeyframes([
+          [0, 0],
+          [2000, 1],
+        ]),
+        screenSource: "video" as const,
+        screenVideo: video,
+      };
+
+      expect(getObjectMotionEnd(object)).toBe(5000);
+    });
+
+    it("ignores a stored video while the screen shows the image", () => {
+      const object = {
+        ...withKeyframes([[2000, 1]]),
+        screenSource: "image" as const,
+        screenVideo: video,
+      };
+
+      expect(getObjectMotionEnd(object)).toBe(2000);
     });
   });
 });

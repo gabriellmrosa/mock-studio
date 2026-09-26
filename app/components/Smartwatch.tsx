@@ -2,13 +2,10 @@
 
 import * as THREE from "three";
 import React, { useEffect, useMemo } from "react";
-import { useGLTF, useTexture } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
 import { GLTF, SkeletonUtils } from "three-stdlib";
-import {
-  buildScreenCanvas,
-  MAX_TEXTURE_SIZE,
-} from "../lib/mockup-image";
+import { useScreenTexture } from "../lib/screen-texture";
 import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import {
   SMARTWATCH_DEFAULT_THEME,
@@ -46,6 +43,10 @@ type GLTFResult = GLTF & {
 
 type SmartwatchProps = React.ComponentPropsWithoutRef<"group"> & {
   imageUrl?: string;
+  /** Gravação de tela; quando presente, substitui a imagem. */
+  videoUrl?: string | null;
+  /** Identifica o objeto para o controlador de vídeo do canvas. */
+  videoKey?: string;
   colors?: Record<string, string>;
   matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
@@ -131,6 +132,8 @@ function getRoundedRectangleShape(
 // ---------------------------------------------------------------------------
 function SmartwatchImpl({
   imageUrl,
+  videoUrl,
+  videoKey,
   colors,
   matteColors = true,
   debugPartColors,
@@ -143,42 +146,12 @@ function SmartwatchImpl({
   const clone = useMemo(() => SkeletonUtils.clone(scene), [scene]);
   useGraph(clone) as unknown as GLTFResult;
   const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("smartwatch");
-  const sourceTexture = useTexture(effectiveImageUrl);
-
-  const screenTexture = useMemo(() => {
-    const img = sourceTexture.image as HTMLImageElement | HTMLCanvasElement | undefined;
-    if (!img) return sourceTexture;
-
-    const imgW = img instanceof HTMLImageElement ? (img.naturalWidth || img.width) : img.width;
-    const imgH = img instanceof HTMLImageElement ? (img.naturalHeight || img.height) : img.height;
-    const canvas = buildScreenCanvas(
-      img,
-      imgW,
-      imgH,
-      screenSize[0],
-      screenSize[1],
-      MAX_TEXTURE_SIZE,
-    );
-
-    const nextTexture = sourceTexture.clone();
-    nextTexture.image = canvas;
-    nextTexture.colorSpace = THREE.SRGBColorSpace;
-    nextTexture.flipY = false;
-    nextTexture.minFilter = THREE.LinearMipmapLinearFilter;
-    nextTexture.magFilter = THREE.LinearFilter;
-    nextTexture.anisotropy = 16;
-    nextTexture.wrapS = THREE.ClampToEdgeWrapping;
-    nextTexture.wrapT = THREE.ClampToEdgeWrapping;
-    nextTexture.needsUpdate = true;
-
-    return nextTexture;
-  }, [screenSize, sourceTexture]);
-
-  useEffect(() => {
-    if (screenTexture !== sourceTexture) {
-      return () => screenTexture.dispose();
-    }
-  }, [screenTexture, sourceTexture]);
+  const screenTexture = useScreenTexture(
+    videoUrl
+      ? { kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
+      : { kind: "image", url: effectiveImageUrl },
+    { cropWidth: screenSize[0], cropHeight: screenSize[1], flipY: false },
+  );
 
   const screenGeometry = useMemo(() => {
     const shape = getRoundedRectangleShape(

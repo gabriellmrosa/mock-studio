@@ -25,7 +25,7 @@ import Snackbar, {
 import { APP_VERSION } from "./lib/app-version";
 import { buildNextDeviceColors } from "./lib/device-colors";
 import { APP_COPY, type Locale, type UiTheme } from "./lib/i18n";
-import { readFileAsDataUrl } from "./lib/mockup-image";
+import { probeVideoFile, readFileAsDataUrl } from "./lib/mockup-image";
 import {
   findKeyframeAt,
   getSceneMotionDuration,
@@ -225,6 +225,36 @@ export default function Home() {
       setUploadError(copy.uploadImageError);
     } finally {
       event.target.value = "";
+    }
+  }
+
+  async function handleVideoUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    const target = selectedObject;
+
+    event.target.value = "";
+
+    if (!file || !target) {
+      return;
+    }
+
+    try {
+      const { durationMs, url } = await probeVideoFile(file);
+
+      updateSceneObject(target.id, {
+        screenSource: "video",
+        screenVideo: {
+          durationMs,
+          frameMs: 0,
+          name: file.name,
+          startMs: 0,
+          url,
+        },
+      });
+      setUploadError("");
+    } catch (error) {
+      console.error(error);
+      setUploadError(copy.uploadVideoError);
     }
   }
 
@@ -818,6 +848,15 @@ export default function Home() {
             isPlaying={isMotionPlaying}
             objects={sceneObjects.filter((object) => object.isVisible)}
             onChangeKeyframes={handleChangeKeyframes}
+            onChangeVideoStart={(objectId, startMs) => {
+              const target = findObject(objectId);
+
+              if (target?.screenVideo) {
+                updateSceneObject(objectId, {
+                  screenVideo: { ...target.screenVideo, startMs },
+                });
+              }
+            }}
             onRemoveKeyframe={handleRemoveKeyframe}
             onScrub={handleScrub}
             onSelectKeyframe={handleSelectKeyframe}
@@ -841,6 +880,20 @@ export default function Home() {
         copy={copy}
         object={selectedObject}
         onImageUpload={handleImageUpload}
+        onVideoUpload={handleVideoUpload}
+        onUpdateScreenVideo={(patch) => {
+          if (!selectedObject?.screenVideo) return;
+
+          updateSceneObject(selectedObject.id, {
+            screenVideo: { ...selectedObject.screenVideo, ...patch },
+          });
+        }}
+        onScreenSourceChange={(screenSource) => {
+          if (!selectedObject) return;
+
+          setUploadError("");
+          updateSceneObject(selectedObject.id, { screenSource });
+        }}
         onModelChange={handleModelChange}
         onResetObject={handleResetObject}
         onThemeColorChange={handleThemeColorChange}

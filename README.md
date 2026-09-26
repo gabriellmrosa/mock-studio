@@ -27,7 +27,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 
 ## Highlights
 
-- compose multiple devices in one scene with independent transforms and uploaded screens
+- compose multiple devices in one scene with independent transforms and uploaded screens — images or screen recordings
 - switch between themes, semantic part colors and model-specific placeholders
 - export PNGs at `1080p`, `1440p` or `4K` — transparent, or with the canvas background and floor grid
 - hide the entire interface for clean, full-canvas captures
@@ -40,7 +40,8 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 
 - multi-object composition with `smartphone`, `smartphone2`, `smartphone3`, `smartwatch`, `notebook` and `tablet`
 - object duplication that preserves transform, image and inspector settings
-- per-object image upload with model-specific placeholders generated at runtime
+- per-object screen content: an image or a video (MP4, MOV or WebM), switched from the `Image` / `Video` control in the `Screen` section, with model-specific placeholders generated at runtime
+- screen videos hold a chosen frame in `Static` (the one exported to PNG) and follow the playhead in `Motion`, where a draggable strip on the object's track sets when the recording starts
 - per-model options like the device body toggle, the notebook keyboard and the tablet screen bezel
 - per-object transform controls for position, rotation and scale
 - device themes plus manual color customization by semantic part
@@ -130,6 +131,7 @@ The `tablet` has no GLB: its body is an extruded rounded rectangle with beveled 
 - [app/lib/scene-objects.ts](app/lib/scene-objects.ts): object creation, reset and model switching
 - [app/lib/scene-templates.ts](app/lib/scene-templates.ts): template capture, rebuild and `localStorage` persistence
 - [app/lib/scene-motion.ts](app/lib/scene-motion.ts): keyframes, easing curves and transform sampling over time
+- [app/lib/screen-texture.ts](app/lib/screen-texture.ts): the shared screen texture hook, for images and videos
 - [app/components/EditorPrimitives/](app/components/EditorPrimitives/): shared panel, button and collapsible-section primitives
 - [app/lib/3d-tokens/](app/lib/3d-tokens/): per-model themes and color tokens
 - [app/lib/i18n.ts](app/lib/i18n.ts): copy for `pt-BR` and `en-US`
@@ -150,6 +152,11 @@ Checklist:
 
 ## Technical Notes
 
+- every model gets its screen texture from one hook, `useScreenTexture`: images are cover-cropped on a canvas, videos through the texture's UV `offset`/`repeat`, since re-cropping a canvas per frame would be too costly
+- screen videos are kept as blob URLs, never base64, and like images they stay out of templates; an upload is accepted only after the browser decodes its first frame, because `canPlayType` is unreliable (Chrome on macOS answers "" for HEVC and plays it anyway)
+- the video element lives in the document, invisible: a detached `<video>` presents no frames, since Chrome pauses video-only background media and the `VideoTexture` freezes
+- video time belongs to a `ScreenVideoController` inside the canvas that, every frame, pins each video to the chosen frame (`Static`), the playhead (`Motion`, paused) or the scene clock (playing), seeking during playback only when it drifts past 0.12s; before its start and after its end a video holds its first and last frame, like keyframes do, and the scene duration includes the latest video end
+- editor chrome is not selectable text (`user-select: none` on the shell and its portaled menus), with inputs, editable fields and error notes opted back in
 - screen placeholders are generated at runtime on a canvas (checker pattern + recommended size in the UI body font), one per model — there are no static placeholder PNGs to maintain
 - placeholder text size is a fraction of the image height so it reads at a consistent visual size across models; `smartwatch` and `notebook` use a larger fraction because their screen is a smaller part of the framed device
 - new objects spawn after the rightmost object on the default plane, even when models differ
