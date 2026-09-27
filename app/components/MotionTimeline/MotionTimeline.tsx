@@ -3,6 +3,7 @@
 import "./MotionTimeline.css";
 import "../ContextMenu/ContextMenu.css";
 import {
+  Fragment,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -12,7 +13,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { Check, Diamond, Play, Square } from "lucide-react";
+import { Check, Diamond, Play, Square, Video } from "lucide-react";
 import BezierEditor from "./BezierEditor";
 import type { AppCopy } from "../../lib/i18n";
 import {
@@ -301,6 +302,56 @@ export default function MotionTimeline({
     setMenu({ ...menu, kind: "bezier" });
   }
 
+  /**
+   * Trilha do vídeo da tela, logo abaixo da trilha de keyframes do objeto —
+   * como um clipe num editor de vídeo. Arrastar o clipe muda o instante em que
+   * a gravação começa na cena.
+   */
+  function renderVideoLane(object: SceneObject) {
+    const video = getActiveScreenVideo(object);
+
+    if (!video) {
+      return null;
+    }
+
+    return (
+      <div
+        className={`motion-timeline-lane motion-timeline-lane-video${
+          object.id === selectedObjectId ? " is-active" : ""
+        }`}
+      >
+        <div
+          className="motion-timeline-clip"
+          title={`${video.name} · ${formatSeconds(video.durationMs)}`}
+          style={{
+            left: toPercent(video.startMs),
+            width: toPercent(video.durationMs),
+          }}
+          onPointerDown={(event) => {
+            if (event.button !== 0) {
+              return;
+            }
+
+            onSelectObject(object.id);
+            beginDrag(event, {
+              kind: "video",
+              moved: false,
+              objectId: object.id,
+              startMs: video.startMs,
+              startX: event.clientX,
+            });
+          }}
+          onPointerMove={handleDragMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+        >
+          <Video size={11} aria-hidden />
+          <span className="motion-timeline-clip-name">{video.name}</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <section className="motion-timeline" aria-label={copy.motionTimeline}>
       <header className="motion-timeline-header">
@@ -332,9 +383,8 @@ export default function MotionTimeline({
                 ? copy.motionRemoveKeyframe
                 : copy.motionAddKeyframe;
 
-              return (
+              const label = (
                 <div
-                  key={object.id}
                   className={`motion-timeline-label${
                     object.id === selectedObjectId ? " is-active" : ""
                   }`}
@@ -360,6 +410,22 @@ export default function MotionTimeline({
                     <Diamond size={11} />
                   </button>
                 </div>
+              );
+
+              return getActiveScreenVideo(object) ? (
+                <Fragment key={object.id}>
+                  {label}
+                  <div
+                    className={`motion-timeline-label motion-timeline-label-video${
+                      object.id === selectedObjectId ? " is-active" : ""
+                    }`}
+                  >
+                    <Video size={11} aria-hidden />
+                    <span>{copy.screenSourceVideo}</span>
+                  </div>
+                </Fragment>
+              ) : (
+                <Fragment key={object.id}>{label}</Fragment>
               );
             })}
           </div>
@@ -388,45 +454,12 @@ export default function MotionTimeline({
             </div>
 
             {objects.map((object) => (
+              <Fragment key={object.id}>
               <div
-                key={object.id}
                 className={`motion-timeline-lane${
                   object.id === selectedObjectId ? " is-active" : ""
                 }`}
               >
-                {(() => {
-                  const video = getActiveScreenVideo(object);
-
-                  if (!video) {
-                    return null;
-                  }
-
-                  // Faixa fina no pé da trilha: o trecho em que a gravação
-                  // toca. Arrastar muda o início dela na cena.
-                  return (
-                    <div
-                      className="motion-timeline-video"
-                      title={`${copy.screenSourceVideo} · ${video.name}`}
-                      style={{
-                        left: toPercent(video.startMs),
-                        width: toPercent(video.durationMs),
-                      }}
-                      onPointerDown={(event) =>
-                        beginDrag(event, {
-                          kind: "video",
-                          moved: false,
-                          objectId: object.id,
-                          startMs: video.startMs,
-                          startX: event.clientX,
-                        })
-                      }
-                      onPointerMove={handleDragMove}
-                      onPointerUp={endDrag}
-                      onPointerCancel={endDrag}
-                    />
-                  );
-                })()}
-
                 {object.keyframes.slice(1).map((keyframe, offset) => {
                   const previous = object.keyframes[offset];
 
@@ -524,6 +557,8 @@ export default function MotionTimeline({
                   );
                 })}
               </div>
+              {renderVideoLane(object)}
+              </Fragment>
             ))}
 
             <div

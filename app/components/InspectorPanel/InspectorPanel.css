@@ -351,3 +351,28 @@
 .screen-video-timing {
   margin-top: var(--space-3);
 }
+
+/* Enquadramento do conteúdo da tela. */
+.screen-fit {
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+}
+
+.screen-fit-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.screen-fit-subtitle {
+  margin-top: var(--space-2);
+}
+
+.screen-fit-reset:disabled {
+  cursor: default;
+  opacity: 0.35;
+}

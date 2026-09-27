@@ -36,7 +36,9 @@ import {
 } from "./lib/scene-motion";
 import {
   changeSceneObjectModel,
+  DEFAULT_SCREEN_FIT,
   createSceneObject,
+  getActiveScreenVideo,
   duplicateSceneObject,
   getSequentialSpawnTransform,
   resetSceneObject,
@@ -202,10 +204,24 @@ export default function Home() {
     }
   }, [sceneObjects, selectedObjectId]);
 
-  function updateSceneObject(id: string, patch: Partial<SceneObject>) {
+  /**
+   * `patch` pode ser uma função do objeto atual. Use-a para mexer em campos
+   * aninhados (enquadramento, dados do vídeo): montar o objeto novo a partir
+   * do `selectedObject` do render faz duas mudanças seguidas se atropelarem —
+   * a cor de fundo, que o ColorRow grava com atraso, desfazia o zoom.
+   */
+  function updateSceneObject(
+    id: string,
+    patch: Partial<SceneObject> | ((object: SceneObject) => Partial<SceneObject>),
+  ) {
     setSceneObjects((current) =>
       current.map((object) =>
-        object.id === id ? { ...object, ...patch } : object,
+        object.id === id
+          ? {
+              ...object,
+              ...(typeof patch === "function" ? patch(object) : patch),
+            }
+          : object,
       ),
     );
   }
@@ -218,7 +234,11 @@ export default function Home() {
 
     try {
       const nextImage = await readFileAsDataUrl(file);
-      updateSceneObject(selectedObject.id, { imageUrl: nextImage });
+      // Imagem nova, enquadramento novo: o anterior foi feito para outra.
+      updateSceneObject(selectedObject.id, {
+        imageFit: { ...DEFAULT_SCREEN_FIT },
+        imageUrl: nextImage,
+      });
       setUploadError("");
     } catch (error) {
       console.error(error);
@@ -245,6 +265,7 @@ export default function Home() {
         screenSource: "video",
         screenVideo: {
           durationMs,
+          fit: { ...DEFAULT_SCREEN_FIT },
           frameMs: 0,
           name: file.name,
           startMs: 0,
@@ -848,15 +869,13 @@ export default function Home() {
             isPlaying={isMotionPlaying}
             objects={sceneObjects.filter((object) => object.isVisible)}
             onChangeKeyframes={handleChangeKeyframes}
-            onChangeVideoStart={(objectId, startMs) => {
-              const target = findObject(objectId);
-
-              if (target?.screenVideo) {
-                updateSceneObject(objectId, {
-                  screenVideo: { ...target.screenVideo, startMs },
-                });
-              }
-            }}
+            onChangeVideoStart={(objectId, startMs) =>
+              updateSceneObject(objectId, (object) =>
+                object.screenVideo
+                  ? { screenVideo: { ...object.screenVideo, startMs } }
+                  : {},
+              )
+            }
             onRemoveKeyframe={handleRemoveKeyframe}
             onScrub={handleScrub}
             onSelectKeyframe={handleSelectKeyframe}
@@ -881,12 +900,26 @@ export default function Home() {
         object={selectedObject}
         onImageUpload={handleImageUpload}
         onVideoUpload={handleVideoUpload}
+        onUpdateScreenFit={(patch) => {
+          if (!selectedObject) return;
+
+          // Grava no enquadramento da fonte que está na tela.
+          updateSceneObject(selectedObject.id, (object) => {
+            const video = getActiveScreenVideo(object);
+
+            return video
+              ? { screenVideo: { ...video, fit: { ...video.fit, ...patch } } }
+              : { imageFit: { ...object.imageFit, ...patch } };
+          });
+        }}
         onUpdateScreenVideo={(patch) => {
           if (!selectedObject?.screenVideo) return;
 
-          updateSceneObject(selectedObject.id, {
-            screenVideo: { ...selectedObject.screenVideo, ...patch },
-          });
+          updateSceneObject(selectedObject.id, (object) =>
+            object.screenVideo
+              ? { screenVideo: { ...object.screenVideo, ...patch } }
+              : {},
+          );
         }}
         onScreenSourceChange={(screenSource) => {
           if (!selectedObject) return;

@@ -1,13 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useTexture } from "@react-three/drei";
+import { detectHdrTransfer, type HdrTransfer } from "./hdr-video";
+import { createScreenCompositor } from "./screen-compositor";
 import {
   MAX_TEXTURE_SIZE,
   buildScreenCanvas,
   getCoverCrop,
 } from "./mockup-image";
+import {
+  DEFAULT_SCREEN_FIT,
+  MAX_SCREEN_CROP,
+  MAX_SCREEN_ZOOM,
+  MIN_SCREEN_ZOOM,
+  type ScreenFit,
+} from "./scene-objects";
 
 /**
  * Textura da tela de um aparelho. Os seis modelos faziam o mesmo caminho à
@@ -15,12 +25,16 @@ import {
  * a textura —, e cada fonte nova (vídeo, hoje) teria que ser repetida seis
  * vezes. Aqui fica o caminho único; o material continua em cada modelo, porque
  * ali há diferenças legítimas (polygonOffset, material declarativo).
+ *
+ * A fonte (imagem ou vídeo) nunca vai direto para o material: passa pela
+ * composição ([screen-compositor.ts](app/lib/screen-compositor.ts)), que
+ * aplica enquadramento, fundo e conversão HDR numa textura no formato da tela.
  */
 
 export type ScreenSource =
-  | { kind: "image"; url: string }
+  | { fit?: ScreenFit; kind: "image"; url: string }
   /** `key` identifica o objeto, para o controlador achar o vídeo dele. */
-  | { kind: "video"; key: string; url: string };
+  | { fit?: ScreenFit; kind: "video"; key: string; url: string };
 
 /**
  * Elementos de vídeo das telas, por objeto. O hook só cria e registra; quem
@@ -57,32 +71,70 @@ function configureScreenTexture(texture: THREE.Texture, flipY: boolean) {
 }
 
 /**
- * Recorte "cover" expresso como transformação de UV, para fontes que não dá
- * para recortar num canvas a cada quadro (vídeo). Mesmo recorte do
- * `buildScreenCanvas`: centralizado, mantendo a proporção da tela.
+ * Onde amostrar o conteúdo para preencher a tela: recorte "cover" automático e
+ * enquadramento do usuário, em UV da textura de origem. `offset`/`repeat`
+ * levam a UV da tela (0 a 1) para a UV da origem; `contentMin`/`contentMax`
+ * delimitam o conteúdo visível — fora dele a composição pinta o fundo.
+ *
+ * O corte das bordas é uma máscara, não um novo enquadramento: a escala e a
+ * posição são calculadas sobre o arquivo inteiro, e o corte só esconde as
+ * faixas, que passam a mostrar o fundo. Recalcular o "cover" sobre o que sobra
+ * ampliava o conteúdo — cortar em cima e embaixo parecia um zoom.
+ *
+ * O sentido do V depende do `flipY` do modelo: com `flipY` o V cresce para o
+ * topo da imagem, sem ele cresce para baixo. Sem compensar, "subir" o conteúdo
+ * desceria no Notebook e no Smartwatch, e o corte de cima cortaria embaixo.
  */
-export function getCoverUvTransform(
+export function getScreenLayout(
   sourceWidth: number,
   sourceHeight: number,
   targetWidth: number,
   targetHeight: number,
+  fit: ScreenFit = DEFAULT_SCREEN_FIT,
+  flipY = true,
 ) {
+  const clampCrop = (value: number) =>
+    Math.min(MAX_SCREEN_CROP, Math.max(0, value || 0));
+  const cropLeft = clampCrop(fit.cropLeft);
+  const cropRight = clampCrop(fit.cropRight);
+  const cropTop = clampCrop(fit.cropTop);
+  const cropBottom = clampCrop(fit.cropBottom);
+
   const crop = getCoverCrop(
     sourceWidth,
     sourceHeight,
     targetWidth,
     targetHeight,
   );
+  const zoom = Math.min(MAX_SCREEN_ZOOM, Math.max(MIN_SCREEN_ZOOM, fit.zoom));
+  const panX = Math.min(1, Math.max(-1, fit.panX));
+  const panY = Math.min(1, Math.max(-1, fit.panY));
+
+  // Janela em frações da origem. Com zoom < 1 passa de 1 e a folga fica
+  // negativa: o mesmo cálculo de posição passa a mover o conteúdo dentro da
+  // tela.
+  const windowU = crop.srcW / sourceWidth / zoom;
+  const windowV = crop.srcH / sourceHeight / zoom;
+
+  // Borda que fica em V = 0: a de baixo com flipY, a de cima sem.
+  const cropAtV0 = flipY ? cropBottom : cropTop;
+  const cropAtV1 = flipY ? cropTop : cropBottom;
 
   return {
-    offset: [crop.srcX / sourceWidth, crop.srcY / sourceHeight] as const,
-    repeat: [crop.srcW / sourceWidth, crop.srcH / sourceHeight] as const,
+    contentMax: [1 - cropRight, 1 - cropAtV1] as const,
+    contentMin: [cropLeft, cropAtV0] as const,
+    // Mover o conteúdo para a direita é levar a janela para a esquerda.
+    offset: [
+      ((1 - windowU) / 2) * (1 - panX),
+      ((1 - windowV) / 2) * (flipY ? 1 - panY : 1 + panY),
+    ] as const,
+    repeat: [windowU, windowV] as const,
   };
 }
 
 function useImageScreenTexture(
   url: string,
-  { cropHeight, cropWidth, flipY }: ScreenTextureOptions,
+  { flipY }: ScreenTextureOptions,
 ) {
   const sourceTexture = useTexture(url);
 
@@ -93,7 +145,7 @@ function useImageScreenTexture(
       | undefined;
 
     if (!image) {
-      return sourceTexture;
+      return { size: null, texture: sourceTexture };
     }
 
     const width =
@@ -104,12 +156,14 @@ function useImageScreenTexture(
       image instanceof HTMLImageElement
         ? image.naturalHeight || image.height
         : image.height;
+    // A imagem inteira, só reduzida ao teto de textura: o recorte é feito na
+    // composição, para o enquadramento alcançar o que sobrar fora dele.
     const canvas = buildScreenCanvas(
       image,
       width,
       height,
-      cropWidth,
-      cropHeight,
+      width,
+      height,
       MAX_TEXTURE_SIZE,
     );
     const next = sourceTexture.clone();
@@ -119,12 +173,12 @@ function useImageScreenTexture(
     next.minFilter = THREE.LinearMipmapLinearFilter;
     next.needsUpdate = true;
 
-    return next;
-  }, [cropHeight, cropWidth, flipY, sourceTexture]);
+    return { size: { height, width }, texture: next };
+  }, [flipY, sourceTexture]);
 
   useEffect(() => {
-    if (texture !== sourceTexture) {
-      return () => texture.dispose();
+    if (texture.texture !== sourceTexture) {
+      return () => texture.texture.dispose();
     }
   }, [sourceTexture, texture]);
 
@@ -139,12 +193,18 @@ function useImageScreenTexture(
  * Sem mipmaps: gerá-los a cada quadro custaria caro e a tela quase nunca é
  * vista minúscula.
  */
+type VideoScreenState = {
+  size: { height: number; width: number };
+  texture: THREE.VideoTexture;
+  transfer: HdrTransfer | null;
+};
+
 function useVideoScreenTexture(
   key: string | null,
   url: string | null,
-  { cropHeight, cropWidth, flipY }: ScreenTextureOptions,
+  { flipY }: ScreenTextureOptions,
 ) {
-  const [texture, setTexture] = useState<THREE.VideoTexture | null>(null);
+  const [state, setState] = useState<VideoScreenState | null>(null);
 
   useEffect(() => {
     if (!url || !key) {
@@ -170,41 +230,41 @@ function useVideoScreenTexture(
 
     // Com o vídeo pausado e posicionado pelo app (quadro fixo, playhead), não
     // há quadro "apresentado" a cada seek; atualiza a textura explicitamente.
-    // Vale também para o primeiro quadro, que chega sem nenhum seek.
     function handleSeeked() {
       if (created) {
         created.needsUpdate = true;
       }
     }
 
-    // As dimensões só existem depois dos metadados, e o recorte depende delas.
-    function handleMetadata() {
+    // Só com um quadro decodificado dá para saber a curva (HDR ou não) — e as
+    // dimensões, de que o recorte depende, já estão prontas nesse ponto.
+    function handleFirstFrame() {
       const next = new THREE.VideoTexture(video);
-      const { offset, repeat } = getCoverUvTransform(
-        video.videoWidth,
-        video.videoHeight,
-        cropWidth,
-        cropHeight,
-      );
+      const transfer = detectHdrTransfer(video);
 
       configureScreenTexture(next, flipY);
+      // HDR é lido cru pela composição: nenhuma curva aplicada aqui.
+      if (transfer) {
+        next.colorSpace = THREE.NoColorSpace;
+      }
       next.minFilter = THREE.LinearFilter;
       next.generateMipmaps = false;
-      next.offset.set(offset[0], offset[1]);
-      next.repeat.set(repeat[0], repeat[1]);
+      next.needsUpdate = true;
       created = next;
-      setTexture(next);
+      setState({
+        size: { height: video.videoHeight, width: video.videoWidth },
+        texture: next,
+        transfer,
+      });
     }
 
-    video.addEventListener("loadedmetadata", handleMetadata, { once: true });
-    video.addEventListener("loadeddata", handleSeeked);
+    video.addEventListener("loadeddata", handleFirstFrame, { once: true });
     video.addEventListener("seeked", handleSeeked);
     video.src = url;
     screenVideos.set(key, video);
 
     return () => {
-      video.removeEventListener("loadedmetadata", handleMetadata);
-      video.removeEventListener("loadeddata", handleSeeked);
+      video.removeEventListener("loadeddata", handleFirstFrame);
       video.removeEventListener("seeked", handleSeeked);
 
       if (screenVideos.get(key) === video) {
@@ -216,30 +276,122 @@ function useVideoScreenTexture(
       video.load();
       video.remove();
       created?.dispose();
-      setTexture(null);
+      setState(null);
     };
-  }, [cropHeight, cropWidth, flipY, key, url]);
+  }, [flipY, key, url]);
 
-  return texture;
+  return state;
+}
+
+type CompositionInput = {
+  size: { height: number; width: number };
+  texture: THREE.Texture;
+  transfer: HdrTransfer | null;
+};
+
+/**
+ * Desenha a fonte na textura da tela. Recompõe quando algo muda — e, no vídeo,
+ * a cada quadro, porque o quadro muda sozinho.
+ */
+function useScreenComposition(
+  input: CompositionInput | null,
+  isVideo: boolean,
+  fit: ScreenFit | undefined,
+  { cropHeight, cropWidth, flipY }: ScreenTextureOptions,
+) {
+  const renderer = useThree((three) => three.gl);
+  const compositor = useMemo(
+    () => createScreenCompositor(cropWidth, cropHeight),
+    [cropHeight, cropWidth],
+  );
+
+  useEffect(() => () => compositor.dispose(), [compositor]);
+
+  const resolvedFit = { ...DEFAULT_SCREEN_FIT, ...fit };
+  const layout = input
+    ? getScreenLayout(
+        input.size.width,
+        input.size.height,
+        cropWidth,
+        cropHeight,
+        resolvedFit,
+        flipY,
+      )
+    : null;
+
+  const background = resolvedFit.background;
+  const layoutKey = layout ? JSON.stringify(layout) : "";
+
+  // O useFrame lê daqui o estado atual sem se re-inscrever a cada render.
+  // Atualizar num efeito (e não no render) também marca a tela para
+  // recompor — é o único momento em que uma imagem precisa ser redesenhada.
+  const frame = useRef<{
+    background: string;
+    dirty: boolean;
+    input: CompositionInput | null;
+    isVideo: boolean;
+    layout: ReturnType<typeof getScreenLayout> | null;
+  }>({ background, dirty: true, input: null, isVideo, layout: null });
+
+  useEffect(() => {
+    frame.current = { background, dirty: true, input, isVideo, layout };
+    // `layout` é recriado a cada render; `layoutKey` é o que muda de verdade.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [background, compositor, input, isVideo, layoutKey]);
+
+  // Prioridade padrão: roda antes do render da cena, que já vê a tela pronta.
+  // Prioridade positiva desligaria o render automático do R3F.
+  useFrame(() => {
+    const current = frame.current;
+
+    if (!current.input || !current.layout) {
+      return;
+    }
+
+    if (!current.dirty && !current.isVideo) {
+      return;
+    }
+
+    compositor.render(renderer, {
+      background: current.background,
+      layout: current.layout,
+      source: current.input.texture,
+      transfer: current.input.transfer,
+    });
+    current.dirty = false;
+  });
+
+  return input ? compositor.texture : null;
 }
 
 /**
- * Enquanto o vídeo carrega os metadados devolve null: o modelo mostra a tela
- * sem textura por um instante, em vez de suspender a cena inteira.
+ * Enquanto o vídeo carrega o primeiro quadro devolve null: o modelo mostra a
+ * tela sem textura por um instante, em vez de suspender a cena inteira.
  */
 export function useScreenTexture(
   source: ScreenSource,
   options: ScreenTextureOptions,
 ): THREE.Texture | null {
-  const imageTexture = useImageScreenTexture(
+  const image = useImageScreenTexture(
     source.kind === "image" ? source.url : BLANK_IMAGE,
     options,
   );
-  const videoTexture = useVideoScreenTexture(
+  const videoState = useVideoScreenTexture(
     source.kind === "video" ? source.key : null,
     source.kind === "video" ? source.url : null,
     options,
   );
+  const isVideo = source.kind === "video";
 
-  return source.kind === "video" ? videoTexture : imageTexture;
+  const input = useMemo<CompositionInput | null>(() => {
+    if (isVideo) {
+      return videoState;
+    }
+
+    return image.size
+      ? { size: image.size, texture: image.texture, transfer: null }
+      : null;
+  }, [image, isVideo, videoState]);
+
+  return useScreenComposition(input, isVideo, source.fit, options);
 }

@@ -6,6 +6,7 @@ import { useGLTF } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
 import { GLTF, SkeletonUtils } from "three-stdlib";
 import { useScreenTexture } from "../lib/screen-texture";
+import type { ScreenFit } from "../lib/scene-objects";
 import { createRoundedScreenGeometryFromMesh } from "../lib/rounded-screen";
 import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import { createSimpleFinishMaterial } from "../lib/simple-finish-material";
@@ -80,6 +81,8 @@ type NotebookProps = React.ComponentPropsWithoutRef<"group"> & {
   videoUrl?: string | null;
   /** Identifica o objeto para o controlador de vídeo do canvas. */
   videoKey?: string;
+  /** Zoom e posição do conteúdo na tela. */
+  screenFit?: ScreenFit;
   colors?: Record<string, string>;
   matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
@@ -104,6 +107,7 @@ function NotebookImpl({
   imageUrl,
   videoUrl,
   videoKey,
+  screenFit,
   colors,
   matteColors = true,
   debugPartColors,
@@ -121,8 +125,8 @@ function NotebookImpl({
   const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("notebook");
   const screenTexture = useScreenTexture(
     videoUrl
-      ? { kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
-      : { kind: "image", url: effectiveImageUrl },
+      ? { fit: screenFit, kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
+      : { fit: screenFit, kind: "image", url: effectiveImageUrl },
     { cropWidth: NOTEBOOK_SCREEN_CROP_W, cropHeight: NOTEBOOK_SCREEN_CROP_H, flipY: false },
   );
 

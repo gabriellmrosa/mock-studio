@@ -25,6 +25,7 @@ import {
 import CameraControlsImpl from "camera-controls";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
 import {
+  getActiveScreenFit,
   getActiveScreenVideo,
   getScreenVideoTime,
   type SceneObject,
@@ -309,6 +310,7 @@ function SceneBridge({
                       imageUrl={object.imageUrl}
                       videoUrl={getActiveScreenVideo(object)?.url ?? null}
                       videoKey={object.id}
+                      screenFit={getActiveScreenFit(object)}
                       screenPosition={model.screenPosition}
                       screenSize={model.screenSize}
                       showDeviceShell={object.showDeviceShell}

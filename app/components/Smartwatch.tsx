@@ -6,6 +6,7 @@ import { useGLTF } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
 import { GLTF, SkeletonUtils } from "three-stdlib";
 import { useScreenTexture } from "../lib/screen-texture";
+import type { ScreenFit } from "../lib/scene-objects";
 import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import {
   SMARTWATCH_DEFAULT_THEME,
@@ -47,6 +48,8 @@ type SmartwatchProps = React.ComponentPropsWithoutRef<"group"> & {
   videoUrl?: string | null;
   /** Identifica o objeto para o controlador de vídeo do canvas. */
   videoKey?: string;
+  /** Zoom e posição do conteúdo na tela. */
+  screenFit?: ScreenFit;
   colors?: Record<string, string>;
   matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
@@ -134,6 +137,7 @@ function SmartwatchImpl({
   imageUrl,
   videoUrl,
   videoKey,
+  screenFit,
   colors,
   matteColors = true,
   debugPartColors,
@@ -148,8 +152,8 @@ function SmartwatchImpl({
   const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("smartwatch");
   const screenTexture = useScreenTexture(
     videoUrl
-      ? { kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
-      : { kind: "image", url: effectiveImageUrl },
+      ? { fit: screenFit, kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
+      : { fit: screenFit, kind: "image", url: effectiveImageUrl },
     { cropWidth: screenSize[0], cropHeight: screenSize[1], flipY: false },
   );
 

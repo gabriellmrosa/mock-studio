@@ -62,7 +62,17 @@ export type AppCopy = {
   screenVideoHint: string;
   uploadVideoError: string;
   screenVideoFrame: string;
-  screenVideoStart: string;
+  screenFitTitle: string;
+  screenFitZoom: string;
+  screenFitX: string;
+  screenFitY: string;
+  screenFitReset: string;
+  screenFitBackground: string;
+  screenCropTitle: string;
+  screenCropTop: string;
+  screenCropBottom: string;
+  screenCropLeft: string;
+  screenCropRight: string;
   screenSectionHintPrefix: string;
   themesSectionTitle: string;
   bodyColorLabel: string;
@@ -193,7 +203,17 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     replaceVideo: "Substituir vídeo",
     screenVideoHint: "MP4, MOV ou WebM. Uma gravação de tela do celular já vem no formato certo.",
     screenVideoFrame: "Quadro (s)",
-    screenVideoStart: "Início na cena (s)",
+    screenFitTitle: "Enquadramento",
+    screenFitZoom: "Zoom (%)",
+    screenFitX: "Posição X (%)",
+    screenFitY: "Posição Y (%)",
+    screenFitReset: "Resetar enquadramento",
+    screenFitBackground: "Fundo",
+    screenCropTitle: "Cortar bordas",
+    screenCropTop: "Topo (%)",
+    screenCropBottom: "Base (%)",
+    screenCropLeft: "Esquerda (%)",
+    screenCropRight: "Direita (%)",
     uploadVideoError: "Este navegador não consegue reproduzir esse vídeo. Gravações de iPhone costumam usar HEVC: tente o Safari ou exporte em H.264.",
     screenSectionHintPrefix: "Tamanho ideal:",
     themesSectionTitle: "Aparência",
@@ -385,7 +405,17 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     replaceVideo: "Replace video",
     screenVideoHint: "MP4, MOV or WebM. A phone screen recording already has the right shape.",
     screenVideoFrame: "Frame (s)",
-    screenVideoStart: "Scene start (s)",
+    screenFitTitle: "Framing",
+    screenFitZoom: "Zoom (%)",
+    screenFitX: "Position X (%)",
+    screenFitY: "Position Y (%)",
+    screenFitReset: "Reset framing",
+    screenFitBackground: "Background",
+    screenCropTitle: "Crop edges",
+    screenCropTop: "Top (%)",
+    screenCropBottom: "Bottom (%)",
+    screenCropLeft: "Left (%)",
+    screenCropRight: "Right (%)",
     uploadVideoError: "This browser can't play that video. iPhone recordings often use HEVC: try Safari or export as H.264.",
     screenSectionHintPrefix: "Ideal size:",
     themesSectionTitle: "Appearance",

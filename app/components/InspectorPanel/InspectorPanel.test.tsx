@@ -1,7 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import InspectorPanel from "./InspectorPanel";
-import { createSceneObject } from "../../lib/scene-objects";
+import {
+  DEFAULT_SCREEN_FIT,
+  createSceneObject,
+} from "../../lib/scene-objects";
 import type { AppCopy } from "../../lib/i18n";
 
 jest.mock("../CustomSelect/CustomSelect", () => ({
@@ -200,7 +203,17 @@ const copy: AppCopy = {
   screenVideoHint: "MP4, MOV or WebM.",
   uploadVideoError: "This browser can't play that video.",
   screenVideoFrame: "Frame (s)",
-  screenVideoStart: "Scene start (s)",
+  screenFitTitle: "Framing",
+  screenFitZoom: "Zoom (%)",
+  screenFitX: "Screen position X (%)",
+  screenFitY: "Screen position Y (%)",
+  screenFitReset: "Reset framing",
+  screenFitBackground: "Screen background",
+  screenCropTitle: "Crop edges",
+  screenCropTop: "Crop top (%)",
+  screenCropBottom: "Crop bottom (%)",
+  screenCropLeft: "Crop left (%)",
+  screenCropRight: "Crop right (%)",
   uploadImageError: "Upload failed",
   zoomInButton: "Zoom in",
   zoomOutButton: "Zoom out",
@@ -228,6 +241,7 @@ function renderInspector(
     onVideoUpload: jest.fn(),
     onScreenSourceChange: jest.fn(),
     onUpdateScreenVideo: jest.fn(),
+    onUpdateScreenFit: jest.fn(),
     onModelChange: jest.fn(),
     onResetObject: jest.fn(),
     onThemeColorChange: jest.fn(),
@@ -282,6 +296,7 @@ describe("InspectorPanel", () => {
       screenSource: "video",
       screenVideo: {
         durationMs: 12400,
+        fit: { ...DEFAULT_SCREEN_FIT },
         frameMs: 0,
         name: "recording.mov",
         startMs: 0,
@@ -293,6 +308,17 @@ describe("InspectorPanel", () => {
     expect(screen.getByText("recording.mov")).toBeInTheDocument();
     expect(screen.getByText("12.4s")).toBeInTheDocument();
     expect(screen.queryByLabelText("Upload image")).not.toBeInTheDocument();
+  });
+
+  it("edits the framing of the screen content", () => {
+    const handlers = renderInspector();
+
+    expect(screen.getByLabelText("Reset framing")).toBeDisabled();
+
+    // O Control mockado sempre envia 12: 12% de posição vira 0.12.
+    fireEvent.click(screen.getByText("control:Screen position X (%)"));
+
+    expect(handlers.onUpdateScreenFit).toHaveBeenCalledWith({ panX: 0.12 });
   });
 
   it("no longer lists video as a device model", () => {

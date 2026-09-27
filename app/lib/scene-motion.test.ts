@@ -1,4 +1,5 @@
 import {
+  DEFAULT_SCREEN_FIT,
   createSceneObject,
   duplicateSceneObject,
   getScreenVideoTime,
@@ -279,6 +280,7 @@ describe("scene-motion", () => {
   describe("screen video", () => {
     const video = {
       durationMs: 4000,
+      fit: { ...DEFAULT_SCREEN_FIT },
       frameMs: 0,
       name: "recording.mp4",
       startMs: 1000,

@@ -5,7 +5,16 @@ import ColorRow from "../ColorRow/ColorRow";
 import Control from "../Control/Control";
 import CustomSelect, { type CustomSelectOption } from "../CustomSelect/CustomSelect";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
-import type { SceneObject, ScreenVideo } from "../../lib/scene-objects";
+import {
+  DEFAULT_SCREEN_FIT,
+  MAX_SCREEN_CROP,
+  MAX_SCREEN_ZOOM,
+  MIN_SCREEN_ZOOM,
+  getActiveScreenFit,
+  type SceneObject,
+  type ScreenFit,
+  type ScreenVideo,
+} from "../../lib/scene-objects";
 import { DEVICE_MODEL_LIST } from "../../models/device-models";
 import {
   InspectorPanelHeader,
@@ -39,6 +48,8 @@ type InspectorPanelProps = {
   onUpdateScreenVideo: (
     patch: Partial<Pick<ScreenVideo, "frameMs" | "startMs">>,
   ) => void;
+  /** Enquadramento da fonte ativa (imagem ou vídeo). */
+  onUpdateScreenFit: (patch: Partial<ScreenFit>) => void;
   onModelChange: (modelId: SceneObject["modelId"]) => void;
   onResetObject: () => void;
   onThemeColorChange: (part: string, hex: string) => void;
@@ -68,6 +79,7 @@ export default function InspectorPanel({
   onVideoUpload,
   onScreenSourceChange,
   onUpdateScreenVideo,
+  onUpdateScreenFit,
   onModelChange,
   onResetObject,
   onThemeColorChange,
@@ -246,40 +258,23 @@ export default function InspectorPanel({
                   className="hidden"
                 />
               </label>
-              {object.screenVideo ? (
+              {object.screenVideo && motionTab === "static" ? (
                 <div className="screen-video-timing">
-                  {/* Cada modo tem o seu tempo: o Estático congela um quadro
-                      (o do PNG); o Movimento posiciona o vídeo na cena. */}
-                  {motionTab === "static" ? (
-                    <Control
-                      label={copy.screenVideoFrame}
-                      value={object.screenVideo.frameMs / 1000}
-                      setValue={(value) =>
-                        onUpdateScreenVideo({
-                          frameMs: Math.round(value * 1000),
-                        })
-                      }
-                      min={0}
-                      max={object.screenVideo.durationMs / 1000}
-                      step={0.01}
-                    />
-                  ) : (
-                    <Control
-                      label={copy.screenVideoStart}
-                      value={object.screenVideo.startMs / 1000}
-                      setValue={(value) =>
-                        onUpdateScreenVideo({
-                          startMs: Math.max(0, Math.round(value * 1000)),
-                        })
-                      }
-                      min={0}
-                      max={Math.max(
-                        10,
-                        Math.ceil(object.screenVideo.startMs / 1000) + 5,
-                      )}
-                      step={0.05}
-                    />
-                  )}
+                  {/* O Estático congela um quadro — o do PNG. No Movimento o
+                      tempo do vídeo é da timeline: o clipe fica numa trilha
+                      própria, como num editor de vídeo. */}
+                  <Control
+                    label={copy.screenVideoFrame}
+                    value={object.screenVideo.frameMs / 1000}
+                    setValue={(value) =>
+                      onUpdateScreenVideo({
+                        frameMs: Math.round(value * 1000),
+                      })
+                    }
+                    min={0}
+                    max={object.screenVideo.durationMs / 1000}
+                    step={0.01}
+                  />
                 </div>
               ) : null}
               {object.screenVideo ? (
@@ -300,6 +295,14 @@ export default function InspectorPanel({
               </p>
             </>
           )}
+          {object.screenSource === "image" || object.screenVideo ? (
+            <ScreenFitControls
+              copy={copy}
+              fit={getActiveScreenFit(object)}
+              onChange={onUpdateScreenFit}
+              uiTheme={uiTheme}
+            />
+          ) : null}
           {uploadError ? (
             <p className="inspector-error-note">{uploadError}</p>
           ) : null}
@@ -506,6 +509,96 @@ export default function InspectorPanel({
 
       </div>
     </aside>
+  );
+}
+
+/**
+ * Enquadramento do conteúdo na tela, tudo em %. A posição é a fração da folga:
+ * com zoom ≥ 100%, ±100% encosta a borda do conteúdo na da tela (nunca sobra
+ * vão); abaixo de 100% o conteúdo fica menor que a tela e o resto é o fundo.
+ * "Cortar bordas" descarta o que foi gravado nas bordas do arquivo, como a
+ * moldura escura de uma gravação espelhada.
+ */
+function ScreenFitControls({
+  copy,
+  fit,
+  onChange,
+  uiTheme,
+}: {
+  copy: AppCopy;
+  fit: ScreenFit;
+  onChange: (patch: Partial<ScreenFit>) => void;
+  uiTheme: UiTheme;
+}) {
+  const isDefault = (Object.keys(DEFAULT_SCREEN_FIT) as (keyof ScreenFit)[])
+    .every((key) => fit[key] === DEFAULT_SCREEN_FIT[key]);
+  const cropControls = [
+    ["cropTop", copy.screenCropTop],
+    ["cropBottom", copy.screenCropBottom],
+    ["cropLeft", copy.screenCropLeft],
+    ["cropRight", copy.screenCropRight],
+  ] as const;
+
+  return (
+    <div className="screen-fit">
+      <div className="screen-fit-header">
+        <span className="editor-sidebar-label">{copy.screenFitTitle}</span>
+        <button
+          type="button"
+          className="editor-icon-button screen-fit-reset"
+          aria-label={copy.screenFitReset}
+          title={copy.screenFitReset}
+          disabled={isDefault}
+          onClick={() => onChange({ ...DEFAULT_SCREEN_FIT })}
+        >
+          <RotateCcw size={13} />
+        </button>
+      </div>
+      <Control
+        label={copy.screenFitZoom}
+        value={Math.round(fit.zoom * 100)}
+        setValue={(value) => onChange({ zoom: value / 100 })}
+        min={MIN_SCREEN_ZOOM * 100}
+        max={MAX_SCREEN_ZOOM * 100}
+      />
+      <Control
+        label={copy.screenFitX}
+        value={Math.round(fit.panX * 100)}
+        setValue={(value) => onChange({ panX: value / 100 })}
+        min={-100}
+        max={100}
+      />
+      <Control
+        label={copy.screenFitY}
+        value={Math.round(fit.panY * 100)}
+        setValue={(value) => onChange({ panY: value / 100 })}
+        min={-100}
+        max={100}
+      />
+      <ColorRow
+        compact
+        label={copy.screenFitBackground}
+        uiTheme={uiTheme}
+        value={fit.background}
+        onChange={(background) => onChange({ background })}
+      />
+
+      <span className="editor-sidebar-label screen-fit-subtitle">
+        {copy.screenCropTitle}
+      </span>
+      {cropControls.map(([key, label]) => (
+        <Control
+          key={key}
+          label={label}
+          // Décimos de %: uma moldura de 11 px num vídeo de 1624 px é 0,7%.
+          value={Math.round(fit[key] * 1000) / 10}
+          setValue={(value) => onChange({ [key]: value / 100 })}
+          min={0}
+          max={MAX_SCREEN_CROP * 100}
+          step={0.1}
+        />
+      ))}
+    </div>
   );
 }
 

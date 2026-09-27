@@ -41,7 +41,9 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - multi-object composition with `smartphone`, `smartphone2`, `smartphone3`, `smartwatch`, `notebook` and `tablet`
 - object duplication that preserves transform, image and inspector settings
 - per-object screen content: an image or a video (MP4, MOV or WebM), switched from the `Image` / `Video` control in the `Screen` section, with model-specific placeholders generated at runtime
-- screen videos hold a chosen frame in `Static` (the one exported to PNG) and follow the playhead in `Motion`, where a draggable strip on the object's track sets when the recording starts
+- screen videos hold a chosen frame in `Static` (the one exported to PNG) and follow the playhead in `Motion`, where the recording is a clip on its own track under the object, dragged to set when it starts
+- per-file screen framing: zoom (50–300%), X/Y position, a background color for whatever the content leaves uncovered, and edge cropping that masks borders recorded into the file
+- HDR screen recordings (HEVC with PQ or HLG, common from iPhone and Mac) are converted to SDR, so they show the same colors as the app they recorded
 - per-model options like the device body toggle, the notebook keyboard and the tablet screen bezel
 - per-object transform controls for position, rotation and scale
 - device themes plus manual color customization by semantic part
@@ -131,7 +133,9 @@ The `tablet` has no GLB: its body is an extruded rounded rectangle with beveled 
 - [app/lib/scene-objects.ts](app/lib/scene-objects.ts): object creation, reset and model switching
 - [app/lib/scene-templates.ts](app/lib/scene-templates.ts): template capture, rebuild and `localStorage` persistence
 - [app/lib/scene-motion.ts](app/lib/scene-motion.ts): keyframes, easing curves and transform sampling over time
-- [app/lib/screen-texture.ts](app/lib/screen-texture.ts): the shared screen texture hook, for images and videos
+- [app/lib/screen-texture.ts](app/lib/screen-texture.ts): the shared screen texture hook, for images and videos, and the framing math (`getScreenLayout`)
+- [app/lib/screen-compositor.ts](app/lib/screen-compositor.ts): the pass that draws the final screen — framing, background and HDR conversion
+- [app/lib/hdr-video.ts](app/lib/hdr-video.ts): HDR detection and the PQ/HLG to SDR conversion
 - [app/components/EditorPrimitives/](app/components/EditorPrimitives/): shared panel, button and collapsible-section primitives
 - [app/lib/3d-tokens/](app/lib/3d-tokens/): per-model themes and color tokens
 - [app/lib/i18n.ts](app/lib/i18n.ts): copy for `pt-BR` and `en-US`
@@ -152,7 +156,10 @@ Checklist:
 
 ## Technical Notes
 
-- every model gets its screen texture from one hook, `useScreenTexture`: images are cover-cropped on a canvas, videos through the texture's UV `offset`/`repeat`, since re-cropping a canvas per frame would be too costly
+- every model gets its screen texture from one hook, `useScreenTexture`, and the source never reaches the model's material directly: a compositing pass draws it into a render target shaped like the screen (8-bit sRGB, mipmapped), applying the cover crop, framing, background and HDR conversion in one place — images are recomposed only when something changes, videos every frame
+- edge crop is a mask, not a re-fit: scale and position come from the whole file and the cropped bands show the background; recomputing the cover crop on what remained made cropping look like zooming
+- HDR recordings come as HEVC 10-bit, BT.2020 and PQ with 100-nit SDR content inside; Chrome hands WebGL the raw PQ signal (white shows as ~50% gray), and its 2D canvas path converts with a 203-nit reference white (white still ~72%), so the conversion is ours, with white at 100 nits — detected through `VideoFrame.colorSpace`, and measured to match an SDR reference within one 8-bit step
+- nested object fields (framing, video data) are updated from the current state (`updateSceneObject(id, object => patch)`): building them from the render-time `selectedObject` let two quick edits overwrite each other
 - screen videos are kept as blob URLs, never base64, and like images they stay out of templates; an upload is accepted only after the browser decodes its first frame, because `canPlayType` is unreliable (Chrome on macOS answers "" for HEVC and plays it anyway)
 - the video element lives in the document, invisible: a detached `<video>` presents no frames, since Chrome pauses video-only background media and the `VideoTexture` freezes
 - video time belongs to a `ScreenVideoController` inside the canvas that, every frame, pins each video to the chosen frame (`Static`), the playhead (`Motion`, paused) or the scene clock (playing), seeking during playback only when it drifts past 0.12s; before its start and after its end a video holds its first and last frame, like keyframes do, and the scene duration includes the latest video end

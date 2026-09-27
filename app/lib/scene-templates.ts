@@ -2,6 +2,7 @@
 
 import { DEVICE_MODELS, type DeviceModelId } from "../models/device-models";
 import {
+  DEFAULT_SCREEN_FIT,
   getPlaceholderImageUrl,
   type SceneObject,
 } from "./scene-objects";
@@ -178,6 +179,7 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       })),
       deviceTheme: object.deviceTheme,
       id: crypto.randomUUID(),
+      imageFit: { ...DEFAULT_SCREEN_FIT },
       imageUrl: getPlaceholderImageUrl(object.modelId),
       isVisible: object.isVisible,
       matteColors: object.matteColors,

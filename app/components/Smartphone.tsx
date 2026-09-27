@@ -6,6 +6,7 @@ import { useGLTF } from "@react-three/drei";
 import { useGraph } from "@react-three/fiber";
 import { GLTF, SkeletonUtils } from "three-stdlib";
 import { useScreenTexture } from "../lib/screen-texture";
+import type { ScreenFit } from "../lib/scene-objects";
 import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import { createSimpleFinishMaterial } from "../lib/simple-finish-material";
 import {
@@ -77,6 +78,8 @@ type SmartphoneProps = JSX.IntrinsicElements["group"] & {
   videoUrl?: string | null;
   /** Identifica o objeto para o controlador de vídeo do canvas. */
   videoKey?: string;
+  /** Zoom e posição do conteúdo na tela. */
+  screenFit?: ScreenFit;
   colors?: Record<string, string>;
   matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
@@ -125,6 +128,7 @@ function SmartphoneImpl({
   imageUrl,
   videoUrl,
   videoKey,
+  screenFit,
   colors,
   matteColors = true,
   debugPartColors,
@@ -151,8 +155,8 @@ function SmartphoneImpl({
 
   const screenTexture = useScreenTexture(
     videoUrl
-      ? { kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
-      : { kind: "image", url: effectiveImageUrl },
+      ? { fit: screenFit, kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
+      : { fit: screenFit, kind: "image", url: effectiveImageUrl },
     { cropWidth: SCREEN_CROP_W, cropHeight: SCREEN_CROP_H, flipY: true },
   );
 

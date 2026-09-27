@@ -166,24 +166,59 @@
   background: color-mix(in srgb, var(--foreground) 9%, transparent);
 }
 
-/* Vídeo da tela: faixa no pé da trilha, abaixo dos trechos e losangos. Fica
-   por cima dos trechos só na altura dela, para os dois serem arrastáveis. */
-.motion-timeline-video {
-  background: repeating-linear-gradient(
-    -45deg,
-    color-mix(in srgb, var(--foreground) 45%, transparent) 0 4px,
-    color-mix(in srgb, var(--foreground) 25%, transparent) 4px 8px
-  );
-  border-radius: 2px;
-  bottom: 0;
-  cursor: grab;
-  height: 0.35rem;
-  position: absolute;
-  z-index: 1;
+/* Trilha do vídeo da tela: um clipe, como num editor de vídeo. Fica logo
+   abaixo da trilha de keyframes do mesmo objeto. */
+.motion-timeline-lane-video {
+  background: color-mix(in srgb, var(--foreground) 3%, transparent);
 }
 
-.motion-timeline-video:active {
+.motion-timeline-clip {
+  align-items: center;
+  background: color-mix(in srgb, var(--foreground) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+  border-radius: var(--radius-xs);
+  bottom: 2px;
+  color: var(--sidebar-muted);
+  cursor: grab;
+  display: flex;
+  font-size: var(--font-size-100);
+  gap: var(--space-1);
+  min-width: 2px;
+  overflow: hidden;
+  padding: 0 var(--space-2);
+  position: absolute;
+  top: 2px;
+}
+
+.motion-timeline-clip:active {
   cursor: grabbing;
+}
+
+.motion-timeline-lane-video.is-active .motion-timeline-clip {
+  background: color-mix(in srgb, var(--foreground) 26%, transparent);
+  color: var(--foreground);
+}
+
+.motion-timeline-clip svg {
+  flex-shrink: 0;
+}
+
+.motion-timeline-clip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Rótulo da trilha de vídeo: recuado, subordinado ao nome do objeto. */
+.motion-timeline-label-video {
+  color: var(--sidebar-muted);
+  font-size: var(--font-size-100);
+  gap: var(--space-1);
+  padding-left: var(--space-3);
+}
+
+.motion-timeline-label-video.is-active {
+  color: var(--foreground);
 }
 
 /* Trecho entre dois keyframes: arrastar desloca a trilha inteira, botão

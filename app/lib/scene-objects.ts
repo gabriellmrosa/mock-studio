@@ -12,6 +12,45 @@ import { createPlaceholderDataUrl } from "./placeholder-image";
 import { cloneKeyframes, type Keyframe } from "./scene-motion";
 
 /**
+ * Enquadramento do conteúdo na tela, sobre o recorte "cover" automático.
+ * - `crop*`: fração de cada borda do arquivo a esconder (0 a 0.25), para
+ *   molduras gravadas junto — gravações de tela espelhadas costumam trazer uma.
+ *   É uma máscara: o conteúdo não muda de tamanho nem de lugar, e a faixa
+ *   cortada mostra o `background`.
+ * - `zoom`: 0.5 a 3. Abaixo de 1 o conteúdo fica menor que a tela e o resto é
+ *   preenchido com `background`, como as faixas cortadas.
+ * - `panX`/`panY`: -1 a 1, a fração da folga usada para mover o conteúdo. Com
+ *   zoom ≥ 1, ±1 encosta a borda do conteúdo na da tela (nunca aparece vão);
+ *   abaixo de 1, encosta o conteúdo numa borda da tela. Positivo move o
+ *   conteúdo para a direita e para cima.
+ */
+export type ScreenFit = {
+  background: string;
+  cropBottom: number;
+  cropLeft: number;
+  cropRight: number;
+  cropTop: number;
+  panX: number;
+  panY: number;
+  zoom: number;
+};
+
+export const DEFAULT_SCREEN_FIT: ScreenFit = {
+  // O branco do fundo da tela no modo Estático.
+  background: "#ffffff",
+  cropBottom: 0,
+  cropLeft: 0,
+  cropRight: 0,
+  cropTop: 0,
+  panX: 0,
+  panY: 0,
+  zoom: 1,
+};
+export const MIN_SCREEN_ZOOM = 0.5;
+export const MAX_SCREEN_ZOOM = 3;
+export const MAX_SCREEN_CROP = 0.25;
+
+/**
  * Gravação de tela enviada pelo usuário. Fica como blob URL (não data URL,
  * como a imagem): um vídeo em base64 pesaria dezenas de MB na memória. Não é
  * revogado ao ser trocado — o mesmo vídeo pode estar num objeto duplicado ou
@@ -20,6 +59,8 @@ import { cloneKeyframes, type Keyframe } from "./scene-motion";
  */
 export type ScreenVideo = {
   durationMs: number;
+  /** Enquadramento próprio: imagem e vídeo raramente pedem o mesmo. */
+  fit: ScreenFit;
   /** Quadro mostrado no modo Estático — e o que sai no PNG. */
   frameMs: number;
   name: string;
@@ -41,6 +82,18 @@ export function getActiveScreenVideo(object: SceneObject) {
   return object.screenSource === "video" ? object.screenVideo : null;
 }
 
+/**
+ * Enquadramento do que a tela mostra agora: o do vídeo ou o da imagem.
+ * Completa com os padrões para aceitar enquadramentos de antes dos campos
+ * novos (cena ainda na memória durante um hot reload).
+ */
+export function getActiveScreenFit(object: SceneObject): ScreenFit {
+  return {
+    ...DEFAULT_SCREEN_FIT,
+    ...(getActiveScreenVideo(object)?.fit ?? object.imageFit),
+  };
+}
+
 export type SceneObject = {
   colors: Record<string, string>;
   customColorsEnabled: boolean;
@@ -49,6 +102,8 @@ export type SceneObject = {
   deletable: boolean;
   deviceTheme: string;
   id: string;
+  /** Enquadramento da imagem; volta ao automático quando ela é trocada. */
+  imageFit: ScreenFit;
   imageUrl: string;
   isVisible: boolean;
   /**
@@ -251,6 +306,7 @@ export function createSceneObject({
     deletable,
     deviceTheme: model.defaultTheme,
     id: id ?? crypto.randomUUID(),
+    imageFit: { ...DEFAULT_SCREEN_FIT },
     imageUrl: getPlaceholderImageUrl(modelId),
     isVisible: true,
     screenSource: "image",
@@ -317,6 +373,7 @@ export function changeSceneObjectModel(
     debugMode: false,
     debugPartColors: { ...model.initialDebugColors },
     deviceTheme: model.defaultTheme,
+    imageFit: { ...DEFAULT_SCREEN_FIT },
     imageUrl: getPlaceholderImageUrl(modelId),
     modelId,
     matteColors: true,

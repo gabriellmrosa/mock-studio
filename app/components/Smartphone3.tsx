@@ -9,6 +9,7 @@ import {
   SCREEN_WIDTH,
 } from "../lib/mockup-image";
 import { useScreenTexture } from "../lib/screen-texture";
+import type { ScreenFit } from "../lib/scene-objects";
 import { getPlaceholderImageUrl } from "../lib/scene-objects";
 import { createSimpleFinishMaterial } from "../lib/simple-finish-material";
 import {
@@ -139,6 +140,8 @@ type Smartphone3Props = JSX.IntrinsicElements["group"] & {
   videoUrl?: string | null;
   /** Identifica o objeto para o controlador de vídeo do canvas. */
   videoKey?: string;
+  /** Zoom e posição do conteúdo na tela. */
+  screenFit?: ScreenFit;
   screenPosition?: [number, number, number];
   screenSize?: [number, number];
   screenRotation?: [number, number, number];
@@ -182,6 +185,7 @@ function ScreenWithTexture({
   imageUrl,
   videoUrl,
   videoKey,
+  screenFit,
   screenGeometry,
   screenPosition,
   screenRotation,
@@ -190,14 +194,16 @@ function ScreenWithTexture({
   videoUrl?: string | null;
   /** Identifica o objeto para o controlador de vídeo do canvas. */
   videoKey?: string;
+  /** Zoom e posição do conteúdo na tela. */
+  screenFit?: ScreenFit;
   screenGeometry: THREE.ShapeGeometry;
   screenPosition: [number, number, number];
   screenRotation: [number, number, number];
 }) {
   const texture = useScreenTexture(
     videoUrl
-      ? { kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
-      : { kind: "image", url: imageUrl },
+      ? { fit: screenFit, kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
+      : { fit: screenFit, kind: "image", url: imageUrl },
     { cropWidth: SCREEN_WIDTH, cropHeight: SCREEN_HEIGHT, flipY: true },
   );
 
@@ -223,6 +229,7 @@ function Smartphone3Impl({
   imageUrl,
   videoUrl,
   videoKey,
+  screenFit,
   screenPosition = [-125, 315, -195],
   screenSize = [220, 470],
   screenRotation = [0, 0, 0],
@@ -435,6 +442,7 @@ function Smartphone3Impl({
         imageUrl={effectiveImageUrl}
         videoUrl={videoUrl}
         videoKey={videoKey}
+        screenFit={screenFit}
         screenGeometry={screenGeometry}
         screenPosition={screenPosition}
         screenRotation={screenRotation}
