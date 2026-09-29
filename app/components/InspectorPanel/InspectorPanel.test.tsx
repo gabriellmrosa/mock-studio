@@ -414,6 +414,19 @@ describe("InspectorPanel", () => {
       expect(screen.queryByText("control:Zoom (%)")).toBeNull();
     });
 
+    it("offers the background color in Crop too, bound to the same value", () => {
+      const handlers = renderInspector(uploaded());
+
+      openOptions();
+      fireEvent.click(screen.getByRole("tab", { name: "Crop" }));
+      // O ColorRow mockado envia #123456 ao ser clicado.
+      fireEvent.click(screen.getByText("color-row:Screen background"));
+
+      expect(handlers.onUpdateScreenFit).toHaveBeenCalledWith({
+        background: "#123456",
+      });
+    });
+
     it("moves the selection with the arrow keys", () => {
       renderInspector(uploaded());
       openOptions();

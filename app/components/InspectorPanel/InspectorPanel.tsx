@@ -703,7 +703,12 @@ function ScreenSettings({
               uiTheme={uiTheme}
             />
           ) : (
-            <ScreenCropPanel copy={copy} fit={fit} onChange={onFitChange} />
+            <ScreenCropPanel
+              copy={copy}
+              fit={fit}
+              onChange={onFitChange}
+              uiTheme={uiTheme}
+            />
           )}
       </SegmentedTabPanel>
       <div className="side-popover-footer">
@@ -813,16 +818,19 @@ function ScreenFitPanel({
 /**
  * Corte das bordas do arquivo, em % com décimos (uma moldura de 11 px num
  * vídeo de 1624 px é 0,7%). É uma máscara: o conteúdo não muda de tamanho nem
- * de lugar, e a faixa cortada mostra o fundo.
+ * de lugar, e a faixa cortada mostra o fundo — por isso a cor dele também
+ * aparece aqui.
  */
 function ScreenCropPanel({
   copy,
   fit,
   onChange,
+  uiTheme,
 }: {
   copy: AppCopy;
   fit: ScreenFit;
   onChange: (patch: Partial<ScreenFit>) => void;
+  uiTheme: UiTheme;
 }) {
   const cropControls = [
     ["cropTop", copy.screenCropTop],
@@ -852,6 +860,15 @@ function ScreenCropPanel({
           step={0.1}
         />
       ))}
+      {/* A faixa cortada mostra o fundo: a cor fica à mão aqui também. É o
+          mesmo valor do Ajuste, e o resetar do corte não mexe nela. */}
+      <ColorRow
+        compact
+        label={copy.screenFitBackground}
+        uiTheme={uiTheme}
+        value={fit.background}
+        onChange={(background) => onChange({ background })}
+      />
     </>
   );
 }

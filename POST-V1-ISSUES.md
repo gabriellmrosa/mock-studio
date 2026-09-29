@@ -75,7 +75,7 @@
 - [x] uploads accept MP4, MOV and WebM, validated by decoding the first frame
 - [x] `Static` holds a chosen frame, which is what the PNG export captures; `Motion` ties the video to the playhead, and the recording is a clip on its own timeline track (its timing lives only in the timeline, not in the Inspector)
 - [x] HDR recordings (PQ/HLG) are converted to SDR in a compositing pass
-- [x] per-file framing: zoom 50–300%, position, background color and edge crop (a mask for borders recorded into the file)
+- [x] per-file framing: zoom 50–300%, position, background color and edge crop (a mask for borders recorded into the file); the background color sits in both `Fit` and `Crop`, bound to one value, and resetting the crop leaves it alone
 - verify HDR in Safari: if it already tone-maps HDR video for WebGL, our conversion would apply twice
 - verify on a regular browser whether starting playback stalls for a moment: in the in-app test browser the first ~0.2–1s of `requestAnimationFrame` stalls on play, with images as well as videos, so it is not caused by the video work
 - HTML on screens stays out of scope until the HTML-in-Canvas API leaves Chrome's origin trial

@@ -42,7 +42,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - object duplication that preserves transform, image and inspector settings
 - per-object screen content: an image or a video (MP4, MOV or WebM), switched from the `Image` / `Video` control in the `Screen` section, with model-specific placeholders generated at runtime
 - screen videos hold a chosen frame in `Static` (the one exported to PNG) and follow the playhead in `Motion`, where the recording is a clip on its own track under the object, dragged to set when it starts
-- per-file screen framing: zoom (50–300%), X/Y position, a background color for whatever the content leaves uncovered, and edge cropping that masks borders recorded into the file
+- per-file screen framing: zoom (50–300%), X/Y position, a background color for whatever the content leaves uncovered, and edge cropping that masks borders recorded into the file — the background color is offered in both `Fit` and `Crop`, since cropped bands show it too
 - once a file is uploaded, the `Screen` section shrinks to a single row — type icon, file name and a `⋮` menu — and the menu opens a floating panel beside the Inspector with `Replace`, the `Frame | Fit | Crop` options and `Remove`
 - HDR screen recordings (HEVC with PQ or HLG, common from iPhone and Mac) are converted to SDR, so they show the same colors as the app they recorded
 - per-model options like the device body toggle, the notebook keyboard and the tablet screen bezel, all as switches
