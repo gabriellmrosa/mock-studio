@@ -60,6 +60,19 @@ jest.mock("../Control/Control", () => ({
 
 jest.mock("../EditorPrimitives/EditorPrimitives", () => ({
   __esModule: true,
+  // As sub-abas são as reais: o teste precisa clicar nelas.
+  SubTabs: jest.requireActual("../EditorPrimitives/EditorPrimitives").SubTabs,
+  SubTabPanel: jest.requireActual("../EditorPrimitives/EditorPrimitives")
+    .SubTabPanel,
+  IconButton: jest.requireActual("../EditorPrimitives/EditorPrimitives")
+    .IconButton,
+  Switch: jest.requireActual("../EditorPrimitives/EditorPrimitives").Switch,
+  SidePopover: jest.requireActual("../EditorPrimitives/EditorPrimitives")
+    .SidePopover,
+  SegmentedTabs: jest.requireActual("../EditorPrimitives/EditorPrimitives")
+    .SegmentedTabs,
+  SegmentedTabPanel: jest.requireActual("../EditorPrimitives/EditorPrimitives")
+    .SegmentedTabPanel,
   InspectorPanelHeader: ({
     title,
   }: {
@@ -87,7 +100,8 @@ const copy: AppCopy = {
   appTitle: "Mock Studio",
   appSubtitle: "Visual mockup editor",
   baseObject: "Base object",
-  bodyColorLabel: "Customize",
+  appearanceTabsLabel: "Appearance options",
+  appearanceTabCustom: "Custom",
   backgroundColorButton: "Background color",
   hideUiButton: "Hide UI",
   showUiButton: "Show UI",
@@ -196,6 +210,12 @@ const copy: AppCopy = {
   motionBezierDone: "Done",
 
   uploadImage: "Upload image",
+  screenUploadImage: "Choose image",
+  removeImage: "Remove image",
+  removeVideo: "Remove video",
+  imageOptions: "Image options",
+  videoOptions: "Video options",
+  closeLabel: "Close",
   screenSourceImage: "Image",
   screenSourceVideo: "Video",
   uploadVideo: "Upload video",
@@ -203,13 +223,16 @@ const copy: AppCopy = {
   screenVideoHint: "MP4, MOV or WebM.",
   uploadVideoError: "This browser can't play that video.",
   screenVideoFrame: "Frame (s)",
-  screenFitTitle: "Framing",
+  screenTabsLabel: "Screen options",
+  screenTabFrame: "Frame",
+  screenTabFit: "Fit",
+  screenTabCrop: "Crop",
+  screenCropReset: "Reset crop",
   screenFitZoom: "Zoom (%)",
   screenFitX: "Screen position X (%)",
   screenFitY: "Screen position Y (%)",
   screenFitReset: "Reset framing",
   screenFitBackground: "Screen background",
-  screenCropTitle: "Crop edges",
   screenCropTop: "Crop top (%)",
   screenCropBottom: "Crop bottom (%)",
   screenCropLeft: "Crop left (%)",
@@ -235,10 +258,13 @@ const copy: AppCopy = {
 
 function renderInspector(
   object = createSceneObject({ id: "object-1", modelId: "smartphone", name: "Object 1" }),
+  { motionTab = "static" }: { motionTab?: "static" | "motion" } = {},
 ) {
   const handlers = {
     onImageUpload: jest.fn(),
     onVideoUpload: jest.fn(),
+    onRemoveImage: jest.fn(),
+    onRemoveVideo: jest.fn(),
     onScreenSourceChange: jest.fn(),
     onUpdateScreenVideo: jest.fn(),
     onUpdateScreenFit: jest.fn(),
@@ -246,7 +272,6 @@ function renderInspector(
     onResetObject: jest.fn(),
     onThemeColorChange: jest.fn(),
     onThemeChange: jest.fn(),
-    onToggleCustomColors: jest.fn(),
     onToggleDeviceShell: jest.fn(),
     onToggleNotebookKeyboard: jest.fn(),
     onToggleTabletBezel: jest.fn(),
@@ -261,7 +286,7 @@ function renderInspector(
       copy={copy}
       object={object}
       uiTheme="dark"
-      motionTab="static"
+      motionTab={motionTab}
       selectedKeyframeId=""
       uploadError=""
       {...handlers}
@@ -283,7 +308,7 @@ describe("InspectorPanel", () => {
   it("switches the screen between image and video", () => {
     const handlers = renderInspector();
 
-    expect(screen.getByLabelText("Upload image")).toBeInTheDocument();
+    expect(screen.getByLabelText("Choose image")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "Video" }));
 
@@ -304,23 +329,196 @@ describe("InspectorPanel", () => {
       },
     });
 
-    expect(screen.getByLabelText("Replace video")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Video options" })).toBeInTheDocument();
     expect(screen.getByText("recording.mov")).toBeInTheDocument();
     expect(screen.getByText("12.4s")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Upload image")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Choose image")).not.toBeInTheDocument();
   });
 
-  it("edits the framing of the screen content", () => {
-    const handlers = renderInspector();
+  describe("screen options panel", () => {
+    const uploaded = () => ({
+      ...createSceneObject({ id: "object-1", name: "Object 1" }),
+      imageName: "tela.png",
+      imageUrl: "data:image/png;base64,AAAA",
+    });
+    const video = () => ({
+      ...createSceneObject({ id: "object-1", name: "Object 1" }),
+      screenSource: "video" as const,
+      screenVideo: {
+        durationMs: 4000,
+        fit: { ...DEFAULT_SCREEN_FIT },
+        frameMs: 0,
+        name: "recording.mov",
+        startMs: 0,
+        url: "blob:x",
+      },
+    });
+    const openOptions = (name = "Image options") =>
+      fireEvent.click(screen.getByRole("button", { name }));
 
-    expect(screen.getByLabelText("Reset framing")).toBeDisabled();
+    it("keeps the options out of the side panel until the menu is opened", () => {
+      renderInspector(uploaded());
 
-    // O Control mockado sempre envia 12: 12% de posição vira 0.12.
-    fireEvent.click(screen.getByText("control:Screen position X (%)"));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(screen.queryByRole("tab", { name: "Fit" })).toBeNull();
+      expect(screen.getByRole("button", { name: "Image options" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+    });
 
-    expect(handlers.onUpdateScreenFit).toHaveBeenCalledWith({ panX: 0.12 });
+    it("opens a floating panel with replace, the sub-tabs and remove", () => {
+      renderInspector(uploaded());
+      openOptions();
+
+      const dialog = screen.getByRole("dialog", { name: "Image options" });
+
+      expect(dialog).toBeInTheDocument();
+      expect(screen.getByLabelText("Upload image")).toBeInTheDocument();
+      expect(screen.getByRole("tab", { name: "Crop" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Remove image" })).toBeInTheDocument();
+      // Segmentado: a primeira opção já vem selecionada.
+      expect(screen.getByRole("tab", { name: "Fit" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+      expect(screen.getByText("control:Zoom (%)")).toBeInTheDocument();
+    });
+
+    it("edits the framing from the panel", () => {
+      const handlers = renderInspector(uploaded());
+
+      openOptions();
+      // O Control mockado sempre envia 12: 12% de posição vira 0.12.
+      fireEvent.click(screen.getByText("control:Screen position X (%)"));
+
+      expect(handlers.onUpdateScreenFit).toHaveBeenCalledWith({ panX: 0.12 });
+    });
+
+    it("always keeps one option selected, switching the panel content", () => {
+      renderInspector(uploaded());
+      openOptions();
+
+      const fit = screen.getByRole("tab", { name: "Fit" });
+      const crop = screen.getByRole("tab", { name: "Crop" });
+
+      // Clicar de novo na selecionada não a desmarca...
+      fireEvent.click(fit);
+      expect(fit).toHaveAttribute("aria-selected", "true");
+
+      // ...e escolher outra troca o conteúdo.
+      fireEvent.click(crop);
+      expect(crop).toHaveAttribute("aria-selected", "true");
+      expect(fit).toHaveAttribute("aria-selected", "false");
+      expect(screen.getByText("control:Crop top (%)")).toBeInTheDocument();
+      expect(screen.queryByText("control:Zoom (%)")).toBeNull();
+    });
+
+    it("moves the selection with the arrow keys", () => {
+      renderInspector(uploaded());
+      openOptions();
+
+      fireEvent.keyDown(screen.getByRole("tab", { name: "Fit" }), {
+        key: "ArrowRight",
+      });
+
+      expect(screen.getByRole("tab", { name: "Crop" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+    });
+
+    it("removes the file from the panel footer", () => {
+      const handlers = renderInspector(uploaded());
+
+      openOptions();
+      fireEvent.click(screen.getByRole("button", { name: "Remove image" }));
+
+      expect(handlers.onRemoveImage).toHaveBeenCalled();
+    });
+
+    it("closes on Escape and on a click outside", () => {
+      renderInspector(uploaded());
+
+      openOptions();
+      fireEvent.keyDown(document, { key: "Escape" });
+      expect(screen.queryByRole("dialog")).toBeNull();
+
+      openOptions();
+      fireEvent.mouseDown(document.body);
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("opens on the Frame sub-tab for a video in Static", () => {
+      renderInspector(video());
+      openOptions("Video options");
+
+      expect(screen.getByRole("tab", { name: "Frame" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      );
+    });
+
+    it("leaves Frame out in Motion, where the timeline owns the video time", () => {
+      renderInspector(video(), { motionTab: "motion" });
+      openOptions("Video options");
+
+      expect(screen.queryByRole("tab", { name: "Frame" })).toBeNull();
+    });
   });
 
+  describe("switches", () => {
+    it("reflects the object state on each switch", () => {
+      renderInspector({
+        ...createSceneObject({ id: "object-1", name: "Object 1" }),
+        matteColors: false,
+        showDeviceShell: true,
+      });
+
+      expect(screen.getByRole("switch", { name: "Device body" })).toHaveAttribute(
+        "aria-checked",
+        "true",
+      );
+      expect(screen.getByRole("switch", { name: "Matte finish" })).toHaveAttribute(
+        "aria-checked",
+        "false",
+      );
+    });
+
+    it("toggles from the switch and from its label text", () => {
+      const handlers = renderInspector();
+
+      fireEvent.click(screen.getByRole("switch", { name: "Device body" }));
+      fireEvent.click(screen.getByText("Matte finish"));
+
+      expect(handlers.onToggleDeviceShell).toHaveBeenCalledTimes(1);
+      expect(handlers.onToggleMatteColors).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("uploaded file row", () => {
+    it("replaces the upload card with the file name and the options menu", () => {
+      renderInspector({
+        ...createSceneObject({ id: "object-1", name: "Object 1" }),
+        imageName: "a-very-long-screenshot-name-from-the-app.png",
+        imageUrl: "data:image/png;base64,AAAA",
+      });
+
+      expect(screen.queryByLabelText("Choose image")).toBeNull();
+      // O nome inteiro fica no title: o visual corta com reticências.
+      expect(
+        screen.getByTitle("a-very-long-screenshot-name-from-the-app.png"),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Image options" })).toBeInTheDocument();
+    });
+
+    it("keeps the upload card while the screen shows the placeholder", () => {
+      renderInspector();
+
+      expect(screen.getByLabelText("Choose image")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "Image options" })).toBeNull();
+    });
+  });
   it("no longer lists video as a device model", () => {
     renderInspector();
     fireEvent.click(screen.getByLabelText("Model"));
@@ -367,11 +565,11 @@ describe("InspectorPanel", () => {
         modelId: "notebook",
         name: "Notebook",
       }),
-      customColorsEnabled: true,
       showNotebookKeyboard: false,
     };
 
     renderInspector(notebook);
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
 
     expect(screen.getByText("color-row:Tampa traseira")).toBeInTheDocument();
     expect(screen.getByText("color-row:Moldura da tela")).toBeInTheDocument();
@@ -388,12 +586,12 @@ describe("InspectorPanel", () => {
         modelId: "notebook",
         name: "Notebook",
       }),
-      customColorsEnabled: true,
       showNotebookKeyboard: false,
     };
 
     const handlers = renderInspector(notebook);
 
+    fireEvent.click(screen.getByRole("button", { name: "Custom" }));
     fireEvent.click(screen.getByText("color-row:Tampa traseira"));
 
     expect(handlers.onThemeColorChange).toHaveBeenCalledWith(

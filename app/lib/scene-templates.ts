@@ -58,7 +58,6 @@ export type TemplateKeyframe = {
 // da posição na lista) e o estado de debug (ferramenta de desenvolvimento).
 export type TemplateObject = {
   colors: Record<string, string>;
-  customColorsEnabled: boolean;
   deviceTheme: string;
   isVisible: boolean;
   /** Só em templates de Movimento. */
@@ -111,7 +110,6 @@ function toTemplateObject(
         }
       : {}),
     colors: { ...object.colors },
-    customColorsEnabled: object.customColorsEnabled,
     deviceTheme: object.deviceTheme,
     isVisible: object.isVisible,
     matteColors: object.matteColors,
@@ -165,7 +163,6 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
 
     return {
       colors: { ...object.colors },
-      customColorsEnabled: object.customColorsEnabled,
       debugMode: false,
       debugPartColors: { ...model.initialDebugColors },
       deletable: index > 0,
@@ -180,6 +177,7 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       deviceTheme: object.deviceTheme,
       id: crypto.randomUUID(),
       imageFit: { ...DEFAULT_SCREEN_FIT },
+      imageName: null,
       imageUrl: getPlaceholderImageUrl(object.modelId),
       isVisible: object.isVisible,
       matteColors: object.matteColors,

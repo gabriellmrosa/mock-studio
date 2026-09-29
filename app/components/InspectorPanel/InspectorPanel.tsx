@@ -1,6 +1,7 @@
 "use client";
 
 import "./InspectorPanel.css";
+import { useRef, useState, type ReactNode } from "react";
 import ColorRow from "../ColorRow/ColorRow";
 import Control from "../Control/Control";
 import CustomSelect, { type CustomSelectOption } from "../CustomSelect/CustomSelect";
@@ -11,25 +12,46 @@ import {
   MAX_SCREEN_ZOOM,
   MIN_SCREEN_ZOOM,
   getActiveScreenFit,
+  isPlaceholderImageUrl,
   type SceneObject,
   type ScreenFit,
   type ScreenVideo,
 } from "../../lib/scene-objects";
 import { DEVICE_MODEL_LIST } from "../../models/device-models";
 import {
+  IconButton,
   InspectorPanelHeader,
   PanelSection,
+  SegmentedTabPanel,
+  SegmentedTabs,
+  SidePopover,
+  SubTabPanel,
+  SubTabs,
+  Switch,
+  type SubTabItem,
 } from "../EditorPrimitives/EditorPrimitives";
 import {
+  Crop,
+  Film,
   Image as ImageIcon,
   Laptop,
+  MoreVertical,
+  Pipette,
   RotateCcw,
+  Scaling,
   Smartphone,
   Tablet,
+  Trash2,
   Upload,
   Video,
   Watch,
 } from "lucide-react";
+
+const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp";
+const VIDEO_ACCEPT = "video/mp4,video/quicktime,video/webm,.mov";
+
+type ScreenTab = "frame" | "fit" | "crop";
+type AppearanceTab = "custom";
 
 const NOTEBOOK_SCREEN_ONLY_COLOR_KEYS = new Set([
   "screenBackCover",
@@ -44,6 +66,9 @@ type InspectorPanelProps = {
   object: SceneObject | null;
   onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onVideoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Volta a tela ao placeholder. */
+  onRemoveImage: () => void;
+  onRemoveVideo: () => void;
   onScreenSourceChange: (source: SceneObject["screenSource"]) => void;
   onUpdateScreenVideo: (
     patch: Partial<Pick<ScreenVideo, "frameMs" | "startMs">>,
@@ -54,7 +79,6 @@ type InspectorPanelProps = {
   onResetObject: () => void;
   onThemeColorChange: (part: string, hex: string) => void;
   onThemeChange: (themeId: string) => void;
-  onToggleCustomColors: () => void;
   onToggleDeviceShell: () => void;
   onToggleNotebookKeyboard: () => void;
   onToggleTabletBezel: () => void;
@@ -77,6 +101,8 @@ export default function InspectorPanel({
   object,
   onImageUpload,
   onVideoUpload,
+  onRemoveImage,
+  onRemoveVideo,
   onScreenSourceChange,
   onUpdateScreenVideo,
   onUpdateScreenFit,
@@ -84,7 +110,6 @@ export default function InspectorPanel({
   onResetObject,
   onThemeColorChange,
   onThemeChange,
-  onToggleCustomColors,
   onToggleDeviceShell,
   onToggleNotebookKeyboard,
   onToggleTabletBezel,
@@ -97,6 +122,13 @@ export default function InspectorPanel({
   uiTheme,
   uploadError,
 }: InspectorPanelProps) {
+  // Sub-aba aberta em cada seção; `null` = todas fechadas, o estado inicial.
+  // É estado de interface, não do objeto: vale para qualquer objeto
+  // selecionado, como a posição de um painel.
+  const [appearanceTab, setAppearanceTab] = useState<AppearanceTab | null>(
+    null,
+  );
+
   if (!object) {
     return (
       <aside className="editor-sidebar editor-sidebar-shell inspector-sidebar" />
@@ -113,9 +145,7 @@ export default function InspectorPanel({
   const editedTransform = editedKeyframe?.transform ?? object;
 
   const model = DEVICE_MODEL_LIST.find((item) => item.id === object.modelId);
-  const uploadRecommendation = model?.recommendedUploadSize
-    ? `${copy.screenSectionHintPrefix} ${model.recommendedUploadSize}`
-    : "";
+  const uploadRecommendation = model?.recommendedUploadSize ?? "";
   const customizableColorKeys = (model?.customizableColorKeys ?? []).filter((part) =>
     object.modelId === "notebook" && !object.showNotebookKeyboard
       ? NOTEBOOK_SCREEN_ONLY_COLOR_KEYS.has(part)
@@ -142,6 +172,24 @@ export default function InspectorPanel({
     })),
   ];
 
+  // As opções da tela só existem depois de um upload: com o placeholder (ou
+  // sem vídeo) não há o que ajustar.
+  const hasUploadedContent =
+    object.screenSource === "image"
+      ? !isPlaceholderImageUrl(object.imageUrl)
+      : object.screenVideo !== null;
+  const screenSourceTabs: SubTabItem<SceneObject["screenSource"]>[] = [
+    { icon: <ImageIcon size={13} />, id: "image", label: copy.screenSourceImage },
+    { icon: <Video size={13} />, id: "video", label: copy.screenSourceVideo },
+  ];
+  const appearanceTabs: SubTabItem<AppearanceTab>[] = [
+    {
+      icon: <Pipette size={13} />,
+      id: "custom",
+      label: copy.appearanceTabCustom,
+    },
+  ];
+
   return (
     <aside className="editor-sidebar editor-sidebar-shell inspector-sidebar inspector-sidebar-scroll">
       <InspectorPanelHeader
@@ -162,39 +210,24 @@ export default function InspectorPanel({
             options={modelOptions}
             onChange={(value) => onModelChange(value as SceneObject["modelId"])}
           />
-          <label className="inspector-inline-toggle">
-            <span className="inspector-inline-toggle-text">{copy.sceneSectionHint}</span>
-            <input
-              type="checkbox"
-              checked={object.showDeviceShell}
-              onChange={onToggleDeviceShell}
-              className="inspector-checkbox"
-              aria-label={copy.sceneSectionHint}
-            />
-          </label>
+          <Switch
+            checked={object.showDeviceShell}
+            label={copy.sceneSectionHint}
+            onChange={onToggleDeviceShell}
+          />
           {object.modelId === "notebook" ? (
-            <label className="inspector-inline-toggle">
-              <span className="inspector-inline-toggle-text">{copy.keyboardToggleLabel}</span>
-              <input
-                type="checkbox"
-                checked={object.showNotebookKeyboard}
-                onChange={onToggleNotebookKeyboard}
-                className="inspector-checkbox"
-                aria-label={copy.keyboardToggleLabel}
-              />
-            </label>
+            <Switch
+              checked={object.showNotebookKeyboard}
+              label={copy.keyboardToggleLabel}
+              onChange={onToggleNotebookKeyboard}
+            />
           ) : null}
           {object.modelId === "tablet" ? (
-            <label className="inspector-inline-toggle">
-              <span className="inspector-inline-toggle-text">{copy.tabletBezelToggleLabel}</span>
-              <input
-                type="checkbox"
-                checked={object.showTabletBezel}
-                onChange={onToggleTabletBezel}
-                className="inspector-checkbox"
-                aria-label={copy.tabletBezelToggleLabel}
-              />
-            </label>
+            <Switch
+              checked={object.showTabletBezel}
+              label={copy.tabletBezelToggleLabel}
+              onChange={onToggleTabletBezel}
+            />
           ) : null}
         </PanelSection>
 
@@ -202,107 +235,91 @@ export default function InspectorPanel({
           title={copy.screenSectionTitle}
           className="--without-border-bottom"
         >
-          <div className="screen-source-tabs" role="tablist">
-            {(["image", "video"] as const).map((source) => (
-              <button
-                key={source}
-                type="button"
-                role="tab"
-                aria-selected={object.screenSource === source}
-                className={`screen-source-tab${
-                  object.screenSource === source ? " is-active" : ""
-                }`}
-                onClick={() => onScreenSourceChange(source)}
-              >
-                {source === "image" ? (
-                  <ImageIcon size={13} />
-                ) : (
-                  <Video size={13} />
-                )}
-                {source === "image"
-                  ? copy.screenSourceImage
-                  : copy.screenSourceVideo}
-              </button>
-            ))}
-          </div>
+          <SegmentedTabs
+            ariaLabel={copy.screenSectionTitle}
+            items={screenSourceTabs}
+            value={object.screenSource}
+            onChange={onScreenSourceChange}
+          />
 
+          {/* Antes do upload, o card convida a enviar; depois, vira uma linha
+              compacta com o arquivo. As opções (substituir, momento, ajuste,
+              corte, remover) ficam num painel flutuante aberto pelo "⋮" — o
+              painel lateral fica enxuto e o efeito aparece na cena ao lado. */}
           {object.screenSource === "image" ? (
-            <>
-              <label className="upload-card">
-                <Upload size={16} />
-                {copy.uploadImage}
-                <input
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp"
-                  aria-label={copy.uploadImage}
-                  onChange={onImageUpload}
-                  className="hidden"
+            hasUploadedContent ? (
+              <ScreenFileRow
+                key={object.id}
+                closeLabel={copy.closeLabel}
+                icon={<ImageIcon size={16} />}
+                menuLabel={copy.imageOptions}
+                name={object.imageName ?? copy.screenSourceImage}
+              >
+                <ScreenSettings
+                  accept={IMAGE_ACCEPT}
+                  copy={copy}
+                  fit={getActiveScreenFit(object)}
+                  frame={null}
+                  onFitChange={onUpdateScreenFit}
+                  onFrameChange={() => undefined}
+                  onRemove={onRemoveImage}
+                  onReplace={onImageUpload}
+                  removeLabel={copy.removeImage}
+                  replaceLabel={copy.uploadImage}
+                  replaceMeta={uploadRecommendation}
+                  uiTheme={uiTheme}
                 />
-              </label>
-              <p className="editor-sidebar-muted inspector-meta-note">
-                {uploadRecommendation}
-              </p>
-            </>
+              </ScreenFileRow>
+            ) : (
+              <UploadCard
+                accept={IMAGE_ACCEPT}
+                label={copy.screenUploadImage}
+                meta={uploadRecommendation}
+                metaTitle={`${copy.screenSectionHintPrefix} ${uploadRecommendation}`}
+                onUpload={onImageUpload}
+              />
+            )
+          ) : object.screenVideo ? (
+            <ScreenFileRow
+              key={object.id}
+              closeLabel={copy.closeLabel}
+              icon={<Video size={16} />}
+              menuLabel={copy.videoOptions}
+              meta={`${(object.screenVideo.durationMs / 1000).toFixed(1)}s`}
+              name={object.screenVideo.name}
+            >
+              <ScreenSettings
+                accept={VIDEO_ACCEPT}
+                copy={copy}
+                fit={getActiveScreenFit(object)}
+                // O Estático congela um momento do vídeo — o do PNG. No
+                // Movimento o tempo do vídeo é da timeline.
+                frame={
+                  motionTab === "static"
+                    ? {
+                        durationMs: object.screenVideo.durationMs,
+                        valueMs: object.screenVideo.frameMs,
+                      }
+                    : null
+                }
+                onFitChange={onUpdateScreenFit}
+                onFrameChange={(frameMs) => onUpdateScreenVideo({ frameMs })}
+                onRemove={onRemoveVideo}
+                onReplace={onVideoUpload}
+                removeLabel={copy.removeVideo}
+                replaceLabel={copy.replaceVideo}
+                replaceMeta={copy.screenVideoHint}
+                uiTheme={uiTheme}
+              />
+            </ScreenFileRow>
           ) : (
-            <>
-              <label className="upload-card">
-                <Upload size={16} />
-                {object.screenVideo ? copy.replaceVideo : copy.uploadVideo}
-                <input
-                  type="file"
-                  accept="video/mp4,video/quicktime,video/webm,.mov"
-                  aria-label={
-                    object.screenVideo ? copy.replaceVideo : copy.uploadVideo
-                  }
-                  onChange={onVideoUpload}
-                  className="hidden"
-                />
-              </label>
-              {object.screenVideo && motionTab === "static" ? (
-                <div className="screen-video-timing">
-                  {/* O Estático congela um quadro — o do PNG. No Movimento o
-                      tempo do vídeo é da timeline: o clipe fica numa trilha
-                      própria, como num editor de vídeo. */}
-                  <Control
-                    label={copy.screenVideoFrame}
-                    value={object.screenVideo.frameMs / 1000}
-                    setValue={(value) =>
-                      onUpdateScreenVideo({
-                        frameMs: Math.round(value * 1000),
-                      })
-                    }
-                    min={0}
-                    max={object.screenVideo.durationMs / 1000}
-                    step={0.01}
-                  />
-                </div>
-              ) : null}
-              {object.screenVideo ? (
-                <p
-                  className="screen-video-file"
-                  title={object.screenVideo.name}
-                >
-                  <span className="screen-video-name">
-                    {object.screenVideo.name}
-                  </span>
-                  <span className="screen-video-duration">
-                    {`${(object.screenVideo.durationMs / 1000).toFixed(1)}s`}
-                  </span>
-                </p>
-              ) : null}
-              <p className="editor-sidebar-muted inspector-meta-note">
-                {copy.screenVideoHint}
-              </p>
-            </>
-          )}
-          {object.screenSource === "image" || object.screenVideo ? (
-            <ScreenFitControls
-              copy={copy}
-              fit={getActiveScreenFit(object)}
-              onChange={onUpdateScreenFit}
-              uiTheme={uiTheme}
+            <UploadCard
+              accept={VIDEO_ACCEPT}
+              label={copy.uploadVideo}
+              meta={copy.screenVideoHint}
+              onUpload={onVideoUpload}
             />
-          ) : null}
+          )}
           {uploadError ? (
             <p className="inspector-error-note">{uploadError}</p>
           ) : null}
@@ -330,44 +347,47 @@ export default function InspectorPanel({
               </button>
             ))}
           </div>
+
+          {/* Os temas são o conteúdo principal e ficam sempre à vista; cores
+              peça a peça são sub-opção, fechada até o usuário pedir. */}
           {customizableColorKeys.length > 0 ? (
             <>
-              <label className="inspector-inline-toggle">
-                <span className="inspector-inline-toggle-text">{copy.matteColorLabel}</span>
-                  <input
-                    type="checkbox"
-                    checked={object.matteColors}
-                    onChange={onToggleMatteColors}
-                    className="inspector-checkbox"
-                    aria-label={copy.matteColorLabel}
-                  />
-                </label>
-
-              <label className="inspector-inline-toggle">
-                <span className="inspector-inline-toggle-text">{copy.bodyColorLabel}</span>
-                  <input
-                    type="checkbox"
-                    checked={object.customColorsEnabled}
-                    onChange={onToggleCustomColors}
-                    className="inspector-checkbox"
-                    aria-label={copy.bodyColorLabel}
-                  />
-                </label>
-
-              {object.customColorsEnabled ? (
-                <div className="panel-card custom-theme-panel">
-                  {customizableColorKeys.map((part) => (
-                    <ColorRow
-                      key={part}
-                      label={customizableColorLabels[part] ?? formatColorPartLabel(part)}
-                      uiTheme={uiTheme}
-                      value={object.colors[part] ?? "#000000"}
-                      onChange={(hex) => onThemeColorChange(part, hex)}
-                    />
-                  ))}
-                </div>
+              <SubTabs
+                ariaLabel={copy.appearanceTabsLabel}
+                idPrefix="appearance-options"
+                items={appearanceTabs}
+                value={appearanceTab}
+                onChange={setAppearanceTab}
+              />
+              {appearanceTab === "custom" ? (
+                <SubTabPanel activeId="custom" idPrefix="appearance-options">
+                  <div className="panel-card custom-theme-panel">
+                    {customizableColorKeys.map((part) => (
+                      <ColorRow
+                        key={part}
+                        label={
+                          customizableColorLabels[part] ??
+                          formatColorPartLabel(part)
+                        }
+                        uiTheme={uiTheme}
+                        value={object.colors[part] ?? "#000000"}
+                        onChange={(hex) => onThemeColorChange(part, hex)}
+                      />
+                    ))}
+                  </div>
+                </SubTabPanel>
               ) : null}
             </>
+          ) : null}
+
+          {/* Acabamento é um liga/desliga que vale para tema e cores
+              personalizadas — por isso fica fora das sub-abas. */}
+          {customizableColorKeys.length > 0 ? (
+            <Switch
+              checked={object.matteColors}
+              label={copy.matteColorLabel}
+              onChange={onToggleMatteColors}
+            />
           ) : null}
         </PanelSection>
 
@@ -512,14 +532,222 @@ export default function InspectorPanel({
   );
 }
 
+/** Convite ao upload, enquanto a tela ainda mostra o placeholder. */
+function UploadCard({
+  accept,
+  label,
+  meta,
+  metaTitle,
+  onUpload,
+}: {
+  accept: string;
+  label: string;
+  /** Dado útil para o upload: tamanho ideal da imagem, formatos do vídeo. */
+  meta: string;
+  metaTitle?: string;
+  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+}) {
+  return (
+    <label className="upload-card">
+      <Upload size={16} />
+      <span className="upload-card-label">{label}</span>
+      {meta ? (
+        <span className="upload-card-meta" title={metaTitle}>
+          {meta}
+        </span>
+      ) : null}
+      <input
+        type="file"
+        accept={accept}
+        aria-label={label}
+        onChange={onUpload}
+        className="hidden"
+      />
+    </label>
+  );
+}
+
 /**
- * Enquadramento do conteúdo na tela, tudo em %. A posição é a fração da folga:
- * com zoom ≥ 100%, ±100% encosta a borda do conteúdo na da tela (nunca sobra
- * vão); abaixo de 100% o conteúdo fica menor que a tela e o resto é o fundo.
- * "Cortar bordas" descarta o que foi gravado nas bordas do arquivo, como a
- * moldura escura de uma gravação espelhada.
+ * O arquivo já enviado, numa linha: ícone do tipo, nome (reticências se não
+ * couber), um dado opcional e o "⋮" que abre as opções num painel flutuante.
  */
-function ScreenFitControls({
+function ScreenFileRow({
+  children,
+  closeLabel,
+  icon,
+  menuLabel,
+  meta,
+  name,
+}: {
+  children: ReactNode;
+  closeLabel: string;
+  icon: ReactNode;
+  menuLabel: string;
+  meta?: string;
+  name: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  return (
+    <div ref={rowRef} className="screen-file-row">
+      <span className="screen-file-icon" aria-hidden>
+        {icon}
+      </span>
+      <span className="screen-file-name" title={name}>
+        {name}
+      </span>
+      {meta ? <span className="screen-file-meta">{meta}</span> : null}
+      {/* Gatilho de menu discreto, como o "⋮" das preferências: sem fundo
+          no hover nem com o painel aberto. */}
+      <IconButton
+        aria-label={menuLabel}
+        title={menuLabel}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        active={isOpen}
+        className="context-menu-trigger-quiet editor-icon-button-no-hover-bg"
+        onClick={() => setIsOpen((current) => !current)}
+      >
+        <MoreVertical size={14} />
+      </IconButton>
+      {isOpen ? (
+        <SidePopover
+          anchorRef={rowRef}
+          closeLabel={closeLabel}
+          onClose={() => setIsOpen(false)}
+          title={menuLabel}
+        >
+          {children}
+        </SidePopover>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Conteúdo do painel de opções da tela: substituir no topo, o segmentado
+ * Momento | Ajuste | Corte e, no rodapé, remover. Segmentado e não sub-abas:
+ * o painel foi aberto justamente para ajustar, então sempre há uma escolhida.
+ */
+function ScreenSettings({
+  accept,
+  copy,
+  fit,
+  frame,
+  onFitChange,
+  onFrameChange,
+  onRemove,
+  onReplace,
+  removeLabel,
+  replaceLabel,
+  replaceMeta,
+  uiTheme,
+}: {
+  accept: string;
+  copy: AppCopy;
+  fit: ScreenFit;
+  /** Momento do vídeo no Estático; `null` esconde a sub-aba. */
+  frame: { durationMs: number; valueMs: number } | null;
+  onFitChange: (patch: Partial<ScreenFit>) => void;
+  onFrameChange: (frameMs: number) => void;
+  onRemove: () => void;
+  onReplace: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  removeLabel: string;
+  replaceLabel: string;
+  replaceMeta: string;
+  uiTheme: UiTheme;
+}) {
+  const tabs: SubTabItem<ScreenTab>[] = [
+    ...(frame
+      ? [{ icon: <Film size={13} />, id: "frame" as const, label: copy.screenTabFrame }]
+      : []),
+    { icon: <Scaling size={13} />, id: "fit", label: copy.screenTabFit },
+    { icon: <Crop size={13} />, id: "crop", label: copy.screenTabCrop },
+  ];
+  const [tab, setTab] = useState<ScreenTab>(tabs[0].id);
+  // Momento some no Movimento: a aba lembrada que não existe mais cai na
+  // primeira — no segmentado sempre há uma selecionada.
+  const activeTab = tabs.some((item) => item.id === tab) ? tab : tabs[0].id;
+
+  return (
+    <>
+      <UploadCard
+        accept={accept}
+        label={replaceLabel}
+        meta={replaceMeta}
+        onUpload={onReplace}
+      />
+      <SegmentedTabs
+        ariaLabel={copy.screenTabsLabel}
+        idPrefix="screen-options"
+        items={tabs}
+        value={activeTab}
+        onChange={setTab}
+      />
+      <SegmentedTabPanel activeId={activeTab} idPrefix="screen-options">
+          {activeTab === "frame" && frame ? (
+            <Control
+              label={copy.screenVideoFrame}
+              value={frame.valueMs / 1000}
+              setValue={(value) => onFrameChange(Math.round(value * 1000))}
+              min={0}
+              max={frame.durationMs / 1000}
+              step={0.01}
+            />
+          ) : activeTab === "fit" ? (
+            <ScreenFitPanel
+              copy={copy}
+              fit={fit}
+              onChange={onFitChange}
+              uiTheme={uiTheme}
+            />
+          ) : (
+            <ScreenCropPanel copy={copy} fit={fit} onChange={onFitChange} />
+          )}
+      </SegmentedTabPanel>
+      <div className="side-popover-footer">
+        <button type="button" className="editor-button-danger" onClick={onRemove}>
+          <Trash2 size={14} />
+          {removeLabel}
+        </button>
+      </div>
+    </>
+  );
+}
+
+/** Botão de resetar no topo de um painel de sub-aba. */
+function SubPanelReset({
+  disabled,
+  label,
+  onReset,
+}: {
+  disabled: boolean;
+  label: string;
+  onReset: () => void;
+}) {
+  return (
+    <div className="inspector-subpanel-actions">
+      <button
+        type="button"
+        className="editor-icon-button inspector-subpanel-reset"
+        aria-label={label}
+        title={label}
+        disabled={disabled}
+        onClick={onReset}
+      >
+        <RotateCcw size={13} />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Ajuste do conteúdo na tela, tudo em %. A posição é a fração da folga: com
+ * zoom ≥ 100%, ±100% encosta a borda do conteúdo na da tela (nunca sobra vão);
+ * abaixo de 100% o conteúdo fica menor que a tela e o resto é o fundo.
+ */
+function ScreenFitPanel({
   copy,
   fit,
   onChange,
@@ -530,30 +758,26 @@ function ScreenFitControls({
   onChange: (patch: Partial<ScreenFit>) => void;
   uiTheme: UiTheme;
 }) {
-  const isDefault = (Object.keys(DEFAULT_SCREEN_FIT) as (keyof ScreenFit)[])
-    .every((key) => fit[key] === DEFAULT_SCREEN_FIT[key]);
-  const cropControls = [
-    ["cropTop", copy.screenCropTop],
-    ["cropBottom", copy.screenCropBottom],
-    ["cropLeft", copy.screenCropLeft],
-    ["cropRight", copy.screenCropRight],
-  ] as const;
+  const isDefault =
+    fit.zoom === DEFAULT_SCREEN_FIT.zoom &&
+    fit.panX === DEFAULT_SCREEN_FIT.panX &&
+    fit.panY === DEFAULT_SCREEN_FIT.panY &&
+    fit.background === DEFAULT_SCREEN_FIT.background;
 
   return (
-    <div className="screen-fit">
-      <div className="screen-fit-header">
-        <span className="editor-sidebar-label">{copy.screenFitTitle}</span>
-        <button
-          type="button"
-          className="editor-icon-button screen-fit-reset"
-          aria-label={copy.screenFitReset}
-          title={copy.screenFitReset}
-          disabled={isDefault}
-          onClick={() => onChange({ ...DEFAULT_SCREEN_FIT })}
-        >
-          <RotateCcw size={13} />
-        </button>
-      </div>
+    <>
+      <SubPanelReset
+        disabled={isDefault}
+        label={copy.screenFitReset}
+        onReset={() =>
+          onChange({
+            background: DEFAULT_SCREEN_FIT.background,
+            panX: DEFAULT_SCREEN_FIT.panX,
+            panY: DEFAULT_SCREEN_FIT.panY,
+            zoom: DEFAULT_SCREEN_FIT.zoom,
+          })
+        }
+      />
       <Control
         label={copy.screenFitZoom}
         value={Math.round(fit.zoom * 100)}
@@ -582,15 +806,45 @@ function ScreenFitControls({
         value={fit.background}
         onChange={(background) => onChange({ background })}
       />
+    </>
+  );
+}
 
-      <span className="editor-sidebar-label screen-fit-subtitle">
-        {copy.screenCropTitle}
-      </span>
+/**
+ * Corte das bordas do arquivo, em % com décimos (uma moldura de 11 px num
+ * vídeo de 1624 px é 0,7%). É uma máscara: o conteúdo não muda de tamanho nem
+ * de lugar, e a faixa cortada mostra o fundo.
+ */
+function ScreenCropPanel({
+  copy,
+  fit,
+  onChange,
+}: {
+  copy: AppCopy;
+  fit: ScreenFit;
+  onChange: (patch: Partial<ScreenFit>) => void;
+}) {
+  const cropControls = [
+    ["cropTop", copy.screenCropTop],
+    ["cropBottom", copy.screenCropBottom],
+    ["cropLeft", copy.screenCropLeft],
+    ["cropRight", copy.screenCropRight],
+  ] as const;
+  const isDefault = cropControls.every(([key]) => fit[key] === 0);
+
+  return (
+    <>
+      <SubPanelReset
+        disabled={isDefault}
+        label={copy.screenCropReset}
+        onReset={() =>
+          onChange({ cropBottom: 0, cropLeft: 0, cropRight: 0, cropTop: 0 })
+        }
+      />
       {cropControls.map(([key, label]) => (
         <Control
           key={key}
           label={label}
-          // Décimos de %: uma moldura de 11 px num vídeo de 1624 px é 0,7%.
           value={Math.round(fit[key] * 1000) / 10}
           setValue={(value) => onChange({ [key]: value / 100 })}
           min={0}
@@ -598,7 +852,7 @@ function ScreenFitControls({
           step={0.1}
         />
       ))}
-    </div>
+    </>
   );
 }
 

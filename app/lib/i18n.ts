@@ -55,6 +55,12 @@ export type AppCopy = {
   tabletBezelToggleLabel: string;
   screenSectionTitle: string;
   uploadImage: string;
+  screenUploadImage: string;
+  removeImage: string;
+  removeVideo: string;
+  imageOptions: string;
+  videoOptions: string;
+  closeLabel: string;
   screenSourceImage: string;
   screenSourceVideo: string;
   uploadVideo: string;
@@ -62,20 +68,24 @@ export type AppCopy = {
   screenVideoHint: string;
   uploadVideoError: string;
   screenVideoFrame: string;
-  screenFitTitle: string;
+  screenTabsLabel: string;
+  screenTabFrame: string;
+  screenTabFit: string;
+  screenTabCrop: string;
+  screenCropReset: string;
   screenFitZoom: string;
   screenFitX: string;
   screenFitY: string;
   screenFitReset: string;
   screenFitBackground: string;
-  screenCropTitle: string;
   screenCropTop: string;
   screenCropBottom: string;
   screenCropLeft: string;
   screenCropRight: string;
   screenSectionHintPrefix: string;
   themesSectionTitle: string;
-  bodyColorLabel: string;
+  appearanceTabsLabel: string;
+  appearanceTabCustom: string;
   matteColorLabel: string;
   debugSectionTitle: string;
   transformSectionTitle: string;
@@ -197,19 +207,28 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     tabletBezelToggleLabel: "Moldura da tela",
     screenSectionTitle: "Tela",
     uploadImage: "Substituir imagem",
+    screenUploadImage: "Enviar imagem",
+    removeImage: "Remover imagem",
+    removeVideo: "Remover vídeo",
+    imageOptions: "Opções da imagem",
+    videoOptions: "Opções do vídeo",
+    closeLabel: "Fechar",
     screenSourceImage: "Imagem",
     screenSourceVideo: "Vídeo",
     uploadVideo: "Enviar vídeo",
     replaceVideo: "Substituir vídeo",
-    screenVideoHint: "MP4, MOV ou WebM. Uma gravação de tela do celular já vem no formato certo.",
-    screenVideoFrame: "Quadro (s)",
-    screenFitTitle: "Enquadramento",
+    screenVideoHint: "MP4, MOV ou WebM",
+    screenVideoFrame: "Tempo (s)",
+    screenTabsLabel: "Opções da tela",
+    screenTabFrame: "Momento",
+    screenTabFit: "Ajuste",
+    screenTabCrop: "Corte",
+    screenCropReset: "Resetar corte",
     screenFitZoom: "Zoom (%)",
     screenFitX: "Posição X (%)",
     screenFitY: "Posição Y (%)",
-    screenFitReset: "Resetar enquadramento",
+    screenFitReset: "Resetar ajuste",
     screenFitBackground: "Fundo",
-    screenCropTitle: "Cortar bordas",
     screenCropTop: "Topo (%)",
     screenCropBottom: "Base (%)",
     screenCropLeft: "Esquerda (%)",
@@ -217,7 +236,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     uploadVideoError: "Este navegador não consegue reproduzir esse vídeo. Gravações de iPhone costumam usar HEVC: tente o Safari ou exporte em H.264.",
     screenSectionHintPrefix: "Tamanho ideal:",
     themesSectionTitle: "Aparência",
-    bodyColorLabel: "Cores personalizadas",
+    appearanceTabsLabel: "Opções de aparência",
+    appearanceTabCustom: "Personalizar",
     matteColorLabel: "Acabamento fosco",
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transformação",
@@ -399,19 +419,28 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     tabletBezelToggleLabel: "Screen bezel",
     screenSectionTitle: "Screen",
     uploadImage: "Replace image",
+    screenUploadImage: "Upload image",
+    removeImage: "Remove image",
+    removeVideo: "Remove video",
+    imageOptions: "Image options",
+    videoOptions: "Video options",
+    closeLabel: "Close",
     screenSourceImage: "Image",
     screenSourceVideo: "Video",
     uploadVideo: "Upload video",
     replaceVideo: "Replace video",
-    screenVideoHint: "MP4, MOV or WebM. A phone screen recording already has the right shape.",
-    screenVideoFrame: "Frame (s)",
-    screenFitTitle: "Framing",
+    screenVideoHint: "MP4, MOV or WebM",
+    screenVideoFrame: "Time (s)",
+    screenTabsLabel: "Screen options",
+    screenTabFrame: "Frame",
+    screenTabFit: "Fit",
+    screenTabCrop: "Crop",
+    screenCropReset: "Reset crop",
     screenFitZoom: "Zoom (%)",
     screenFitX: "Position X (%)",
     screenFitY: "Position Y (%)",
-    screenFitReset: "Reset framing",
+    screenFitReset: "Reset fit",
     screenFitBackground: "Background",
-    screenCropTitle: "Crop edges",
     screenCropTop: "Top (%)",
     screenCropBottom: "Bottom (%)",
     screenCropLeft: "Left (%)",
@@ -419,7 +448,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     uploadVideoError: "This browser can't play that video. iPhone recordings often use HEVC: try Safari or export as H.264.",
     screenSectionHintPrefix: "Ideal size:",
     themesSectionTitle: "Appearance",
-    bodyColorLabel: "Custom colors",
+    appearanceTabsLabel: "Appearance options",
+    appearanceTabCustom: "Custom",
     matteColorLabel: "Matte finish",
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transform",

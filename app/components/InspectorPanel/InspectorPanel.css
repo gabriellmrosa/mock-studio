@@ -23,33 +23,10 @@
   width: 100%;
 }
 
-.inspector-inline-toggle {
-  align-items: center;
-  color: var(--sidebar-muted);
-  display: flex;
-  font-size: var(--font-size-150);
-  gap: var(--space-2);
-  justify-content: flex-end;
-  line-height: 1.5;
-  margin-top: var(--space-2);
-}
-
-.inspector-inline-toggle-text {
-  text-align: right;
-}
-
-.inspector-checkbox {
-  accent-color: var(--foreground);
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-  border-radius: var(--radius-xs);
-  height: 0.875rem;
-  margin-top: 0.125rem;
-  width: 0.875rem;
-}
-
 /* --- Upload card --- */
 
+/* Ícone, ação e — abaixo, mais apagado — o dado útil para o upload (tamanho
+   ideal da imagem, formatos do vídeo). */
 .upload-card {
   align-items: center;
   background: color-mix(in srgb, var(--button-bg) 75%, transparent);
@@ -57,9 +34,10 @@
   color: var(--button-fg);
   cursor: pointer;
   display: flex;
+  flex-direction: column;
   font-size: var(--font-size-150);
   letter-spacing: 0.08em;
-  gap: var(--space-3);
+  gap: var(--space-1);
   justify-content: center;
   position: relative;
   padding: var(--space-4);
@@ -101,6 +79,15 @@
   pointer-events: none;
   position: absolute;
   transition: background 160ms ease;
+}
+
+.upload-card-label {
+  margin-top: var(--space-1);
+}
+
+.upload-card-meta {
+  color: var(--sidebar-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .upload-card:hover {
@@ -281,59 +268,25 @@
   padding: var(--space-2) 0;
 }
 
-/* --- Tela: fonte imagem / vídeo --- */
-.screen-source-tabs {
-  background: color-mix(in srgb, var(--foreground) 6%, transparent);
+/* Arquivo enviado: ícone do tipo, nome com reticências, dado opcional e o
+   "⋮" das opções. Substitui o card de upload depois do envio. */
+.screen-file-row {
+  align-items: center;
+  background: var(--surface-subtle);
   border-radius: var(--radius-sm);
   display: flex;
-  gap: 2px;
-  margin-bottom: var(--space-3);
-  padding: 2px;
+  font-size: var(--font-size-150);
+  gap: var(--space-2);
+  padding: var(--space-3);
 }
 
-.screen-source-tab {
-  align-items: center;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-xs);
+.screen-file-icon {
   color: var(--sidebar-muted);
-  cursor: pointer;
-  display: flex;
-  flex: 1;
-  font-size: var(--font-size-150);
-  gap: var(--space-2);
-  justify-content: center;
-  padding: var(--space-2);
-  transition:
-    background-color 140ms ease,
-    color 140ms ease;
+  display: inline-flex;
+  flex-shrink: 0;
 }
 
-.screen-source-tab:hover {
-  color: var(--foreground);
-}
-
-.screen-source-tab.is-active {
-  background: var(--surface-raised);
-  color: var(--foreground);
-  font-weight: var(--font-semibold);
-}
-
-.screen-source-tab:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
-  outline-offset: 1px;
-}
-
-/* Arquivo de vídeo atual: nome truncado e duração alinhada à direita. */
-.screen-video-file {
-  align-items: center;
-  display: flex;
-  font-size: var(--font-size-150);
-  gap: var(--space-2);
-  margin: var(--space-2) 0 0;
-}
-
-.screen-video-name {
+.screen-file-name {
   color: var(--foreground);
   flex: 1;
   min-width: 0;
@@ -342,37 +295,29 @@
   white-space: nowrap;
 }
 
-.screen-video-duration {
+.screen-file-meta {
   color: var(--sidebar-muted);
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
 
-.screen-video-timing {
-  margin-top: var(--space-3);
-}
-
-/* Enquadramento do conteúdo da tela. */
-.screen-fit {
+/* Rodapé do painel de opções: a ação destrutiva, separada do resto. */
+.side-popover-footer {
   border-top: 1px solid var(--panel-border);
+  padding-top: var(--space-2);
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-3);
-  padding-top: var(--space-3);
-}
+  justify-content: flex-end;
+} 
 
-.screen-fit-header {
-  align-items: center;
+/* Painel de uma sub-aba: o resetar fica no canto, sem título — o nome já
+   está na aba. */
+.inspector-subpanel-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
+  margin-bottom: calc(var(--space-1) * -1);
 }
 
-.screen-fit-subtitle {
-  margin-top: var(--space-2);
-}
-
-.screen-fit-reset:disabled {
+.inspector-subpanel-reset:disabled {
   cursor: default;
   opacity: 0.35;
 }

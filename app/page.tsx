@@ -39,6 +39,7 @@ import {
   DEFAULT_SCREEN_FIT,
   createSceneObject,
   getActiveScreenVideo,
+  getPlaceholderImageUrl,
   duplicateSceneObject,
   getSequentialSpawnTransform,
   resetSceneObject,
@@ -237,6 +238,7 @@ export default function Home() {
       // Imagem nova, enquadramento novo: o anterior foi feito para outra.
       updateSceneObject(selectedObject.id, {
         imageFit: { ...DEFAULT_SCREEN_FIT },
+        imageName: file.name,
         imageUrl: nextImage,
       });
       setUploadError("");
@@ -900,6 +902,20 @@ export default function Home() {
         object={selectedObject}
         onImageUpload={handleImageUpload}
         onVideoUpload={handleVideoUpload}
+        onRemoveImage={() =>
+          selectedObject &&
+          // De volta ao placeholder do modelo — e as sub-opções da tela somem
+          // com ele, já que não há mais o que ajustar.
+          updateSceneObject(selectedObject.id, (object) => ({
+            imageFit: { ...DEFAULT_SCREEN_FIT },
+            imageName: null,
+            imageUrl: getPlaceholderImageUrl(object.modelId),
+          }))
+        }
+        onRemoveVideo={() =>
+          selectedObject &&
+          updateSceneObject(selectedObject.id, { screenVideo: null })
+        }
         onUpdateScreenFit={(patch) => {
           if (!selectedObject) return;
 
@@ -931,11 +947,6 @@ export default function Home() {
         onResetObject={handleResetObject}
         onThemeColorChange={handleThemeColorChange}
         onThemeChange={handleThemeChange}
-        onToggleCustomColors={() =>
-          selectedObject && updateSceneObject(selectedObject.id, {
-            customColorsEnabled: !selectedObject?.customColorsEnabled,
-          })
-        }
         onToggleDeviceShell={() =>
           selectedObject && updateSceneObject(selectedObject.id, {
             showDeviceShell: !selectedObject?.showDeviceShell,

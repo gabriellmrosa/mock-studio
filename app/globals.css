@@ -31,6 +31,18 @@
   --surface-hover: #524c46;
   --surface-active: #6f675f;
   --surface-raised: rgba(78, 73, 68, 0.9);
+  /* Fundo discreto de controles em repouso sobre o painel (trilho do
+     segmentado Imagem/Vídeo, sub-abas fechadas). Derivado do texto, vale nos
+     dois temas sem redefinir — o tema claro troca o --foreground no mesmo
+     elemento. */
+  --surface-subtle: color-mix(in srgb, var(--foreground) 6%, transparent);
+  /* Trilho do Switch desligado. WCAG 1.4.11 pede 3:1 para o estado ser
+     percebido: 3.55:1 contra o painel e 3.99:1 com a bolinha. Ligado, o
+     Switch usa o par --button-active-bg/-fg, o "selecionado" do app. */
+  --switch-track-off: #8c857d;
+  /* Ações destrutivas (remover). 5.11:1 sobre --panel-bg; o #f87171 fixo que
+     o menu de contexto usava dava 4.21:1 aqui e 2.59:1 no tema claro. */
+  --danger-fg: #ff8a80;
   --canvas-overlay: rgba(42, 41, 39, 0.58);
   --canvas-toolbar: rgba(57, 53, 49, 0.92);
   --canvas-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
@@ -51,7 +63,11 @@
   --foreground: var(--ink-dark);
   --sidebar-bg: var(--black-950);
   --sidebar-border: #c2b9ae;
-  --sidebar-muted: #6a645d;
+  /* Texto secundário. Calibrado para WCAG AA (4.5:1) em texto de 11px sobre
+     a superfície mais clara onde aparece — as sub-abas fechadas, sobre
+     --surface-subtle: 5.15:1 (o #6a645d anterior dava 4.56:1, no limite).
+     O tema escuro tem a mesma folga: 5.12:1. */
+  --sidebar-muted: #625c55;
   --sidebar-value: var(--ink-dark);
   --sidebar-label: var(--ink-dark);
   --sidebar-dot: var(--black-800);
@@ -72,6 +88,10 @@
   --surface-hover: var(--black-900);
   --surface-active: #e8ded1;
   --surface-raised: rgba(255, 253, 249, 0.92);
+  /* 3.71:1 contra o painel claro, 4.03:1 com a bolinha. */
+  --switch-track-off: var(--black-600);
+  /* 6.16:1 sobre --panel-bg claro. */
+  --danger-fg: #b42318;
   --canvas-overlay: rgba(247, 241, 234, 0.7);
   --canvas-toolbar: rgba(245, 237, 227, 0.94);
   --canvas-shadow: 0 16px 40px rgba(120, 102, 85, 0.16);

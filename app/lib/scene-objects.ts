@@ -96,7 +96,6 @@ export function getActiveScreenFit(object: SceneObject): ScreenFit {
 
 export type SceneObject = {
   colors: Record<string, string>;
-  customColorsEnabled: boolean;
   debugMode: boolean;
   debugPartColors: Record<string, string>;
   deletable: boolean;
@@ -104,6 +103,11 @@ export type SceneObject = {
   id: string;
   /** Enquadramento da imagem; volta ao automático quando ela é trocada. */
   imageFit: ScreenFit;
+  /**
+   * Nome do arquivo enviado, para a linha do arquivo no Inspector — a imagem
+   * é guardada como data URL, que não carrega nome. `null` = placeholder.
+   */
+  imageName: string | null;
   imageUrl: string;
   isVisible: boolean;
   /**
@@ -300,13 +304,13 @@ export function createSceneObject({
 
   return {
     colors: { ...(model.themes[model.defaultTheme] ?? {}) },
-    customColorsEnabled: false,
     debugMode: false,
     debugPartColors: { ...model.initialDebugColors },
     deletable,
     deviceTheme: model.defaultTheme,
     id: id ?? crypto.randomUUID(),
     imageFit: { ...DEFAULT_SCREEN_FIT },
+    imageName: null,
     imageUrl: getPlaceholderImageUrl(modelId),
     isVisible: true,
     screenSource: "image",
@@ -369,11 +373,11 @@ export function changeSceneObjectModel(
   return {
     ...object,
     colors: { ...(model.themes[model.defaultTheme] ?? {}) },
-    customColorsEnabled: false,
     debugMode: false,
     debugPartColors: { ...model.initialDebugColors },
     deviceTheme: model.defaultTheme,
     imageFit: { ...DEFAULT_SCREEN_FIT },
+    imageName: null,
     imageUrl: getPlaceholderImageUrl(modelId),
     modelId,
     matteColors: true,

@@ -79,3 +79,16 @@
 - verify HDR in Safari: if it already tone-maps HDR video for WebGL, our conversion would apply twice
 - verify on a regular browser whether starting playback stalls for a moment: in the in-app test browser the first ~0.2–1s of `requestAnimationFrame` stalls on play, with images as well as videos, so it is not caused by the video work
 - HTML on screens stays out of scope until the HTML-in-Canvas API leaves Chrome's origin trial
+- [x] SDR video showed washed-out colors after the compositing pass landed (#1D4ED8 rendered as #5F94ED): three decodes video sRGB in its material shaders, so the compositor now does it too — measured within 4 units of the source color
+
+## 11. Inspector option patterns — done
+
+- [x] option primitives in `EditorPrimitives`: `Switch` (on/off), `SegmentedTabs` (exclusive choice, always one selected) and `SubTabs` (optional groups that start closed)
+- [x] the four checkboxes (device body, keyboard, screen bezel, matte finish) became switches
+- [x] after an upload the screen shows one row — icon, name, `⋮` — and its options live in a floating `SidePopover` beside the Inspector: `Replace`, `Frame | Fit | Crop`, `Remove`
+- [x] `Custom` colors became a sub-tab under the always-visible theme grid; the `customColorsEnabled` flag, which only toggled the panel, left the object and the templates
+- [x] the recommended image size moved into the upload card
+- [x] the loading notice got a fixed place below the mode toggle
+- [x] contrast pass: `--sidebar-muted` (light) darkened to keep 5.1:1 on `--surface-subtle`; new tokens `--surface-subtle`, `--switch-track-off` and `--danger-fg`, the last replacing a fixed red that failed AA
+- run a full contrast sweep of the interface: this pass covered the new surfaces only
+- `Transform` (position, rotation, scale) could adopt `SegmentedTabs` if the section grows

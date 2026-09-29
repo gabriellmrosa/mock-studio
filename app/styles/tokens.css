@@ -65,6 +65,15 @@
      SIZING
      ===================== */
   --input-min-height: 26px;
+  /* Toggle Estático / Movimento, fixo no topo central do canvas. */
+  --canvas-mode-toggle-top: var(--space-6);
+  --canvas-mode-toggle-height: 2.5rem;
+  /* Avisos de atividade (carregando, exportando) têm lugar fixo logo abaixo
+     do toggle — o mesmo em qualquer situação, inclusive com a UI escondida. */
+  --canvas-notice-top: calc(
+    var(--canvas-mode-toggle-top) + var(--canvas-mode-toggle-height) +
+      var(--space-2)
+  );
 
   /* =====================
      BORDER RADIUS SCALE

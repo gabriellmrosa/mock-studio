@@ -10,11 +10,15 @@
   position: absolute;
 }
 
+/* Lugar fixo, logo abaixo do toggle de modo (ver tokens.css): nunca disputa
+   espaço com ele, e continua no mesmo ponto com a UI escondida. */
 .activity-notice-inline {
+  animation: activity-notice-appear 160ms ease;
   left: 50%;
   position: absolute;
-  top: var(--space-4);
+  top: var(--canvas-notice-top);
   transform: translateX(-50%);
+  z-index: 3;
 }
 
 .activity-notice-surface {
@@ -29,8 +33,9 @@
   text-align: center;
 }
 
+/* Fundo sólido: o texto não pode brigar com a cena 3D atrás dele. */
 .activity-notice-surface-inline {
-  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  background: var(--panel-bg);
   border: 1px solid var(--button-border);
   border-radius: var(--radius-full);
   box-shadow: var(--canvas-shadow);
@@ -64,6 +69,19 @@
 
 .activity-notice-label-inline {
   font-size: var(--font-size-200);
+}
+
+@keyframes activity-notice-appear {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .activity-notice-inline {
+    animation: none;
+  }
 }
 
 @keyframes activity-notice-spin {

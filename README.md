@@ -43,8 +43,9 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - per-object screen content: an image or a video (MP4, MOV or WebM), switched from the `Image` / `Video` control in the `Screen` section, with model-specific placeholders generated at runtime
 - screen videos hold a chosen frame in `Static` (the one exported to PNG) and follow the playhead in `Motion`, where the recording is a clip on its own track under the object, dragged to set when it starts
 - per-file screen framing: zoom (50–300%), X/Y position, a background color for whatever the content leaves uncovered, and edge cropping that masks borders recorded into the file
+- once a file is uploaded, the `Screen` section shrinks to a single row — type icon, file name and a `⋮` menu — and the menu opens a floating panel beside the Inspector with `Replace`, the `Frame | Fit | Crop` options and `Remove`
 - HDR screen recordings (HEVC with PQ or HLG, common from iPhone and Mac) are converted to SDR, so they show the same colors as the app they recorded
-- per-model options like the device body toggle, the notebook keyboard and the tablet screen bezel
+- per-model options like the device body toggle, the notebook keyboard and the tablet screen bezel, all as switches
 - per-object transform controls for position, rotation and scale
 - device themes plus manual color customization by semantic part
 - PNG export in two modes from the `Export` menu: transparent, or with the canvas background color and floor grid baked in
@@ -164,6 +165,12 @@ Checklist:
 - the video element lives in the document, invisible: a detached `<video>` presents no frames, since Chrome pauses video-only background media and the `VideoTexture` freezes
 - video time belongs to a `ScreenVideoController` inside the canvas that, every frame, pins each video to the chosen frame (`Static`), the playhead (`Motion`, paused) or the scene clock (playing), seeking during playback only when it drifts past 0.12s; before its start and after its end a video holds its first and last frame, like keyframes do, and the scene duration includes the latest video end
 - editor chrome is not selectable text (`user-select: none` on the shell and its portaled menus), with inputs, editable fields and error notes opted back in
+- the Inspector has three option primitives in `EditorPrimitives`: `Switch` for true on/off options (`role="switch"` inside a `<label>`), `SegmentedTabs` for exclusive choices where one is always selected (`Image | Video`, and `Frame | Fit | Crop` in the screen panel) and `SubTabs` for optional groups that start closed and toggle open (`Custom` colors)
+- `SidePopover` is the floating settings panel: portaled, placed left of the Inspector and aligned to the item that opened it, following scroll and resize; it closes on Escape, an outside click or its close button, and returns focus to the trigger
+- menu triggers (`⋮`) and close buttons are quiet icon buttons — no background on hover or while their menu is open (`context-menu-trigger-quiet`, `editor-icon-button-no-hover-bg`); the base `IconButton` keeps its hover background
+- the loading notice has one fixed place, just below the `Static` / `Motion` toggle (`--canvas-notice-top`, derived from the toggle's size tokens), so it never covers the toggle and does not move when the UI is hidden
+- contrast is measured, not eyeballed: secondary text (`--sidebar-muted`) keeps at least 5.1:1 on the lightest surface it sits on (`--surface-subtle`) in both themes, the switch's off track holds 3:1 (`--switch-track-off`, WCAG 1.4.11) and destructive actions use `--danger-fg` (5.1:1 dark, 6.2:1 light) — the old fixed `#f87171` failed AA in both themes
+- SDR video is decoded from sRGB in the compositing shader: three never gives video textures a hardware sRGB format and decodes them in the material shader instead, so a custom pass that skips it shows the video washed out
 - screen placeholders are generated at runtime on a canvas (checker pattern + recommended size in the UI body font), one per model — there are no static placeholder PNGs to maintain
 - placeholder text size is a fraction of the image height so it reads at a consistent visual size across models; `smartwatch` and `notebook` use a larger fraction because their screen is a smaller part of the framed device
 - new objects spawn after the rightmost object on the default plane, even when models differ
@@ -206,6 +213,8 @@ Checklist:
 - React portals bubble events through the component tree, not the DOM tree, so menu items rendered in a portal still fire the `onClick` of the card that owns the menu
 - aliasing two concepts to "save state" backfires: treating the first keyframe as a live alias for the static pose meant reordering keyframes rewrote the object's resting transform — giving each keyframe its own copy removed a whole class of coupling and shrank the reorder logic to an array swap
 - reading pixels back from the WebGL canvas returns a stale frame without `preserveDrawingBuffer`; validate any measurement instrument against a change you know happened before trusting it
+- a custom shader that samples a `VideoTexture` must decode sRGB itself — three's built-in materials do it behind a `DECODE_VIDEO_TEXTURE` define, so the gap only shows once video goes through your own pass; measure a known color end to end after any change to the texture pipeline
+- Turbopack in dev can keep serving an old `globals.css` after an edit, even across restarts, and a new token then resolves to nothing; check the served `root-of-the-server` chunk and nudge the file with a second change
 
 ## Asset Scripts
 

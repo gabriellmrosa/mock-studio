@@ -35,6 +35,8 @@ const VERTEX_SHADER = /* glsl */ `
 
 const FRAGMENT_SHADER = /* glsl */ `
   uniform sampler2D map;
+  // 0 = SDR já linear (o amostrador decodificou), 1 = PQ, 2 = HLG,
+  // 3 = SDR em sRGB a decodificar aqui (vídeo).
   uniform int transferMode;
   uniform vec2 uvOffset;
   uniform vec2 uvRepeat;
@@ -44,6 +46,14 @@ const FRAGMENT_SHADER = /* glsl */ `
   varying vec2 vUv;
 
   ${HDR_TO_SDR_GLSL}
+
+  vec3 srgbToLinear(vec3 color) {
+    return mix(
+      pow(color * 0.9478672986 + 0.0521327014, vec3(2.4)),
+      color * 0.0773993808,
+      vec3(lessThanEqual(color, vec3(0.04045)))
+    );
+  }
 
   void main() {
     vec2 sourceUv = uvOffset + vUv * uvRepeat;
@@ -55,14 +65,40 @@ const FRAGMENT_SHADER = /* glsl */ `
     if (inside) {
       vec3 texel = texture2D(map, sourceUv).rgb;
 
-      // SDR chega linear (o amostrador decodifica o sRGB); HDR chega cru.
-      color = transferMode == 0 ? texel : hdrToSdrLinear(texel, transferMode);
+      if (transferMode == 0) {
+        color = texel;
+      } else if (transferMode == 3) {
+        color = srgbToLinear(texel);
+      } else {
+        color = hdrToSdrLinear(texel, transferMode);
+      }
     }
 
     // Sai linear: o alvo é sRGB e a GPU codifica na escrita.
     gl_FragColor = vec4(color, 1.0);
   }
 `;
+
+/**
+ * Como o shader deve ler a fonte. Imagem em sRGB vira linear no próprio
+ * amostrador (formato sRGB de hardware). Vídeo não: o three nunca dá esse
+ * formato a texturas de vídeo e decodifica no shader do material
+ * (DECODE_VIDEO_TEXTURE) — que aqui é o nosso. Sem o modo 3 o vídeo SDR saía
+ * codificado duas vezes, lavado (#1D4ED8 virava #5F94ED).
+ */
+export function getTransferMode(
+  source: THREE.Texture,
+  transfer: HdrTransfer | null,
+) {
+  if (transfer === "pq") return 1;
+  if (transfer === "hlg") return 2;
+
+  const isSrgbVideo =
+    (source as THREE.VideoTexture).isVideoTexture === true &&
+    source.colorSpace === THREE.SRGBColorSpace;
+
+  return isSrgbVideo ? 3 : 0;
+}
 
 export function createScreenCompositor(screenWidth: number, screenHeight: number) {
   const aspect = screenWidth / screenHeight;
@@ -120,8 +156,7 @@ export function createScreenCompositor(screenWidth: number, screenHeight: number
       },
     ) {
       uniforms.map.value = source;
-      uniforms.transferMode.value =
-        transfer === "pq" ? 1 : transfer === "hlg" ? 2 : 0;
+      uniforms.transferMode.value = getTransferMode(source, transfer);
       // THREE.Color converte o hex (sRGB) para linear, como o shader espera.
       uniforms.background.value.set(background);
       uniforms.uvOffset.value.set(layout.offset[0], layout.offset[1]);

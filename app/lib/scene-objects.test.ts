@@ -37,7 +37,6 @@ describe("scene-objects", () => {
       expect(object.deviceTheme).toBe(model.defaultTheme);
       expect(object.colors).toEqual(model.themes[model.defaultTheme]);
       expect(object.debugPartColors).toEqual(model.initialDebugColors);
-      expect(object.customColorsEnabled).toBe(false);
       expect(object.debugMode).toBe(false);
       expect(object.showDeviceShell).toBe(true);
       expect(object.showNotebookKeyboard).toBe(true);
@@ -72,7 +71,6 @@ describe("scene-objects", () => {
         name: "Workspace",
       }),
       colors: { keyboardDeck: "#111111", screenBackCover: "#222222" },
-      customColorsEnabled: true,
       debugMode: true,
       deviceTheme: "",
       imageUrl: "data:image/png;base64,abc",
@@ -98,7 +96,6 @@ describe("scene-objects", () => {
 
     expect(duplicated).toMatchObject({
       colors: original.colors,
-      customColorsEnabled: true,
       debugMode: true,
       deletable: true,
       deviceTheme: "",
@@ -171,7 +168,6 @@ describe("scene-objects", () => {
         rotationY: 15,
         rotationZ: -11,
         scale: 2,
-        customColorsEnabled: true,
         debugMode: true,
         showDeviceShell: false,
         showNotebookKeyboard: false,
@@ -193,7 +189,6 @@ describe("scene-objects", () => {
       DEVICE_MODELS.notebook.initialDebugColors,
     );
     expect(changed.matteColors).toBe(true);
-    expect(changed.customColorsEnabled).toBe(false);
     expect(changed.debugMode).toBe(false);
     expect(changed.positionX).toBe(1);
     expect(changed.positionY).toBe(4);

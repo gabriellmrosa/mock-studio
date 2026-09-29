@@ -85,11 +85,11 @@
 }
 
 .context-menu-row-danger {
-  color: #f87171;
+  color: var(--danger-fg);
 }
 
 .context-menu-row-danger:hover {
-  background: rgba(239, 68, 68, 0.12);
+  background: color-mix(in srgb, var(--danger-fg) 12%, transparent);
 }
 
 .context-menu-row-chevron {

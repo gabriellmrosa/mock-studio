@@ -361,3 +361,245 @@
 .panel-section-chevron.is-open {
   transform: rotate(180deg);
 }
+
+/* --- Sub-abas de seção ---
+   Grupos de sub-opções de uma configuração: rótulo + ícone, lado a lado e
+   alinhados ao fim da linha; a aberta ganha a superfície elevada. Substituem
+   o checkbox que abria mais opções. */
+.editor-subtabs {
+  display: flex;
+  gap: var(--space-1);
+  justify-content: flex-end;
+  margin: var(--space-3) 0;
+}
+
+.editor-subtab {
+  align-items: center;
+  background: var(--surface-subtle);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--font-size-150);
+  gap: var(--space-2);
+  justify-content: center;
+  padding: var(--space-2) var(--space-4);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.editor-subtab:hover {
+  color: var(--foreground);
+}
+
+.editor-subtab.is-active {
+  background: var(--surface-raised);
+  color: var(--foreground);
+}
+
+.editor-subtab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.editor-subtab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.editor-subtab-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.editor-subtab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* --- Switch ---
+   Trilho + bolinha. Desligado: --switch-track-off; ligado: o par
+   --button-active-bg/-fg, o mesmo das abas selecionadas. */
+.editor-switch-row {
+  align-items: center;
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--font-size-150);
+  gap: var(--space-2);
+  justify-content: flex-end;
+  line-height: 1.5;
+  margin-top: var(--space-2);
+}
+
+.editor-switch-label {
+  text-align: right;
+}
+
+.editor-switch {
+  background: var(--switch-track-off);
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  flex-shrink: 0;
+  height: 1rem;
+  padding: 2px;
+  position: relative;
+  transition: background-color 140ms ease;
+  width: 1.75rem;
+}
+
+.editor-switch.is-checked {
+  background: var(--button-active-bg);
+}
+
+.editor-switch-thumb {
+  background: var(--button-active-fg);
+  border-radius: var(--radius-full);
+  display: block;
+  height: 0.75rem;
+  transition: transform 140ms ease;
+  width: 0.75rem;
+}
+
+/* Trilho de 1.75rem, bolinha de 0.75rem e 2px de respiro de cada lado. */
+.editor-switch.is-checked .editor-switch-thumb {
+  transform: translateX(0.75rem);
+}
+
+.editor-switch:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-switch,
+  .editor-switch-thumb {
+    transition: none;
+  }
+}
+
+/* --- Controle segmentado ---
+   Trilho de largura total com opções exclusivas; a selecionada ganha a
+   superfície elevada. Ex.: Imagem | Vídeo; Momento | Ajuste | Corte. */
+.editor-segmented {
+  background: var(--surface-subtle);
+  border-radius: var(--radius-sm);
+  display: flex;
+  gap: 2px;
+  margin-bottom: var(--space-3);
+  padding: 2px;
+}
+
+.editor-segmented-tab {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-xs);
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  font-size: var(--font-size-150);
+  gap: var(--space-2);
+  justify-content: center;
+  min-width: 0;
+  padding: var(--space-2);
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.editor-segmented-tab:hover {
+  color: var(--foreground);
+}
+
+.editor-segmented-tab.is-active {
+  background: var(--surface-raised);
+  color: var(--foreground);
+  font-weight: var(--font-semibold);
+}
+
+.editor-segmented-tab:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.editor-segmented-icon {
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+/* --- Side popover ---
+   Painel flutuante à esquerda do painel lateral (posição definida pelo
+   componente). Mesma superfície dos painéis, com sombra de elemento
+   flutuante. */
+.side-popover {
+  animation: side-popover-appear 140ms ease;
+  background: var(--sidebar-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--canvas-shadow);
+  color: var(--foreground);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-height: calc(100vh - var(--space-6));
+  overflow-y: auto;
+  padding: var(--space-4);
+  position: fixed;
+  width: 17rem;
+  z-index: 60;
+}
+
+.side-popover:focus {
+  outline: none;
+}
+
+.side-popover-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+@keyframes side-popover-appear {
+  from {
+    opacity: 0;
+    transform: translateX(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .side-popover {
+    animation: none;
+  }
+}
+
+/* --- Ação destrutiva ---
+   Discreta até o hover: texto em --danger-fg, sem fundo. */
+.editor-button-danger {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--danger-fg);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--font-size-150);
+  gap: var(--space-2);
+  padding: var(--space-2);
+  transition: background-color 140ms ease;
+}
+
+.editor-button-danger:hover {
+  background: color-mix(in srgb, var(--danger-fg) 12%, transparent);
+}
+
+.editor-button-danger:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 1px;
+}
