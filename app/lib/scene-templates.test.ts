@@ -391,4 +391,58 @@ describe("scene-templates", () => {
       expect(getTemplateSnapshot(scene, "static", "#fff")).not.toBe(staticBase);
     });
   });
+
+  describe("video size", () => {
+    const frame = { height: 412, width: 648 };
+
+    it("stores the video size in motion templates only", () => {
+      const motion = createSceneTemplate({
+        frame,
+        mode: "motion",
+        name: "Template 1",
+        objects: buildScene(),
+      });
+      const still = createSceneTemplate({
+        frame,
+        name: "Template 1",
+        objects: buildScene(),
+      });
+
+      expect(motion.frame).toEqual(frame);
+      expect(still).not.toHaveProperty("frame");
+    });
+
+    it("reloads it, and older motion templates load without one", () => {
+      const motion = createSceneTemplate({
+        frame,
+        mode: "motion",
+        name: "Sized",
+        objects: buildScene(),
+      });
+      const older = createSceneTemplate({
+        mode: "motion",
+        name: "Older",
+        objects: buildScene(),
+      });
+
+      storeRaw([motion, { ...older, frame: { width: "wide" } }]);
+
+      const [sized, loadedOlder] = loadTemplates();
+
+      expect(sized.frame).toEqual(frame);
+      // Sem um tamanho válido, o app usa o padrão ao aplicar.
+      expect(loadedOlder).not.toHaveProperty("frame");
+    });
+
+    it("counts a size change as unsaved only in Motion", () => {
+      const scene = buildScene();
+
+      expect(getTemplateSnapshot(scene, "motion", null, frame)).not.toBe(
+        getTemplateSnapshot(scene, "motion", null, { height: 1080, width: 1920 }),
+      );
+      expect(getTemplateSnapshot(scene, "static", null, frame)).toBe(
+        getTemplateSnapshot(scene, "static", null),
+      );
+    });
+  });
 });

@@ -68,6 +68,9 @@
   /* Toggle Estático / Movimento, fixo no topo central do canvas. */
   --canvas-mode-toggle-top: var(--space-6);
   --canvas-mode-toggle-height: 2.5rem;
+  /* Botões redondos (.editor-fab): barra flutuante do canvas e play da
+     timeline. */
+  --canvas-fab-size: 2.25rem;
   /* Avisos de atividade (carregando, exportando) têm lugar fixo logo abaixo
      do toggle — o mesmo em qualquer situação, inclusive com a UI escondida. */
   --canvas-notice-top: calc(

@@ -1,21 +1,20 @@
 "use client";
 
 import "./MotionTimeline.css";
-import "../ContextMenu/ContextMenu.css";
 import {
   Fragment,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
 import { Check, Diamond, Play, Square, Video } from "lucide-react";
 import BezierEditor from "./BezierEditor";
-import type { AppCopy } from "../../lib/i18n";
+import MotionFrameControl from "./MotionFrameControl";
+import TimelineMenu from "./TimelineMenu";
+import type { AppCopy, Locale } from "../../lib/i18n";
+import type { MotionFrame } from "../../lib/motion-frame";
 import {
   getActiveScreenVideo,
   type SceneObject,
@@ -42,10 +41,14 @@ const DRAG_THRESHOLD_PX = 3;
 
 type MotionTimelineProps = {
   copy: AppCopy;
+  /** Tamanho do vídeo: configuração da cena do Movimento, não de um objeto. */
+  frame: MotionFrame;
   isPlaying: boolean;
+  locale: Locale;
   objects: SceneObject[];
   /** Cria um keyframe no playhead; se já houver um ali, remove. */
   onToggleKeyframeAtPlayhead: (objectId: string) => void;
+  onChangeFrame: (frame: MotionFrame) => void;
   onChangeKeyframes: (objectId: string, keyframes: Keyframe[]) => void;
   onChangeVideoStart: (objectId: string, startMs: number) => void;
   onRemoveKeyframe: (objectId: string, keyframeId: string) => void;
@@ -114,8 +117,11 @@ function snap(ms: number) {
 
 export default function MotionTimeline({
   copy,
+  frame,
   isPlaying,
+  locale,
   objects,
+  onChangeFrame,
   onChangeKeyframes,
   onChangeVideoStart,
   onRemoveKeyframe,
@@ -367,6 +373,12 @@ export default function MotionTimeline({
         <span className="motion-timeline-clock">
           {`${formatSeconds(displayedPlayheadMs)} / ${formatSeconds(sceneDurationMs)}`}
         </span>
+        <MotionFrameControl
+          copy={copy}
+          frame={frame}
+          locale={locale}
+          onChange={onChangeFrame}
+        />
       </header>
 
       {objects.length === 0 ? (
@@ -633,79 +645,5 @@ export default function MotionTimeline({
         </TimelineMenu>
       ) : null}
     </section>
-  );
-}
-
-/**
- * Menu de botão direito ancorado no cursor. O ContextMenu do projeto abre a
- * partir de um botão gatilho; aqui não há gatilho, então só reaproveitamos o
- * visual dele.
- */
-function TimelineMenu({
-  children,
-  className,
-  onClose,
-  x,
-  y,
-}: {
-  children: ReactNode;
-  className?: string;
-  onClose: () => void;
-  x: number;
-  y: number;
-}) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  // A timeline fica no rodapé: o menu costuma não caber abaixo do cursor.
-  // Ajuste direto no DOM, antes da pintura, para não abrir e depois pular.
-  useLayoutEffect(() => {
-    const panel = panelRef.current;
-
-    if (!panel) {
-      return;
-    }
-
-    const rect = panel.getBoundingClientRect();
-
-    panel.style.left = `${Math.min(x, window.innerWidth - rect.width - 8)}px`;
-    panel.style.top = `${
-      y + rect.height > window.innerHeight - 8 ? y - rect.height : y
-    }px`;
-  }, [x, y, className]);
-
-  useEffect(() => {
-    function handlePointerDown(event: MouseEvent) {
-      if (!panelRef.current?.contains(event.target as Node)) {
-        onClose();
-      }
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    document.addEventListener("mousedown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("resize", onClose);
-
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("resize", onClose);
-    };
-  }, [onClose]);
-
-  return createPortal(
-    <div
-      ref={panelRef}
-      role="menu"
-      className={`context-menu-panel motion-timeline-menu ${className ?? ""}`.trim()}
-      style={{ left: x, top: y }}
-      onContextMenu={(event) => event.preventDefault()}
-    >
-      {children}
-    </div>,
-    document.body,
   );
 }

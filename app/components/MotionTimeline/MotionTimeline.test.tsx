@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import MotionTimeline from "./MotionTimeline";
 import { APP_COPY } from "../../lib/i18n";
+import { DEFAULT_MOTION_FRAME, type MotionFrame } from "../../lib/motion-frame";
 import {
   DEFAULT_SCREEN_FIT,
   createSceneObject,
@@ -31,8 +32,12 @@ function withVideo(object: SceneObject): SceneObject {
   };
 }
 
-function renderTimeline(objects: SceneObject[]) {
+function renderTimeline(
+  objects: SceneObject[],
+  frame: MotionFrame = DEFAULT_MOTION_FRAME,
+) {
   const handlers = {
+    onChangeFrame: jest.fn(),
     onChangeKeyframes: jest.fn(),
     onChangeVideoStart: jest.fn(),
     onRemoveKeyframe: jest.fn(),
@@ -46,7 +51,9 @@ function renderTimeline(objects: SceneObject[]) {
   const { container } = render(
     <MotionTimeline
       copy={copy}
+      frame={frame}
       isPlaying={false}
+      locale="en-US"
       objects={objects}
       playbackStartedAt={null}
       playheadMs={0}
@@ -109,5 +116,79 @@ describe("MotionTimeline", () => {
     ]);
 
     expect(container.querySelector(".motion-timeline-lane-video")).toBeNull();
+  });
+
+  describe("video size", () => {
+    const openSize = () =>
+      fireEvent.click(screen.getByRole("button", { name: "Video size: 1920 × 1080" }));
+
+    it("shows the current size in the header and opens its panel", () => {
+      renderTimeline([]);
+      openSize();
+
+      const panel = screen.getByRole("dialog", { name: "Video size" });
+
+      expect(panel).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /16:9/ })).toHaveAttribute(
+        "aria-pressed",
+        "true",
+      );
+      expect(screen.getByText("Aspect ratio 16:9")).toBeInTheDocument();
+    });
+
+    it("applies a preset", () => {
+      const { handlers } = renderTimeline([]);
+      openSize();
+
+      fireEvent.click(screen.getByRole("button", { name: /1:1/ }));
+
+      expect(handlers.onChangeFrame).toHaveBeenCalledWith({
+        height: 1080,
+        width: 1080,
+      });
+    });
+
+    it("sets a side in pixels on Enter, leaving the other alone by default", () => {
+      const { handlers } = renderTimeline([]);
+      openSize();
+
+      const width = screen.getByLabelText("Width");
+      fireEvent.change(width, { target: { value: "648" } });
+      // Nada é aplicado enquanto se digita...
+      expect(handlers.onChangeFrame).not.toHaveBeenCalled();
+      fireEvent.keyDown(width, { key: "Enter" });
+
+      // ...e no Enter a proporção passa a ser a das medidas digitadas.
+      expect(handlers.onChangeFrame).toHaveBeenCalledWith({
+        height: 1080,
+        width: 648,
+      });
+    });
+
+    it("keeps the aspect ratio when locked", () => {
+      const { handlers } = renderTimeline([]);
+      openSize();
+
+      fireEvent.click(screen.getByRole("button", { name: "Keep aspect ratio" }));
+      const width = screen.getByLabelText("Width");
+      fireEvent.change(width, { target: { value: "960" } });
+      fireEvent.blur(width);
+
+      expect(handlers.onChangeFrame).toHaveBeenCalledWith({
+        height: 540,
+        width: 960,
+      });
+    });
+
+    it("describes a custom size by its ratio", () => {
+      renderTimeline([], { height: 412, width: 648 });
+      fireEvent.click(screen.getByRole("button", { name: "Video size: 648 × 412" }));
+
+      expect(screen.getByText("Aspect ratio 1.57:1")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /16:9/ })).toHaveAttribute(
+        "aria-pressed",
+        "false",
+      );
+    });
   });
 });

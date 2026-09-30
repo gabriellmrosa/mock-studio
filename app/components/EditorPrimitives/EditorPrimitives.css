@@ -98,13 +98,13 @@
   color: var(--icon-fg);
   cursor: pointer;
   display: inline-flex;
-  height: 2.25rem;
+  height: var(--canvas-fab-size);
   justify-content: center;
   transition:
     transform 160ms ease,
     border-color 160ms ease,
     background-color 160ms ease;
-  width: 2.25rem;
+  width: var(--canvas-fab-size);
 }
 
 .editor-fab:hover {

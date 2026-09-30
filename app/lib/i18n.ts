@@ -89,6 +89,11 @@ export type AppCopy = {
   transformSectionTitle: string;
   transformStaticTab: string;
   motionTimeline: string;
+  motionFrameLabel: string;
+  motionFrameWidth: string;
+  motionFrameHeight: string;
+  motionFrameKeepRatio: string;
+  motionFrameRatio: string;
   motionTimelineEmpty: string;
   motionModeToggle: string;
   transformMotionTab: string;
@@ -239,6 +244,11 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     transformSectionTitle: "Transformação",
     transformStaticTab: "Estático",
     motionTimeline: "Linha do tempo",
+    motionFrameLabel: "Tamanho do vídeo",
+    motionFrameWidth: "Largura",
+    motionFrameHeight: "Altura",
+    motionFrameKeepRatio: "Manter proporção",
+    motionFrameRatio: "Proporção",
     motionTimelineEmpty: "Nenhum objeto visível na cena.",
     motionModeToggle: "Modo movimento",
     transformMotionTab: "Movimento",
@@ -449,6 +459,11 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     transformSectionTitle: "Transform",
     transformStaticTab: "Static",
     motionTimeline: "Timeline",
+    motionFrameLabel: "Video size",
+    motionFrameWidth: "Width",
+    motionFrameHeight: "Height",
+    motionFrameKeepRatio: "Keep aspect ratio",
+    motionFrameRatio: "Aspect ratio",
     motionTimelineEmpty: "No visible objects in the scene.",
     motionModeToggle: "Motion mode",
     transformMotionTab: "Motion",

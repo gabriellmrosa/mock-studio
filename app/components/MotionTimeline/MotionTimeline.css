@@ -32,6 +32,79 @@
   letter-spacing: 0.04em;
 }
 
+/* --- Tamanho do vídeo ---
+   Botão no canto direito do cabeçalho, com as medidas atuais; abre um painel
+   (TimelineMenu) com atalhos de proporção e largura/altura em pixels. */
+.motion-frame-trigger {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-sm);
+  color: var(--button-fg);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--font-size-150);
+  font-variant-numeric: tabular-nums;
+  gap: var(--space-2);
+  margin-left: auto;
+  min-height: var(--input-min-height);
+  padding: 0 var(--space-2);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+}
+
+.motion-frame-trigger:hover,
+.motion-frame-trigger[aria-expanded="true"] {
+  background: var(--surface-hover);
+  border-color: var(--button-border-hover);
+}
+
+.motion-frame-preset-size {
+  color: var(--sidebar-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reserva o lugar do check nas linhas sem ele, para as medidas alinharem. */
+.motion-frame-check-space {
+  display: inline-block;
+  width: 12px;
+}
+
+.motion-frame-fields {
+  align-items: flex-end;
+  border-top: 1px solid var(--panel-border);
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  padding-top: var(--space-3);
+}
+
+.motion-frame-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.motion-frame-field .editor-input {
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-200);
+  font-variant-numeric: tabular-nums;
+  width: 100%;
+}
+
+.motion-frame-field-label,
+.motion-frame-ratio {
+  color: var(--sidebar-muted);
+  font-size: var(--font-size-100);
+}
+
+.motion-frame-ratio {
+  margin: var(--space-2) 0 0;
+}
+
 .motion-timeline-empty {
   align-items: center;
   display: flex;
@@ -312,7 +385,8 @@
    Editor de curva cubic-bezier (popover do menu de transição)
    ========================================= */
 
-.motion-timeline-menu.is-bezier {
+.motion-timeline-menu.is-bezier,
+.motion-timeline-menu.is-panel {
   padding: var(--space-3);
   width: 15rem;
 }
@@ -402,4 +476,9 @@
 .bezier-editor-actions .editor-button-outline {
   padding: var(--space-2);
   white-space: nowrap;
+}
+
+/* O cadeado fica na altura dos campos, entre eles. */
+.motion-frame-lock {
+  height: var(--input-min-height);
 }

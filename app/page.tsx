@@ -26,6 +26,7 @@ import { APP_VERSION } from "./lib/app-version";
 import { buildNextDeviceColors } from "./lib/device-colors";
 import { APP_COPY, type Locale, type UiTheme } from "./lib/i18n";
 import { probeVideoFile, readFileAsDataUrl } from "./lib/mockup-image";
+import { DEFAULT_MOTION_FRAME, type MotionFrame } from "./lib/motion-frame";
 import {
   findKeyframeAt,
   getSceneMotionDuration,
@@ -131,6 +132,11 @@ export default function Home() {
   // Cor de fundo do canvas: mora aqui (e não no MockupCanvas) para poder ser
   // capturada e restaurada junto com os templates.
   const [canvasBgColor, setCanvasBgColor] = useState<string | null>(null);
+  // Tamanho do vídeo no Movimento. Não entra na troca de cenas: só o
+  // Movimento o usa, então ele simplesmente fica aqui enquanto o Estático
+  // está na tela.
+  const [motionFrame, setMotionFrame] =
+    useState<MotionFrame>(DEFAULT_MOTION_FRAME);
   const [templates, setTemplates] = useState<SceneTemplate[]>([]);
   // O que o modo atual tinha da última vez que ficou "limpo": ao entrar nele,
   // ao salvar ou ao aplicar um template. Diferente disso = alteração não salva.
@@ -436,6 +442,7 @@ export default function Home() {
     sceneObjects,
     motionTab,
     canvasBgColor,
+    motionFrame,
   );
   const hasUnsavedChanges = currentSnapshot !== savedSnapshot;
 
@@ -443,6 +450,7 @@ export default function Home() {
     const template = createSceneTemplate({
       backgroundColor: canvasBgColor,
       camera: cameraApiRef.current?.getPose() ?? null,
+      frame: motionFrame,
       mode: motionTab,
       name: getNextTemplateName(modeTemplates),
       objects: sceneObjects,
@@ -488,7 +496,9 @@ export default function Home() {
     } else {
       // Mesmos ids de propósito: só uma cena é montada por vez, e manter os
       // ids evita recarregar os modelos e re-enquadrar a câmera na troca.
-      setSavedSnapshot(getTemplateSnapshot(sceneObjects, mode, canvasBgColor));
+      setSavedSnapshot(
+        getTemplateSnapshot(sceneObjects, mode, canvasBgColor, motionFrame),
+      );
     }
 
     setMotionTab(mode);
@@ -504,6 +514,7 @@ export default function Home() {
     }
 
     const nextObjects = applySceneTemplate(template);
+    const nextFrame = template.frame ?? DEFAULT_MOTION_FRAME;
 
     setSceneObjects(nextObjects);
     setSelectedObjectId(nextObjects[0]?.id ?? "");
@@ -513,8 +524,18 @@ export default function Home() {
     setMotionStartedAt(null);
     setPlayheadMs(0);
     setCanvasBgColor(template.backgroundColor);
+
+    if (template.mode === "motion") {
+      setMotionFrame(nextFrame);
+    }
+
     setSavedSnapshot(
-      getTemplateSnapshot(nextObjects, template.mode, template.backgroundColor),
+      getTemplateSnapshot(
+        nextObjects,
+        template.mode,
+        template.backgroundColor,
+        nextFrame,
+      ),
     );
     // A câmera é o último passo: fica pendente até a cena assentar.
     setPendingCameraPose(template.camera);
@@ -862,13 +883,17 @@ export default function Home() {
         onMotionModeChange={(isMotionMode) =>
           handleModeChange(isMotionMode ? "motion" : "static")
         }
+        motionFrame={motionTab === "motion" ? motionFrame : null}
         motionPlayheadMs={motionPlayheadMs}
         motionStartedAt={motionStartedAt}
         timeline={
           <MotionTimeline
             copy={copy}
+            frame={motionFrame}
             isPlaying={isMotionPlaying}
+            locale={locale}
             objects={sceneObjects.filter((object) => object.isVisible)}
+            onChangeFrame={setMotionFrame}
             onChangeKeyframes={handleChangeKeyframes}
             onChangeVideoStart={(objectId, startMs) =>
               updateSceneObject(objectId, (object) =>

@@ -30,6 +30,51 @@
   background: transparent;
 }
 
+/* Contêiner do <Canvas>. No Estático ocupa o palco inteiro. */
+.canvas-viewport {
+  inset: 0;
+  position: absolute;
+}
+
+.canvas-frame {
+  height: 100%;
+  width: 100%;
+}
+
+/* No Movimento o canvas vira o quadro do vídeo: a maior área na proporção
+   escolhida que cabe entre os painéis, abaixo do toggle de modo e acima da
+   barra flutuante e da timeline. As unidades de contêiner (cqw/cqh) fazem o
+   "caber": a largura é a menor entre a disponível e a que a altura permite. */
+.canvas-viewport.is-framed {
+  align-items: center;
+  bottom: calc(
+    var(--motion-timeline-height) + var(--space-4) + var(--canvas-fab-size) +
+      var(--space-4)
+  );
+  container-type: size;
+  display: flex;
+  justify-content: center;
+  left: calc(var(--editor-sidebar-width) + var(--space-6));
+  right: calc(var(--editor-sidebar-width) + var(--space-6));
+  top: calc(
+    var(--canvas-mode-toggle-top) + var(--canvas-mode-toggle-height) +
+      var(--space-4)
+  );
+}
+
+/* Sem painéis, timeline nem toggle: o quadro usa o palco todo. */
+.canvas-viewport.is-framed.is-ui-hidden {
+  inset: var(--space-6);
+}
+
+.canvas-viewport.is-framed .canvas-frame {
+  aspect-ratio: var(--canvas-frame-ratio);
+  box-shadow: var(--canvas-shadow);
+  height: auto;
+  outline: 1px solid var(--button-border);
+  width: min(100cqw, 100cqh * var(--canvas-frame-ratio));
+}
+
 .canvas-stage-overlay {
   inset: 0;
   pointer-events: none;

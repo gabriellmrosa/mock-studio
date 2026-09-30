@@ -12,6 +12,7 @@ import {
   type EasingId,
   type MotionTransform,
 } from "./scene-motion";
+import { normalizeMotionFrame, type MotionFrame } from "./motion-frame";
 
 // ---------------------------------------------------------------------------
 // Templates de cena — composição reutilizável salva no localStorage.
@@ -24,7 +25,8 @@ import {
 //
 // Estático e Movimento são ambientes separados, cada um com a sua lista: o
 // template guarda o `mode` em que foi salvo e a UI só lista os do modo atual.
-// Só os de Movimento carregam keyframes (~150 bytes cada).
+// Só os de Movimento carregam keyframes (~150 bytes cada) e o tamanho do
+// quadro do vídeo.
 //
 // Por que o schema continua na versão 1: `mode` e `keyframes` são campos
 // opcionais — template sem `mode` é Estático, objeto sem `keyframes` não tem
@@ -81,6 +83,8 @@ export type SceneTemplate = {
   backgroundColor: string | null;
   camera: CameraPose | null;
   createdAt: number;
+  /** Só em templates de Movimento; sem ele, o quadro padrão (1920 × 1080). */
+  frame?: MotionFrame;
   id: string;
   mode: TemplateMode;
   name: string;
@@ -131,6 +135,7 @@ function toTemplateObject(
 export function createSceneTemplate({
   backgroundColor = null,
   camera = null,
+  frame = null,
   id,
   mode = "static",
   name,
@@ -138,6 +143,7 @@ export function createSceneTemplate({
 }: {
   backgroundColor?: string | null;
   camera?: CameraPose | null;
+  frame?: MotionFrame | null;
   id?: string;
   mode?: TemplateMode;
   name: string;
@@ -147,6 +153,7 @@ export function createSceneTemplate({
     backgroundColor,
     camera,
     createdAt: Date.now(),
+    ...(mode === "motion" && frame ? { frame: { ...frame } } : {}),
     id: id ?? crypto.randomUUID(),
     mode,
     name,
@@ -208,9 +215,11 @@ export function getTemplateSnapshot(
   objects: SceneObject[],
   mode: TemplateMode,
   backgroundColor: string | null,
+  frame: MotionFrame | null = null,
 ) {
   return JSON.stringify({
     backgroundColor,
+    ...(mode === "motion" && frame ? { frame } : {}),
     objects: objects.map((object) => toTemplateObject(object, mode)),
   });
 }
@@ -289,9 +298,12 @@ function isValidKeyframe(value: unknown): value is TemplateKeyframe {
  */
 function normalizeTemplate(template: SceneTemplate): SceneTemplate {
   const mode: TemplateMode = template.mode === "motion" ? "motion" : "static";
+  const { frame: storedFrame, ...fields } = template;
+  const frame = mode === "motion" ? normalizeMotionFrame(storedFrame) : null;
 
   return {
-    ...template,
+    ...fields,
+    ...(frame ? { frame } : {}),
     mode,
     objects: template.objects.map((object) => {
       const { keyframes, ...rest } = object;

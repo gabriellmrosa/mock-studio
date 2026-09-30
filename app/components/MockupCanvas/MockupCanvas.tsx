@@ -6,6 +6,7 @@ import {
   useEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import * as THREE from "three";
@@ -24,6 +25,7 @@ import {
 } from "@react-three/drei";
 import CameraControlsImpl from "camera-controls";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
+import type { MotionFrame } from "../../lib/motion-frame";
 import {
   getActiveScreenFit,
   getActiveScreenVideo,
@@ -76,6 +78,11 @@ type MockupCanvasProps = {
   /** Instante da cena a exibir quando parado; null = mostrar a pose estática. */
   motionPlayheadMs: number | null;
   isMotionMode: boolean;
+  /**
+   * Tamanho do vídeo, só no Movimento: o canvas assume a proporção dele, então
+   * a câmera, o auto-fit e o "Enquadrar cena" já enxergam o quadro final.
+   */
+  motionFrame: MotionFrame | null;
   onMotionModeChange: (isMotionMode: boolean) => void;
   /** A timeline em si; o canvas só reserva o rodapé para ela. */
   timeline: ReactNode;
@@ -561,7 +568,7 @@ function BoundsResetController({
   sceneRef: { current: THREE.Group | null };
 }) {
   const bounds = useBounds();
-  const { camera } = useThree();
+  const { camera, gl } = useThree();
   // Cena cuja câmera veio de um template. Sem isso, limpar a pose pendente
   // (que está nas deps do effect) dispararia um auto-fit logo depois de
   // restaurar a câmera, desfazendo a restauração.
@@ -587,6 +594,21 @@ function BoundsResetController({
     let frameId = 0;
 
     frameId = requestAnimationFrame(() => {
+      // O canvas pode ter acabado de mudar de forma (entrar no Movimento,
+      // trocar o tamanho do vídeo) e o R3F só atualiza a câmera quando mede de
+      // novo. O enquadramento depende da proporção, então ela vem direto do
+      // contêiner, que já tem o tamanho novo.
+      const container = gl.domElement.parentElement;
+
+      if (
+        container &&
+        camera instanceof THREE.PerspectiveCamera &&
+        container.clientWidth > 0 &&
+        container.clientHeight > 0
+      ) {
+        camera.aspect = container.clientWidth / container.clientHeight;
+      }
+
       bounds.refresh(sceneGroup);
 
       const { center, distance } = bounds.getSize();
@@ -639,6 +661,7 @@ function BoundsResetController({
     bounds,
     camera,
     controlsRef,
+    gl,
     isSceneSettled,
     pendingCameraPose,
     sceneFitKey,
@@ -767,9 +790,13 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [viewportControls]);
 
-  const stageClass = canvasBgColor
-    ? "mockup-stage relative flex-1 h-screen"
-    : `mockup-stage relative flex-1 h-screen ${props.uiTheme === "dark" ? "mockup-stage-dark" : "mockup-stage-light"}`;
+  // No Movimento a cor de fundo pinta só o quadro do vídeo; em volta dele
+  // fica o fundo do palco.
+  const isFramed = props.motionFrame !== null;
+  const stageClass =
+    canvasBgColor && !isFramed
+      ? "mockup-stage relative flex-1 h-screen"
+      : `mockup-stage relative flex-1 h-screen ${props.uiTheme === "dark" ? "mockup-stage-dark" : "mockup-stage-light"}`;
   const currentObjectIds = new Set(
     props.objects
       .filter((object) => object.isVisible)
@@ -793,7 +820,12 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     activeLoadingObjectIds.length > 1
       ? `${props.copy.canvasObjectLoadingLabel} (${activeLoadingObjectIds.length})`
       : props.copy.canvasObjectLoadingLabel;
-  const sceneFitKey = `${props.objects.map((object) => object.id).join(",")}::${activeResolvedObjectIds.join(",")}`;
+  const motionFrame = props.motionFrame;
+  // A forma do quadro entra na chave: mudar o tamanho do vídeo muda o que cabe
+  // na tela, então a cena é enquadrada de novo.
+  const sceneFitKey = `${props.objects.map((object) => object.id).join(",")}::${activeResolvedObjectIds.join(",")}::${
+    motionFrame ? `${motionFrame.width}x${motionFrame.height}` : ""
+  }`;
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -858,8 +890,26 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   return (
     <div
       className={stageClass}
-      style={canvasBgColor ? { background: canvasBgColor } : undefined}
+      style={canvasBgColor && !isFramed ? { background: canvasBgColor } : undefined}
     >
+      {/* O mesmo contêiner nos dois modos, só com outra forma: trocar a
+          estrutura remontaria o <Canvas> e recarregaria a cena inteira. */}
+      <div
+        className={`canvas-viewport${isFramed ? " is-framed" : ""}${
+          isFramed && props.isUiHidden ? " is-ui-hidden" : ""
+        }`}
+      >
+      <div
+        className="canvas-frame"
+        style={
+          motionFrame
+            ? ({
+                "--canvas-frame-ratio": motionFrame.width / motionFrame.height,
+                background: canvasBgColor ?? undefined,
+              } as CSSProperties)
+            : undefined
+        }
+      >
       <Canvas
         camera={{ fov: CAMERA_FOV, position: CAMERA_POSITION }}
         dpr={[1, 2]}
@@ -883,6 +933,8 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           sceneFitKey={sceneFitKey}
         />
       </Canvas>
+      </div>
+      </div>
 
       {/* Enquanto o template assenta, bloqueia a interação com a cena para
           que um arraste acidental não estrague o enquadramento restaurado. */}

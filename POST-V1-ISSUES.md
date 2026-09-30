@@ -105,4 +105,13 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - **UI:** a read-only "Built-in" group above "My templates" in the templates dock (apply only; no rename or delete), both groups sharing one scroll area so the dock doesn't double in height.
 - **Tests:** five per mode, unique ids, theme colors match the models, keyframes only in `Motion`, sorted and within the Inspector ranges, and every template applies like a saved one.
 - **Verify in the browser** after composing: numbers alone got the proportions and gaps wrong three times.
-- Found along the way, not fixed: in `Motion`, auto-fit ignores the timeline's height, so a single device ends up partly behind it.
+- Found along the way: in `Motion`, auto-fit ignored the timeline's height, so a single device ended up partly behind it — fixed by the video size (item 13), which fits the canvas above the timeline.
+
+## 13. Video size in Motion — done
+
+- [x] `Motion` has a video size, 1920 × 1080 by default, set from a button in the timeline header: 16:9, 1:1, 4:5 and 9:16 presets, or width and height in pixels (the ratio follows the numbers), with an aspect-ratio lock that is off by default
+- [x] the canvas takes that shape between the panels, the mode toggle and the timeline, so what is composed is what the video will show — which also stops a single device from ending up behind the timeline
+- [x] sides stay even and within 64–3840 px, ready for a video encoder
+- [x] `Motion` templates store the size (an optional field, no schema bump), and changing it counts as an unsaved change
+- `Static` has no size on purpose: a PNG is easy to crop afterwards, in Figma or any editor
+- `Export` in `Motion` still produces the same PNG presets as before; the size is groundwork for the video export in item 7
