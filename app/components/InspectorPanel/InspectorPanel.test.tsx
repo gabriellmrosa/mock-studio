@@ -5,7 +5,7 @@ import {
   DEFAULT_SCREEN_FIT,
   createSceneObject,
 } from "../../lib/scene-objects";
-import type { AppCopy } from "../../lib/i18n";
+import { APP_COPY, type AppCopy } from "../../lib/i18n";
 
 jest.mock("../CustomSelect/CustomSelect", () => ({
   __esModule: true,
@@ -169,7 +169,6 @@ const copy: AppCopy = {
   exportBackgroundLabel: "Background",
   exportWithBackground: "With background",
   exportTransparent: "Transparent",
-  exportTemplateLabel: "Template",
   saveAsTemplate: "Save as template",
   templatesSectionTitle: "Templates",
   templatesEmptyHint: "Save the current scene to reuse it later.",
@@ -199,6 +198,20 @@ const copy: AppCopy = {
   motionFrameHeight: "Height",
   motionFrameKeepRatio: "Keep aspect ratio",
   motionFrameRatio: "Aspect ratio",
+  exportTabImage: APP_COPY["en-US"].exportTabImage,
+  exportTabVideo: APP_COPY["en-US"].exportTabVideo,
+  videoExportDestination: APP_COPY["en-US"].videoExportDestination,
+  videoExportUnavailable: APP_COPY["en-US"].videoExportUnavailable,
+  videoExportPresets: APP_COPY["en-US"].videoExportPresets,
+  videoExportCustomize: APP_COPY["en-US"].videoExportCustomize,
+  videoExportFps: APP_COPY["en-US"].videoExportFps,
+  videoExportResolution: APP_COPY["en-US"].videoExportResolution,
+  videoExportSubmit: APP_COPY["en-US"].videoExportSubmit,
+  videoExportCancel: APP_COPY["en-US"].videoExportCancel,
+  videoExportProgress: APP_COPY["en-US"].videoExportProgress,
+  videoExportUnsupported: APP_COPY["en-US"].videoExportUnsupported,
+  videoExportSuccess: APP_COPY["en-US"].videoExportSuccess,
+  videoExportError: APP_COPY["en-US"].videoExportError,
   motionTimelineEmpty: "No animated objects yet.",
   motionModeToggle: "Motion mode",
   transformMotionTab: "Motion",

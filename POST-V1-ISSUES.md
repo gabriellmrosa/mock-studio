@@ -40,13 +40,19 @@
 - the spawn position uses a functional state updater, but the name is derived from a stale `sceneObjects.length`
 - derive the name inside the same functional updater that appends the object
 
-## 7. Give motion an output
+## 7. Give motion an output — done
 
-- per-object keyframes ship without any way to export the result: the animation only exists inside the editor
-- `canvas.captureStream()` + `MediaRecorder` is the browser-native path, available since January 2020
-- format is the catch: Chrome and Firefox record WebM, Safari records MP4, and universal MP4 would need `ffmpeg.wasm` in the bundle
-- the export is the larger half of the work — fixed frame rate, deterministic playback and coexisting with the offscreen SSAA render path
-
+- per-object keyframes shipped without any way to export the result: the animation only existed inside the editor
+- [x] in `Motion` the `Export` menu has two tabs, `Image` and `Video`; the video tab lists three destinations — social and presentations (MP4 with background, 60 fps), website with no background (transparent WebM, 30 fps) and highest quality (MP4, 60 fps, 2×) —, `Customize` exposes background, frame rate and resolution (changing any of them clears the destination), and a one-line summary sits above `Export video`
+- a separate dialog was tried first and felt like too much for a choice that fits in the menu the user already opened
+- [x] `Save as template` became a checkbox, checked by default and remembered, and applies to image and video exports alike
+- [x] frames are rendered one at a time, not recorded: each frame poses the scene at its instant, seeks every screen video to the exact frame and renders with the PNG's supersampling — a slow machine takes longer but drops nothing, and the tab can stay in the background (R3F's `advance()` drives the frame, not `requestAnimationFrame`)
+- [x] encoding uses WebCodecs through `mediabunny` (MPL-2.0), loaded only on the first video export; Chrome's native encoder has no alpha, so `mediabunny` encodes the transparency as a second VP9 stream, which Chrome, Edge and Firefox play back as a transparent WebM
+- [x] the video ends exactly on the final pose (the last frame is the scene's last instant), with progress and cancel in the canvas notice; the canvas is blocked meanwhile, and the file uses the scene as it was when the export started, so editing in the panels can't change it halfway
+- measured: 4 s at 1080p60 in about 16 s, 1.4 MB; the result was checked with `ffprobe` (frame count, frame rate, alpha) and frame by frame against a counter video on the screen
+- `MediaRecorder` was ruled out: real-time capture drops frames under load and its quality is limited
+- Safari doesn't show WebM transparency yet (announced for Safari 27); its own format, HEVC with alpha, can't be encoded in Chrome — a site targeting Safari needs a still fallback for now
+- the frame readback goes through the CPU (about 30 ms at 1080p with 2× supersampling); a GPU downscale would roughly halve the time per frame if exports ever feel slow
 ## 8. Templates do not capture motion — done
 
 - [x] templates carry a `mode`; `Motion` templates store every keyframe (time, pose, easing and cubic-bezier curve), `Static` ones store none
@@ -92,6 +98,9 @@
 - [x] contrast pass: `--sidebar-muted` (light) darkened to keep 5.1:1 on `--surface-subtle`; new tokens `--surface-subtle`, `--switch-track-off` and `--danger-fg`, the last replacing a fixed red that failed AA
 - run a full contrast sweep of the interface: this pass covered the new surfaces only
 - `Transform` (position, rotation, scale) could adopt `SegmentedTabs` if the section grows
+- [x] a `Checkbox` primitive joined them, for an extra action that rides along with another (`Save as template` when exporting) — not an on/off state of the object, which stays a `Switch`
+- [x] floating panels (context menus and their submenus, the `CustomSelect` list, the timeline menus) share the Properties panel background, `--sidebar-bg`, like the screen options popover already did; hovers inside them mix with the same color, and the backdrop blur went away, since it does nothing over an opaque background
+- [x] a selected toggle or tab no longer turns bold (segmented tabs, the `Static | Motion` switch, the export options): background and color mark the selection, and the label keeps its weight, so it doesn't shift width
 
 ## 12. Built-in templates — parked
 

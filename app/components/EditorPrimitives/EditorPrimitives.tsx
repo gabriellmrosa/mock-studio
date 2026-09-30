@@ -327,6 +327,34 @@ export function SubTabPanel({
 }
 
 /**
+ * Caixa de seleção para uma ação extra que acompanha outra (ex.: "salvar como
+ * template" ao exportar). Diferente do `Switch`, que liga um estado do objeto,
+ * aqui a marcação só diz "faça também isto". Input nativo — teclado, leitor de
+ * tela e o clique no texto vêm de graça —, pintado com a cor do tema.
+ */
+export function Checkbox({
+  checked,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className="editor-checkbox-row">
+      <input
+        type="checkbox"
+        className="editor-checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+      />
+      <span className="editor-checkbox-label">{label}</span>
+    </label>
+  );
+}
+
+/**
  * Liga/desliga de uma opção (ex.: corpo do aparelho, acabamento fosco).
  * Substituiu o checkbox: o estado fica visível à distância e o controle segue
  * o padrão de mercado para "ativo/inativo". Um botão com `role="switch"`,

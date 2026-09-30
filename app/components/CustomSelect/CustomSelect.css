@@ -63,8 +63,7 @@
 
 .custom-select-panel {
   animation: custom-select-appear 120ms ease;
-  background: var(--surface-raised);
-  backdrop-filter: blur(12px);
+  background: var(--sidebar-bg);
   border: 1px solid var(--panel-border);
   border-radius: var(--radius-sm);
   box-shadow: var(--canvas-shadow);
@@ -105,7 +104,7 @@
 
 [data-theme="dark"] .custom-select-option:hover,
 [data-theme="dark"] .custom-select-option[data-highlighted="true"] {
-  background: color-mix(in srgb, var(--foreground) 12%, var(--surface-raised));
+  background: color-mix(in srgb, var(--foreground) 12%, var(--sidebar-bg));
 }
 
 .custom-select-option[data-selected="true"] {
@@ -113,7 +112,7 @@
 }
 
 [data-theme="dark"] .custom-select-option[data-selected="true"] {
-  background: color-mix(in srgb, var(--foreground) 18%, var(--surface-raised));
+  background: color-mix(in srgb, var(--foreground) 18%, var(--sidebar-bg));
 }
 
 .custom-select-option-copy {

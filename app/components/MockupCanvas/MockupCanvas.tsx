@@ -24,7 +24,7 @@ import {
   useBounds,
 } from "@react-three/drei";
 import CameraControlsImpl from "camera-controls";
-import type { AppCopy, UiTheme } from "../../lib/i18n";
+import type { AppCopy, Locale, UiTheme } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
 import {
   getActiveScreenFit,
@@ -39,14 +39,43 @@ import {
   OBJECT_POSITION_MULTIPLIER,
   OBJECT_POSITION_MULTIPLIER_Z,
 } from "../../lib/scene-presets";
-import { hasMotion, sampleMotion } from "../../lib/scene-motion";
+import {
+  getSceneMotionDuration,
+  hasMotion,
+  sampleMotion,
+} from "../../lib/scene-motion";
 import { DEVICE_MODELS } from "../../models/device-models";
 import FloatingCanvasControls from "../FloatingCanvasControls/FloatingCanvasControls";
 import {
+  downloadBlob,
   exportCanvasPhoto,
   formatTimestampForFilename,
 } from "./export-photo";
 import ActivityNotice from "../ActivityNotice/ActivityNotice";
+import {
+  VideoExportCanceledError,
+  createVideoFrameRenderer,
+  encodeVideo,
+} from "./export-video";
+import {
+  getVideoExportFilename,
+  getVideoExportSize,
+  getVideoFrameTimes,
+  type VideoExportSettings,
+} from "../../lib/video-export";
+
+/** Um pedido de exportação de vídeo, já com tudo decidido pelo modal. */
+export type VideoExportRequest = {
+  /** Cor de fundo, ou `null` para transparente. */
+  background: string | null;
+  frameTimes: number[];
+  onProgress: (done: number, total: number) => void;
+  settings: VideoExportSettings;
+  signal: AbortSignal;
+  size: MotionFrame;
+};
+
+export type VideoExportHandler = (request: VideoExportRequest) => Promise<Blob>;
 
 export type ExportPreset = {
   height: number;
@@ -62,6 +91,7 @@ type MockupCanvasProps = {
   bgColor: string | null;
   copy: AppCopy;
   isUiHidden: boolean;
+  locale: Locale;
   objects: SceneObject[];
   onBgColorChange: (color: string | null) => void;
   onCameraApiReady: (api: CameraApi | null) => void;
@@ -84,6 +114,8 @@ type MockupCanvasProps = {
    */
   motionFrame: MotionFrame | null;
   onMotionModeChange: (isMotionMode: boolean) => void;
+  /** Para o preview: exportar vídeo toma conta da cena. */
+  onStopMotion: () => void;
   /** A timeline em si; o canvas só reserva o rodapé para ela. */
   timeline: ReactNode;
   scaleOverrides: ScaleOverrides;
@@ -121,6 +153,7 @@ type SceneBridgeProps = MockupCanvasProps & {
   onObjectLoadStateChange: (id: string, isLoading: boolean) => void;
   onObjectResolved: (id: string) => void;
   onSelectObject: (id: string) => void;
+  onVideoExportReady: (handler: VideoExportHandler | null) => void;
   onViewportControlsReady: (api: ViewportControlsApi | null) => void;
   sceneFitKey: string;
   spawnOverrides: SpawnOverrides;
@@ -178,6 +211,42 @@ function getResolvedObjectPosition(
   ];
 }
 
+/**
+ * Escreve no grupo a pose de um objeto num instante da cena. É o que o preview
+ * faz a cada quadro e o que a exportação de vídeo faz por quadro — a mesma
+ * conta, para o arquivo não divergir do editor. Sem keyframes, não mexe.
+ */
+function applyMotionPose(
+  group: THREE.Group,
+  object: SceneObject,
+  index: number,
+  timeMs: number,
+  spawnOverrides: SpawnOverrides,
+) {
+  const sampled = sampleMotion(object, timeMs);
+
+  if (!sampled) {
+    return;
+  }
+
+  // Reusa a mesma resolução de posição do render estático para o preview não
+  // divergir do que o objeto mostra parado.
+  const [x, y, z] = getResolvedObjectPosition(
+    { ...object, ...sampled },
+    index,
+    spawnOverrides,
+    DEVICE_MODELS[object.modelId].modelSpawnOffset,
+  );
+
+  group.position.set(x, y, z);
+  group.rotation.set(
+    (sampled.rotationX * Math.PI) / 180,
+    (sampled.rotationY * Math.PI) / 180,
+    (sampled.rotationZ * Math.PI) / 180,
+  );
+  group.scale.setScalar(sampled.scale);
+}
+
 function SceneBridge({
   isSceneSettled,
   objects,
@@ -189,6 +258,7 @@ function SceneBridge({
   motionStartedAt,
   onSelectObject,
   onTemplateApplied,
+  onVideoExportReady,
   onViewportControlsReady,
   pendingCameraPose,
   scaleOverrides,
@@ -203,7 +273,13 @@ function SceneBridge({
   // Refs por objeto: o preview de movimento escreve no grupo direto, e eles
   // nascem dentro de um .map, então não dá para ter um useRef por objeto.
   const objectGroupsRef = useRef(new Map<string, THREE.Group>());
-  const { camera, gl, scene, size } = useThree();
+  const { advance, camera, gl, scene, size } = useThree();
+  // Enquanto um vídeo é exportado, os vídeos das telas são do exportador: o
+  // controlador do editor não pode posicioná-los no playhead por cima.
+  const isExportingVideoRef = useRef(false);
+  // A exportação lê a cena de quando roda, não de quando foi registrada.
+  const latestSceneRef = useRef({ motionPlayheadMs, objects, spawnOverrides });
+  latestSceneRef.current = { motionPlayheadMs, objects, spawnOverrides };
 
   function handleObjectDoubleClick(
     event: ThreeEvent<MouseEvent>,
@@ -228,6 +304,63 @@ function SceneBridge({
       onExportReady(null);
     };
   }, [camera, gl, onExportReady, scene, size]);
+
+  useEffect(() => {
+    function applyPoses(
+      timeMs: number,
+      { objects: current, spawnOverrides: overrides } = latestSceneRef.current,
+    ) {
+      current.forEach((object, index) => {
+        const group = objectGroupsRef.current.get(object.id);
+
+        if (group) {
+          applyMotionPose(group, object, index, timeMs, overrides);
+        }
+      });
+    }
+
+    onVideoExportReady(async (request) => {
+      isExportingVideoRef.current = true;
+      // O vídeo é da cena de quando se clicou em exportar: os painéis
+      // continuam abertos, e mexer num objeto agora não pode mudar o arquivo
+      // no meio.
+      const exported = latestSceneRef.current;
+
+      const renderer = createVideoFrameRenderer(
+        {
+          advance,
+          applyPoses: (timeMs) => applyPoses(timeMs, exported),
+          camera,
+          gl,
+          gridRef,
+          objects: () => exported.objects,
+          // Volta ao instante que o editor mostrava; os vídeos das telas o
+          // controlador reposiciona sozinho no próximo quadro.
+          restore: () => applyPoses(latestSceneRef.current.motionPlayheadMs ?? 0),
+          scene,
+        },
+        request.size,
+        request.background,
+      );
+
+      try {
+        return await encodeVideo({
+          frameTimes: request.frameTimes,
+          onProgress: request.onProgress,
+          renderer,
+          settings: request.settings,
+          signal: request.signal,
+        });
+      } finally {
+        renderer.end();
+        isExportingVideoRef.current = false;
+      }
+    });
+
+    return () => {
+      onVideoExportReady(null);
+    };
+  }, [advance, camera, gl, onVideoExportReady, scene]);
 
   const gridColors = getGridColors(canvasBgColor, uiTheme);
 
@@ -332,6 +465,7 @@ function SceneBridge({
           })}
         </group>
         <ScreenVideoController
+          isPausedRef={isExportingVideoRef}
           motionPlayheadMs={motionPlayheadMs}
           motionStartedAt={motionStartedAt}
           objects={objects}
@@ -391,15 +525,22 @@ const VIDEO_SEEK_EPSILON_S = 0.015;
  * Mesmo padrão do MotionDriver: escreve direto no elemento, sem estado React.
  */
 function ScreenVideoController({
+  isPausedRef,
   motionPlayheadMs,
   motionStartedAt,
   objects,
 }: {
+  /** Durante a exportação de vídeo, quem posiciona os vídeos é o exportador. */
+  isPausedRef: { current: boolean };
   motionPlayheadMs: number | null;
   motionStartedAt: number | null;
   objects: SceneObject[];
 }) {
   useFrame(() => {
+    if (isPausedRef.current) {
+      return;
+    }
+
     for (const object of objects) {
       const video = getActiveScreenVideo(object);
       const element = video ? getScreenVideoElement(object.id) : null;
@@ -464,37 +605,18 @@ function MotionDriver({
   spawnOverrides: SpawnOverrides;
   startedAt: number;
 }) {
-  const model = DEVICE_MODELS[object.modelId];
-
   useFrame(() => {
     const group = groupsRef.current.get(object.id);
 
-    if (!group) {
-      return;
+    if (group) {
+      applyMotionPose(
+        group,
+        object,
+        index,
+        Date.now() - startedAt,
+        spawnOverrides,
+      );
     }
-
-    const sampled = sampleMotion(object, Date.now() - startedAt);
-
-    if (!sampled) {
-      return;
-    }
-
-    // Reusa a mesma resolução de posição do render estático para o preview não
-    // divergir do que o objeto mostra parado.
-    const [x, y, z] = getResolvedObjectPosition(
-      { ...object, ...sampled },
-      index,
-      spawnOverrides,
-      model.modelSpawnOffset,
-    );
-
-    group.position.set(x, y, z);
-    group.rotation.set(
-      (sampled.rotationX * Math.PI) / 180,
-      (sampled.rotationY * Math.PI) / 180,
-      (sampled.rotationZ * Math.PI) / 180,
-    );
-    group.scale.setScalar(sampled.scale);
   });
 
   return null;
@@ -760,6 +882,16 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const [incrementalLoadingDelayElapsed, setIncrementalLoadingDelayElapsed] =
     useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const videoExportHandlerRef = useRef<VideoExportHandler | null>(null);
+  const [isVideoExportReady, setIsVideoExportReady] = useState(false);
+  // Quadros prontos da exportação de vídeo em curso; null = nenhuma.
+  const [videoProgress, setVideoProgress] = useState<{
+    done: number;
+    total: number;
+  } | null>(null);
+  const videoAbortRef = useRef<AbortController | null>(null);
+  // Mesma conta da timeline: até o último keyframe ou o fim do último vídeo.
+  const sceneDurationMs = getSceneMotionDuration(props.objects);
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -855,6 +987,58 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     setLoadingObjectIds((current) => current.filter((currentId) => currentId !== id));
   }
 
+  async function handleExportVideo(settings: VideoExportSettings) {
+    const exportVideo = videoExportHandlerRef.current;
+
+    if (!exportVideo || !props.motionFrame || videoProgress) {
+      return;
+    }
+
+    // Exportar toma conta da cena: o preview para, e o canvas fica bloqueado
+    // até o fim (ver o overlay abaixo).
+    props.onStopMotion();
+
+    const size = getVideoExportSize(props.motionFrame, settings.scale);
+    const frameTimes = getVideoFrameTimes(sceneDurationMs, settings.fps);
+    const controller = new AbortController();
+
+    videoAbortRef.current = controller;
+    setVideoProgress({ done: 0, total: frameTimes.length });
+
+    try {
+      const blob = await exportVideo({
+        // O mesmo fundo do PNG: a cor do canvas, ou a padrão do tema.
+        background: settings.background
+          ? (canvasBgColor ?? DEFAULT_BG[props.uiTheme])
+          : null,
+        frameTimes,
+        onProgress: (done, total) => setVideoProgress({ done, total }),
+        settings,
+        signal: controller.signal,
+        size,
+      });
+
+      downloadBlob(
+        blob,
+        getVideoExportFilename(
+          size,
+          settings,
+          formatTimestampForFilename(new Date()),
+        ),
+      );
+      props.onNotify?.("success", props.copy.videoExportSuccess);
+    } catch (error) {
+      // Cancelar é uma escolha, não um erro: nada de aviso.
+      if (!(error instanceof VideoExportCanceledError)) {
+        console.error("Failed to export video.", error);
+        props.onNotify?.("error", props.copy.videoExportError);
+      }
+    } finally {
+      videoAbortRef.current = null;
+      setVideoProgress(null);
+    }
+  }
+
   async function handleTakePhoto(resolution: {
     width: number;
     height: number;
@@ -929,6 +1113,10 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           onObjectLoadStateChange={handleObjectLoadStateChange}
           onObjectResolved={handleObjectResolved}
           onSelectObject={props.onSelectObject}
+          onVideoExportReady={(handler) => {
+            videoExportHandlerRef.current = handler;
+            setIsVideoExportReady(Boolean(handler));
+          }}
           onViewportControlsReady={setViewportControls}
           sceneFitKey={sceneFitKey}
         />
@@ -941,6 +1129,27 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       {isApplyingTemplate ? (
         <div className="canvas-blocking-overlay">
           <ActivityNotice label={props.copy.canvasTemplateLoadingLabel} />
+        </div>
+      ) : null}
+
+      {/* Exportando vídeo, a cena é do exportador quadro a quadro: mexer nela
+          agora estragaria o arquivo. O aviso mostra o progresso e cancela. */}
+      {videoProgress ? (
+        <div className="canvas-blocking-overlay">
+          <ActivityNotice
+            label={props.copy.videoExportProgress
+              .replace("{done}", String(videoProgress.done))
+              .replace("{total}", String(videoProgress.total))}
+            action={
+              <button
+                type="button"
+                className="activity-notice-action"
+                onClick={() => videoAbortRef.current?.abort()}
+              >
+                {props.copy.videoExportCancel}
+              </button>
+            }
+          />
         </div>
       ) : null}
 
@@ -984,6 +1193,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           bgColor={canvasBgColor}
           copy={props.copy}
           isUiHidden={props.isUiHidden}
+          locale={props.locale}
           onBgColorChange={setCanvasBgColor}
           onFitToScene={() => viewportControls?.fitToScene()}
           onPanDown={() => viewportControls?.panDown()}
@@ -997,8 +1207,19 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           onToggleUiHidden={props.onToggleUiHidden}
           onZoomIn={() => viewportControls?.zoomIn()}
           onZoomOut={() => viewportControls?.zoomOut()}
-          takePhotoDisabled={!isExportReady || isExporting}
+          takePhotoDisabled={!isExportReady || isExporting || videoProgress !== null}
           uiTheme={props.uiTheme}
+          video={
+            props.motionFrame
+              ? {
+                  // Sem o motor pronto, é como uma cena sem animação: a aba
+                  // mostra o aviso e não deixa exportar.
+                  durationMs: isVideoExportReady ? sceneDurationMs : 0,
+                  frame: props.motionFrame,
+                  onExport: (settings) => void handleExportVideo(settings),
+                }
+              : undefined
+          }
         />
 
         {props.isMotionMode && !props.isUiHidden ? props.timeline : null}

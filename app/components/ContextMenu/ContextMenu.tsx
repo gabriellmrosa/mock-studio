@@ -1,12 +1,27 @@
 "use client";
 
 import "./ContextMenu.css";
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronRight } from "lucide-react";
 import { IconButton } from "../EditorPrimitives/EditorPrimitives";
 
 const TOP_END_MENU_GAP = 16;
+
+const CloseMenuContext = createContext<() => void>(() => undefined);
+
+/** Dentro do `content` de um ContextMenu: fecha o painel (ex.: após exportar). */
+export function useCloseContextMenu() {
+  return useContext(CloseMenuContext);
+}
 
 export type ContextMenuActionItem = {
   type: "action";
@@ -33,6 +48,12 @@ export type ContextMenuItem = ContextMenuActionItem | ContextMenuSubmenuItem;
 
 type ContextMenuProps = {
   items: ContextMenuItem[];
+  /**
+   * Conteúdo livre, depois dos itens, para painéis que não são uma lista de
+   * ações (ex.: o de exportar, com abas e opções). As ações que devem fechar
+   * o painel usam `useCloseContextMenu`.
+   */
+  content?: ReactNode;
   // Conteúdo fixo renderizado no topo do painel (ex.: um seletor). Interagir com
   // ele não fecha o menu, pois cliques dentro do painel são ignorados.
   headerContent?: ReactNode;
@@ -52,6 +73,7 @@ type PanelPosition = { top: number; left: number };
 
 export default function ContextMenu({
   items,
+  content,
   headerContent,
   panelPlacement = "bottom-start",
   panelClassName,
@@ -156,6 +178,41 @@ export default function ContextMenu({
       setIsPanelPositionResolved(true);
     }
   }, [isOpen, isPanelPositionResolved, panelPlacement, panelPosition]);
+
+  // Aberto para cima, o painel se ancora pela base: se o conteúdo muda de
+  // altura (ex.: trocar de aba), ele sobe ou desce para continuar colado ao
+  // botão, em vez de crescer por cima dele.
+  useEffect(() => {
+    const panel = panelRef.current;
+
+    if (
+      !isOpen ||
+      panelPlacement !== "top-end" ||
+      !panel ||
+      typeof ResizeObserver === "undefined"
+    ) {
+      return;
+    }
+
+    const observer = new ResizeObserver(() => {
+      const triggerRect = rootRef.current?.getBoundingClientRect();
+
+      if (!triggerRect) {
+        return;
+      }
+
+      const panelRect = panel.getBoundingClientRect();
+
+      setPanelPosition({
+        left: triggerRect.right - panelRect.width,
+        top: triggerRect.top - panelRect.height - TOP_END_MENU_GAP,
+      });
+    });
+
+    observer.observe(panel);
+
+    return () => observer.disconnect();
+  }, [isOpen, panelPlacement]);
 
   function handleTriggerButtonClick(event?: React.MouseEvent<HTMLButtonElement>) {
     if (triggerStopPropagation) {
@@ -269,6 +326,12 @@ export default function ContextMenu({
                 </button>
               );
             })}
+
+            {content ? (
+              <CloseMenuContext.Provider value={close}>
+                {content}
+              </CloseMenuContext.Provider>
+            ) : null}
 
             {submenuOptions && (
               <div

@@ -13,23 +13,29 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  Bookmark,
   Camera,
-  Check,
-  Download,
   Eye,
   EyeOff,
   ScanSearch,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import ContextMenu, { type ContextMenuItem } from "../ContextMenu/ContextMenu";
+import ContextMenu from "../ContextMenu/ContextMenu";
+import ExportPanel, { type ExportTab } from "./ExportPanel";
+import type { Locale } from "../../lib/i18n";
+import type { MotionFrame } from "../../lib/motion-frame";
+import {
+  DEFAULT_VIDEO_EXPORT_PRESET,
+  getVideoExportPreset,
+  type VideoExportSettings,
+} from "../../lib/video-export";
 
 type FloatingCanvasControlsProps = {
   bgColor: string | null;
   copy: AppCopy;
   isUiHidden: boolean;
   onBgColorChange: (color: string) => void;
+  locale: Locale;
   onFitToScene: () => void;
   onPanDown: () => void;
   onPanLeft: () => void;
@@ -46,12 +52,18 @@ type FloatingCanvasControlsProps = {
   onZoomOut: () => void;
   takePhotoDisabled: boolean;
   uiTheme: UiTheme;
+  /** Só no Movimento: liga a aba Vídeo do menu Exportar. */
+  video?: {
+    durationMs: number;
+    frame: MotionFrame;
+    onExport: (settings: VideoExportSettings) => void;
+  };
 };
 
 const EXPORT_OPTIONS = [
-  { id: "full-hd", label: "1920x1080", width: 1920, height: 1080, enabled: true },
-  { id: "quad-hd", label: "2560x1440", width: 2560, height: 1440, enabled: true },
-  { id: "ultra-hd", label: "3840x2160", width: 3840, height: 2160, enabled: true },
+  { id: "full-hd", label: "1920x1080", width: 1920, height: 1080 },
+  { id: "quad-hd", label: "2560x1440", width: 2560, height: 1440 },
+  { id: "ultra-hd", label: "3840x2160", width: 3840, height: 2160 },
 ] as const;
 
 const DEFAULT_BG: Record<UiTheme, string> = {
@@ -63,6 +75,7 @@ type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
 const HIDE_UI_CORNER_KEY = "mock-photo-hide-ui-corner";
 const EXPORT_BG_KEY = "mock-photo-export-bg";
+const EXPORT_TEMPLATE_KEY = "mock-photo-export-template";
 const DRAG_THRESHOLD = 6;
 
 function isCorner(value: string | null): value is Corner {
@@ -84,6 +97,7 @@ export default function FloatingCanvasControls({
   bgColor,
   copy,
   isUiHidden,
+  locale,
   onBgColorChange,
   onFitToScene,
   onPanDown,
@@ -97,6 +111,7 @@ export default function FloatingCanvasControls({
   onZoomOut,
   takePhotoDisabled,
   uiTheme,
+  video,
 }: FloatingCanvasControlsProps) {
   const colorInputRef = useRef<HTMLInputElement>(null);
 
@@ -118,83 +133,32 @@ export default function FloatingCanvasControls({
   }
 
   // Salvar a cena como template junto do export é uma ação paralela: não muda
-  // o PNG gerado, apenas guarda a composição para reutilizar depois.
-  const [saveTemplateOnExport, setSaveTemplateOnExport] = useState(false);
-
-  const exportMenuItems: ContextMenuItem[] = EXPORT_OPTIONS.map((option) => ({
-    type: "action",
-    label: option.label,
-    badgeLabel: option.enabled ? undefined : "Em breve",
-    disabled: !option.enabled,
-    onClick: () => {
-      onTakePhoto({
-        width: option.width,
-        height: option.height,
-        includeBackground: exportWithBg,
-      });
-
-      if (saveTemplateOnExport) {
-        onSaveTemplate?.();
-      }
+  // o arquivo gerado, só guarda a composição para reutilizar depois. Vem
+  // marcado, e a escolha fica lembrada como a do fundo.
+  const [saveTemplateOnExport, setSaveTemplateOnExport] = useState<boolean>(
+    () => {
+      if (typeof window === "undefined") return true;
+      return window.localStorage.getItem(EXPORT_TEMPLATE_KEY) !== "0";
     },
-    trailingIcon: option.enabled ? <Download size={14} /> : undefined,
-  }));
-
-  const exportHeader = (
-    <div className="export-bg-toggle">
-      <span className="export-bg-toggle-label">{copy.exportBackgroundLabel}</span>
-      <div
-        className="export-bg-seg"
-        role="radiogroup"
-        aria-label={copy.exportBackgroundLabel}
-      >
-        <button
-          type="button"
-          role="radio"
-          aria-checked={!exportWithBg}
-          className={`export-bg-seg-btn${!exportWithBg ? " is-active" : ""}`}
-          onClick={() => chooseExportBg(false)}
-        >
-          <span className="export-swatch export-swatch-transparent" />
-          <span className="export-bg-seg-label">{copy.exportTransparent}</span>
-          {!exportWithBg ? <Check size={13} className="export-bg-seg-check" /> : null}
-        </button>
-        <button
-          type="button"
-          role="radio"
-          aria-checked={exportWithBg}
-          className={`export-bg-seg-btn${exportWithBg ? " is-active" : ""}`}
-          onClick={() => chooseExportBg(true)}
-        >
-          <span
-            className="export-swatch"
-            style={{ background: displayColor, border: circleBorder }}
-          />
-          <span className="export-bg-seg-label">{copy.exportWithBackground}</span>
-          {exportWithBg ? <Check size={13} className="export-bg-seg-check" /> : null}
-        </button>
-      </div>
-
-      <div className="export-template-block">
-        <span className="export-bg-toggle-label">
-          {copy.exportTemplateLabel}
-        </span>
-        <button
-          type="button"
-          role="checkbox"
-          aria-checked={saveTemplateOnExport}
-          className={`export-bg-seg-btn${saveTemplateOnExport ? " is-active" : ""}`}
-          onClick={() => setSaveTemplateOnExport((current) => !current)}
-        >
-          <Bookmark size={14} className="export-template-icon" />
-          <span className="export-bg-seg-label">{copy.saveAsTemplate}</span>
-          {saveTemplateOnExport ? (
-            <Check size={13} className="export-bg-seg-check" />
-          ) : null}
-        </button>
-      </div>
-    </div>
   );
+
+  function chooseSaveTemplate(value: boolean) {
+    setSaveTemplateOnExport(value);
+    window.localStorage.setItem(EXPORT_TEMPLATE_KEY, value ? "1" : "0");
+  }
+
+  // Aba e configurações do vídeo vivem aqui, e não no painel: o painel é
+  // desmontado ao fechar e reabriria sempre do zero.
+  const [exportTab, setExportTab] = useState<ExportTab>("image");
+  const [videoSettings, setVideoSettings] = useState(() =>
+    getVideoExportPreset(DEFAULT_VIDEO_EXPORT_PRESET),
+  );
+
+  function afterExport() {
+    if (saveTemplateOnExport) {
+      onSaveTemplate?.();
+    }
+  }
 
   const hideUiLabel = isUiHidden ? copy.showUiButton : copy.hideUiButton;
 
@@ -409,8 +373,42 @@ export default function FloatingCanvasControls({
       </div>
 
         <ContextMenu
-          items={exportMenuItems}
-          headerContent={exportHeader}
+          items={[]}
+          content={
+            <ExportPanel
+              backgroundSwatch={{ background: displayColor, border: circleBorder }}
+              copy={copy}
+              exportWithBg={exportWithBg}
+              locale={locale}
+              photoOptions={EXPORT_OPTIONS}
+              saveTemplate={saveTemplateOnExport}
+              tab={exportTab}
+              video={
+                video
+                  ? {
+                      ...video,
+                      onExport: (settings) => {
+                        video.onExport(settings);
+                        afterExport();
+                      },
+                      onSettingsChange: setVideoSettings,
+                      settings: videoSettings,
+                    }
+                  : undefined
+              }
+              onExportPhoto={(option) => {
+                onTakePhoto({
+                  height: option.height,
+                  includeBackground: exportWithBg,
+                  width: option.width,
+                });
+                afterExport();
+              }}
+              onExportWithBgChange={chooseExportBg}
+              onSaveTemplateChange={chooseSaveTemplate}
+              onTabChange={setExportTab}
+            />
+          }
           panelPlacement="top-end"
           panelClassName="canvas-export-context-menu"
           triggerAriaLabel={copy.takePhotoButton}

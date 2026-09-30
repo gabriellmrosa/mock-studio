@@ -42,16 +42,7 @@ export async function exportCanvasPhoto({
   const previousSceneBackground = scene.background;
   const previousGridVisible = gridRef.current?.visible ?? true;
 
-  // Clamp the supersampled dimensions to the GPU's max texture size so large
-  // presets don't fail to allocate the render target.
-  const maxTextureSize = gl.capabilities.maxTextureSize ?? 4096;
-  const scale = Math.max(
-    1,
-    Math.min(
-      SUPERSAMPLE_SCALE,
-      Math.floor(maxTextureSize / Math.max(preset.width, preset.height)),
-    ),
-  );
+  const scale = getSupersampleScale(gl, preset.width, preset.height);
   const renderWidth = preset.width * scale;
   const renderHeight = preset.height * scale;
 
@@ -124,6 +115,44 @@ export async function exportCanvasPhoto({
   downloadBlob(blob, `${preset.label}.png`);
 }
 
+/**
+ * Fator de superamostragem para um tamanho de saída, limitado ao maior
+ * render target que a GPU aloca. Compartilhado com a exportação de vídeo.
+ */
+export function getSupersampleScale(
+  gl: Pick<THREE.WebGLRenderer, "capabilities">,
+  width: number,
+  height: number,
+) {
+  const maxTextureSize = gl.capabilities.maxTextureSize ?? 4096;
+
+  return Math.max(
+    1,
+    Math.min(
+      SUPERSAMPLE_SCALE,
+      Math.floor(maxTextureSize / Math.max(width, height)),
+    ),
+  );
+}
+
+/**
+ * O WebGL lê de baixo para cima; imagens vão de cima para baixo. Copia as
+ * linhas invertidas para `target`.
+ */
+export function flipPixelRows(
+  pixels: Uint8Array,
+  width: number,
+  height: number,
+  target: Uint8ClampedArray,
+) {
+  const rowLength = width * 4;
+
+  for (let row = 0; row < height; row += 1) {
+    const sourceStart = (height - row - 1) * rowLength;
+    target.set(pixels.subarray(sourceStart, sourceStart + rowLength), row * rowLength);
+  }
+}
+
 export async function renderTargetPixelsToBlob(
   pixels: Uint8Array,
   width: number,
@@ -140,17 +169,8 @@ export async function renderTargetPixelsToBlob(
     throw new Error("Não foi possível preparar a imagem exportada.");
   }
 
-  const rowLength = width * 4;
-  const flippedPixels = new Uint8ClampedArray(pixels.length);
-
-  for (let row = 0; row < height; row += 1) {
-    const sourceStart = (height - row - 1) * rowLength;
-    const targetStart = row * rowLength;
-    flippedPixels.set(pixels.subarray(sourceStart, sourceStart + rowLength), targetStart);
-  }
-
   const imageData = context.createImageData(width, height);
-  imageData.data.set(flippedPixels);
+  flipPixelRows(pixels, width, height, imageData.data);
   context.putImageData(imageData, 0, 0);
 
   // Downscale the supersampled render to the target size with high-quality

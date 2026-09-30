@@ -431,7 +431,8 @@
 
 .bezier-editor-handle {
   cursor: grab;
-  fill: var(--surface-raised);
+  /* A cor do painel: o ponto parece vazado sobre o gráfico. */
+  fill: var(--sidebar-bg);
   stroke: var(--foreground);
   stroke-width: 2;
 }

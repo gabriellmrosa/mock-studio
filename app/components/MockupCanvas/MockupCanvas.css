@@ -164,7 +164,6 @@
 .canvas-mode-tab.is-active {
   background: var(--button-active-bg);
   color: var(--button-active-fg);
-  font-weight: var(--font-semibold);
 }
 
 /* Com a timeline aberta a barra flutuante sobe, para não ficar por baixo. */

@@ -883,7 +883,9 @@ export default function Home() {
         onMotionModeChange={(isMotionMode) =>
           handleModeChange(isMotionMode ? "motion" : "static")
         }
+        locale={locale}
         motionFrame={motionTab === "motion" ? motionFrame : null}
+        onStopMotion={() => setMotionStartedAt(null)}
         motionPlayheadMs={motionPlayheadMs}
         motionStartedAt={motionStartedAt}
         timeline={
