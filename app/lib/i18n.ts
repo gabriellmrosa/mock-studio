@@ -67,9 +67,7 @@ export type AppCopy = {
   replaceVideo: string;
   screenVideoHint: string;
   uploadVideoError: string;
-  screenVideoFrame: string;
   screenTabsLabel: string;
-  screenTabFrame: string;
   screenTabFit: string;
   screenTabCrop: string;
   screenCropReset: string;
@@ -218,9 +216,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     uploadVideo: "Enviar vídeo",
     replaceVideo: "Substituir vídeo",
     screenVideoHint: "MP4, MOV ou WebM",
-    screenVideoFrame: "Tempo (s)",
     screenTabsLabel: "Opções da tela",
-    screenTabFrame: "Momento",
     screenTabFit: "Ajuste",
     screenTabCrop: "Corte",
     screenCropReset: "Resetar corte",
@@ -430,9 +426,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     uploadVideo: "Upload video",
     replaceVideo: "Replace video",
     screenVideoHint: "MP4, MOV or WebM",
-    screenVideoFrame: "Time (s)",
     screenTabsLabel: "Screen options",
-    screenTabFrame: "Frame",
     screenTabFit: "Fit",
     screenTabCrop: "Crop",
     screenCropReset: "Reset crop",

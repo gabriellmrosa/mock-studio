@@ -61,8 +61,6 @@ export type ScreenVideo = {
   durationMs: number;
   /** Enquadramento próprio: imagem e vídeo raramente pedem o mesmo. */
   fit: ScreenFit;
-  /** Quadro mostrado no modo Estático — e o que sai no PNG. */
-  frameMs: number;
   name: string;
   /** Instante da cena em que o vídeo começa a tocar, no modo Movimento. */
   startMs: number;

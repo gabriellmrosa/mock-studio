@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
 import InspectorPanel from "./InspectorPanel";
 import {
@@ -222,9 +222,7 @@ const copy: AppCopy = {
   replaceVideo: "Replace video",
   screenVideoHint: "MP4, MOV or WebM.",
   uploadVideoError: "This browser can't play that video.",
-  screenVideoFrame: "Frame (s)",
   screenTabsLabel: "Screen options",
-  screenTabFrame: "Frame",
   screenTabFit: "Fit",
   screenTabCrop: "Crop",
   screenCropReset: "Reset crop",
@@ -266,7 +264,6 @@ function renderInspector(
     onRemoveImage: jest.fn(),
     onRemoveVideo: jest.fn(),
     onScreenSourceChange: jest.fn(),
-    onUpdateScreenVideo: jest.fn(),
     onUpdateScreenFit: jest.fn(),
     onModelChange: jest.fn(),
     onResetObject: jest.fn(),
@@ -305,8 +302,15 @@ describe("InspectorPanel", () => {
     expect(handlers.onModelChange).toHaveBeenCalledWith("notebook");
   });
 
-  it("switches the screen between image and video", () => {
-    const handlers = renderInspector();
+  it("goes straight to the image upload in Static, with no source choice", () => {
+    renderInspector();
+
+    expect(screen.getByLabelText("Choose image")).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Video" })).toBeNull();
+  });
+
+  it("switches the screen between image and video in Motion", () => {
+    const handlers = renderInspector(undefined, { motionTab: "motion" });
 
     expect(screen.getByLabelText("Choose image")).toBeInTheDocument();
 
@@ -316,18 +320,20 @@ describe("InspectorPanel", () => {
   });
 
   it("shows the video upload and the current file on the video source", () => {
-    renderInspector({
-      ...createSceneObject({ id: "object-1", name: "Object 1" }),
-      screenSource: "video",
-      screenVideo: {
-        durationMs: 12400,
-        fit: { ...DEFAULT_SCREEN_FIT },
-        frameMs: 0,
-        name: "recording.mov",
-        startMs: 0,
-        url: "blob:x",
+    renderInspector(
+      {
+        ...createSceneObject({ id: "object-1", name: "Object 1" }),
+        screenSource: "video",
+        screenVideo: {
+          durationMs: 12400,
+          fit: { ...DEFAULT_SCREEN_FIT },
+          name: "recording.mov",
+          startMs: 0,
+          url: "blob:x",
+        },
       },
-    });
+      { motionTab: "motion" },
+    );
 
     expect(screen.getByRole("button", { name: "Video options" })).toBeInTheDocument();
     expect(screen.getByText("recording.mov")).toBeInTheDocument();
@@ -347,7 +353,6 @@ describe("InspectorPanel", () => {
       screenVideo: {
         durationMs: 4000,
         fit: { ...DEFAULT_SCREEN_FIT },
-        frameMs: 0,
         name: "recording.mov",
         startMs: 0,
         url: "blob:x",
@@ -462,21 +467,16 @@ describe("InspectorPanel", () => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
 
-    it("opens on the Frame sub-tab for a video in Static", () => {
-      renderInspector(video());
-      openOptions("Video options");
-
-      expect(screen.getByRole("tab", { name: "Frame" })).toHaveAttribute(
-        "aria-selected",
-        "true",
-      );
-    });
-
-    it("leaves Frame out in Motion, where the timeline owns the video time", () => {
+    it("offers only Fit and Crop for a video, whose time is the timeline's", () => {
       renderInspector(video(), { motionTab: "motion" });
       openOptions("Video options");
 
-      expect(screen.queryByRole("tab", { name: "Frame" })).toBeNull();
+      const options = within(screen.getByRole("dialog"));
+
+      expect(options.getAllByRole("tab").map((tab) => tab.textContent)).toEqual([
+        "Fit",
+        "Crop",
+      ]);
     });
   });
 

@@ -268,7 +268,6 @@ export default function Home() {
         screenVideo: {
           durationMs,
           fit: { ...DEFAULT_SCREEN_FIT },
-          frameMs: 0,
           name: file.name,
           startMs: 0,
           url,
@@ -927,15 +926,6 @@ export default function Home() {
               ? { screenVideo: { ...video, fit: { ...video.fit, ...patch } } }
               : { imageFit: { ...object.imageFit, ...patch } };
           });
-        }}
-        onUpdateScreenVideo={(patch) => {
-          if (!selectedObject?.screenVideo) return;
-
-          updateSceneObject(selectedObject.id, (object) =>
-            object.screenVideo
-              ? { screenVideo: { ...object.screenVideo, ...patch } }
-              : {},
-          );
         }}
         onScreenSourceChange={(screenSource) => {
           if (!selectedObject) return;

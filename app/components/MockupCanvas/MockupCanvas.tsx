@@ -378,7 +378,6 @@ const VIDEO_SEEK_EPSILON_S = 0.015;
 /**
  * Dono do tempo dos vídeos das telas. A cada quadro decide, por objeto, em que
  * instante o vídeo deve estar:
- * - Estático: parado no quadro escolhido no Inspector;
  * - Movimento parado: no instante do playhead;
  * - Movimento tocando: tocando junto com o relógio da cena, corrigido por seek
  *   só quando se desvia — seek a cada quadro travaria a decodificação.
@@ -403,19 +402,17 @@ function ScreenVideoController({
       }
 
       const isPlaying = motionStartedAt !== null;
+      // Vídeo só existe no Movimento, onde sempre há um instante: o do
+      // relógio tocando ou o do playhead.
       const sceneTimeMs = isPlaying
         ? Date.now() - motionStartedAt
-        : motionPlayheadMs;
-      const targetMs =
-        sceneTimeMs === null
-          ? Math.min(video.frameMs, video.durationMs)
-          : getScreenVideoTime(video, sceneTimeMs);
+        : (motionPlayheadMs ?? 0);
+      const targetMs = getScreenVideoTime(video, sceneTimeMs);
       // O último quadro fica um pouco antes do fim: em `duration` exato alguns
       // navegadores mostram preto.
       const targetS = Math.min(targetMs, video.durationMs - 20) / 1000;
       const insideVideo =
         isPlaying &&
-        sceneTimeMs !== null &&
         sceneTimeMs >= video.startMs &&
         sceneTimeMs < video.startMs + video.durationMs;
 

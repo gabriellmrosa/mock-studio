@@ -24,7 +24,6 @@ function withVideo(object: SceneObject): SceneObject {
     screenVideo: {
       durationMs: 4000,
       fit: { ...DEFAULT_SCREEN_FIT },
-      frameMs: 0,
       name: "recording.mov",
       startMs: 1000,
       url: "blob:x",

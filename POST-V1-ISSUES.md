@@ -73,7 +73,7 @@
 - [x] one `useScreenTexture` hook replaces the texture code duplicated across the six models
 - [x] the `Screen` section switches between `Image` and `Video`, each keeping its own file; the disabled "Video MP4 · coming soon" device option is gone
 - [x] uploads accept MP4, MOV and WebM, validated by decoding the first frame
-- [x] `Static` holds a chosen frame, which is what the PNG export captures; `Motion` ties the video to the playhead, and the recording is a clip on its own timeline track (its timing lives only in the timeline, not in the Inspector)
+- [x] video is `Motion` only: `Static` is a still image, so its `Screen` section has no `Image | Video` choice (the `Frame` option that picked the video frame for the PNG went with it); `Motion` ties the video to the playhead, and the recording is a clip on its own timeline track (its timing lives only in the timeline, not in the Inspector)
 - [x] HDR recordings (PQ/HLG) are converted to SDR in a compositing pass
 - [x] per-file framing: zoom 50–300%, position, background color and edge crop (a mask for borders recorded into the file); the background color sits in both `Fit` and `Crop`, bound to one value, and resetting the crop leaves it alone
 - verify HDR in Safari: if it already tone-maps HDR video for WebGL, our conversion would apply twice
@@ -85,7 +85,7 @@
 
 - [x] option primitives in `EditorPrimitives`: `Switch` (on/off), `SegmentedTabs` (exclusive choice, always one selected) and `SubTabs` (optional groups that start closed)
 - [x] the four checkboxes (device body, keyboard, screen bezel, matte finish) became switches
-- [x] after an upload the screen shows one row — icon, name, `⋮` — and its options live in a floating `SidePopover` beside the Inspector: `Replace`, `Frame | Fit | Crop`, `Remove`
+- [x] after an upload the screen shows one row — icon, name, `⋮` — and its options live in a floating `SidePopover` beside the Inspector: `Replace`, `Fit | Crop`, `Remove`
 - [x] `Custom` colors became a sub-tab under the always-visible theme grid; the `customColorsEnabled` flag, which only toggled the panel, left the object and the templates
 - [x] the recommended image size moved into the upload card
 - [x] the loading notice got a fixed place below the mode toggle

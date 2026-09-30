@@ -281,7 +281,6 @@ describe("scene-motion", () => {
     const video = {
       durationMs: 4000,
       fit: { ...DEFAULT_SCREEN_FIT },
-      frameMs: 0,
       name: "recording.mp4",
       startMs: 1000,
       url: "blob:x",

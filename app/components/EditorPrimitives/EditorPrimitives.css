@@ -485,7 +485,7 @@
 
 /* --- Controle segmentado ---
    Trilho de largura total com opções exclusivas; a selecionada ganha a
-   superfície elevada. Ex.: Imagem | Vídeo; Momento | Ajuste | Corte. */
+   superfície elevada. Ex.: Imagem | Vídeo; Ajuste | Corte. */
 .editor-segmented {
   background: var(--surface-subtle);
   border-radius: var(--radius-sm);

@@ -15,7 +15,6 @@ import {
   isPlaceholderImageUrl,
   type SceneObject,
   type ScreenFit,
-  type ScreenVideo,
 } from "../../lib/scene-objects";
 import { DEVICE_MODEL_LIST } from "../../models/device-models";
 import {
@@ -32,7 +31,6 @@ import {
 } from "../EditorPrimitives/EditorPrimitives";
 import {
   Crop,
-  Film,
   Image as ImageIcon,
   Laptop,
   MoreVertical,
@@ -50,7 +48,7 @@ import {
 const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp";
 const VIDEO_ACCEPT = "video/mp4,video/quicktime,video/webm,.mov";
 
-type ScreenTab = "frame" | "fit" | "crop";
+type ScreenTab = "fit" | "crop";
 type AppearanceTab = "custom";
 
 const NOTEBOOK_SCREEN_ONLY_COLOR_KEYS = new Set([
@@ -70,9 +68,6 @@ type InspectorPanelProps = {
   onRemoveImage: () => void;
   onRemoveVideo: () => void;
   onScreenSourceChange: (source: SceneObject["screenSource"]) => void;
-  onUpdateScreenVideo: (
-    patch: Partial<Pick<ScreenVideo, "frameMs" | "startMs">>,
-  ) => void;
   /** Enquadramento da fonte ativa (imagem ou vídeo). */
   onUpdateScreenFit: (patch: Partial<ScreenFit>) => void;
   onModelChange: (modelId: SceneObject["modelId"]) => void;
@@ -104,7 +99,6 @@ export default function InspectorPanel({
   onRemoveImage,
   onRemoveVideo,
   onScreenSourceChange,
-  onUpdateScreenVideo,
   onUpdateScreenFit,
   onModelChange,
   onResetObject,
@@ -172,10 +166,13 @@ export default function InspectorPanel({
     })),
   ];
 
+  // Vídeo só existe no Movimento: o Estático é uma imagem parada, então lá a
+  // tela é sempre a imagem e não há escolha de fonte.
+  const screenSource = motionTab === "motion" ? object.screenSource : "image";
   // As opções da tela só existem depois de um upload: com o placeholder (ou
   // sem vídeo) não há o que ajustar.
   const hasUploadedContent =
-    object.screenSource === "image"
+    screenSource === "image"
       ? !isPlaceholderImageUrl(object.imageUrl)
       : object.screenVideo !== null;
   const screenSourceTabs: SubTabItem<SceneObject["screenSource"]>[] = [
@@ -235,18 +232,20 @@ export default function InspectorPanel({
           title={copy.screenSectionTitle}
           className="--without-border-bottom"
         >
-          <SegmentedTabs
-            ariaLabel={copy.screenSectionTitle}
-            items={screenSourceTabs}
-            value={object.screenSource}
-            onChange={onScreenSourceChange}
-          />
+          {motionTab === "motion" ? (
+            <SegmentedTabs
+              ariaLabel={copy.screenSectionTitle}
+              items={screenSourceTabs}
+              value={screenSource}
+              onChange={onScreenSourceChange}
+            />
+          ) : null}
 
           {/* Antes do upload, o card convida a enviar; depois, vira uma linha
               compacta com o arquivo. As opções (substituir, momento, ajuste,
               corte, remover) ficam num painel flutuante aberto pelo "⋮" — o
               painel lateral fica enxuto e o efeito aparece na cena ao lado. */}
-          {object.screenSource === "image" ? (
+          {screenSource === "image" ? (
             hasUploadedContent ? (
               <ScreenFileRow
                 key={object.id}
@@ -259,9 +258,7 @@ export default function InspectorPanel({
                   accept={IMAGE_ACCEPT}
                   copy={copy}
                   fit={getActiveScreenFit(object)}
-                  frame={null}
                   onFitChange={onUpdateScreenFit}
-                  onFrameChange={() => undefined}
                   onRemove={onRemoveImage}
                   onReplace={onImageUpload}
                   removeLabel={copy.removeImage}
@@ -292,18 +289,7 @@ export default function InspectorPanel({
                 accept={VIDEO_ACCEPT}
                 copy={copy}
                 fit={getActiveScreenFit(object)}
-                // O Estático congela um momento do vídeo — o do PNG. No
-                // Movimento o tempo do vídeo é da timeline.
-                frame={
-                  motionTab === "static"
-                    ? {
-                        durationMs: object.screenVideo.durationMs,
-                        valueMs: object.screenVideo.frameMs,
-                      }
-                    : null
-                }
                 onFitChange={onUpdateScreenFit}
-                onFrameChange={(frameMs) => onUpdateScreenVideo({ frameMs })}
                 onRemove={onRemoveVideo}
                 onReplace={onVideoUpload}
                 removeLabel={copy.removeVideo}
@@ -627,16 +613,14 @@ function ScreenFileRow({
 
 /**
  * Conteúdo do painel de opções da tela: substituir no topo, o segmentado
- * Momento | Ajuste | Corte e, no rodapé, remover. Segmentado e não sub-abas:
+ * Ajuste | Corte e, no rodapé, remover. Segmentado e não sub-abas:
  * o painel foi aberto justamente para ajustar, então sempre há uma escolhida.
  */
 function ScreenSettings({
   accept,
   copy,
   fit,
-  frame,
   onFitChange,
-  onFrameChange,
   onRemove,
   onReplace,
   removeLabel,
@@ -647,10 +631,7 @@ function ScreenSettings({
   accept: string;
   copy: AppCopy;
   fit: ScreenFit;
-  /** Momento do vídeo no Estático; `null` esconde a sub-aba. */
-  frame: { durationMs: number; valueMs: number } | null;
   onFitChange: (patch: Partial<ScreenFit>) => void;
-  onFrameChange: (frameMs: number) => void;
   onRemove: () => void;
   onReplace: (event: React.ChangeEvent<HTMLInputElement>) => void;
   removeLabel: string;
@@ -659,16 +640,10 @@ function ScreenSettings({
   uiTheme: UiTheme;
 }) {
   const tabs: SubTabItem<ScreenTab>[] = [
-    ...(frame
-      ? [{ icon: <Film size={13} />, id: "frame" as const, label: copy.screenTabFrame }]
-      : []),
     { icon: <Scaling size={13} />, id: "fit", label: copy.screenTabFit },
     { icon: <Crop size={13} />, id: "crop", label: copy.screenTabCrop },
   ];
-  const [tab, setTab] = useState<ScreenTab>(tabs[0].id);
-  // Momento some no Movimento: a aba lembrada que não existe mais cai na
-  // primeira — no segmentado sempre há uma selecionada.
-  const activeTab = tabs.some((item) => item.id === tab) ? tab : tabs[0].id;
+  const [tab, setTab] = useState<ScreenTab>("fit");
 
   return (
     <>
@@ -682,20 +657,11 @@ function ScreenSettings({
         ariaLabel={copy.screenTabsLabel}
         idPrefix="screen-options"
         items={tabs}
-        value={activeTab}
+        value={tab}
         onChange={setTab}
       />
-      <SegmentedTabPanel activeId={activeTab} idPrefix="screen-options">
-          {activeTab === "frame" && frame ? (
-            <Control
-              label={copy.screenVideoFrame}
-              value={frame.valueMs / 1000}
-              setValue={(value) => onFrameChange(Math.round(value * 1000))}
-              min={0}
-              max={frame.durationMs / 1000}
-              step={0.01}
-            />
-          ) : activeTab === "fit" ? (
+      <SegmentedTabPanel activeId={tab} idPrefix="screen-options">
+          {tab === "fit" ? (
             <ScreenFitPanel
               copy={copy}
               fit={fit}

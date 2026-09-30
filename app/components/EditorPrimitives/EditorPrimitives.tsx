@@ -360,7 +360,7 @@ export function Switch({
 
 /**
  * Controle segmentado: um trilho de largura total com opções exclusivas, sempre
- * uma selecionada (ex.: Imagem | Vídeo; Momento | Ajuste | Corte no painel de
+ * uma selecionada (ex.: Imagem | Vídeo; Ajuste | Corte no painel de
  * opções da tela). Diferente das SubTabs, que podem ficar todas fechadas —
  * aqui a escolha é obrigatória, então são abas de verdade (`role="tab"`).
  *
