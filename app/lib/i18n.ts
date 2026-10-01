@@ -130,6 +130,7 @@ export type AppCopy = {
   rotationY: string;
   rotationZ: string;
   scale: string;
+  opacity: string;
   moveUpButton: string;
   moveDownButton: string;
   moveLeftButton: string;
@@ -308,6 +309,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     rotationY: "Rotação Y",
     rotationZ: "Rotação Z",
     scale: "Escala",
+    opacity: "Opacidade (%)",
     moveUpButton: "Mover para cima",
     moveDownButton: "Mover para baixo",
     moveLeftButton: "Mover para a esquerda",
@@ -540,6 +542,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     rotationY: "Rotation Y",
     rotationZ: "Rotation Z",
     scale: "Scale",
+    opacity: "Opacity (%)",
     moveUpButton: "Move up",
     moveDownButton: "Move down",
     moveLeftButton: "Move left",

@@ -66,6 +66,11 @@ import { DEVICE_MODELS } from "./models/device-models";
 /** Cena de um modo guardada enquanto o outro está ativo. */
 type ModeScene = {
   backgroundColor: string | null;
+  /**
+   * A câmera de quando se saiu do modo. Cada modo volta como estava: sem ela,
+   * a câmera do outro modo (com outro quadro, outra cena) ficaria no lugar.
+   */
+  camera: CameraPose | null;
   objects: SceneObject[];
   savedSnapshot: string;
   selectedObjectId: string;
@@ -152,10 +157,12 @@ export default function Home() {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(
     null,
   );
-  // Enquanto não for null, o canvas fica bloqueado aplicando o template.
-  const [pendingCameraPose, setPendingCameraPose] = useState<CameraPose | null>(
-    null,
-  );
+  // Câmera a restaurar assim que a cena assentar: a de um template (o canvas
+  // fica bloqueado e avisa ao terminar) ou a de um modo ao voltar para ele.
+  const [pendingCamera, setPendingCamera] = useState<{
+    pose: CameraPose;
+    source: "mode" | "template";
+  } | null>(null);
   const cameraApiRef = useRef<CameraApi | null>(null);
   const copy = APP_COPY[locale];
   const minViewportLabel = `${MIN_DESKTOP_WIDTH} x ${MIN_DESKTOP_HEIGHT} px`;
@@ -482,6 +489,7 @@ export default function Home() {
       ...current,
       [motionTab]: {
         backgroundColor: canvasBgColor,
+        camera: cameraApiRef.current?.getPose() ?? null,
         objects: sceneObjects,
         savedSnapshot: snapshotToPark,
         selectedObjectId,
@@ -493,6 +501,9 @@ export default function Home() {
       setSelectedObjectId(target.selectedObjectId);
       setCanvasBgColor(target.backgroundColor);
       setSavedSnapshot(target.savedSnapshot);
+      setPendingCamera(
+        target.camera ? { pose: target.camera, source: "mode" } : null,
+      );
     } else {
       // Mesmos ids de propósito: só uma cena é montada por vez, e manter os
       // ids evita recarregar os modelos e re-enquadrar a câmera na troca.
@@ -538,7 +549,9 @@ export default function Home() {
       ),
     );
     // A câmera é o último passo: fica pendente até a cena assentar.
-    setPendingCameraPose(template.camera);
+    setPendingCamera(
+      template.camera ? { pose: template.camera, source: "template" } : null,
+    );
 
     if (!template.camera) {
       notify("success", copy.templateAppliedMessage);
@@ -811,10 +824,16 @@ export default function Home() {
     }
   }
 
+  // A câmera pendente assentou. Só um template merece aviso; voltar a um modo
+  // é só voltar.
+  const isRestoringTemplate = pendingCamera?.source === "template";
   const handleTemplateApplied = useCallback(() => {
-    setPendingCameraPose(null);
-    notify("success", copy.templateAppliedMessage);
-  }, [copy.templateAppliedMessage]);
+    setPendingCamera(null);
+
+    if (isRestoringTemplate) {
+      notify("success", copy.templateAppliedMessage);
+    }
+  }, [copy.templateAppliedMessage, isRestoringTemplate]);
 
   function handleRenameTemplate(id: string, name: string) {
     persistAndSetTemplates(renameTemplate(templates, id, name));
@@ -878,7 +897,8 @@ export default function Home() {
         onSelectObject={setSelectedObjectId}
         onTemplateApplied={handleTemplateApplied}
         onToggleUiHidden={() => setIsUiHidden((current) => !current)}
-        pendingCameraPose={pendingCameraPose}
+        isApplyingTemplate={isRestoringTemplate}
+        pendingCameraPose={pendingCamera?.pose ?? null}
         isMotionMode={motionTab === "motion"}
         onMotionModeChange={(isMotionMode) =>
           handleModeChange(isMotionMode ? "motion" : "static")
@@ -987,6 +1007,7 @@ export default function Home() {
         onUpdatePosition={(positionPatch) => updateTransform(positionPatch)}
         onUpdateRotation={(rotationPatch) => updateTransform(rotationPatch)}
         onUpdateScale={(scale) => updateTransform({ scale })}
+        onUpdateOpacity={(opacity) => updateTransform({ opacity })}
         motionTab={motionTab}
         selectedKeyframeId={selectedKeyframeId}
         uiTheme={uiTheme}

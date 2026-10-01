@@ -57,6 +57,7 @@ import {
   createVideoFrameRenderer,
   encodeVideo,
 } from "./export-video";
+import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
 import {
   getVideoExportFilename,
   getVideoExportSize,
@@ -100,9 +101,11 @@ type MockupCanvasProps = {
   onSelectObject: (id: string) => void;
   onTemplateApplied: () => void;
   onToggleUiHidden: () => void;
-  // Enquadramento a restaurar ao aplicar um template. Enquanto não for null a
-  // cena fica bloqueada por um loading, e a câmera é o último passo aplicado.
+  // Enquadramento a restaurar — o de um template ou o de um modo ao voltar
+  // para ele —, aplicado como último passo, quando a cena assenta.
   pendingCameraPose: CameraPose | null;
+  /** O pendente é um template: a cena fica bloqueada por um loading. */
+  isApplyingTemplate: boolean;
   /** Instante inicial do preview de movimento; null = parado. */
   motionStartedAt: number | null;
   /** Instante da cena a exibir quando parado; null = mostrar a pose estática. */
@@ -245,6 +248,34 @@ function applyMotionPose(
     (sampled.rotationZ * Math.PI) / 180,
   );
   group.scale.setScalar(sampled.scale);
+  // Junto com a pose, no mesmo quadro: o OpacityController roda antes do
+  // preview em cada quadro e, sozinho, deixaria a opacidade um quadro atrás —
+  // no primeiro quadro do play, com a da pose estática (um objeto que entra
+  // invisível piscaria). O userData fica para ele manter o valor depois.
+  group.userData.opacity = sampled.opacity;
+  applyObjectOpacity(group, sampled.opacity);
+}
+
+/**
+ * Leva a opacidade de cada objeto aos materiais, a cada quadro. A opacidade
+ * fica em `userData` do grupo — vinda do render parado ou escrita pelo preview
+ * e pela exportação de vídeo, que também a aplicam na hora (applyMotionPose)
+ * —, e este controlador a mantém: os modelos trocam materiais quando querem.
+ */
+function OpacityController({
+  groupsRef,
+}: {
+  groupsRef: { current: Map<string, THREE.Group> };
+}) {
+  useFrame(({ camera }) => {
+    orderObjectGroups(groupsRef.current.values(), camera);
+
+    for (const group of groupsRef.current.values()) {
+      applyObjectOpacity(group, group.userData.opacity ?? 1);
+    }
+  });
+
+  return null;
 }
 
 function SceneBridge({
@@ -310,13 +341,17 @@ function SceneBridge({
       timeMs: number,
       { objects: current, spawnOverrides: overrides } = latestSceneRef.current,
     ) {
-      current.forEach((object, index) => {
-        const group = objectGroupsRef.current.get(object.id);
+      // Mesma contagem do render: a posição de spawn depende do índice entre
+      // os visíveis.
+      current
+        .filter((object) => object.isVisible)
+        .forEach((object, index) => {
+          const group = objectGroupsRef.current.get(object.id);
 
-        if (group) {
-          applyMotionPose(group, object, index, timeMs, overrides);
-        }
-      });
+          if (group) {
+            applyMotionPose(group, object, index, timeMs, overrides);
+          }
+        });
     }
 
     onVideoExportReady(async (request) => {
@@ -435,6 +470,7 @@ function SceneBridge({
                     (displayed.rotationZ * Math.PI) / 180,
                   ]}
                   scale={displayed.scale}
+                  userData={{ opacity: displayed.opacity }}
                 >
                   <group
                     rotation={model.baseRotation}
@@ -464,6 +500,7 @@ function SceneBridge({
             );
           })}
         </group>
+        <OpacityController groupsRef={objectGroupsRef} />
         <ScreenVideoController
           isPausedRef={isExportingVideoRef}
           motionPlayheadMs={motionPlayheadMs}
@@ -943,7 +980,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const isSceneSettled =
     visibleObjectCount > 0 &&
     activeResolvedObjectIds.length === visibleObjectCount;
-  const isApplyingTemplate = props.pendingCameraPose !== null;
+  const isApplyingTemplate = props.isApplyingTemplate;
   const isIncrementalObjectLoading =
     activeLoadingObjectIds.length > 0 && activeResolvedObjectIds.length > 0;
   const showIncrementalLoading =

@@ -126,6 +126,8 @@ export type SceneObject = {
   rotationY: number;
   rotationZ: number;
   scale: number;
+  /** 0 a 1; em 0 o objeto some da cena (mas continua na lista). */
+  opacity: number;
   showDeviceShell: boolean;
   showNotebookKeyboard: boolean;
   showTabletBezel: boolean;

@@ -85,6 +85,8 @@ type InspectorPanelProps = {
     patch: Pick<SceneObject, "positionX" | "positionY" | "positionZ">,
   ) => void;
   onUpdateScale: (scale: number) => void;
+  /** 0 a 1; o controle mostra em %. */
+  onUpdateOpacity: (opacity: number) => void;
   motionTab: "static" | "motion";
   selectedKeyframeId: string;
   uiTheme: UiTheme;
@@ -111,6 +113,7 @@ export default function InspectorPanel({
   onUpdatePosition,
   onUpdateRotation,
   onUpdateScale,
+  onUpdateOpacity,
   motionTab,
   selectedKeyframeId,
   uiTheme,
@@ -507,6 +510,14 @@ export default function InspectorPanel({
                 min={0.1}
                 max={3}
                 step={0.01}
+              />
+              <Control
+                label={copy.opacity}
+                value={Math.round(editedTransform.opacity * 100)}
+                setValue={(value) => onUpdateOpacity(value / 100)}
+                min={0}
+                max={100}
+                step={1}
               />
             </div>
           </div>

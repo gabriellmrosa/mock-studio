@@ -8,6 +8,8 @@ export const DEFAULT_OBJECT_TRANSFORM = {
   rotationY: 180,
   rotationZ: 0,
   scale: 1,
+  /** 0 a 1. Faz parte da pose: anima nos keyframes como posição e escala. */
+  opacity: 1,
 } as const;
 
 export const OBJECT_POSITION_MULTIPLIER = 140;

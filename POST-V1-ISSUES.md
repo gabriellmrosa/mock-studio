@@ -60,6 +60,7 @@
 - [x] no schema bump: `mode` and `keyframes` are optional, so templates saved before them load as `Static` and an older cached app keeps reading the list
 - [x] keyframe ids are not stored and are regenerated on every apply, since timeline selection looks them up scene-wide
 - [x] switching modes or opening a template with unsaved changes asks first (`AlertDialog`)
+- [x] each mode keeps its own camera too: leaving a mode parks the camera with the scene, and coming back restores it at once, with no fly-over and no "template applied" notice — before, a `Motion` scene opened from a template came back from `Static` with the static camera, framed for another aspect ratio
 
 ## 9. Timeline for coordinating motion across objects — done
 
@@ -124,3 +125,15 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] `Motion` templates store the size (an optional field, no schema bump), and changing it counts as an unsaved change
 - `Static` has no size on purpose: a PNG is easy to crop afterwards, in Figma or any editor
 - `Export` in `Motion` still produces the same PNG presets as before; the size is groundwork for the video export in item 7
+
+## 14. Object opacity — done
+
+- [x] objects have an opacity (0–100% in the Inspector, under `Transform` after scale, like After Effects' layer transform), and it is part of the pose: in `Motion` each keyframe carries its own, so an object fades in, out or pops in like position and scale animate
+- [x] before its first keyframe an object holds that keyframe's pose — opacity included —, which is also After Effects' rule: keyframes animate values, they don't decide whether a layer exists; for an object that enters at 1 s, its first keyframe gets 0%
+- [x] the fade reads as one layer, not an x-ray: translucent objects draw a depth-only pass first, so only their front surface shows; glass, translucent by nature, stays out of that pass so it doesn't hide the screen behind it
+- [x] translucent objects get their own copies of the materials (clones of the same GLB share them, so fading one phone would fade its twins), kept in sync with the originals every frame and dropped back at 100%; at 0% the object is hidden, so it can't cover what is behind it
+- [x] transparent objects are drawn back to front per object, so a translucent device in front doesn't hide another one behind it
+- [x] templates store opacity; templates and keyframes saved before it open at 100%
+- [x] the preview applies opacity together with the pose, in the same frame; applied a frame later, an object that should enter invisible flashed for one frame at the start of every play
+- [x] fixed along the way: the video export counted hidden objects when placing devices, unlike the canvas, so a hidden object listed first shifted the others in the file
+- open question: a layer bar with in and out points on the timeline (After Effects' way of deciding when a layer exists) — opacity keyframes cover it for now

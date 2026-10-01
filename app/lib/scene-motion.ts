@@ -69,6 +69,8 @@ export type MotionTransform = {
   rotationY: number;
   rotationZ: number;
   scale: number;
+  /** 0 a 1. Para um objeto entrar em cena: 0 no primeiro keyframe. */
+  opacity: number;
 };
 
 export type Keyframe = {
@@ -181,6 +183,7 @@ export function captureTransform(object: SceneObject): MotionTransform {
     rotationY: object.rotationY,
     rotationZ: object.rotationZ,
     scale: object.scale,
+    opacity: object.opacity,
   };
 }
 
@@ -343,6 +346,7 @@ function lerpTransform(
     rotationY: lerp(from.rotationY, to.rotationY, t),
     rotationZ: lerp(from.rotationZ, to.rotationZ, t),
     scale: lerp(from.scale, to.scale, t),
+    opacity: lerp(from.opacity, to.opacity, t),
   };
 }
 

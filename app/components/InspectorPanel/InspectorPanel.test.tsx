@@ -161,6 +161,7 @@ const copy: AppCopy = {
   rotationY: "Rotation Y",
   rotationZ: "Rotation Z",
   scale: "Scale",
+  opacity: "Opacity (%)",
   sceneSectionHint: "Device body",
   screenSectionHintPrefix: "Ideal size:",
   screenSectionTitle: "App Screen",
@@ -294,6 +295,7 @@ function renderInspector(
     onUpdatePosition: jest.fn(),
     onUpdateRotation: jest.fn(),
     onUpdateScale: jest.fn(),
+    onUpdateOpacity: jest.fn(),
   };
 
   render(
@@ -575,6 +577,15 @@ describe("InspectorPanel", () => {
       rotationY: 192,
       rotationZ: 0,
     });
+  });
+
+  it("edits opacity in percent and stores it from 0 to 1", () => {
+    const handlers = renderInspector();
+
+    // O Control mockado sempre envia 12: 12% vira 0.12.
+    fireEvent.click(screen.getByText("control:Opacity (%)"));
+
+    expect(handlers.onUpdateOpacity).toHaveBeenCalledWith(0.12);
   });
 
   it("shows notebook keyboard toggle only for notebook objects", () => {

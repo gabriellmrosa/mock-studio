@@ -178,6 +178,23 @@ describe("scene-motion", () => {
     expect(sampleMotion(object, 1500)?.positionX).toBeCloseTo(10);
   });
 
+  it("animates opacity like the rest of the pose, holding it before the first keyframe", () => {
+    const base = makeObject();
+    const object = {
+      ...base,
+      keyframes: [
+        { easing: "linear" as const, id: "a", timeMs: 1000, transform: { ...captureTransform(base), opacity: 0 } },
+        { easing: "linear" as const, id: "b", timeMs: 2000, transform: { ...captureTransform(base), opacity: 1 } },
+      ],
+    };
+
+    // Um objeto que "entra" em 1 s: invisível antes, segurando o primeiro
+    // keyframe, e aparecendo no trecho até o segundo.
+    expect(sampleMotion(object, 0)?.opacity).toBe(0);
+    expect(sampleMotion(object, 1500)?.opacity).toBeCloseTo(0.5);
+    expect(sampleMotion(object, 2000)?.opacity).toBe(1);
+  });
+
   it("holds the last pose past the end instead of looping", () => {
     const object = withKeyframes([
       [0, 0],

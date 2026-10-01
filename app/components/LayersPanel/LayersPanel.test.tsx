@@ -90,6 +90,7 @@ const copy: AppCopy = {
   rotationY: "Rotation Y",
   rotationZ: "Rotation Z",
   scale: "Scale",
+  opacity: "Opacity (%)",
   sceneSectionHint: "Device body",
   screenSectionHintPrefix: "Ideal size:",
   screenSectionTitle: "App Screen",

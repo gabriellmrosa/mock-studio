@@ -74,6 +74,8 @@ export type TemplateObject = {
   rotationY: number;
   rotationZ: number;
   scale: number;
+  /** Templates de antes da opacidade não a têm: valem 100%. */
+  opacity?: number;
   showDeviceShell: boolean;
   showNotebookKeyboard: boolean;
   showTabletBezel: boolean;
@@ -126,6 +128,7 @@ function toTemplateObject(
     rotationY: object.rotationY,
     rotationZ: object.rotationZ,
     scale: object.scale,
+    opacity: object.opacity,
     showDeviceShell: object.showDeviceShell,
     showNotebookKeyboard: object.showNotebookKeyboard,
     showTabletBezel: object.showTabletBezel,
@@ -179,7 +182,11 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
           ? { bezier: [...keyframe.bezier] as CubicBezier }
           : {}),
         id: crypto.randomUUID(),
-        transform: { ...keyframe.transform },
+        transform: {
+          ...keyframe.transform,
+          // Keyframes salvos antes da opacidade não a têm: 100%.
+          opacity: keyframe.transform.opacity ?? 1,
+        },
       })),
       deviceTheme: object.deviceTheme,
       id: crypto.randomUUID(),
@@ -199,6 +206,7 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       rotationY: object.rotationY,
       rotationZ: object.rotationZ,
       scale: object.scale,
+      opacity: object.opacity ?? 1,
       showDeviceShell: object.showDeviceShell,
       showNotebookKeyboard: object.showNotebookKeyboard,
       showTabletBezel: object.showTabletBezel,
@@ -261,6 +269,8 @@ function isValidTemplateObject(value: unknown): value is TemplateObject {
   );
 }
 
+// Obrigatórias num keyframe salvo. A opacidade veio depois e é opcional:
+// sem ela, o keyframe vale 100%.
 const TRANSFORM_KEYS: Array<keyof MotionTransform> = [
   "positionX",
   "positionY",
@@ -288,7 +298,8 @@ function isValidKeyframe(value: unknown): value is TemplateKeyframe {
         keyframe.bezier.length === 4 &&
         keyframe.bezier.every((value) => typeof value === "number"))) &&
     !!transform &&
-    TRANSFORM_KEYS.every((key) => typeof transform[key] === "number")
+    TRANSFORM_KEYS.every((key) => typeof transform[key] === "number") &&
+    (transform.opacity === undefined || typeof transform.opacity === "number")
   );
 }
 

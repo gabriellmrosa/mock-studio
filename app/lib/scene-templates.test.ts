@@ -392,6 +392,43 @@ describe("scene-templates", () => {
     });
   });
 
+  describe("opacity", () => {
+    it("keeps the object's opacity and every keyframe's", () => {
+      const [first, second] = buildAnimatedScene();
+      const template = createSceneTemplate({
+        mode: "motion",
+        name: "Template 1",
+        objects: [{ ...first, opacity: 0.4 }, second],
+      });
+      const [rebuilt] = applySceneTemplate(template);
+
+      expect(rebuilt.opacity).toBe(0.4);
+      expect(rebuilt.keyframes[0].transform.opacity).toBe(1);
+    });
+
+    it("opens templates saved before opacity at 100%", () => {
+      const template = createSceneTemplate({
+        mode: "motion",
+        name: "Older",
+        objects: buildAnimatedScene(),
+      });
+      // Como um template salvo antes da opacidade: sem o campo em lugar nenhum.
+      const older = JSON.parse(JSON.stringify(template), (key, value) =>
+        key === "opacity" ? undefined : value,
+      );
+
+      storeRaw([older]);
+
+      const [loaded] = loadTemplates();
+      const [rebuilt] = applySceneTemplate(loaded);
+
+      // Os keyframes antigos continuam válidos — não somem por faltar um campo.
+      expect(rebuilt.keyframes).toHaveLength(2);
+      expect(rebuilt.opacity).toBe(1);
+      expect(rebuilt.keyframes.every((keyframe) => keyframe.transform.opacity === 1)).toBe(true);
+    });
+  });
+
   describe("video size", () => {
     const frame = { height: 412, width: 648 };
 
