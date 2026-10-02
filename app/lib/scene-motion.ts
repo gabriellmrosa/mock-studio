@@ -1,4 +1,8 @@
-import { getActiveScreenVideo, type SceneObject } from "./scene-objects";
+import {
+  getActiveScreenVideo,
+  getScreenVideoClipDuration,
+  type SceneObject,
+} from "./scene-objects";
 
 /**
  * Motion por objeto: uma lista de keyframes, cada um um retrato dos sete
@@ -315,7 +319,10 @@ export function getObjectMotionEnd(object: SceneObject): number {
   const lastKeyframe = object.keyframes[object.keyframes.length - 1]?.timeMs ?? 0;
   const video = getActiveScreenVideo(object);
 
-  return Math.max(lastKeyframe, video ? video.startMs + video.durationMs : 0);
+  return Math.max(
+    lastKeyframe,
+    video ? video.startMs + getScreenVideoClipDuration(video) : 0,
+  );
 }
 
 /**
@@ -386,4 +393,28 @@ export function sampleMotion(
   }
 
   return keyframes[keyframes.length - 1].transform;
+}
+
+/**
+ * A pose que a cena mostra num instante. Como um clipe num editor de vídeo,
+ * um objeto animado só existe a partir do primeiro keyframe: antes dele fica
+ * fora de cena (opacidade 0), e arrastar a trilha para frente deixa o espaço
+ * de trás vazio. Depois do último keyframe ele continua na pose final — num
+ * mockup, a composição final é o ponto de chegada, não uma saída de cena.
+ *
+ * Só para exibir: editar (criar keyframe no playhead) usa `sampleMotion`, que
+ * segura a primeira pose — um keyframe novo antes do primeiro não pode nascer
+ * invisível.
+ */
+export function sampleDisplayedMotion(
+  object: SceneObject,
+  timeMs: number,
+): MotionTransform | null {
+  const sampled = sampleMotion(object, timeMs);
+
+  if (sampled && timeMs < object.keyframes[0].timeMs) {
+    return { ...sampled, opacity: 0 };
+  }
+
+  return sampled;
 }

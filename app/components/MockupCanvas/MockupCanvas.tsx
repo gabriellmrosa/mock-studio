@@ -32,7 +32,10 @@ import {
   getScreenVideoTime,
   type SceneObject,
 } from "../../lib/scene-objects";
-import { getScreenVideoElement } from "../../lib/screen-texture";
+import {
+  getScreenVideoElement,
+  setScreenVideoShown,
+} from "../../lib/screen-texture";
 import type { CameraPose } from "../../lib/scene-templates";
 import {
   AUTO_OBJECT_POSITIONS,
@@ -42,7 +45,7 @@ import {
 import {
   getSceneMotionDuration,
   hasMotion,
-  sampleMotion,
+  sampleDisplayedMotion,
 } from "../../lib/scene-motion";
 import { DEVICE_MODELS } from "../../models/device-models";
 import FloatingCanvasControls from "../FloatingCanvasControls/FloatingCanvasControls";
@@ -58,6 +61,9 @@ import {
   encodeVideo,
 } from "./export-video";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
+import TimelineResizeHandle, {
+  clampTimelineHeight,
+} from "../MotionTimeline/TimelineResizeHandle";
 import {
   getVideoExportFilename,
   getVideoExportSize,
@@ -128,6 +134,12 @@ type MockupCanvasProps = {
 
 export type CameraApi = {
   fitObject: (id: string) => void;
+  /**
+   * Quanto mover um objeto, em coordenadas do mundo, para o centro dele cair
+   * no centro da vista — o centro da imagem ou do vídeo exportado —, sem mudar
+   * a distância até a câmera. `null` se o objeto não está na cena.
+   */
+  getCenteringOffset: (id: string) => [number, number, number] | null;
   getPose: () => CameraPose | null;
   setPose: (pose: CameraPose) => void;
 };
@@ -163,6 +175,8 @@ type SceneBridgeProps = MockupCanvasProps & {
 };
 
 const DEFAULT_BG: Record<UiTheme, string> = { dark: "#2e2b28", light: "#f2ebe0" };
+
+const TIMELINE_HEIGHT_KEY = "mock-photo-timeline-height";
 
 function getGridColors(bgHex: string | null, uiTheme: UiTheme) {
   const hex = bgHex ?? DEFAULT_BG[uiTheme];
@@ -226,7 +240,7 @@ function applyMotionPose(
   timeMs: number,
   spawnOverrides: SpawnOverrides,
 ) {
-  const sampled = sampleMotion(object, timeMs);
+  const sampled = sampleDisplayedMotion(object, timeMs);
 
   if (!sampled) {
     return;
@@ -423,7 +437,7 @@ function SceneBridge({
             // É só exibição: o transform estático do objeto não é tocado.
             const sampled =
               motionPlayheadMs !== null
-                ? sampleMotion(object, motionPlayheadMs)
+                ? sampleDisplayedMotion(object, motionPlayheadMs)
                 : null;
             const displayed = sampled ? { ...object, ...sampled } : object;
 
@@ -470,7 +484,10 @@ function SceneBridge({
                     (displayed.rotationZ * Math.PI) / 180,
                   ]}
                   scale={displayed.scale}
-                  userData={{ opacity: displayed.opacity }}
+                  // Um número, não um objeto: o R3F compara objetos por
+                  // referência e reaplicaria a opacidade do instante parado a
+                  // cada render — por cima da do preview ou da exportação.
+                  userData-opacity={displayed.opacity}
                 >
                   <group
                     rotation={model.baseRotation}
@@ -593,15 +610,23 @@ function ScreenVideoController({
         ? Date.now() - motionStartedAt
         : (motionPlayheadMs ?? 0);
       const targetMs = getScreenVideoTime(video, sceneTimeMs);
+
+      // Fora do trecho do clipe a tela fica sem vídeo, só com o fundo.
+      setScreenVideoShown(object.id, targetMs !== null);
+
+      if (targetMs === null) {
+        if (!element.paused) {
+          element.pause();
+        }
+
+        continue;
+      }
+
       // O último quadro fica um pouco antes do fim: em `duration` exato alguns
       // navegadores mostram preto.
       const targetS = Math.min(targetMs, video.durationMs - 20) / 1000;
-      const insideVideo =
-        isPlaying &&
-        sceneTimeMs >= video.startMs &&
-        sceneTimeMs < video.startMs + video.durationMs;
 
-      if (insideVideo) {
+      if (isPlaying) {
         if (Math.abs(element.currentTime - targetS) > VIDEO_DRIFT_TOLERANCE_S) {
           element.currentTime = Math.max(0, targetS);
         }
@@ -848,6 +873,29 @@ function BoundsResetController({
 
         fitWithMargin(controls, target);
       },
+      getCenteringOffset: (id) => {
+        const target = sceneRef.current?.getObjectByName(id);
+
+        if (!target) {
+          return null;
+        }
+
+        const center = new THREE.Box3()
+          .setFromObject(target)
+          .getCenter(new THREE.Vector3());
+        const eye = controls.getPosition(new THREE.Vector3());
+        const viewDirection = controls
+          .getTarget(new THREE.Vector3())
+          .sub(eye)
+          .normalize();
+        // O ponto do eixo da vista na mesma profundidade do objeto: levar o
+        // centro até ele centraliza sem aproximar nem afastar.
+        const depth = center.clone().sub(eye).dot(viewDirection);
+        const onAxis = eye.add(viewDirection.multiplyScalar(depth));
+        const offset = onAxis.sub(center);
+
+        return [offset.x, offset.y, offset.z];
+      },
       getPose: () => {
         const position = controls.getPosition(new THREE.Vector3());
         const target = controls.getTarget(new THREE.Vector3());
@@ -919,6 +967,29 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const [incrementalLoadingDelayElapsed, setIncrementalLoadingDelayElapsed] =
     useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  // Altura escolhida para a timeline, em px; null = a padrão do token. Fica
+  // no navegador, como as preferências do Exportar.
+  const [timelineHeight, setTimelineHeight] = useState<number | null>(null);
+
+  useEffect(() => {
+    // Lida depois de montar: no servidor não há localStorage, e ler durante
+    // o render quebraria a hidratação.
+    const stored = Number(window.localStorage.getItem(TIMELINE_HEIGHT_KEY));
+
+    if (stored > 0) {
+      setTimelineHeight(clampTimelineHeight(stored));
+    }
+  }, []);
+
+  function changeTimelineHeight(height: number | null) {
+    setTimelineHeight(height);
+
+    if (height === null) {
+      window.localStorage.removeItem(TIMELINE_HEIGHT_KEY);
+    } else {
+      window.localStorage.setItem(TIMELINE_HEIGHT_KEY, String(height));
+    }
+  }
   const videoExportHandlerRef = useRef<VideoExportHandler | null>(null);
   const [isVideoExportReady, setIsVideoExportReady] = useState(false);
   // Quadros prontos da exportação de vídeo em curso; null = nenhuma.
@@ -1111,7 +1182,17 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   return (
     <div
       className={stageClass}
-      style={canvasBgColor && !isFramed ? { background: canvasBgColor } : undefined}
+      style={
+        {
+          ...(canvasBgColor && !isFramed ? { background: canvasBgColor } : {}),
+          // A timeline, a barra flutuante acima dela e o quadro do vídeo leem
+          // este token: mudar aqui move tudo junto. O 50vh segura a janela
+          // que encolheu depois da escolha.
+          ...(timelineHeight !== null
+            ? { "--motion-timeline-height": `min(${timelineHeight}px, 50vh)` }
+            : {}),
+        } as CSSProperties
+      }
     >
       {/* O mesmo contêiner nos dois modos, só com outra forma: trocar a
           estrutura remontaria o <Canvas> e recarregaria a cena inteira. */}
@@ -1259,7 +1340,16 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           }
         />
 
-        {props.isMotionMode && !props.isUiHidden ? props.timeline : null}
+        {props.isMotionMode && !props.isUiHidden ? (
+          <>
+            <TimelineResizeHandle
+              copy={props.copy}
+              height={timelineHeight}
+              onChange={changeTimelineHeight}
+            />
+            {props.timeline}
+          </>
+        ) : null}
       </div>
     </div>
   );

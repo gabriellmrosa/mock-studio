@@ -136,4 +136,47 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] templates store opacity; templates and keyframes saved before it open at 100%
 - [x] the preview applies opacity together with the pose, in the same frame; applied a frame later, an object that should enter invisible flashed for one frame at the start of every play
 - [x] fixed along the way: the video export counted hidden objects when placing devices, unlike the canvas, so a hidden object listed first shifted the others in the file
-- open question: a layer bar with in and out points on the timeline (After Effects' way of deciding when a layer exists) — opacity keyframes cover it for now
+- [x] later (item 19): an animated object exists only from its first keyframe on, like a layer from its in point
+
+## 15. Resizable timeline — done
+
+- [x] a handle on the timeline's top edge changes its height, like a video editor's panel: drag it, or focus it and use the arrow keys; double-click (or `Home`) goes back to the default
+- [x] from the default height (`--motion-timeline-height`, the smallest that fits the header and a track) up to half the window, so the canvas never disappears; the choice is remembered in the browser
+- [x] the height lives in one token: the stage overrides it, and the timeline, the floating toolbar above it and the video frame all follow — the frame shrinks without changing its aspect ratio, so the camera needs no refit
+
+## 16. Center in the canvas — done
+
+- [x] `Center` sits next to `Reset` in the `Transform` header and moves the selected object to the middle of the view — the middle of the exported image or video —, keeping its distance to the camera, so it doesn't grow or shrink
+- [x] "the middle" is the camera's axis, not the world origin: with the view panned or orbited, zeroing the position would leave the object off-center; the offset is measured from the object's bounding box and converted back into the position fields
+- [x] in `Motion` it writes to the selected keyframe's pose, like every other `Transform` field, and it shows whenever those fields do (`Reset` stays `Static`-only)
+
+## 17. Trim screen videos on the timeline — done
+
+- [x] the clip's edges are trim handles: dragging the left edge cuts the start of the video and keeps the rest in place (the clip starts later by the same amount), dragging the right edge cuts the end; the middle still moves the whole clip
+- [x] a clip exists only within its range, like in a video editor: before and after it the screen shows only its background color — before, it held the first and last frames, so moving a clip forward left the video frozen on screen where the clip no longer was
+- [x] the file is never changed: the video keeps `trimStartMs` and `trimEndMs`, and a clip can't shrink below 100 ms nor start before zero
+- [x] the same rules apply to the export, frame by frame
+
+## 18. Video export ignored animated opacity with a screen video — fixed
+
+- with a recording on a screen, objects meant to be hidden (opacity 0) showed up in the exported video, at the opacity of the instant parked on the timeline
+- cause: each frame waits for the screen videos to seek; meanwhile React re-renders the canvas (the progress changes every frame), and React Three Fiber compares object props by reference, so the `userData={{ opacity }}` object was re-applied on every render with the parked instant's value, over the frame's own
+- fix: the frame's pose is applied after the seeks, with nothing awaited between it and the render, and opacity is passed as a number (`userData-opacity`), which only re-applies when it actually changes
+- checked both ways on the same scene: the old code exported the hidden object fully visible from frame 0; the fix exports 0% → 50% → 100% as animated
+
+## 19. Objects exist from their first keyframe — done
+
+- [x] same rule as a video clip: an animated object is out of the scene before its first keyframe, so dragging a track forward leaves the time behind it empty instead of showing the object frozen on its first pose
+- [x] after the last keyframe it stays on its final pose — in a mockup the final composition is where the animation lands, and an object with a single keyframe would otherwise exist for one instant only
+- [x] objects without keyframes are always there, as before
+- [x] display only (`sampleDisplayedMotion`): editing still samples the held first pose, so a keyframe added before the first one is born visible, not at 0%
+- an out point (an object leaving the scene before the end) would need its own handle on the track; an opacity keyframe at 0% covers it meanwhile
+
+## 20. Timeline zoom — done
+
+- [x] `−` / `+` in the timeline header, anchored on the playhead (it stays put on screen while the rest opens or closes around it), from the whole scene (1×) up to 40×
+- [x] trackpad pinch inside the timeline, anchored under the fingers: Chrome and Edge deliver it as `wheel` with `ctrlKey`, Safari as `gesture*` events; both are caught only inside the timeline, so pinching elsewhere still zooms the page, and plain scrolling is untouched
+- [x] the lanes become `zoom` times wider than the visible window, inside a horizontal scroller: keyframes, segments, clips and playhead are positioned in % of the axis, so they scale with no change to the time math
+- [x] the ruler picks the finest step that keeps 80 px between marks — whole seconds without zoom, half and tenth seconds when zoomed
+- [x] during playback the timeline scrolls to keep the playhead in view
+- checked in the browser: three `+` clicks reach 3.4× with the playhead on the same pixel; a pinch over 1.6 s reaches 7.5× with that mark on the same pixel; the follow-the-playhead scroll was not exercised there, since playback needs a visible browser pane

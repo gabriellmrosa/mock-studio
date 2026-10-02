@@ -7,7 +7,10 @@ import {
   getScreenVideoTime,
   type SceneObject,
 } from "../../lib/scene-objects";
-import { getScreenVideoElement } from "../../lib/screen-texture";
+import {
+  getScreenVideoElement,
+  setScreenVideoShown,
+} from "../../lib/screen-texture";
 import {
   getVideoExportFormat,
   type VideoExportSettings,
@@ -113,8 +116,10 @@ export function createVideoFrameRenderer(
     canvas,
 
     async render(timeMs) {
-      applyPoses(timeMs);
-
+      // Primeiro os vídeos das telas, que levam tempo. Durante essa espera o
+      // React pode atualizar o canvas (o progresso muda a cada quadro) e
+      // reaplicar a pose do instante parado na timeline; por isso a pose do
+      // quadro vem depois, e daí até o render nada mais espera.
       await Promise.all(
         objects().map((object) => {
           const video = getActiveScreenVideo(object);
@@ -124,15 +129,23 @@ export function createVideoFrameRenderer(
             return undefined;
           }
 
+          const sourceMs = getScreenVideoTime(video, timeMs);
+
+          // Como no editor: fora do clipe, a tela só com o fundo.
+          setScreenVideoShown(object.id, sourceMs !== null);
+
+          if (sourceMs === null) {
+            return undefined;
+          }
+
           // Como no editor: o último quadro fica um pouco antes do fim.
-          const ms = Math.min(
-            getScreenVideoTime(video, timeMs),
-            video.durationMs - 20,
-          );
+          const ms = Math.min(sourceMs, video.durationMs - 20);
 
           return seekVideo(element, ms / 1000);
         }),
       );
+
+      applyPoses(timeMs);
 
       // O `seeked` marca a textura do vídeo para atualizar; este quadro do R3F
       // roda o compositor, que redesenha a tela antes do render abaixo.

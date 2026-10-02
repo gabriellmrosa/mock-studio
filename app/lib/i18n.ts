@@ -88,6 +88,13 @@ export type AppCopy = {
   transformSectionTitle: string;
   transformStaticTab: string;
   motionTimeline: string;
+  motionZoomLabel: string;
+  motionZoomIn: string;
+  motionZoomOut: string;
+  motionVideoTrimStart: string;
+  motionVideoTrimEnd: string;
+  timelineResizeLabel: string;
+  timelineResizeHint: string;
   motionFrameLabel: string;
   motionFrameWidth: string;
   motionFrameHeight: string;
@@ -123,6 +130,8 @@ export type AppCopy = {
   motionBezierReset: string;
   motionBezierDone: string;
   resetObjectButton: string;
+  centerObjectLabel: string;
+  centerObjectButton: string;
   positionX: string;
   positionY: string;
   positionZ: string;
@@ -258,6 +267,13 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     transformSectionTitle: "Transformação",
     transformStaticTab: "Estático",
     motionTimeline: "Linha do tempo",
+    motionZoomLabel: "Zoom da linha do tempo",
+    motionZoomIn: "Aproximar (ou faça pinça no trackpad)",
+    motionZoomOut: "Afastar (ou faça pinça no trackpad)",
+    motionVideoTrimStart: "Arraste para cortar o começo do vídeo",
+    motionVideoTrimEnd: "Arraste para cortar o fim do vídeo",
+    timelineResizeLabel: "Altura da linha do tempo",
+    timelineResizeHint: "Arraste para mudar a altura. Clique duplo volta ao padrão.",
     motionFrameLabel: "Tamanho do vídeo",
     motionFrameWidth: "Largura",
     motionFrameHeight: "Altura",
@@ -302,6 +318,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "cubic-bezier": "Cubic bezier",
     },
     resetObjectButton: "Resetar transformação",
+    centerObjectLabel: "Centralizar",
+    centerObjectButton: "Centralizar no canvas",
     positionX: "Posição X",
     positionY: "Posição Y",
     positionZ: "Posição Z",
@@ -491,6 +509,13 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     transformSectionTitle: "Transform",
     transformStaticTab: "Static",
     motionTimeline: "Timeline",
+    motionZoomLabel: "Timeline zoom",
+    motionZoomIn: "Zoom in (or pinch on the trackpad)",
+    motionZoomOut: "Zoom out (or pinch on the trackpad)",
+    motionVideoTrimStart: "Drag to trim the start of the video",
+    motionVideoTrimEnd: "Drag to trim the end of the video",
+    timelineResizeLabel: "Timeline height",
+    timelineResizeHint: "Drag to change the height. Double-click resets it.",
     motionFrameLabel: "Video size",
     motionFrameWidth: "Width",
     motionFrameHeight: "Height",
@@ -535,6 +560,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "cubic-bezier": "Cubic bezier",
     },
     resetObjectButton: "Reset transform",
+    centerObjectLabel: "Center",
+    centerObjectButton: "Center in the canvas",
     positionX: "Position X",
     positionY: "Position Y",
     positionZ: "Position Z",

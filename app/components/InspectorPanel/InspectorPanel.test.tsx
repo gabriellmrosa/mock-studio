@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { insertKeyframe } from "../../lib/scene-motion";
 import InspectorPanel from "./InspectorPanel";
 import {
   DEFAULT_SCREEN_FIT,
@@ -157,6 +158,8 @@ const copy: AppCopy = {
   portuguese: "PT-BR",
   renameObject: "Rename",
   resetObjectButton: "Reset transform",
+  centerObjectLabel: "Center",
+  centerObjectButton: "Center in the canvas",
   rotationX: "Rotation X",
   rotationY: "Rotation Y",
   rotationZ: "Rotation Z",
@@ -194,6 +197,13 @@ const copy: AppCopy = {
   transformSectionTitle: "Transform",
   transformStaticTab: "Static",
   motionTimeline: "Timeline",
+  motionZoomLabel: APP_COPY["en-US"].motionZoomLabel,
+  motionZoomIn: APP_COPY["en-US"].motionZoomIn,
+  motionZoomOut: APP_COPY["en-US"].motionZoomOut,
+  motionVideoTrimStart: APP_COPY["en-US"].motionVideoTrimStart,
+  motionVideoTrimEnd: APP_COPY["en-US"].motionVideoTrimEnd,
+  timelineResizeLabel: APP_COPY["en-US"].timelineResizeLabel,
+  timelineResizeHint: APP_COPY["en-US"].timelineResizeHint,
   motionFrameLabel: "Video size",
   motionFrameWidth: "Width",
   motionFrameHeight: "Height",
@@ -275,7 +285,10 @@ const copy: AppCopy = {
 
 function renderInspector(
   object = createSceneObject({ id: "object-1", modelId: "smartphone", name: "Object 1" }),
-  { motionTab = "static" }: { motionTab?: "static" | "motion" } = {},
+  {
+    motionTab = "static",
+    selectedKeyframeId = "",
+  }: { motionTab?: "static" | "motion"; selectedKeyframeId?: string } = {},
 ) {
   const handlers = {
     onImageUpload: jest.fn(),
@@ -286,6 +299,7 @@ function renderInspector(
     onUpdateScreenFit: jest.fn(),
     onModelChange: jest.fn(),
     onResetObject: jest.fn(),
+    onCenterObject: jest.fn(),
     onThemeColorChange: jest.fn(),
     onThemeChange: jest.fn(),
     onToggleDeviceShell: jest.fn(),
@@ -304,7 +318,7 @@ function renderInspector(
       object={object}
       uiTheme="dark"
       motionTab={motionTab}
-      selectedKeyframeId=""
+      selectedKeyframeId={selectedKeyframeId}
       uploadError=""
       {...handlers}
     />,
@@ -349,6 +363,8 @@ describe("InspectorPanel", () => {
           fit: { ...DEFAULT_SCREEN_FIT },
           name: "recording.mov",
           startMs: 0,
+          trimEndMs: 0,
+          trimStartMs: 0,
           url: "blob:x",
         },
       },
@@ -375,6 +391,8 @@ describe("InspectorPanel", () => {
         fit: { ...DEFAULT_SCREEN_FIT },
         name: "recording.mov",
         startMs: 0,
+        trimEndMs: 0,
+        trimStartMs: 0,
         url: "blob:x",
       },
     });
@@ -565,6 +583,36 @@ describe("InspectorPanel", () => {
     fireEvent.click(screen.getByLabelText("Reset transform"));
 
     expect(handlers.onResetObject).toHaveBeenCalled();
+  });
+
+  describe("center in the canvas", () => {
+    it("sits next to Reset in Static", () => {
+      const handlers = renderInspector();
+
+      fireEvent.click(screen.getByLabelText("Center in the canvas"));
+
+      expect(handlers.onCenterObject).toHaveBeenCalled();
+      expect(screen.getByLabelText("Reset transform")).toBeInTheDocument();
+    });
+
+    it("works on the selected keyframe in Motion, where Reset doesn't apply", () => {
+      const base = createSceneObject({ id: "object-1", name: "Object 1" });
+      const object = { ...base, keyframes: insertKeyframe(base, 0).keyframes };
+
+      renderInspector(object, {
+        motionTab: "motion",
+        selectedKeyframeId: object.keyframes[0].id,
+      });
+
+      expect(screen.getByLabelText("Center in the canvas")).toBeInTheDocument();
+      expect(screen.queryByLabelText("Reset transform")).toBeNull();
+    });
+
+    it("is hidden in Motion with no keyframe to edit", () => {
+      renderInspector(undefined, { motionTab: "motion" });
+
+      expect(screen.queryByLabelText("Center in the canvas")).toBeNull();
+    });
   });
 
   it("maps rotation Y control back to the stored object rotation", () => {

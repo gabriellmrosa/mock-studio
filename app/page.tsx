@@ -47,6 +47,10 @@ import {
   type SceneObject,
 } from "./lib/scene-objects";
 import {
+  OBJECT_POSITION_MULTIPLIER,
+  OBJECT_POSITION_MULTIPLIER_Z,
+} from "./lib/scene-presets";
+import {
   applySceneTemplate,
   createSceneTemplate,
   getNextTemplateName,
@@ -283,6 +287,8 @@ export default function Home() {
           fit: { ...DEFAULT_SCREEN_FIT },
           name: file.name,
           startMs: 0,
+          trimEndMs: 0,
+          trimStartMs: 0,
           url,
         },
       });
@@ -790,6 +796,31 @@ export default function Home() {
 
   // Em Movimento os controles editam o keyframe selecionado; em Estático, a
   // pose do objeto. Cada modo escreve só no seu lado.
+  /**
+   * Leva o objeto ao centro da vista (o centro do que se exporta), na mesma
+   * distância da câmera. Grava na pose em edição: a do objeto no Estático, a
+   * do keyframe selecionado no Movimento.
+   */
+  function handleCenterObject() {
+    if (!selectedObject) return;
+
+    const offset = cameraApiRef.current?.getCenteringOffset(selectedObject.id);
+    const pose =
+      motionTab === "motion" ? selectedKeyframe?.transform : selectedObject;
+
+    if (!offset || !pose) return;
+
+    const [dx, dy, dz] = offset;
+    // Duas casas, como os campos mostram: menos de 1/100 de unidade não se vê.
+    const round = (value: number) => Math.round(value * 100) / 100;
+
+    updateTransform({
+      positionX: round(pose.positionX + dx / OBJECT_POSITION_MULTIPLIER),
+      positionY: round(pose.positionY + dy / OBJECT_POSITION_MULTIPLIER),
+      positionZ: round(pose.positionZ + dz / OBJECT_POSITION_MULTIPLIER_Z),
+    });
+  }
+
   function updateTransform(patch: Partial<SceneObject>) {
     if (!selectedObject) return;
 
@@ -917,10 +948,10 @@ export default function Home() {
             objects={sceneObjects.filter((object) => object.isVisible)}
             onChangeFrame={setMotionFrame}
             onChangeKeyframes={handleChangeKeyframes}
-            onChangeVideoStart={(objectId, startMs) =>
+            onChangeVideo={(objectId, patch) =>
               updateSceneObject(objectId, (object) =>
                 object.screenVideo
-                  ? { screenVideo: { ...object.screenVideo, startMs } }
+                  ? { screenVideo: { ...object.screenVideo, ...patch } }
                   : {},
               )
             }
@@ -982,6 +1013,7 @@ export default function Home() {
         }}
         onModelChange={handleModelChange}
         onResetObject={handleResetObject}
+        onCenterObject={handleCenterObject}
         onThemeColorChange={handleThemeColorChange}
         onThemeChange={handleThemeChange}
         onToggleDeviceShell={() =>

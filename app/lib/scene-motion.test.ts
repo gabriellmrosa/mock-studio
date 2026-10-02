@@ -2,7 +2,9 @@ import {
   DEFAULT_SCREEN_FIT,
   createSceneObject,
   duplicateSceneObject,
+  getScreenVideoClipDuration,
   getScreenVideoTime,
+  trimVideoClip,
 } from "./scene-objects";
 import {
   DEFAULT_BEZIER,
@@ -18,6 +20,7 @@ import {
   insertKeyframe,
   moveKeyframeTo,
   removeKeyframe,
+  sampleDisplayedMotion,
   sampleMotion,
   shiftKeyframes,
   updateKeyframe,
@@ -195,6 +198,38 @@ describe("scene-motion", () => {
     expect(sampleMotion(object, 2000)?.opacity).toBe(1);
   });
 
+  describe("what the scene shows", () => {
+    const object = withKeyframes([
+      [1000, 0],
+      [2000, 5],
+    ]);
+
+    it("keeps an animated object out of the scene before its first keyframe", () => {
+      expect(sampleDisplayedMotion(object, 0)?.opacity).toBe(0);
+      expect(sampleDisplayedMotion(object, 999)?.opacity).toBe(0);
+      // A partir do primeiro keyframe ele existe, na opacidade da pose.
+      expect(sampleDisplayedMotion(object, 1000)?.opacity).toBe(1);
+    });
+
+    it("stays on its final pose after the last keyframe", () => {
+      expect(sampleDisplayedMotion(object, 99999)).toMatchObject({
+        opacity: 1,
+        positionX: 5,
+      });
+    });
+
+    it("leaves editing alone: a keyframe added before the first is visible", () => {
+      const { keyframes } = insertKeyframe(object, 500);
+
+      expect(keyframes[0]).toMatchObject({ timeMs: 500 });
+      expect(keyframes[0].transform.opacity).toBe(1);
+    });
+
+    it("doesn't touch objects without keyframes", () => {
+      expect(sampleDisplayedMotion(makeObject(), 0)).toBeNull();
+    });
+  });
+
   it("holds the last pose past the end instead of looping", () => {
     const object = withKeyframes([
       [0, 0],
@@ -300,13 +335,50 @@ describe("scene-motion", () => {
       fit: { ...DEFAULT_SCREEN_FIT },
       name: "recording.mp4",
       startMs: 1000,
+      trimEndMs: 0,
+      trimStartMs: 0,
       url: "blob:x",
     };
 
-    it("holds the first frame before the start and the last after the end", () => {
-      expect(getScreenVideoTime(video, 0)).toBe(0);
+    it("exists only within its clip, like in a video editor", () => {
+      // Antes e depois do clipe a tela fica sem vídeo.
+      expect(getScreenVideoTime(video, 0)).toBeNull();
       expect(getScreenVideoTime(video, 2500)).toBe(1500);
-      expect(getScreenVideoTime(video, 99999)).toBe(4000);
+      // O fim é inclusivo: a cena que acaba com o clipe mostra o último quadro.
+      expect(getScreenVideoTime(video, 5000)).toBe(4000);
+      expect(getScreenVideoTime(video, 5001)).toBeNull();
+    });
+
+    it("plays only the trimmed part of the file", () => {
+      const trimmed = { ...video, trimEndMs: 1000, trimStartMs: 500 };
+
+      expect(getScreenVideoClipDuration(trimmed)).toBe(2500);
+      // No início do clipe, o arquivo já está nos 500 ms cortados.
+      expect(getScreenVideoTime(trimmed, 1000)).toBe(500);
+      expect(getScreenVideoTime(trimmed, 3500)).toBe(3000);
+      expect(getScreenVideoTime(trimmed, 3501)).toBeNull();
+    });
+
+    it("trims the start keeping the rest of the video in place", () => {
+      // Cortar 600 ms do começo: o clipe passa a começar 600 ms depois.
+      expect(trimVideoClip(video, "start", 600)).toEqual({
+        startMs: 1600,
+        trimStartMs: 600,
+      });
+      // Não volta para antes do arquivo nem do zero da cena.
+      expect(trimVideoClip(video, "start", -5000)).toEqual({
+        startMs: 1000,
+        trimStartMs: 0,
+      });
+      expect(
+        trimVideoClip({ ...video, trimStartMs: 1500 }, "start", -5000),
+      ).toEqual({ startMs: 0, trimStartMs: 500 });
+    });
+
+    it("trims the end, always leaving a minimal clip", () => {
+      expect(trimVideoClip(video, "end", -1000)).toEqual({ trimEndMs: 1000 });
+      expect(trimVideoClip(video, "end", 500)).toEqual({ trimEndMs: 0 });
+      expect(trimVideoClip(video, "end", -99999)).toEqual({ trimEndMs: 3900 });
     });
 
     it("extends the scene to the end of the video", () => {
@@ -320,6 +392,13 @@ describe("scene-motion", () => {
       };
 
       expect(getObjectMotionEnd(object)).toBe(5000);
+      // Com o fim cortado, a cena acaba antes.
+      expect(
+        getObjectMotionEnd({
+          ...object,
+          screenVideo: { ...video, trimEndMs: 1500 },
+        }),
+      ).toBe(3500);
     });
 
     it("ignores a stored video while the screen shows the image", () => {

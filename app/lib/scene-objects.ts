@@ -62,17 +62,80 @@ export type ScreenVideo = {
   /** Enquadramento próprio: imagem e vídeo raramente pedem o mesmo. */
   fit: ScreenFit;
   name: string;
-  /** Instante da cena em que o vídeo começa a tocar, no modo Movimento. */
+  /** Instante da cena em que o clipe começa, no modo Movimento. */
   startMs: number;
+  /**
+   * Quanto do arquivo fica de fora no começo e no fim, em ms — o corte feito
+   * arrastando as bordas do clipe na timeline. O arquivo não muda.
+   */
+  trimEndMs: number;
+  trimStartMs: number;
   url: string;
 };
 
+/** Menor clipe que o corte deixa sobrar: abaixo disso some da timeline. */
+export const MIN_SCREEN_VIDEO_CLIP_MS = 100;
+
+/** Quanto do vídeo toca na cena: o arquivo menos os cortes. */
+export function getScreenVideoClipDuration(video: ScreenVideo) {
+  return Math.max(
+    MIN_SCREEN_VIDEO_CLIP_MS,
+    video.durationMs - (video.trimStartMs ?? 0) - (video.trimEndMs ?? 0),
+  );
+}
+
+export type VideoClipPatch = Partial<
+  Pick<ScreenVideo, "startMs" | "trimEndMs" | "trimStartMs">
+>;
+
 /**
- * Tempo do vídeo num instante da cena. Antes do início segura o primeiro
- * quadro e depois do fim o último, como os keyframes fazem.
+ * Corta uma borda do clipe, como num editor de vídeo, a partir do clipe como
+ * estava no início do arrasto. Na borda do começo o resto do vídeo não sai do
+ * lugar: o clipe começa depois na cena na mesma medida em que o arquivo é
+ * cortado. Nenhum corte passa do arquivo nem deixa menos que o clipe mínimo,
+ * e o começo não vai para antes do zero da cena.
  */
-export function getScreenVideoTime(video: ScreenVideo, sceneTimeMs: number) {
-  return Math.min(video.durationMs, Math.max(0, sceneTimeMs - video.startMs));
+export function trimVideoClip(
+  video: ScreenVideo,
+  edge: "start" | "end",
+  deltaMs: number,
+): VideoClipPatch {
+  const trimStartMs = video.trimStartMs ?? 0;
+  const trimEndMs = video.trimEndMs ?? 0;
+
+  if (edge === "end") {
+    const max = video.durationMs - trimStartMs - MIN_SCREEN_VIDEO_CLIP_MS;
+
+    return { trimEndMs: Math.min(max, Math.max(0, trimEndMs - deltaMs)) };
+  }
+
+  const min = Math.max(0, trimStartMs - video.startMs);
+  const max = video.durationMs - trimEndMs - MIN_SCREEN_VIDEO_CLIP_MS;
+  const next = Math.min(max, Math.max(min, trimStartMs + deltaMs));
+
+  return {
+    startMs: video.startMs + (next - trimStartMs),
+    trimStartMs: next,
+  };
+}
+
+/**
+ * Tempo do arquivo num instante da cena, ou `null` fora do clipe. Como num
+ * editor de vídeo, o clipe só existe no trecho dele na timeline: antes e
+ * depois a tela não mostra o vídeo. O fim é inclusivo — a cena que termina
+ * junto com o clipe acaba no último quadro dele, não numa tela vazia.
+ */
+export function getScreenVideoTime(
+  video: ScreenVideo,
+  sceneTimeMs: number,
+): number | null {
+  const offset = sceneTimeMs - video.startMs;
+
+  if (offset < 0 || offset > getScreenVideoClipDuration(video)) {
+    return null;
+  }
+
+  return (video.trimStartMs ?? 0) + offset;
 }
 
 /** Vídeo que a tela mostra de fato: o enviado, e só se for a fonte escolhida. */

@@ -212,6 +212,12 @@
   padding: var(--space-6);
 }
 
+.transform-actions {
+  align-items: center;
+  display: flex;
+  gap: var(--space-4);
+}
+
 .transform-reset-wrap {
   align-items: center;
   display: flex;

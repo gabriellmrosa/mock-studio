@@ -18,6 +18,40 @@
   z-index: 3;
 }
 
+/* Alça de altura na borda de cima da timeline: uma faixa invisível de 7px
+   centrada na borda, que vira uma linha ao passar o mouse ou focar. */
+.timeline-resize-handle {
+  bottom: calc(var(--motion-timeline-height) - 3px);
+  cursor: row-resize;
+  height: 7px;
+  left: var(--editor-sidebar-width);
+  pointer-events: auto;
+  position: absolute;
+  right: var(--editor-sidebar-width);
+  touch-action: none;
+  z-index: 4;
+}
+
+.timeline-resize-handle::after {
+  background: transparent;
+  content: "";
+  height: 2px;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 2px;
+  transition: background-color 120ms ease;
+}
+
+.timeline-resize-handle:hover::after,
+.timeline-resize-handle:focus-visible::after {
+  background: color-mix(in srgb, var(--foreground) 40%, transparent);
+}
+
+.timeline-resize-handle:focus-visible {
+  outline: none;
+}
+
 .motion-timeline-header {
   align-items: center;
   display: flex;
@@ -46,12 +80,44 @@
   font-size: var(--font-size-150);
   font-variant-numeric: tabular-nums;
   gap: var(--space-2);
-  margin-left: auto;
   min-height: var(--input-min-height);
   padding: 0 var(--space-2);
   transition:
     border-color 160ms ease,
     background-color 160ms ease;
+}
+
+/* Zoom da timeline: − e +, à direita do cabeçalho, antes do tamanho do vídeo. */
+.motion-timeline-zoom {
+  display: flex;
+  gap: 2px;
+  margin-left: auto;
+}
+
+.motion-timeline-zoom-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--button-border);
+  border-radius: var(--radius-sm);
+  color: var(--button-fg);
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  min-height: var(--input-min-height);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease;
+  width: var(--input-min-height);
+}
+
+.motion-timeline-zoom-button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  border-color: var(--button-border-hover);
+}
+
+.motion-timeline-zoom-button:disabled {
+  cursor: default;
+  opacity: 0.4;
 }
 
 .motion-frame-trigger:hover,
@@ -197,12 +263,23 @@
   opacity: 0.4;
 }
 
+/* Janela do eixo: rola na horizontal quando há zoom. A rolagem vertical (muitas
+   trilhas) continua sendo do corpo, junto com os rótulos. */
+.motion-timeline-viewport {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* A largura (zoom × janela) vem do componente; tudo dentro é posicionado em %
+   do eixo e escala junto. */
 .motion-timeline-lanes {
   cursor: col-resize;
   display: flex;
   flex-direction: column;
-  flex: 1;
   gap: var(--space-1);
+  min-width: 100%;
   position: relative;
   touch-action: none;
 }
@@ -265,6 +342,32 @@
 
 .motion-timeline-clip:active {
   cursor: grabbing;
+}
+
+/* Bordas do clipe: arrastar corta o começo ou o fim do vídeo, como num
+   editor. Invisíveis até o mouse passar; o meio continua movendo o clipe. */
+.motion-timeline-clip-trim {
+  bottom: 0;
+  cursor: ew-resize;
+  position: absolute;
+  top: 0;
+  touch-action: none;
+  transition: background-color 120ms ease;
+  width: 6px;
+  z-index: 1;
+}
+
+.motion-timeline-clip-trim.is-start {
+  left: 0;
+}
+
+.motion-timeline-clip-trim.is-end {
+  right: 0;
+}
+
+.motion-timeline-clip-trim:hover,
+.motion-timeline-clip-trim:active {
+  background: color-mix(in srgb, var(--foreground) 40%, transparent);
 }
 
 .motion-timeline-lane-video.is-active .motion-timeline-clip {

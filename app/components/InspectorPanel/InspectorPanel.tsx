@@ -35,6 +35,7 @@ import {
   Laptop,
   MoreVertical,
   Pipette,
+  Crosshair,
   RotateCcw,
   Scaling,
   Smartphone,
@@ -72,6 +73,8 @@ type InspectorPanelProps = {
   onUpdateScreenFit: (patch: Partial<ScreenFit>) => void;
   onModelChange: (modelId: SceneObject["modelId"]) => void;
   onResetObject: () => void;
+  /** Leva o objeto ao centro da vista, na pose em edição. */
+  onCenterObject: () => void;
   onThemeColorChange: (part: string, hex: string) => void;
   onThemeChange: (themeId: string) => void;
   onToggleDeviceShell: () => void;
@@ -104,6 +107,7 @@ export default function InspectorPanel({
   onUpdateScreenFit,
   onModelChange,
   onResetObject,
+  onCenterObject,
   onThemeColorChange,
   onThemeChange,
   onToggleDeviceShell,
@@ -392,20 +396,41 @@ export default function InspectorPanel({
           }
           className="transform-section"
           action={
-            motionTab === "motion" ? undefined : (
-            <div className="transform-reset-wrap">
-              <span className="transform-reset-label">Reset</span>
-              <button
-                type="button"
-                onClick={onResetObject}
-                aria-label={copy.resetObjectButton}
-                title={copy.resetObjectButton}
-                className="editor-fab"
-              >
-                <RotateCcw size={16} />
-              </button>
-            </div>
-            )
+            // Com os campos de posição na tela: no Estático, ou num keyframe.
+            motionTab === "static" || editedKeyframe ? (
+              <div className="transform-actions">
+                <div className="transform-reset-wrap">
+                  <span className="transform-reset-label">
+                    {copy.centerObjectLabel}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={onCenterObject}
+                    aria-label={copy.centerObjectButton}
+                    title={copy.centerObjectButton}
+                    className="editor-fab"
+                  >
+                    <Crosshair size={16} />
+                  </button>
+                </div>
+                {/* O reset volta o objeto à pose padrão; no Movimento a pose
+                    é a de cada keyframe, e ele não se aplica. */}
+                {motionTab === "static" ? (
+                  <div className="transform-reset-wrap">
+                    <span className="transform-reset-label">Reset</span>
+                    <button
+                      type="button"
+                      onClick={onResetObject}
+                      aria-label={copy.resetObjectButton}
+                      title={copy.resetObjectButton}
+                      className="editor-fab"
+                    >
+                      <RotateCcw size={16} />
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            ) : undefined
           }
         >
           {motionTab === "motion" && !editedKeyframe ? (

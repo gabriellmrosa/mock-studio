@@ -27,6 +27,8 @@ function withVideo(object: SceneObject): SceneObject {
       fit: { ...DEFAULT_SCREEN_FIT },
       name: "recording.mov",
       startMs: 1000,
+      trimEndMs: 0,
+      trimStartMs: 0,
       url: "blob:x",
     },
   };
@@ -39,7 +41,7 @@ function renderTimeline(
   const handlers = {
     onChangeFrame: jest.fn(),
     onChangeKeyframes: jest.fn(),
-    onChangeVideoStart: jest.fn(),
+    onChangeVideo: jest.fn(),
     onRemoveKeyframe: jest.fn(),
     onScrub: jest.fn(),
     onSelectKeyframe: jest.fn(),
@@ -107,6 +109,41 @@ describe("MotionTimeline", () => {
     expect(handlers.onSelectObject).toHaveBeenCalledWith("a");
   });
 
+  it("draws only the trimmed part of the clip", () => {
+    const object = withVideo(createSceneObject({ id: "a", name: "Phone" }));
+    const { container } = renderTimeline([
+      {
+        ...object,
+        screenVideo: { ...object.screenVideo!, trimEndMs: 1000, trimStartMs: 500 },
+      },
+    ]);
+    const clip = container.querySelector<HTMLElement>(".motion-timeline-clip");
+
+    // 4 s de arquivo menos 1,5 s de cortes: 2,5 s no eixo de 6 s.
+    expect(clip?.style.width).toBe(`${(2500 / 6000) * 100}%`);
+  });
+
+  it("trims the start from the clip's left edge", () => {
+    const { container, handlers } = renderTimeline([
+      withVideo(createSceneObject({ id: "a", name: "Phone" })),
+    ]);
+    const lanes = container.querySelector(".motion-timeline-lanes") as HTMLElement;
+    const handle = container.querySelector(
+      ".motion-timeline-clip-trim.is-start",
+    ) as HTMLElement;
+
+    // 600 px de eixo para 6 s: 100 px = 1 s.
+    lanes.getBoundingClientRect = () => ({ left: 0, width: 600 }) as DOMRect;
+    handle.setPointerCapture = jest.fn();
+    fireEvent.pointerDown(handle, { button: 0, clientX: 100, pointerId: 1 });
+    fireEvent.pointerMove(handle, { clientX: 150, pointerId: 1 });
+
+    expect(handlers.onChangeVideo).toHaveBeenLastCalledWith("a", {
+      startMs: 1500,
+      trimStartMs: 500,
+    });
+  });
+
   it("hides the video track while the screen shows the image", () => {
     const { container } = renderTimeline([
       {
@@ -116,6 +153,46 @@ describe("MotionTimeline", () => {
     ]);
 
     expect(container.querySelector(".motion-timeline-lane-video")).toBeNull();
+  });
+
+  describe("zoom", () => {
+    const lanesWidth = (container: HTMLElement) =>
+      container.querySelector<HTMLElement>(".motion-timeline-lanes")?.style.width;
+
+    it("starts with the whole scene in view, so there is nothing to zoom out", () => {
+      const { container } = renderTimeline([createSceneObject({ id: "a", name: "Phone" })]);
+
+      expect(lanesWidth(container)).toBe("100%");
+      expect(screen.getByRole("button", { name: /Zoom out/ })).toBeDisabled();
+    });
+
+    it("widens the lanes from the zoom buttons", () => {
+      const { container } = renderTimeline([createSceneObject({ id: "a", name: "Phone" })]);
+
+      fireEvent.click(screen.getByRole("button", { name: /Zoom in/ }));
+      expect(lanesWidth(container)).toBe("150%");
+
+      fireEvent.click(screen.getByRole("button", { name: /Zoom out/ }));
+      expect(lanesWidth(container)).toBe("100%");
+    });
+
+    it("zooms on a trackpad pinch, which arrives as a ctrl+wheel", () => {
+      const { container } = renderTimeline([createSceneObject({ id: "a", name: "Phone" })]);
+      const viewport = container.querySelector(".motion-timeline-viewport") as HTMLElement;
+
+      fireEvent.wheel(viewport, { ctrlKey: true, deltaY: -100 });
+
+      expect(parseFloat(lanesWidth(container) ?? "0")).toBeGreaterThan(100);
+    });
+
+    it("leaves plain scrolling alone", () => {
+      const { container } = renderTimeline([createSceneObject({ id: "a", name: "Phone" })]);
+      const viewport = container.querySelector(".motion-timeline-viewport") as HTMLElement;
+
+      fireEvent.wheel(viewport, { deltaY: -100 });
+
+      expect(lanesWidth(container)).toBe("100%");
+    });
   });
 
   describe("video size", () => {

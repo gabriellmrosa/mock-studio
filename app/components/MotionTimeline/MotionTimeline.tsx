@@ -9,15 +9,35 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { Check, Diamond, Play, Square, Video } from "lucide-react";
+import {
+  Check,
+  Diamond,
+  Play,
+  Square,
+  Video,
+  ZoomIn,
+  ZoomOut,
+} from "lucide-react";
 import BezierEditor from "./BezierEditor";
 import MotionFrameControl from "./MotionFrameControl";
 import TimelineMenu from "./TimelineMenu";
+import {
+  MAX_TIMELINE_ZOOM,
+  MIN_TIMELINE_ZOOM,
+  TIMELINE_ZOOM_STEP,
+  formatTick,
+  getTickStepMs,
+  useTimelineZoom,
+} from "./useTimelineZoom";
 import type { AppCopy, Locale } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
 import {
   getActiveScreenVideo,
+  getScreenVideoClipDuration,
+  trimVideoClip,
   type SceneObject,
+  type ScreenVideo,
+  type VideoClipPatch,
 } from "../../lib/scene-objects";
 import {
   DEFAULT_BEZIER,
@@ -50,7 +70,8 @@ type MotionTimelineProps = {
   onToggleKeyframeAtPlayhead: (objectId: string) => void;
   onChangeFrame: (frame: MotionFrame) => void;
   onChangeKeyframes: (objectId: string, keyframes: Keyframe[]) => void;
-  onChangeVideoStart: (objectId: string, startMs: number) => void;
+  /** Move ou corta o clipe do vídeo da tela. */
+  onChangeVideo: (objectId: string, patch: VideoClipPatch) => void;
   onRemoveKeyframe: (objectId: string, keyframeId: string) => void;
   onScrub: (timeMs: number) => void;
   onSelectKeyframe: (objectId: string, keyframeId: string) => void;
@@ -79,6 +100,15 @@ type DragState =
       objectId: string;
       startMs: number;
       startX: number;
+    }
+  | {
+      /** Uma borda do clipe: corta o começo ou o fim do vídeo. */
+      edge: "start" | "end";
+      kind: "video-trim";
+      moved: boolean;
+      objectId: string;
+      startX: number;
+      video: ScreenVideo;
     }
   | {
       keyframeId: string;
@@ -123,7 +153,7 @@ export default function MotionTimeline({
   objects,
   onChangeFrame,
   onChangeKeyframes,
-  onChangeVideoStart,
+  onChangeVideo,
   onRemoveKeyframe,
   onScrub,
   onSelectKeyframe,
@@ -138,6 +168,9 @@ export default function MotionTimeline({
 }: MotionTimelineProps) {
   const lanesRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
+  const { reveal, viewportRef, viewportWidth, zoom, zoomTo } = useTimelineZoom(
+    objects.length > 0,
+  );
   // O eixo cresce com a cena, mas congela durante um arrasto: se ele mudasse
   // de escala no meio do gesto, o keyframe fugiria do cursor.
   const [frozenAxisMs, setFrozenAxisMs] = useState<number | null>(null);
@@ -181,6 +214,40 @@ export default function MotionTimeline({
       : playheadMs;
 
   const toPercent = (timeMs: number) => `${(timeMs / axisMs) * 100}%`;
+
+  // Régua: o intervalo mais fino que ainda dá para ler na escala atual. Antes
+  // de medir a janela, um segundo.
+  const tickStepMs =
+    viewportWidth > 0 ? getTickStepMs((viewportWidth * zoom) / axisMs) : 1000;
+  const ticks = Array.from(
+    { length: Math.floor(axisMs / tickStepMs) + 1 },
+    (_, index) => index * tickStepMs,
+  );
+
+  // Com zoom, o playhead sairia da tela durante o play: a timeline o segue.
+  useEffect(() => {
+    if (isPlaying) {
+      reveal(displayedPlayheadMs / axisMs);
+    }
+    // `reveal` lê refs: não precisa re-inscrever o efeito.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [axisMs, displayedPlayheadMs, isPlaying]);
+
+  /** Zoom dos botões: ancorado no playhead, se ele está à vista. */
+  function zoomFromButton(factor: number) {
+    const lanes = lanesRef.current?.getBoundingClientRect();
+    const viewport = viewportRef.current?.getBoundingClientRect();
+    const playheadX = lanes
+      ? lanes.left + (displayedPlayheadMs / axisMs) * lanes.width
+      : undefined;
+    const isVisible =
+      playheadX !== undefined &&
+      viewport !== undefined &&
+      playheadX >= viewport.left &&
+      playheadX <= viewport.right;
+
+    zoomTo(zoom * factor, isVisible ? playheadX : undefined);
+  }
 
   function timeFromClientX(clientX: number) {
     const rect = lanesRef.current?.getBoundingClientRect();
@@ -239,7 +306,17 @@ export default function MotionTimeline({
     const deltaMs = msFromDeltaX(deltaX);
 
     if (drag.kind === "video") {
-      onChangeVideoStart(drag.objectId, Math.max(0, snap(drag.startMs + deltaMs)));
+      onChangeVideo(drag.objectId, {
+        startMs: Math.max(0, snap(drag.startMs + deltaMs)),
+      });
+      return;
+    }
+
+    if (drag.kind === "video-trim") {
+      onChangeVideo(
+        drag.objectId,
+        trimVideoClip(drag.video, drag.edge, snap(deltaMs)),
+      );
       return;
     }
 
@@ -320,6 +397,8 @@ export default function MotionTimeline({
       return null;
     }
 
+    const clipDuration = getScreenVideoClipDuration(video);
+
     return (
       <div
         className={`motion-timeline-lane motion-timeline-lane-video${
@@ -328,10 +407,10 @@ export default function MotionTimeline({
       >
         <div
           className="motion-timeline-clip"
-          title={`${video.name} · ${formatSeconds(video.durationMs)}`}
+          title={`${video.name} · ${formatSeconds(clipDuration)}`}
           style={{
             left: toPercent(video.startMs),
-            width: toPercent(video.durationMs),
+            width: toPercent(clipDuration),
           }}
           onPointerDown={(event) => {
             if (event.button !== 0) {
@@ -351,6 +430,36 @@ export default function MotionTimeline({
           onPointerUp={endDrag}
           onPointerCancel={endDrag}
         >
+          {(["start", "end"] as const).map((edge) => (
+            <span
+              key={edge}
+              aria-hidden
+              className={`motion-timeline-clip-trim is-${edge}`}
+              title={
+                edge === "start"
+                  ? copy.motionVideoTrimStart
+                  : copy.motionVideoTrimEnd
+              }
+              onPointerDown={(event) => {
+                if (event.button !== 0) {
+                  return;
+                }
+
+                onSelectObject(object.id);
+                beginDrag(event, {
+                  edge,
+                  kind: "video-trim",
+                  moved: false,
+                  objectId: object.id,
+                  startX: event.clientX,
+                  video,
+                });
+              }}
+              onPointerMove={handleDragMove}
+              onPointerUp={endDrag}
+              onPointerCancel={endDrag}
+            />
+          ))}
           <Video size={11} aria-hidden />
           <span className="motion-timeline-clip-name">{video.name}</span>
         </div>
@@ -373,6 +482,28 @@ export default function MotionTimeline({
         <span className="motion-timeline-clock">
           {`${formatSeconds(displayedPlayheadMs)} / ${formatSeconds(sceneDurationMs)}`}
         </span>
+        <div className="motion-timeline-zoom" role="group" aria-label={copy.motionZoomLabel}>
+          <button
+            type="button"
+            className="motion-timeline-zoom-button"
+            aria-label={copy.motionZoomOut}
+            title={copy.motionZoomOut}
+            disabled={zoom <= MIN_TIMELINE_ZOOM}
+            onClick={() => zoomFromButton(1 / TIMELINE_ZOOM_STEP)}
+          >
+            <ZoomOut size={13} />
+          </button>
+          <button
+            type="button"
+            className="motion-timeline-zoom-button"
+            aria-label={copy.motionZoomIn}
+            title={copy.motionZoomIn}
+            disabled={zoom >= MAX_TIMELINE_ZOOM}
+            onClick={() => zoomFromButton(TIMELINE_ZOOM_STEP)}
+          >
+            <ZoomIn size={13} />
+          </button>
+        </div>
         <MotionFrameControl
           copy={copy}
           frame={frame}
@@ -442,27 +573,28 @@ export default function MotionTimeline({
             })}
           </div>
 
+          {/* A janela rola na horizontal; dentro dela a área das trilhas tem
+              `zoom` vezes a largura visível. */}
+          <div className="motion-timeline-viewport" ref={viewportRef}>
           <div
             className="motion-timeline-lanes"
             ref={lanesRef}
+            style={{ width: `${zoom * 100}%` }}
             onPointerDown={(event) => beginDrag(event, { kind: "scrub" })}
             onPointerMove={handleDragMove}
             onPointerUp={endDrag}
             onPointerCancel={endDrag}
           >
             <div className="motion-timeline-ruler" aria-hidden>
-              {Array.from(
-                { length: Math.floor(axisMs / 1000) + 1 },
-                (_, second) => (
-                  <span
-                    key={second}
-                    className="motion-timeline-tick"
-                    style={{ left: toPercent(second * 1000) }}
-                  >
-                    {`${second}s`}
-                  </span>
-                ),
-              )}
+              {ticks.map((timeMs) => (
+                <span
+                  key={timeMs}
+                  className="motion-timeline-tick"
+                  style={{ left: toPercent(timeMs) }}
+                >
+                  {formatTick(timeMs, tickStepMs)}
+                </span>
+              ))}
             </div>
 
             {objects.map((object) => (
@@ -577,6 +709,7 @@ export default function MotionTimeline({
               className="motion-timeline-playhead"
               style={{ left: toPercent(displayedPlayheadMs) }}
             />
+          </div>
           </div>
         </div>
       )}

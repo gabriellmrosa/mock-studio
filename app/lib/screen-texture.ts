@@ -48,6 +48,21 @@ export function getScreenVideoElement(key: string) {
   return screenVideos.get(key) ?? null;
 }
 
+/**
+ * Telas cujo vídeo está fora do trecho do clipe na timeline: mostram só a cor
+ * de fundo, como uma tela sem vídeo. Quem decide é quem decide o tempo (o
+ * controlador do canvas, ou a exportação); o compositor só lê.
+ */
+const hiddenScreenVideos = new Set<string>();
+
+export function setScreenVideoShown(key: string, shown: boolean) {
+  if (shown) {
+    hiddenScreenVideos.delete(key);
+  } else {
+    hiddenScreenVideos.add(key);
+  }
+}
+
 type ScreenTextureOptions = {
   /** Proporção da tela do modelo; só a razão entre os dois importa. */
   cropWidth: number;
@@ -269,6 +284,7 @@ function useVideoScreenTexture(
 
       if (screenVideos.get(key) === video) {
         screenVideos.delete(key);
+        hiddenScreenVideos.delete(key);
       }
 
       video.pause();
@@ -295,7 +311,8 @@ type CompositionInput = {
  */
 function useScreenComposition(
   input: CompositionInput | null,
-  isVideo: boolean,
+  /** A chave do vídeo da tela, ou `null` quando a fonte é imagem. */
+  videoKey: string | null,
   fit: ScreenFit | undefined,
   { cropHeight, cropWidth, flipY }: ScreenTextureOptions,
 ) {
@@ -329,15 +346,15 @@ function useScreenComposition(
     background: string;
     dirty: boolean;
     input: CompositionInput | null;
-    isVideo: boolean;
     layout: ReturnType<typeof getScreenLayout> | null;
-  }>({ background, dirty: true, input: null, isVideo, layout: null });
+    videoKey: string | null;
+  }>({ background, dirty: true, input: null, layout: null, videoKey });
 
   useEffect(() => {
-    frame.current = { background, dirty: true, input, isVideo, layout };
+    frame.current = { background, dirty: true, input, layout, videoKey };
     // `layout` é recriado a cada render; `layoutKey` é o que muda de verdade.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [background, compositor, input, isVideo, layoutKey]);
+  }, [background, compositor, input, layoutKey, videoKey]);
 
   // Prioridade padrão: roda antes do render da cena, que já vê a tela pronta.
   // Prioridade positiva desligaria o render automático do R3F.
@@ -348,13 +365,20 @@ function useScreenComposition(
       return;
     }
 
-    if (!current.dirty && !current.isVideo) {
+    if (!current.dirty && current.videoKey === null) {
       return;
     }
 
+    // Fora do clipe: uma área de conteúdo vazia (mínimo depois do máximo)
+    // deixa só a cor de fundo.
+    const isHidden =
+      current.videoKey !== null && hiddenScreenVideos.has(current.videoKey);
+
     compositor.render(renderer, {
       background: current.background,
-      layout: current.layout,
+      layout: isHidden
+        ? { ...current.layout, contentMax: [0, 0], contentMin: [1, 1] }
+        : current.layout,
       source: current.input.texture,
       transfer: current.input.transfer,
     });
@@ -393,5 +417,10 @@ export function useScreenTexture(
       : null;
   }, [image, isVideo, videoState]);
 
-  return useScreenComposition(input, isVideo, source.fit, options);
+  return useScreenComposition(
+    input,
+    source.kind === "video" ? source.key : null,
+    source.fit,
+    options,
+  );
 }
