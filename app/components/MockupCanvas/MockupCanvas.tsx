@@ -3,6 +3,7 @@
 import "./MockupCanvas.css";
 import {
   Suspense,
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -1078,22 +1079,53 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     };
   }, [isIncrementalObjectLoading]);
 
-  function handleObjectLoadStateChange(id: string, isLoading: boolean) {
-    setLoadingObjectIds((current) => {
-      if (isLoading) {
-        return current.includes(id) ? current : [...current, id];
-      }
+  // Estes callbacks vão para efeitos dentro da cena (registrar exportadores,
+  // avisar que um objeto carregou). Precisam ser estáveis: uma função nova a
+  // cada render re-rodaria esses efeitos, que mudam estado aqui, que
+  // renderiza de novo — um laço de centenas de renders por segundo, parado.
+  // Pelo mesmo motivo, as listas só mudam quando algo muda de fato: um
+  // `filter` sempre devolve um array novo, e o React leria isso como mudança.
+  const handleObjectLoadStateChange = useCallback(
+    (id: string, isLoading: boolean) => {
+      setLoadingObjectIds((current) => {
+        if (isLoading) {
+          return current.includes(id) ? current : [...current, id];
+        }
 
-      return current.filter((currentId) => currentId !== id);
-    });
-  }
+        return current.includes(id)
+          ? current.filter((currentId) => currentId !== id)
+          : current;
+      });
+    },
+    [],
+  );
 
-  function handleObjectResolved(id: string) {
+  const handleObjectResolved = useCallback((id: string) => {
     setResolvedObjectIds((current) =>
       current.includes(id) ? current : [...current, id],
     );
-    setLoadingObjectIds((current) => current.filter((currentId) => currentId !== id));
-  }
+    setLoadingObjectIds((current) =>
+      current.includes(id)
+        ? current.filter((currentId) => currentId !== id)
+        : current,
+    );
+  }, []);
+
+  const handleExportReady = useCallback(
+    (handler: ((preset: ExportPreset) => Promise<void>) | null) => {
+      exportHandlerRef.current = handler;
+      setIsExportReady(Boolean(handler));
+    },
+    [],
+  );
+
+  const handleVideoExportReady = useCallback(
+    (handler: VideoExportHandler | null) => {
+      videoExportHandlerRef.current = handler;
+      setIsVideoExportReady(Boolean(handler));
+    },
+    [],
+  );
 
   async function handleExportVideo(settings: VideoExportSettings) {
     const exportVideo = videoExportHandlerRef.current;
@@ -1224,17 +1256,11 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           {...props}
           canvasBgColor={canvasBgColor}
           isSceneSettled={isSceneSettled}
-          onExportReady={(handler) => {
-            exportHandlerRef.current = handler;
-            setIsExportReady(Boolean(handler));
-          }}
+          onExportReady={handleExportReady}
           onObjectLoadStateChange={handleObjectLoadStateChange}
           onObjectResolved={handleObjectResolved}
           onSelectObject={props.onSelectObject}
-          onVideoExportReady={(handler) => {
-            videoExportHandlerRef.current = handler;
-            setIsVideoExportReady(Boolean(handler));
-          }}
+          onVideoExportReady={handleVideoExportReady}
           onViewportControlsReady={setViewportControls}
           sceneFitKey={sceneFitKey}
         />

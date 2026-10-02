@@ -858,6 +858,11 @@ export default function Home() {
   // A câmera pendente assentou. Só um template merece aviso; voltar a um modo
   // é só voltar.
   const isRestoringTemplate = pendingCamera?.source === "template";
+  // Estável: vai para um efeito do canvas, que rodaria de novo a cada render.
+  const handleCameraApiReady = useCallback((api: CameraApi | null) => {
+    cameraApiRef.current = api;
+  }, []);
+
   const handleTemplateApplied = useCallback(() => {
     setPendingCamera(null);
 
@@ -914,9 +919,7 @@ export default function Home() {
         isUiHidden={isUiHidden}
         objects={sceneObjects}
         onBgColorChange={setCanvasBgColor}
-        onCameraApiReady={(api) => {
-          cameraApiRef.current = api;
-        }}
+        onCameraApiReady={handleCameraApiReady}
         onNotify={(tone, message) =>
           setNotification({
             id: Date.now(),

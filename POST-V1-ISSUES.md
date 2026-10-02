@@ -180,3 +180,11 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] the ruler picks the finest step that keeps 80 px between marks — whole seconds without zoom, half and tenth seconds when zoomed
 - [x] during playback the timeline scrolls to keep the playhead in view
 - checked in the browser: three `+` clicks reach 3.4× with the playhead on the same pixel; a pinch over 1.6 s reaches 7.5× with that mark on the same pixel; the follow-the-playhead scroll was not exercised there, since playback needs a visible browser pane
+
+## 21. Idle render loop in the canvas — fixed
+
+- the editor felt sluggish: measured with temporary counters, the canvas (`MockupCanvas` and its `SceneBridge`) re-rendered about 740 times a second while nothing happened (1,474 renders in 2 s in `Motion`, 602 in `Static`)
+- cause: callbacks handed to effects inside the scene were new functions on every render — registering the photo and video exporters, reporting that an object finished loading — so those effects re-ran on every render; each run set state in the canvas, which rendered again. The "object loaded" path also replaced the loading list with `filter`, which always returns a new array, so React saw a change even when nothing changed
+- the loading-state part dates back to March (`2906568`); the video export registration added one more trigger, and the editor's growing per-render work made the loop noticeable
+- fix: the callbacks are stable (`useCallback`, they only touch setters and refs), list updates return the same array when nothing changes, and the page's camera callback is stable too
+- after: zero renders while idle in both modes; dragging the playhead renders in proportion to the movement (4–8 renders for a full drag)
