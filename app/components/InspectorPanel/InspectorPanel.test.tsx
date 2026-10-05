@@ -67,6 +67,8 @@ jest.mock("../EditorPrimitives/EditorPrimitives", () => ({
     .SubTabPanel,
   IconButton: jest.requireActual("../EditorPrimitives/EditorPrimitives")
     .IconButton,
+  ResetButton: jest.requireActual("../EditorPrimitives/EditorPrimitives")
+    .ResetButton,
   Switch: jest.requireActual("../EditorPrimitives/EditorPrimitives").Switch,
   SidePopover: jest.requireActual("../EditorPrimitives/EditorPrimitives")
     .SidePopover,
@@ -158,8 +160,15 @@ const copy: AppCopy = {
   portuguese: "PT-BR",
   renameObject: "Rename",
   resetObjectButton: "Reset transform",
-  centerObjectLabel: "Center",
-  centerObjectButton: "Center in the canvas",
+  alignmentLabel: "Alignment",
+  alignmentHorizontal: "Horizontal alignment",
+  alignmentVertical: "Vertical alignment",
+  alignLeft: "Align left",
+  alignCenter: "Center horizontally",
+  alignRight: "Align right",
+  alignTop: "Align top",
+  alignMiddle: "Center vertically",
+  alignBottom: "Align bottom",
   rotationX: "Rotation X",
   rotationY: "Rotation Y",
   rotationZ: "Rotation Z",
@@ -299,7 +308,7 @@ function renderInspector(
     onUpdateScreenFit: jest.fn(),
     onModelChange: jest.fn(),
     onResetObject: jest.fn(),
-    onCenterObject: jest.fn(),
+    onAlignObject: jest.fn(),
     onThemeColorChange: jest.fn(),
     onThemeChange: jest.fn(),
     onToggleDeviceShell: jest.fn(),
@@ -578,21 +587,48 @@ describe("InspectorPanel", () => {
   });
 
   it("calls reset object from the reset action", () => {
-    const handlers = renderInspector();
+    const handlers = renderInspector({
+      ...createSceneObject({ id: "object-1", modelId: "smartphone", name: "Object 1" }),
+      positionX: 0.5,
+    });
 
     fireEvent.click(screen.getByLabelText("Reset transform"));
 
     expect(handlers.onResetObject).toHaveBeenCalled();
   });
 
-  describe("center in the canvas", () => {
-    it("sits next to Reset in Static", () => {
+  it("dims the reset while the object is already in the default pose", () => {
+    renderInspector();
+
+    expect(screen.getByLabelText("Reset transform")).toBeDisabled();
+  });
+
+  describe("alignment", () => {
+    it("aligns on one axis per button, with Reset still in the header", () => {
       const handlers = renderInspector();
 
-      fireEvent.click(screen.getByLabelText("Center in the canvas"));
+      fireEvent.click(screen.getByLabelText("Align left"));
+      fireEvent.click(screen.getByLabelText("Center vertically"));
 
-      expect(handlers.onCenterObject).toHaveBeenCalled();
+      expect(handlers.onAlignObject).toHaveBeenNthCalledWith(1, {
+        axis: "x",
+        edge: "start",
+      });
+      expect(handlers.onAlignObject).toHaveBeenNthCalledWith(2, {
+        axis: "y",
+        edge: "center",
+      });
       expect(screen.getByLabelText("Reset transform")).toBeInTheDocument();
+    });
+
+    it("splits the buttons in a horizontal and a vertical group", () => {
+      renderInspector();
+
+      const horizontal = screen.getByRole("group", { name: "Horizontal alignment" });
+      const vertical = screen.getByRole("group", { name: "Vertical alignment" });
+
+      expect(horizontal.querySelectorAll("button")).toHaveLength(3);
+      expect(vertical.querySelectorAll("button")).toHaveLength(3);
     });
 
     it("works on the selected keyframe in Motion, where Reset doesn't apply", () => {
@@ -604,14 +640,14 @@ describe("InspectorPanel", () => {
         selectedKeyframeId: object.keyframes[0].id,
       });
 
-      expect(screen.getByLabelText("Center in the canvas")).toBeInTheDocument();
+      expect(screen.getByLabelText("Align top")).toBeInTheDocument();
       expect(screen.queryByLabelText("Reset transform")).toBeNull();
     });
 
     it("is hidden in Motion with no keyframe to edit", () => {
       renderInspector(undefined, { motionTab: "motion" });
 
-      expect(screen.queryByLabelText("Center in the canvas")).toBeNull();
+      expect(screen.queryByLabelText("Align left")).toBeNull();
     });
   });
 

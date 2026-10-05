@@ -420,6 +420,13 @@ export function duplicateSceneObject({
   };
 }
 
+/** Se o objeto já está na pose padrão — aí o reset não teria o que fazer. */
+export function isDefaultObjectTransform(object: SceneObject) {
+  return (
+    Object.keys(DEFAULT_OBJECT_TRANSFORM) as (keyof typeof DEFAULT_OBJECT_TRANSFORM)[]
+  ).every((key) => object[key] === DEFAULT_OBJECT_TRANSFORM[key]);
+}
+
 export function resetSceneObject(object: SceneObject): SceneObject {
   return {
     ...object,

@@ -6,7 +6,7 @@ import type {
 } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, X } from "lucide-react";
+import { ChevronDown, RotateCcw, X } from "lucide-react";
 
 type LayersPanelHeaderProps = {
   action?: ReactNode;
@@ -207,6 +207,39 @@ export function IconButton({
       {...props}
     >
       {children}
+    </button>
+  );
+}
+
+/**
+ * Resetar: só o ícone, sem borda nem rótulo, para não pesar mais que o que
+ * ele reseta. Apagado quando não há nada para voltar ao padrão.
+ *
+ * Usa o `title` do navegador e não o Tooltip: nos painéis com rolagem o
+ * balão seria cortado.
+ */
+export function ResetButton({
+  disabled = false,
+  label,
+  onReset,
+  size = "normal",
+}: {
+  disabled?: boolean;
+  label: string;
+  onReset: () => void;
+  /** `small` dentro de sub-abas; `normal` no título de uma seção. */
+  size?: "normal" | "small";
+}) {
+  return (
+    <button
+      type="button"
+      className={`editor-icon-button editor-reset-button editor-reset-button-${size}`}
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      onClick={onReset}
+    >
+      <RotateCcw size={size === "small" ? 13 : 16} />
     </button>
   );
 }
@@ -628,5 +661,33 @@ export function SidePopover({
       {children}
     </div>,
     document.body,
+  );
+}
+
+/**
+ * Balão com o nome de um botão só de ícone, como os da barra do canvas.
+ *
+ * Vai dentro do próprio botão, que ganha a classe `editor-tooltip-trigger`.
+ * Ser filho, e não um invólucro em volta, deixa o botão continuar sendo
+ * posicionado como sempre — o do canto do canvas, por exemplo, é absoluto e
+ * arrastável. É CSS puro: aparece no hover e no foco por teclado, depois de
+ * um instante, para a barra não piscar quando o mouse só passa por ela.
+ *
+ * `aria-hidden` porque repete o `aria-label` do botão — sem isso o leitor de
+ * tela anunciaria o nome duas vezes. Pelo mesmo motivo o botão não usa mais
+ * `title`, que mostraria um segundo balão, o do navegador.
+ */
+export function Tooltip({
+  label,
+  side = "top",
+}: {
+  label: string;
+  /** Embaixo quando em cima não cabe (ex.: botão no topo da tela). */
+  side?: "bottom" | "top";
+}) {
+  return (
+    <span aria-hidden className={`editor-tooltip editor-tooltip-${side}`}>
+      {label}
+    </span>
   );
 }

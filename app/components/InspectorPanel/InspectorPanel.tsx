@@ -6,12 +6,14 @@ import ColorRow from "../ColorRow/ColorRow";
 import Control from "../Control/Control";
 import CustomSelect, { type CustomSelectOption } from "../CustomSelect/CustomSelect";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
+import type { ObjectAlignment } from "../MockupCanvas/object-alignment";
 import {
   DEFAULT_SCREEN_FIT,
   MAX_SCREEN_CROP,
   MAX_SCREEN_ZOOM,
   MIN_SCREEN_ZOOM,
   getActiveScreenFit,
+  isDefaultObjectTransform,
   isPlaceholderImageUrl,
   type SceneObject,
   type ScreenFit,
@@ -21,6 +23,7 @@ import {
   IconButton,
   InspectorPanelHeader,
   PanelSection,
+  ResetButton,
   SegmentedTabPanel,
   SegmentedTabs,
   SidePopover,
@@ -30,13 +33,17 @@ import {
   type SubTabItem,
 } from "../EditorPrimitives/EditorPrimitives";
 import {
+  AlignCenterHorizontal,
+  AlignCenterVertical,
+  AlignEndHorizontal,
+  AlignEndVertical,
+  AlignStartHorizontal,
+  AlignStartVertical,
   Crop,
   Image as ImageIcon,
   Laptop,
   MoreVertical,
   Pipette,
-  Crosshair,
-  RotateCcw,
   Scaling,
   Smartphone,
   Tablet,
@@ -73,8 +80,8 @@ type InspectorPanelProps = {
   onUpdateScreenFit: (patch: Partial<ScreenFit>) => void;
   onModelChange: (modelId: SceneObject["modelId"]) => void;
   onResetObject: () => void;
-  /** Leva o objeto ao centro da vista, na pose em edição. */
-  onCenterObject: () => void;
+  /** Alinha o objeto ao quadro do canvas, na pose em edição. */
+  onAlignObject: (alignment: ObjectAlignment) => void;
   onThemeColorChange: (part: string, hex: string) => void;
   onThemeChange: (themeId: string) => void;
   onToggleDeviceShell: () => void;
@@ -107,7 +114,7 @@ export default function InspectorPanel({
   onUpdateScreenFit,
   onModelChange,
   onResetObject,
-  onCenterObject,
+  onAlignObject,
   onThemeColorChange,
   onThemeChange,
   onToggleDeviceShell,
@@ -396,40 +403,14 @@ export default function InspectorPanel({
           }
           className="transform-section"
           action={
-            // Com os campos de posição na tela: no Estático, ou num keyframe.
-            motionTab === "static" || editedKeyframe ? (
-              <div className="transform-actions">
-                <div className="transform-reset-wrap">
-                  <span className="transform-reset-label">
-                    {copy.centerObjectLabel}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={onCenterObject}
-                    aria-label={copy.centerObjectButton}
-                    title={copy.centerObjectButton}
-                    className="editor-fab"
-                  >
-                    <Crosshair size={16} />
-                  </button>
-                </div>
-                {/* O reset volta o objeto à pose padrão; no Movimento a pose
-                    é a de cada keyframe, e ele não se aplica. */}
-                {motionTab === "static" ? (
-                  <div className="transform-reset-wrap">
-                    <span className="transform-reset-label">Reset</span>
-                    <button
-                      type="button"
-                      onClick={onResetObject}
-                      aria-label={copy.resetObjectButton}
-                      title={copy.resetObjectButton}
-                      className="editor-fab"
-                    >
-                      <RotateCcw size={16} />
-                    </button>
-                  </div>
-                ) : null}
-              </div>
+            // O reset volta o objeto à pose padrão; no Movimento a pose é a
+            // de cada keyframe, e ele não se aplica.
+            motionTab === "static" ? (
+              <ResetButton
+                disabled={isDefaultObjectTransform(object)}
+                label={copy.resetObjectButton}
+                onReset={onResetObject}
+              />
             ) : undefined
           }
         >
@@ -439,7 +420,9 @@ export default function InspectorPanel({
             </p>
           ) : (
           <div className="transform-groups">
-            <div className="transform-group">
+            <AlignmentControl copy={copy} onAlign={onAlignObject} />
+
+            <div className="transform-group transform-group-offset">
               <Control
                 label={copy.positionX}
                 value={editedTransform.positionX}
@@ -551,6 +534,73 @@ export default function InspectorPanel({
 
       </div>
     </aside>
+  );
+}
+
+/**
+ * Alinhamento ao quadro do canvas: dois trilhos lado a lado, o horizontal
+ * (esquerda, centro, direita) e o vertical (topo, meio, base). São ações,
+ * não estados — nenhum botão fica selecionado.
+ */
+function AlignmentControl({
+  copy,
+  onAlign,
+}: {
+  copy: AppCopy;
+  onAlign: (alignment: ObjectAlignment) => void;
+}) {
+  const groups: {
+    axis: ObjectAlignment["axis"];
+    items: { edge: ObjectAlignment["edge"]; icon: ReactNode; label: string }[];
+    label: string;
+  }[] = [
+    {
+      axis: "x",
+      items: [
+        { edge: "start", icon: <AlignStartVertical size={16} />, label: copy.alignLeft },
+        { edge: "center", icon: <AlignCenterVertical size={16} />, label: copy.alignCenter },
+        { edge: "end", icon: <AlignEndVertical size={16} />, label: copy.alignRight },
+      ],
+      label: copy.alignmentHorizontal,
+    },
+    {
+      axis: "y",
+      items: [
+        { edge: "start", icon: <AlignStartHorizontal size={16} />, label: copy.alignTop },
+        { edge: "center", icon: <AlignCenterHorizontal size={16} />, label: copy.alignMiddle },
+        { edge: "end", icon: <AlignEndHorizontal size={16} />, label: copy.alignBottom },
+      ],
+      label: copy.alignmentVertical,
+    },
+  ];
+
+  return (
+    <div className="transform-group">
+      <span className="transform-reset-label">{copy.alignmentLabel}</span>
+      <div className="transform-align-row">
+        {groups.map((group) => (
+          <div
+            key={group.axis}
+            role="group"
+            aria-label={group.label}
+            className="editor-segmented transform-align-group"
+          >
+            {group.items.map((item) => (
+              <button
+                key={item.edge}
+                type="button"
+                aria-label={item.label}
+                title={item.label}
+                className="editor-segmented-tab"
+                onClick={() => onAlign({ axis: group.axis, edge: item.edge })}
+              >
+                {item.icon}
+              </button>
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -735,16 +785,12 @@ function SubPanelReset({
 }) {
   return (
     <div className="inspector-subpanel-actions">
-      <button
-        type="button"
-        className="editor-icon-button inspector-subpanel-reset"
-        aria-label={label}
-        title={label}
+      <ResetButton
         disabled={disabled}
-        onClick={onReset}
-      >
-        <RotateCcw size={13} />
-      </button>
+        label={label}
+        size="small"
+        onReset={onReset}
+      />
     </div>
   );
 }

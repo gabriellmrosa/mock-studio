@@ -58,7 +58,9 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - template management with inline rename, delete and `Restore framing`, which returns the camera to the pose saved with that template without touching the objects
 - per-object motion: a `Static` / `Motion` switch on the canvas and a timeline with one track per visible object — create a keyframe at the playhead with the track's ◆+ button, drag keyframes in time or shift a whole track, right-click between two keyframes to pick the transition (presets or a `cubic-bezier` curve editor with overshoot), edit the selected keyframe's pose in the Inspector, and press `Space` to play
 - framing actions split by scope: `Fit scene` in the toolbar, `Frame object` in each object's menu
-- `Center` in the `Transform` header: moves the object to the middle of the view (the middle of the export), keeping its distance to the camera
+- `Alignment` at the top of `Transform`: left, center or right and top, middle or bottom, one axis per click, with a small margin — against the video frame in `Motion`, against the part of the canvas visible between the panels in `Static`; the object keeps its distance to the camera
+- tooltips on the canvas toolbar icons, shown on hover and keyboard focus
+- `Reset` as a single icon, dimmed when there is nothing to reset
 - timeline zoom: `−` / `+` in its header or a trackpad pinch inside it, anchored on the playhead or under the fingers, with a ruler that refines to tenths of a second
 - a resizable timeline in `Motion`: drag its top edge (or use the arrow keys on it), double-click to reset; the height is remembered
 - object opacity, part of the pose: set it in `Transform` and, in `Motion`, animate it per keyframe to fade an object in or out

@@ -21,6 +21,7 @@ import {
   ZoomOut,
 } from "lucide-react";
 import ContextMenu from "../ContextMenu/ContextMenu";
+import { Tooltip } from "../EditorPrimitives/EditorPrimitives";
 import ExportPanel, { type ExportTab } from "./ExportPanel";
 import type { Locale } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
@@ -273,85 +274,84 @@ export default function FloatingCanvasControls({
         <button
           ref={toolbarEyeRef}
           type="button"
-          className="editor-fab"
+          className="editor-fab editor-tooltip-trigger"
           role="switch"
           aria-checked={isUiHidden}
           aria-label={hideUiLabel}
-          title={hideUiLabel}
           onClick={toggleUiHidden}
         >
           <EyeOff size={16} />
+          <Tooltip label={hideUiLabel} />
         </button>
         <button
           type="button"
-          className="editor-fab"
+          className="editor-fab editor-tooltip-trigger"
           aria-label={copy.fitSceneButton}
-          title={copy.fitSceneButton}
           onClick={onFitToScene}
         >
           <ScanSearch size={16} />
+          <Tooltip label={copy.fitSceneButton} />
         </button>
         <button
           type="button"
-          className="editor-fab"
+          className="editor-fab editor-tooltip-trigger"
           aria-label={copy.moveUpButton}
-          title={copy.moveUpButton}
           onClick={onPanUp}
         >
           <ArrowUp size={16} />
+          <Tooltip label={copy.moveUpButton} />
         </button>
         <button
           type="button"
-          className="editor-fab"
+          className="editor-fab editor-tooltip-trigger"
           aria-label={copy.moveDownButton}
-          title={copy.moveDownButton}
           onClick={onPanDown}
         >
           <ArrowDown size={16} />
+          <Tooltip label={copy.moveDownButton} />
         </button>
         <button
           type="button"
-          className="editor-fab"
+          className="editor-fab editor-tooltip-trigger"
           aria-label={copy.moveLeftButton}
-          title={copy.moveLeftButton}
           onClick={onPanLeft}
         >
           <ArrowLeft size={16} />
+          <Tooltip label={copy.moveLeftButton} />
         </button>
         <button
           type="button"
-          className="editor-fab"
+          className="editor-fab editor-tooltip-trigger"
           aria-label={copy.moveRightButton}
-          title={copy.moveRightButton}
           onClick={onPanRight}
         >
           <ArrowRight size={16} />
+          <Tooltip label={copy.moveRightButton} />
         </button>
         <button
           type="button"
-          className="editor-fab"
+          className="editor-fab editor-tooltip-trigger"
           aria-label={copy.zoomOutButton}
-          title={copy.zoomOutButton}
           onClick={onZoomOut}
         >
           <ZoomOut size={16} />
+          <Tooltip label={copy.zoomOutButton} />
         </button>
         <button
           type="button"
-          className="editor-fab"
+          className="editor-fab editor-tooltip-trigger"
           aria-label={copy.zoomInButton}
-          title={copy.zoomInButton}
           onClick={onZoomIn}
         >
           <ZoomIn size={16} />
+          <Tooltip label={copy.zoomInButton} />
         </button>
 
         <div className="canvas-color-control">
           <button
             type="button"
-            className="editor-fab"
+            className="editor-fab editor-tooltip-trigger"
             aria-label={copy.backgroundColorButton}
-            title={copy.backgroundColorButton}
             onClick={() => colorInputRef.current?.click()}
           >
             <div
@@ -361,6 +361,7 @@ export default function FloatingCanvasControls({
                 border: circleBorder,
               }}
             />
+            <Tooltip label={copy.backgroundColorButton} />
           </button>
           <input
             ref={colorInputRef}
@@ -430,20 +431,24 @@ export default function FloatingCanvasControls({
         <button
           ref={cornerEyeRef}
           type="button"
-          className={`editor-fab canvas-hide-ui-fab corner-${corner}${
+          className={`editor-fab editor-tooltip-trigger canvas-hide-ui-fab corner-${corner}${
             dragPos ? " is-dragging" : ""
           }`}
           style={dragPos ? { left: dragPos.x, top: dragPos.y } : undefined}
           role="switch"
           aria-checked={isUiHidden}
           aria-label={hideUiLabel}
-          title={hideUiLabel}
           onPointerDown={handleHideUiPointerDown}
           onPointerMove={handleHideUiPointerMove}
           onPointerUp={handleHideUiPointerUp}
           onClick={handleHideUiClick}
         >
           <Eye size={16} />
+          {/* Num canto de cima não cabe em cima: abre para baixo. */}
+          <Tooltip
+            label={hideUiLabel}
+            side={corner.startsWith("top") ? "bottom" : "top"}
+          />
         </button>
       )}
     </>

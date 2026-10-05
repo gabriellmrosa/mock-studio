@@ -139,6 +139,28 @@
   cursor: pointer;
 }
 
+/* --- Reset ---
+   Ícone solto (ver ResetButton). O normal ganha a altura de uma linha de
+   título de seção; o pequeno é o das sub-abas. */
+.editor-reset-button {
+  border-radius: var(--radius-xs);
+}
+
+.editor-reset-button-normal {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+.editor-reset-button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+
+.editor-reset-button:disabled:hover {
+  background: transparent;
+  transform: none;
+}
+
 .editor-icon-button-no-hover-bg:hover {
   background: transparent;
   border-color: transparent;
@@ -631,4 +653,94 @@
 .editor-button-danger:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
   outline-offset: 1px;
+}
+
+/* --- Tooltip ---
+   Balão sobre botões só de ícone (ver o componente Tooltip). Cor invertida,
+   a do botão de ação principal, para destacar sobre a cena 3D em qualquer
+   cor de fundo. */
+
+/* Especificidade zero: um botão já posicionado (ex.: absoluto no canto)
+   continua como está, e serve de referência do mesmo jeito. */
+:where(.editor-tooltip-trigger) {
+  position: relative;
+}
+
+.editor-tooltip {
+  background: var(--button-active-bg);
+  border-radius: var(--radius-sm);
+  color: var(--button-active-fg);
+  font-size: var(--font-size-150);
+  font-weight: var(--font-medium);
+  left: 50%;
+  line-height: 1.2;
+  opacity: 0;
+  padding: var(--space-1) var(--space-2);
+  pointer-events: none;
+  position: absolute;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
+  user-select: none;
+  white-space: nowrap;
+  z-index: 20;
+}
+
+/* A ponta: um quadrado girado, metade para fora da borda do balão. */
+.editor-tooltip::after {
+  background: inherit;
+  border-radius: 2px;
+  content: "";
+  height: 0.5rem;
+  left: 50%;
+  position: absolute;
+  width: 0.5rem;
+}
+
+/* Escondido, o balão fica um pouco recuado na direção do botão e chega
+   deslizando para longe dele. */
+.editor-tooltip-top {
+  bottom: calc(100% + var(--space-2));
+  transform: translate(-50%, 25%);
+}
+
+.editor-tooltip-top::after {
+  bottom: 1px;
+  transform: translate(-50%, 50%) rotate(45deg);
+}
+
+.editor-tooltip-bottom {
+  top: calc(100% + var(--space-2));
+  transform: translate(-50%, -25%);
+}
+
+.editor-tooltip-bottom::after {
+  top: 1px;
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+/* Aparece depois de um instante; some na hora. */
+.editor-tooltip-trigger:hover > .editor-tooltip,
+.editor-tooltip-trigger:focus-visible > .editor-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  transition-delay: 300ms;
+}
+
+/* Clicando ou arrastando, o balão sai da frente. */
+.editor-tooltip-trigger:active > .editor-tooltip,
+.editor-tooltip-trigger.is-dragging > .editor-tooltip {
+  opacity: 0;
+  transition-delay: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor-tooltip {
+    transition: opacity 160ms ease;
+  }
+
+  .editor-tooltip-top,
+  .editor-tooltip-bottom {
+    transform: translate(-50%, 0);
+  }
 }

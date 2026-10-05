@@ -130,8 +130,15 @@ export type AppCopy = {
   motionBezierReset: string;
   motionBezierDone: string;
   resetObjectButton: string;
-  centerObjectLabel: string;
-  centerObjectButton: string;
+  alignmentLabel: string;
+  alignmentHorizontal: string;
+  alignmentVertical: string;
+  alignLeft: string;
+  alignCenter: string;
+  alignRight: string;
+  alignTop: string;
+  alignMiddle: string;
+  alignBottom: string;
   positionX: string;
   positionY: string;
   positionZ: string;
@@ -318,8 +325,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "cubic-bezier": "Cubic bezier",
     },
     resetObjectButton: "Resetar transformação",
-    centerObjectLabel: "Centralizar",
-    centerObjectButton: "Centralizar no canvas",
+    alignmentLabel: "Alinhamento",
+    alignmentHorizontal: "Alinhamento horizontal",
+    alignmentVertical: "Alinhamento vertical",
+    alignLeft: "Alinhar à esquerda",
+    alignCenter: "Centralizar na horizontal",
+    alignRight: "Alinhar à direita",
+    alignTop: "Alinhar ao topo",
+    alignMiddle: "Centralizar na vertical",
+    alignBottom: "Alinhar à base",
     positionX: "Posição X",
     positionY: "Posição Y",
     positionZ: "Posição Z",
@@ -560,8 +574,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "cubic-bezier": "Cubic bezier",
     },
     resetObjectButton: "Reset transform",
-    centerObjectLabel: "Center",
-    centerObjectButton: "Center in the canvas",
+    alignmentLabel: "Alignment",
+    alignmentHorizontal: "Horizontal alignment",
+    alignmentVertical: "Vertical alignment",
+    alignLeft: "Align left",
+    alignCenter: "Center horizontally",
+    alignRight: "Align right",
+    alignTop: "Align top",
+    alignMiddle: "Center vertically",
+    alignBottom: "Align bottom",
     positionX: "Position X",
     positionY: "Position Y",
     positionZ: "Position Z",

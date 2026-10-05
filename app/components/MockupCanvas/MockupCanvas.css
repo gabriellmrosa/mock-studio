@@ -63,6 +63,22 @@
 }
 
 /* Sem painéis, timeline nem toggle: o quadro usa o palco todo. */
+/* O que fica visível do canvas no Estático, onde ele passa por baixo dos
+   painéis: entre eles, abaixo do toggle de modo e acima da barra flutuante.
+   É a referência do alinhamento — invisível, só para medir. */
+.canvas-align-area {
+  bottom: calc(var(--space-6) + var(--canvas-fab-size) + var(--space-4));
+  left: var(--editor-sidebar-width);
+  pointer-events: none;
+  position: absolute;
+  right: var(--editor-sidebar-width);
+  top: calc(
+    var(--canvas-mode-toggle-top) + var(--canvas-mode-toggle-height) +
+      var(--space-4)
+  );
+  visibility: hidden;
+}
+
 .canvas-viewport.is-framed.is-ui-hidden {
   inset: var(--space-6);
 }

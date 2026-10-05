@@ -6,6 +6,7 @@ import {
   getPlaceholderImageUrl,
   getSequentialSpawnTransform,
   isPlaceholderImageUrl,
+  isDefaultObjectTransform,
   resetSceneObject,
 } from "./scene-objects";
 import {
@@ -146,6 +147,9 @@ describe("scene-objects", () => {
     expect(reset.rotationZ).toBe(0);
     expect(reset.scale).toBe(1);
     expect(reset.isVisible).toBe(false);
+    expect(isDefaultObjectTransform(modified)).toBe(false);
+    expect(isDefaultObjectTransform(reset)).toBe(true);
+    expect(isDefaultObjectTransform({ ...reset, opacity: 0.5 })).toBe(false);
   });
 
   it("changes model and refreshes placeholder/theme defaults without moving the object", () => {

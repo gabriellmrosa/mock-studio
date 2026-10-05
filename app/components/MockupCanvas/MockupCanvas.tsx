@@ -61,6 +61,13 @@ import {
   createVideoFrameRenderer,
   encodeVideo,
 } from "./export-video";
+import {
+  FULL_ALIGNMENT_AREA,
+  collectWorldVertices,
+  getAlignmentOffset,
+  type AlignmentArea,
+  type ObjectAlignment,
+} from "./object-alignment";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
 import TimelineResizeHandle, {
   clampTimelineHeight,
@@ -136,11 +143,14 @@ type MockupCanvasProps = {
 export type CameraApi = {
   fitObject: (id: string) => void;
   /**
-   * Quanto mover um objeto, em coordenadas do mundo, para o centro dele cair
-   * no centro da vista — o centro da imagem ou do vídeo exportado —, sem mudar
-   * a distância até a câmera. `null` se o objeto não está na cena.
+   * Quanto mover um objeto, em coordenadas do mundo, para alinhá-lo ao quadro
+   * do canvas — no Movimento, o do vídeo exportado —, sem mudar a distância
+   * até a câmera. `null` se o objeto não está na cena.
    */
-  getCenteringOffset: (id: string) => [number, number, number] | null;
+  getAlignmentOffset: (
+    id: string,
+    alignment: ObjectAlignment,
+  ) => [number, number, number] | null;
   getPose: () => CameraPose | null;
   setPose: (pose: CameraPose) => void;
 };
@@ -159,6 +169,8 @@ export type SpawnOverrides = Record<number, [number, number, number]>;
 export type ScaleOverrides = Record<number, number>;
 
 type SceneBridgeProps = MockupCanvasProps & {
+  /** A área de referência do alinhamento no Estático (ver `.canvas-align-area`). */
+  alignmentAreaRef: { current: HTMLDivElement | null };
   canvasBgColor: string | null;
   // true quando todos os objetos visíveis já resolveram — só então a pose
   // pendente é considerada aplicada em definitivo.
@@ -294,6 +306,7 @@ function OpacityController({
 }
 
 function SceneBridge({
+  alignmentAreaRef,
   isSceneSettled,
   objects,
   onCameraApiReady,
@@ -526,6 +539,7 @@ function SceneBridge({
           objects={objects}
         />
         <BoundsResetController
+          alignmentAreaRef={alignmentAreaRef}
           controlsRef={controlsRef}
           isSceneSettled={isSceneSettled}
           onCameraApiReady={onCameraApiReady}
@@ -733,7 +747,34 @@ function fitWithMargin(
   controls.fitToBox(box, true);
 }
 
+/**
+ * A área do alinhamento em frações do canvas. No Estático o canvas passa por
+ * baixo dos painéis e da barra flutuante, e a área é o que sobra visível
+ * (`.canvas-align-area`, desenhada em CSS com os mesmos tokens do quadro do
+ * Movimento). No Movimento — ou sem a interface — não há essa área: vale o
+ * canvas todo, que é o quadro do vídeo.
+ */
+function measureAlignmentArea(
+  canvas: HTMLCanvasElement,
+  areaElement: HTMLDivElement | null,
+): AlignmentArea {
+  const canvasRect = canvas.getBoundingClientRect();
+  const areaRect = areaElement?.getBoundingClientRect();
+
+  if (!areaRect || canvasRect.width === 0 || canvasRect.height === 0) {
+    return FULL_ALIGNMENT_AREA;
+  }
+
+  return {
+    bottom: (areaRect.bottom - canvasRect.top) / canvasRect.height,
+    left: (areaRect.left - canvasRect.left) / canvasRect.width,
+    right: (areaRect.right - canvasRect.left) / canvasRect.width,
+    top: (areaRect.top - canvasRect.top) / canvasRect.height,
+  };
+}
+
 function BoundsResetController({
+  alignmentAreaRef,
   controlsRef,
   isSceneSettled,
   onCameraApiReady,
@@ -743,6 +784,7 @@ function BoundsResetController({
   onViewportControlsReady,
   sceneRef,
 }: {
+  alignmentAreaRef: { current: HTMLDivElement | null };
   controlsRef: { current: CameraControlsImpl | null };
   isSceneSettled: boolean;
   onCameraApiReady: (api: CameraApi | null) => void;
@@ -874,28 +916,22 @@ function BoundsResetController({
 
         fitWithMargin(controls, target);
       },
-      getCenteringOffset: (id) => {
+      getAlignmentOffset: (id, alignment) => {
         const target = sceneRef.current?.getObjectByName(id);
+        const camera = controls.camera;
 
-        if (!target) {
+        if (!target || !(camera instanceof THREE.PerspectiveCamera)) {
           return null;
         }
 
-        const center = new THREE.Box3()
-          .setFromObject(target)
-          .getCenter(new THREE.Vector3());
-        const eye = controls.getPosition(new THREE.Vector3());
-        const viewDirection = controls
-          .getTarget(new THREE.Vector3())
-          .sub(eye)
-          .normalize();
-        // O ponto do eixo da vista na mesma profundidade do objeto: levar o
-        // centro até ele centraliza sem aproximar nem afastar.
-        const depth = center.clone().sub(eye).dot(viewDirection);
-        const onAxis = eye.add(viewDirection.multiplyScalar(depth));
-        const offset = onAxis.sub(center);
+        const offset = getAlignmentOffset(
+          collectWorldVertices(target),
+          camera,
+          alignment,
+          measureAlignmentArea(gl.domElement, alignmentAreaRef.current),
+        );
 
-        return [offset.x, offset.y, offset.z];
+        return offset ? [offset.x, offset.y, offset.z] : null;
       },
       getPose: () => {
         const position = controls.getPosition(new THREE.Vector3());
@@ -917,7 +953,7 @@ function BoundsResetController({
     return () => {
       onCameraApiReady(null);
     };
-  }, [controlsRef, onCameraApiReady, sceneRef]);
+  }, [alignmentAreaRef, controlsRef, gl, onCameraApiReady, sceneRef]);
 
   useEffect(() => {
     const controls = controlsRef.current;
@@ -992,6 +1028,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     }
   }
   const videoExportHandlerRef = useRef<VideoExportHandler | null>(null);
+  const alignmentAreaRef = useRef<HTMLDivElement | null>(null);
   const [isVideoExportReady, setIsVideoExportReady] = useState(false);
   // Quadros prontos da exportação de vídeo em curso; null = nenhuma.
   const [videoProgress, setVideoProgress] = useState<{
@@ -1254,6 +1291,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       >
         <SceneBridge
           {...props}
+          alignmentAreaRef={alignmentAreaRef}
           canvasBgColor={canvasBgColor}
           isSceneSettled={isSceneSettled}
           onExportReady={handleExportReady}
@@ -1267,6 +1305,12 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       </Canvas>
       </div>
       </div>
+
+      {/* Não aparece: só marca o que fica visível do canvas no Estático, para
+          o alinhamento medir (ver measureAlignmentArea). */}
+      {!isFramed && !props.isUiHidden ? (
+        <div ref={alignmentAreaRef} className="canvas-align-area" aria-hidden />
+      ) : null}
 
       {/* Enquanto o template assenta, bloqueia a interação com a cena para
           que um arraste acidental não estrague o enquadramento restaurado. */}

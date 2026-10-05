@@ -19,6 +19,7 @@ import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
 import MotionTimeline from "./components/MotionTimeline/MotionTimeline";
 import MockupCanvas from "./components/MockupCanvas/MockupCanvas";
+import type { ObjectAlignment } from "./components/MockupCanvas/object-alignment";
 import Snackbar, {
   type SnackbarNotification,
 } from "./components/Snackbar/Snackbar";
@@ -797,14 +798,17 @@ export default function Home() {
   // Em Movimento os controles editam o keyframe selecionado; em Estático, a
   // pose do objeto. Cada modo escreve só no seu lado.
   /**
-   * Leva o objeto ao centro da vista (o centro do que se exporta), na mesma
-   * distância da câmera. Grava na pose em edição: a do objeto no Estático, a
-   * do keyframe selecionado no Movimento.
+   * Alinha o objeto ao quadro do canvas num eixo, na mesma distância da
+   * câmera. Grava na pose em edição: a do objeto no Estático, a do keyframe
+   * selecionado no Movimento.
    */
-  function handleCenterObject() {
+  function handleAlignObject(alignment: ObjectAlignment) {
     if (!selectedObject) return;
 
-    const offset = cameraApiRef.current?.getCenteringOffset(selectedObject.id);
+    const offset = cameraApiRef.current?.getAlignmentOffset(
+      selectedObject.id,
+      alignment,
+    );
     const pose =
       motionTab === "motion" ? selectedKeyframe?.transform : selectedObject;
 
@@ -1016,7 +1020,7 @@ export default function Home() {
         }}
         onModelChange={handleModelChange}
         onResetObject={handleResetObject}
-        onCenterObject={handleCenterObject}
+        onAlignObject={handleAlignObject}
         onThemeColorChange={handleThemeColorChange}
         onThemeChange={handleThemeChange}
         onToggleDeviceShell={() =>

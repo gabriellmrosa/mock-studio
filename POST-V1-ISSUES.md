@@ -144,7 +144,7 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] from the default height (`--motion-timeline-height`, the smallest that fits the header and a track) up to half the window, so the canvas never disappears; the choice is remembered in the browser
 - [x] the height lives in one token: the stage overrides it, and the timeline, the floating toolbar above it and the video frame all follow — the frame shrinks without changing its aspect ratio, so the camera needs no refit
 
-## 16. Center in the canvas — done
+## 16. Center in the canvas — done (replaced by #22)
 
 - [x] `Center` sits next to `Reset` in the `Transform` header and moves the selected object to the middle of the view — the middle of the exported image or video —, keeping its distance to the camera, so it doesn't grow or shrink
 - [x] "the middle" is the camera's axis, not the world origin: with the view panned or orbited, zeroing the position would leave the object off-center; the offset is measured from the object's bounding box and converted back into the position fields
@@ -188,3 +188,25 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - the loading-state part dates back to March (`2906568`); the video export registration added one more trigger, and the editor's growing per-render work made the loop noticeable
 - fix: the callbacks are stable (`useCallback`, they only touch setters and refs), list updates return the same array when nothing changes, and the page's camera callback is stable too
 - after: zero renders while idle in both modes; dragging the playhead renders in proportion to the movement (4–8 renders for a full drag)
+
+## 22. Alignment in Transform — done
+
+- [x] an `Alignment` group at the top of the `Transform` list replaces the `Center` button: two rails side by side, left · center · right and top · middle · bottom, one axis per button, so aligning left keeps the height already set; centering both ways is center + middle
+- [x] the reference is what the person frames: the video frame in `Motion`; in `Static` the canvas runs under the panels and the floating toolbar, so the area is the part left visible between them (`.canvas-align-area`, an invisible element laid out in CSS with the same tokens as the `Motion` frame, measured on click); with the UI hidden, the whole canvas
+- [x] a margin of 5% of the area's shorter side (`ALIGNMENT_MARGIN`), the same on both axes, so the device's edge and shadow don't touch the border
+- [x] the edge is the object's projected silhouette (its vertices on screen), not its 3D box, which is much larger on a rotated device; the object moves parallel to the screen, keeping its distance to the camera, and a few correction steps absorb the perspective
+- [x] in `Motion` it writes to the selected keyframe's pose, and shows whenever the position fields do
+- an object larger than the area overflows the opposite side: alignment moves, it doesn't resize
+
+## 23. Tooltips on the canvas toolbar — done
+
+- [x] a `Tooltip` primitive with the look of the social icons' balloon on gabriellamas-site: inverted colors (`--button-active-bg` / `--button-active-fg`), `--radius-sm`, a small pointer, fading up into place
+- [x] pure CSS, no state: it lives inside the button (`editor-tooltip-trigger`), so buttons keep their own positioning — the draggable corner toggle included —, shows on hover and `:focus-visible` after 300 ms so the toolbar doesn't flicker as the mouse passes, hides at once, on click and while dragging
+- [x] `aria-hidden`, since it repeats the button's `aria-label`; the buttons dropped `title`, which would show a second, native tooltip
+- [x] opens downward when the hide-UI toggle sits in a top corner; `Export` has a text label and no tooltip
+- panels scroll and would clip the balloon, so icons inside them keep `title` for now; using it there needs a portal
+
+## 24. Reset as an icon — done
+
+- [x] `ResetButton` primitive: the rotate icon alone, no label or border, in `normal` (section headers) and `small` (sub-tab panels) sizes — `Transform` and the screen `Fit` / `Crop` panels now share it
+- [x] dimmed while there is nothing to reset: in `Transform` when the object is already in the default pose (`isDefaultObjectTransform`: position, rotation, scale and opacity)

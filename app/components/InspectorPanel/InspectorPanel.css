@@ -212,18 +212,6 @@
   padding: var(--space-6);
 }
 
-.transform-actions {
-  align-items: center;
-  display: flex;
-  gap: var(--space-4);
-}
-
-.transform-reset-wrap {
-  align-items: center;
-  display: flex;
-  gap: var(--space-2);
-}
-
 .transform-reset-label {
   color: var(--sidebar-muted);
   font-size: var(--font-size-150);
@@ -244,6 +232,18 @@
 
 .transform-group-offset {
   margin-top: var(--space-8);
+}
+
+/* Alinhamento: os trilhos horizontal e vertical lado a lado, dividindo a
+   largura. O trilho é o do controle segmentado, sem a margem de baixo. */
+.transform-align-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.transform-align-group {
+  flex: 1;
+  margin-bottom: 0;
 }
 
 .debug-toggle-button {
@@ -321,9 +321,4 @@
   display: flex;
   justify-content: flex-end;
   margin-bottom: calc(var(--space-1) * -1);
-}
-
-.inspector-subpanel-reset:disabled {
-  cursor: default;
-  opacity: 0.35;
 }
