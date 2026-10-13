@@ -56,6 +56,9 @@ import {
   formatTimestampForFilename,
 } from "./export-photo";
 import ActivityNotice from "../ActivityNotice/ActivityNotice";
+import ExportProgressDialog, {
+  type VideoExportProgress,
+} from "../FloatingCanvasControls/ExportProgressDialog";
 import {
   VideoExportCanceledError,
   createVideoFrameRenderer,
@@ -73,6 +76,7 @@ import TimelineResizeHandle, {
   clampTimelineHeight,
 } from "../MotionTimeline/TimelineResizeHandle";
 import {
+  estimateRemainingMs,
   getVideoExportFilename,
   getVideoExportSize,
   getVideoFrameTimes,
@@ -1031,11 +1035,11 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const alignmentAreaRef = useRef<HTMLDivElement | null>(null);
   const [isVideoExportReady, setIsVideoExportReady] = useState(false);
   // Quadros prontos da exportação de vídeo em curso; null = nenhuma.
-  const [videoProgress, setVideoProgress] = useState<{
-    done: number;
-    total: number;
-  } | null>(null);
+  const [videoProgress, setVideoProgress] =
+    useState<VideoExportProgress | null>(null);
   const videoAbortRef = useRef<AbortController | null>(null);
+  // Estável: o Dialog reassina o teclado quando o callback muda.
+  const cancelVideoExport = useCallback(() => videoAbortRef.current?.abort(), []);
   // Mesma conta da timeline: até o último keyframe ou o fim do último vídeo.
   const sceneDurationMs = getSceneMotionDuration(props.objects);
 
@@ -1179,8 +1183,10 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     const frameTimes = getVideoFrameTimes(sceneDurationMs, settings.fps);
     const controller = new AbortController();
 
+    const startedAt = performance.now();
+
     videoAbortRef.current = controller;
-    setVideoProgress({ done: 0, total: frameTimes.length });
+    setVideoProgress({ done: 0, remainingMs: null, total: frameTimes.length });
 
     try {
       const blob = await exportVideo({
@@ -1189,7 +1195,16 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           ? (canvasBgColor ?? DEFAULT_BG[props.uiTheme])
           : null,
         frameTimes,
-        onProgress: (done, total) => setVideoProgress({ done, total }),
+        onProgress: (done, total) =>
+          setVideoProgress({
+            done,
+            remainingMs: estimateRemainingMs(
+              performance.now() - startedAt,
+              done,
+              total,
+            ),
+            total,
+          }),
         settings,
         signal: controller.signal,
         size,
@@ -1321,25 +1336,14 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       ) : null}
 
       {/* Exportando vídeo, a cena é do exportador quadro a quadro: mexer nela
-          agora estragaria o arquivo. O aviso mostra o progresso e cancela. */}
-      {videoProgress ? (
-        <div className="canvas-blocking-overlay">
-          <ActivityNotice
-            label={props.copy.videoExportProgress
-              .replace("{done}", String(videoProgress.done))
-              .replace("{total}", String(videoProgress.total))}
-            action={
-              <button
-                type="button"
-                className="activity-notice-action"
-                onClick={() => videoAbortRef.current?.abort()}
-              >
-                {props.copy.videoExportCancel}
-              </button>
-            }
-          />
-        </div>
-      ) : null}
+          — ou nos painéis — agora estragaria o arquivo. O dialog cobre tudo,
+          mostra o progresso e cancela. */}
+      <ExportProgressDialog
+        copy={props.copy}
+        locale={props.locale}
+        progress={videoProgress}
+        onCancel={cancelVideoExport}
+      />
 
       <div
         className={`canvas-stage-overlay${

@@ -111,6 +111,12 @@ export type AppCopy = {
   videoExportCancel: string;
   /** `{done}` e `{total}` são trocados pelos números. */
   videoExportProgress: string;
+  videoExportProgressTitle: string;
+  videoExportEstimating: string;
+  /** `{time}` é trocado pelo tempo, já com a unidade. */
+  videoExportRemaining: string;
+  videoExportFinishing: string;
+  videoExportHint: string;
   videoExportUnsupported: string;
   videoExportSafariTransparent: string;
   videoExportSuccess: string;
@@ -295,7 +301,13 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     videoExportFps: "Quadros por segundo",
     videoExportResolution: "Resolução",
     videoExportCancel: "Cancelar",
-    videoExportProgress: "Exportando vídeo · {done}/{total}",
+    videoExportProgress: "Quadro {done} de {total}",
+    videoExportProgressTitle: "Exportando vídeo",
+    videoExportEstimating: "Calculando o tempo restante…",
+    videoExportRemaining: "Cerca de {time} restantes",
+    videoExportFinishing: "Finalizando o arquivo…",
+    videoExportHint:
+      "Pode usar outra aba enquanto isso. Ao terminar, o vídeo vai para a sua pasta de downloads.",
     videoExportUnsupported: "Este navegador não exporta esse formato. Use o Chrome ou o Edge.",
     videoExportSafariTransparent:
       "O Safari ainda não mostra vídeos sem fundo. Para exportar com transparência, abra o Mock Studio no Chrome, Edge ou Firefox.",
@@ -541,7 +553,13 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     videoExportFps: "Frame rate",
     videoExportResolution: "Resolution",
     videoExportCancel: "Cancel",
-    videoExportProgress: "Exporting video · {done}/{total}",
+    videoExportProgress: "Frame {done} of {total}",
+    videoExportProgressTitle: "Exporting video",
+    videoExportEstimating: "Estimating time left…",
+    videoExportRemaining: "About {time} left",
+    videoExportFinishing: "Finishing the file…",
+    videoExportHint:
+      "You can use another tab meanwhile. When it's done, the video goes to your downloads folder.",
     videoExportUnsupported: "This browser can't export this format. Use Chrome or Edge.",
     videoExportSafariTransparent:
       "Safari doesn't show transparent videos yet. To export with transparency, open Mock Studio in Chrome, Edge or Firefox.",

@@ -18,6 +18,12 @@ type DialogProps = {
   children?: ReactNode;
   className?: string;
   description?: string;
+  /**
+   * `false` para um trabalho em curso (ex.: exportar um vídeo): Esc e clique
+   * fora não fazem nada, e só o botão de cancelar interrompe — um toque sem
+   * querer não joga fora minutos de trabalho.
+   */
+  dismissible?: boolean;
   /** No rodapé, à esquerda das ações (ex.: um checkbox que vale para a ação). */
   footerStart?: ReactNode;
   isOpen: boolean;
@@ -38,7 +44,8 @@ const FOCUSABLE =
  * finais dos apps de criação — primeiro se configura, depois se confirma.
  * Cancelar fica sempre à esquerda das ações, e a principal é a última.
  *
- * Esc e clique fora contam como cancelar, nunca como confirmar. Um Esc que
+ * Esc e clique fora contam como cancelar, nunca como confirmar (ou nada,
+ * com `dismissible={false}`). Um Esc que
  * outro controle já tratou (um select aberto, que fecha a lista) não fecha o
  * dialog. O Tab fica preso dentro dele, e o foco volta para quem o abriu.
  */
@@ -48,6 +55,7 @@ export default function Dialog({
   children,
   className = "",
   description,
+  dismissible = true,
   footerStart,
   isOpen,
   onCancel,
@@ -71,7 +79,11 @@ export default function Dialog({
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape" && !event.defaultPrevented) {
         event.preventDefault();
-        onCancel();
+
+        if (dismissible) {
+          onCancel();
+        }
+
         return;
       }
 
@@ -104,14 +116,18 @@ export default function Dialog({
       window.removeEventListener("keydown", handleKeyDown);
       previouslyFocused?.focus?.();
     };
-  }, [isOpen, onCancel]);
+  }, [dismissible, isOpen, onCancel]);
 
   if (!isOpen) {
     return null;
   }
 
   return createPortal(
-    <div className="dialog-overlay" onClick={onCancel} role="presentation">
+    <div
+      className="dialog-overlay"
+      onClick={dismissible ? onCancel : undefined}
+      role="presentation"
+    >
       <div
         ref={panelRef}
         className={`dialog ${className}`.trim()}

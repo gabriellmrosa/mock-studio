@@ -117,6 +117,54 @@
   color: var(--danger-fg);
 }
 
+/* --- Progresso da exportação de vídeo (ExportProgressDialog) --- */
+.export-progress-dialog {
+  max-width: 26rem;
+}
+
+.export-progress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* A barra: o trilho na superfície sutil, o preenchimento na cor da ação
+   principal, a mesma do botão Exportar. Sem transição: o progresso já chega
+   a cada quadro, e com a página ocupada renderizando, uma animação de
+   largura ficaria para trás do número. */
+.export-progress-track {
+  background: var(--surface-subtle);
+  border-radius: var(--radius-full);
+  height: 0.375rem;
+  overflow: hidden;
+}
+
+.export-progress-fill {
+  background: var(--button-active-bg);
+  border-radius: inherit;
+  height: 100%;
+}
+
+.export-progress-row {
+  color: var(--sidebar-muted);
+  display: flex;
+  font-size: var(--font-size-150);
+  font-variant-numeric: tabular-nums;
+  justify-content: space-between;
+}
+
+.export-progress-copy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.export-progress-status {
+  color: var(--foreground);
+  font-size: var(--font-size-200);
+  margin: 0;
+}
+
 .export-swatch {
   border-radius: var(--radius-xs);
   flex-shrink: 0;

@@ -1,16 +1,12 @@
 import "./ActivityNotice.css";
-import type { ReactNode } from "react";
 
 type ActivityNoticeProps = {
-  /** Uma ação ao lado do texto, como cancelar uma exportação longa. */
-  action?: ReactNode;
   className?: string;
   label: string;
   variant?: "centered" | "inline";
 };
 
 export default function ActivityNotice({
-  action,
   className,
   label,
   variant = "inline",
@@ -33,7 +29,6 @@ export default function ActivityNotice({
         >
           {label}
         </p>
-        {action}
       </div>
     </div>
   );

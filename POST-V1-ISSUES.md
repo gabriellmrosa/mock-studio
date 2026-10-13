@@ -48,7 +48,7 @@
 - [x] `Save as template` became a checkbox, checked by default and remembered, and applies to image and video exports alike
 - [x] frames are rendered one at a time, not recorded: each frame poses the scene at its instant, seeks every screen video to the exact frame and renders with the PNG's supersampling — a slow machine takes longer but drops nothing, and the tab can stay in the background (R3F's `advance()` drives the frame, not `requestAnimationFrame`)
 - [x] encoding uses WebCodecs through `mediabunny` (MPL-2.0), loaded only on the first video export; Chrome's native encoder has no alpha, so `mediabunny` encodes the transparency as a second VP9 stream, which Chrome, Edge and Firefox play back as a transparent WebM
-- [x] the video ends exactly on the final pose (the last frame is the scene's last instant), with progress and cancel in the canvas notice; the canvas is blocked meanwhile, and the file uses the scene as it was when the export started, so editing in the panels can't change it halfway
+- [x] the video ends exactly on the final pose (the last frame is the scene's last instant), with progress and cancel shown while it renders (see #26); the scene is blocked meanwhile, and the file uses the scene as it was when the export started, so editing in the panels can't change it halfway
 - measured: 4 s at 1080p60 in about 16 s, 1.4 MB; the result was checked with `ffprobe` (frame count, frame rate, alpha) and frame by frame against a counter video on the screen
 - `MediaRecorder` was ruled out: real-time capture drops frames under load and its quality is limited
 - Safari doesn't show WebM transparency yet (announced for Safari 27); its own format, HEVC with alpha, can't be encoded in Chrome — a site targeting Safari needs a still fallback for now
@@ -222,4 +222,13 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - a destination folder picker was considered and dropped: only Chrome and Edge can open a native "Save as", the other browsers always use their downloads folder
 - the button stays `Export`, not `Download`: the dialog sets format, size and transparency first, as in editing tools
 - next: a `Copy project link` carrying the scene in the URL hash, so a Safari user can reopen it in another browser (templates live in each browser's `localStorage`; screen images and videos would still need re-uploading)
+
+## 26. Video export progress as a dialog — done
+
+- [x] the progress moved from a small notice over the canvas to the shared `Dialog`, behind the backdrop: the panels stayed exposed before, though editing anything mid-export would change the file
+- [x] a progress bar (`--surface-subtle` track, `--button-active-bg` fill), `Frame 220 of 1,040` and the percentage, the time left (`About 2 minutes left`, in steps of 5 s under a minute) and a hint: another tab can be used meanwhile, and the file lands in the downloads folder
+- [x] the estimate (`estimateRemainingMs`) comes from the pace so far, measured in the progress callback; it waits for 10 frames and 1.5 s, since the first frames include loading the encoder and the first video seeks, and reads `Finishing the file…` once every frame is done
+- [x] `Dialog` gained `dismissible={false}`: `Escape` and outside clicks do nothing, so only `Cancel` stops minutes of work; cancelling still downloads nothing and shows no error
+- the bar has no width transition: the page is busy rendering frames, so an animated width fell far behind the number (41% with an almost empty bar); progress already arrives every frame
+- the photo export keeps its short canvas notice: it takes a moment, not minutes
 

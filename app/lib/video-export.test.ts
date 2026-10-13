@@ -1,5 +1,6 @@
 import {
   DEFAULT_VIDEO_EXPORT_SETTINGS,
+  estimateRemainingMs,
   getVideoExportFilename,
   getVideoExportFormat,
   getVideoExportSize,
@@ -51,5 +52,15 @@ describe("video export", () => {
         "2026-09-30_10-00-00",
       ),
     ).toBe("mock-photo-648x412-30fps-2026-09-30_10-00-00.webm");
+  });
+
+  it("estimates the time left from the pace so far, once there is a pace", () => {
+    // 100 quadros em 10 s: 0,1 s por quadro, faltam 900.
+    expect(estimateRemainingMs(10_000, 100, 1000)).toBe(90_000);
+    // Cedo demais para dizer.
+    expect(estimateRemainingMs(10_000, 5, 1000)).toBeNull();
+    expect(estimateRemainingMs(800, 20, 1000)).toBeNull();
+    // Todos os quadros prontos: só falta fechar o arquivo.
+    expect(estimateRemainingMs(10_000, 1000, 1000)).toBeNull();
   });
 });

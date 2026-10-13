@@ -76,3 +76,23 @@ export function getVideoExportFilename(
 ) {
   return `mock-photo-${size.width}x${size.height}-${settings.fps}fps-${timestamp}.${getVideoExportFormat(settings)}`;
 }
+
+/**
+ * Tempo que falta, em ms, pelo ritmo até aqui. `null` enquanto o ritmo ainda
+ * não diz nada: nos primeiros quadros entram o carregamento do codificador e
+ * a primeira busca nos vídeos, e a estimativa sairia muito alta.
+ */
+export function estimateRemainingMs(
+  elapsedMs: number,
+  done: number,
+  total: number,
+) {
+  const MIN_FRAMES = 10;
+  const MIN_ELAPSED_MS = 1500;
+
+  if (done < MIN_FRAMES || elapsedMs < MIN_ELAPSED_MS || done >= total) {
+    return null;
+  }
+
+  return (elapsedMs / done) * (total - done);
+}
