@@ -1,26 +1,17 @@
 import {
-  findVideoExportPreset,
+  DEFAULT_VIDEO_EXPORT_SETTINGS,
   getVideoExportFilename,
   getVideoExportFormat,
-  getVideoExportPreset,
   getVideoExportSize,
   getVideoFrameTimes,
 } from "./video-export";
 
 describe("video export", () => {
-  it("maps each preset to its settings and back", () => {
-    for (const id of ["social", "web", "master"] as const) {
-      expect(findVideoExportPreset(getVideoExportPreset(id))).toBe(id);
-    }
-
-    expect(
-      findVideoExportPreset({ background: false, fps: 60, scale: 2 }),
-    ).toBeNull();
-  });
-
   it("uses WebM for transparent video and MP4 otherwise", () => {
-    expect(getVideoExportFormat(getVideoExportPreset("web"))).toBe("webm");
-    expect(getVideoExportFormat(getVideoExportPreset("social"))).toBe("mp4");
+    expect(
+      getVideoExportFormat({ ...DEFAULT_VIDEO_EXPORT_SETTINGS, background: false }),
+    ).toBe("webm");
+    expect(getVideoExportFormat(DEFAULT_VIDEO_EXPORT_SETTINGS)).toBe("mp4");
   });
 
   it("scales the frame, capping the longest side at 4K", () => {
@@ -56,7 +47,7 @@ describe("video export", () => {
     expect(
       getVideoExportFilename(
         { height: 412, width: 648 },
-        getVideoExportPreset("web"),
+        { background: false, fps: 30, scale: 1 },
         "2026-09-30_10-00-00",
       ),
     ).toBe("mock-photo-648x412-30fps-2026-09-30_10-00-00.webm");

@@ -48,11 +48,12 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - per-model options like the device body toggle, the notebook keyboard and the tablet screen bezel, all as switches
 - per-object transform controls for position, rotation and scale
 - device themes plus manual color customization by semantic part
-- PNG export in two modes from the `Export` menu: transparent, or with the canvas background color and floor grid baked in
-- export resolution menu with `1920x1080`, `2560x1440` and `3840x2160` presets
+- an `Export` dialog in the middle of the screen, behind a dimmed backdrop: choose everything first — format, size, background — then export once; `Cancel`, `Escape` or a click outside closes it
+- PNG export in two modes: transparent, or with the canvas background color and floor grid baked in
+- image sizes `1920 × 1080`, `2560 × 1440` and `3840 × 2160`, remembered between exports
 - supersampled (SSAA) rendering for sharper, screenshot-grade exports
 - export feedback chip while the PNG is being prepared
-- scene templates stored in `localStorage`: composition, background color and camera pose — plus every keyframe when saved in `Motion` — saved from the `Templates` section or along with an export (the `Save as template` checkbox in the `Export` menu, checked by default)
+- scene templates stored in `localStorage`: composition, background color and camera pose — plus every keyframe when saved in `Motion` — saved from the `Templates` section or along with an export (the `Save as template` checkbox in the `Export` dialog, checked by default)
 - `Static` and `Motion` are separate environments: each keeps its own scene and its own template list, and the first visit to `Motion` starts from a copy of the static scene
 - switching environments or opening a template with unsaved changes asks first, offering to save a template before leaving
 - template management with inline rename, delete and `Restore framing`, which returns the camera to the pose saved with that template without touching the objects
@@ -66,7 +67,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - object opacity, part of the pose: set it in `Transform` and, in `Motion`, animate it per keyframe to fade an object in or out
 - in `Motion` an animated object enters the scene at its first keyframe — drag its track forward and it isn't there before — and stays on its final pose after the last one
 - a video size for `Motion` (1920 × 1080 by default), set from the timeline header with 16:9, 1:1, 4:5 and 9:16 presets or width and height in pixels, with an optional aspect-ratio lock; the canvas takes that shape, and `Motion` templates store it
-- video export from `Motion`, in the `Video` tab of the `Export` menu: destinations — social (MP4 with background, 60 fps), website (transparent WebM, 30 fps) and highest quality (MP4, 2×) — with background, frame rate and resolution under `Customize`; progress and cancel show in the canvas notice
+- video export from `Motion`, where the `Export` dialog opens on `Video`: background (MP4 with it, transparent WebM without), frame rate (30 or 60 fps) and resolution (1× or 2×), with a one-line summary; progress and cancel show in the canvas notice. In Safari, which doesn't show transparent video yet, choosing a transparent video shows a note suggesting Chrome, Edge or Firefox
 - distraction-free `Hide UI` mode with a toggle you can drag to any canvas corner, animating between the toolbar and the corner it snaps to
 - layered selection flow via list and direct interaction in the 3D scene
 - `pt-BR` and `en-US` UI support
@@ -185,7 +186,7 @@ Checklist:
 - placeholder text size is a fraction of the image height so it reads at a consistent visual size across models; `smartwatch` and `notebook` use a larger fraction because their screen is a smaller part of the framed device
 - new objects spawn after the rightmost object on the default plane, even when models differ
 - duplicated objects also reuse the anti-overlap spawn logic on the same plane
-- the `Export` menu has a background mode selector (transparent vs. canvas background) above the `1920x1080`, `2560x1440` and `3840x2160` resolution presets, all active; the chosen mode is remembered via `localStorage`
+- the `Export` dialog is built on the shared `Dialog` component (also behind the `AlertDialog` confirmations): every choice is a `CustomSelect`, and the background and size choices are remembered via `localStorage`
 - exporting with the canvas background also bakes in the floor grid; transparent exports omit both for a clean cutout
 - PNG export renders offscreen at 2x internally (SSAA) and downscales, for sharp edges without visible canvas distortion during capture
 - side panels overlay the canvas (`position: absolute`) so the 3D scene spans the full viewport behind them and never resizes or re-fits the camera when panels toggle

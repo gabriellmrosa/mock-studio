@@ -24,6 +24,9 @@ export type AppCopy = {
   exportWithBackground: string;
   exportTransparent: string;
   saveAsTemplate: string;
+  exportFormatLabel: string;
+  exportSizeLabel: string;
+  dialogCancel: string;
   templatesSectionTitle: string;
   templatesEmptyHint: string;
   templatesEmptyHintMotion: string;
@@ -102,17 +105,14 @@ export type AppCopy = {
   motionFrameRatio: string;
   exportTabImage: string;
   exportTabVideo: string;
-  videoExportDestination: string;
   videoExportUnavailable: string;
-  videoExportPresets: Record<"social" | "web" | "master", { hint: string; title: string }>;
-  videoExportCustomize: string;
   videoExportFps: string;
   videoExportResolution: string;
-  videoExportSubmit: string;
   videoExportCancel: string;
   /** `{done}` e `{total}` são trocados pelos números. */
   videoExportProgress: string;
   videoExportUnsupported: string;
+  videoExportSafariTransparent: string;
   videoExportSuccess: string;
   videoExportError: string;
   motionTimelineEmpty: string;
@@ -210,6 +210,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     exportWithBackground: "Com fundo",
     exportTransparent: "Transparente",
     saveAsTemplate: "Salvar como template",
+    exportFormatLabel: "Formato",
+    exportSizeLabel: "Tamanho",
+    dialogCancel: "Cancelar",
     templatesSectionTitle: "Templates",
     templatesEmptyHint: "Salve a cena atual para reutilizar depois.",
     templatesEmptyHintMotion: "Salve a animação atual para reutilizar depois.",
@@ -288,20 +291,14 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionFrameRatio: "Proporção",
     exportTabImage: "Imagem",
     exportTabVideo: "Vídeo",
-    videoExportDestination: "Destino",
     videoExportUnavailable: "Anime algo na timeline para exportar vídeo.",
-    videoExportPresets: {
-      social: { hint: "Com fundo, pronto para postar.", title: "Redes e apresentações" },
-      web: { hint: "Transparente no Chrome, Edge e Firefox.", title: "Site, sem fundo" },
-      master: { hint: "Resolução dobrada, para editar depois.", title: "Máxima qualidade" },
-    },
-    videoExportCustomize: "Personalizar",
     videoExportFps: "Quadros por segundo",
     videoExportResolution: "Resolução",
-    videoExportSubmit: "Exportar vídeo",
     videoExportCancel: "Cancelar",
     videoExportProgress: "Exportando vídeo · {done}/{total}",
     videoExportUnsupported: "Este navegador não exporta esse formato. Use o Chrome ou o Edge.",
+    videoExportSafariTransparent:
+      "O Safari ainda não mostra vídeos sem fundo. Para exportar com transparência, abra o Mock Studio no Chrome, Edge ou Firefox.",
     videoExportSuccess: "Vídeo exportado.",
     videoExportError: "Não foi possível exportar o vídeo.",
     motionTimelineEmpty: "Nenhum objeto visível na cena.",
@@ -459,6 +456,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     exportWithBackground: "With background",
     exportTransparent: "Transparent",
     saveAsTemplate: "Save as template",
+    exportFormatLabel: "Format",
+    exportSizeLabel: "Size",
+    dialogCancel: "Cancel",
     templatesSectionTitle: "Templates",
     templatesEmptyHint: "Save the current scene to reuse it later.",
     templatesEmptyHintMotion: "Save the current animation to reuse it later.",
@@ -537,20 +537,14 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionFrameRatio: "Aspect ratio",
     exportTabImage: "Image",
     exportTabVideo: "Video",
-    videoExportDestination: "Destination",
     videoExportUnavailable: "Animate something on the timeline to export a video.",
-    videoExportPresets: {
-      social: { hint: "With background, ready to post.", title: "Social and presentations" },
-      web: { hint: "Transparent in Chrome, Edge and Firefox.", title: "Website, no background" },
-      master: { hint: "Double resolution, for editing later.", title: "Highest quality" },
-    },
-    videoExportCustomize: "Customize",
     videoExportFps: "Frame rate",
     videoExportResolution: "Resolution",
-    videoExportSubmit: "Export video",
     videoExportCancel: "Cancel",
     videoExportProgress: "Exporting video · {done}/{total}",
     videoExportUnsupported: "This browser can't export this format. Use Chrome or Edge.",
+    videoExportSafariTransparent:
+      "Safari doesn't show transparent videos yet. To export with transparency, open Mock Studio in Chrome, Edge or Firefox.",
     videoExportSuccess: "Video exported.",
     videoExportError: "Couldn't export the video.",
     motionTimelineEmpty: "No visible objects in the scene.",

@@ -2,6 +2,7 @@
 
 import "./FloatingCanvasControls.css";
 import {
+  useCallback,
   useLayoutEffect,
   useRef,
   useState,
@@ -20,14 +21,12 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import ContextMenu from "../ContextMenu/ContextMenu";
 import { Tooltip } from "../EditorPrimitives/EditorPrimitives";
-import ExportPanel, { type ExportTab } from "./ExportPanel";
+import ExportDialog, { type ExportKind } from "./ExportDialog";
 import type { Locale } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
 import {
-  DEFAULT_VIDEO_EXPORT_PRESET,
-  getVideoExportPreset,
+  DEFAULT_VIDEO_EXPORT_SETTINGS,
   type VideoExportSettings,
 } from "../../lib/video-export";
 
@@ -53,7 +52,7 @@ type FloatingCanvasControlsProps = {
   onZoomOut: () => void;
   takePhotoDisabled: boolean;
   uiTheme: UiTheme;
-  /** Só no Movimento: liga a aba Vídeo do menu Exportar. */
+  /** Só no Movimento: liga a exportação de vídeo no dialog Exportar. */
   video?: {
     durationMs: number;
     frame: MotionFrame;
@@ -62,9 +61,9 @@ type FloatingCanvasControlsProps = {
 };
 
 const EXPORT_OPTIONS = [
-  { id: "full-hd", label: "1920x1080", width: 1920, height: 1080 },
-  { id: "quad-hd", label: "2560x1440", width: 2560, height: 1440 },
-  { id: "ultra-hd", label: "3840x2160", width: 3840, height: 2160 },
+  { badge: "Full HD", id: "full-hd", width: 1920, height: 1080 },
+  { badge: "QHD", id: "quad-hd", width: 2560, height: 1440 },
+  { badge: "4K", id: "ultra-hd", width: 3840, height: 2160 },
 ] as const;
 
 const DEFAULT_BG: Record<UiTheme, string> = {
@@ -77,6 +76,7 @@ type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 const HIDE_UI_CORNER_KEY = "mock-photo-hide-ui-corner";
 const EXPORT_BG_KEY = "mock-photo-export-bg";
 const EXPORT_TEMPLATE_KEY = "mock-photo-export-template";
+const EXPORT_SIZE_KEY = "mock-photo-export-size";
 const DRAG_THRESHOLD = 6;
 
 function isCorner(value: string | null): value is Corner {
@@ -148,17 +148,63 @@ export default function FloatingCanvasControls({
     window.localStorage.setItem(EXPORT_TEMPLATE_KEY, value ? "1" : "0");
   }
 
-  // Aba e configurações do vídeo vivem aqui, e não no painel: o painel é
-  // desmontado ao fechar e reabriria sempre do zero.
-  const [exportTab, setExportTab] = useState<ExportTab>("image");
-  const [videoSettings, setVideoSettings] = useState(() =>
-    getVideoExportPreset(DEFAULT_VIDEO_EXPORT_PRESET),
-  );
+  // O tamanho da imagem também fica lembrado: quem exporta em 4K costuma
+  // exportar sempre em 4K.
+  const [photoSizeId, setPhotoSizeId] = useState<string>(() => {
+    if (typeof window === "undefined") return EXPORT_OPTIONS[0].id;
+    const stored = window.localStorage.getItem(EXPORT_SIZE_KEY);
+    return EXPORT_OPTIONS.some((option) => option.id === stored)
+      ? stored!
+      : EXPORT_OPTIONS[0].id;
+  });
 
-  function afterExport() {
+  function choosePhotoSize(id: string) {
+    setPhotoSizeId(id);
+    window.localStorage.setItem(EXPORT_SIZE_KEY, id);
+  }
+
+  // As escolhas vivem aqui, e não no dialog: ele é desmontado ao fechar e
+  // reabriria sempre do zero.
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  // No Movimento o que se exporta é, antes de tudo, o vídeo: o Formato abre
+  // nele. Uma troca para Imagem vale até sair do Movimento — ao voltar, o
+  // padrão é o vídeo de novo.
+  const isMotion = Boolean(video);
+  const [exportKind, setExportKind] = useState<ExportKind>(
+    isMotion ? "video" : "image",
+  );
+  const [exportKindMode, setExportKindMode] = useState(isMotion);
+
+  if (exportKindMode !== isMotion) {
+    setExportKindMode(isMotion);
+    setExportKind(isMotion ? "video" : "image");
+  }
+  const [videoSettings, setVideoSettings] = useState(DEFAULT_VIDEO_EXPORT_SETTINGS);
+
+  // Estável: o Dialog reassina o Esc quando o callback muda.
+  const closeExport = useCallback(() => setIsExportOpen(false), []);
+
+  /** Exporta o que foi escolhido no dialog, como foi escolhido. */
+  function handleExport() {
+    if (video && exportKind === "video") {
+      video.onExport(videoSettings);
+    } else {
+      const size =
+        EXPORT_OPTIONS.find((option) => option.id === photoSizeId) ??
+        EXPORT_OPTIONS[0];
+
+      onTakePhoto({
+        height: size.height,
+        includeBackground: exportWithBg,
+        width: size.width,
+      });
+    }
+
     if (saveTemplateOnExport) {
       onSaveTemplate?.();
     }
+
+    setIsExportOpen(false);
   }
 
   const hideUiLabel = isUiHidden ? copy.showUiButton : copy.hideUiButton;
@@ -373,59 +419,41 @@ export default function FloatingCanvasControls({
         </div>
       </div>
 
-        <ContextMenu
-          items={[]}
-          content={
-            <ExportPanel
-              backgroundSwatch={{ background: displayColor, border: circleBorder }}
-              copy={copy}
-              exportWithBg={exportWithBg}
-              locale={locale}
-              photoOptions={EXPORT_OPTIONS}
-              saveTemplate={saveTemplateOnExport}
-              tab={exportTab}
-              video={
-                video
-                  ? {
-                      ...video,
-                      onExport: (settings) => {
-                        video.onExport(settings);
-                        afterExport();
-                      },
-                      onSettingsChange: setVideoSettings,
-                      settings: videoSettings,
-                    }
-                  : undefined
-              }
-              onExportPhoto={(option) => {
-                onTakePhoto({
-                  height: option.height,
-                  includeBackground: exportWithBg,
-                  width: option.width,
-                });
-                afterExport();
-              }}
-              onExportWithBgChange={chooseExportBg}
-              onSaveTemplateChange={chooseSaveTemplate}
-              onTabChange={setExportTab}
-            />
-          }
-          panelPlacement="top-end"
-          panelClassName="canvas-export-context-menu"
-          triggerAriaLabel={copy.takePhotoButton}
-          triggerTitle={copy.takePhotoButton}
-          triggerDisabled={takePhotoDisabled}
-          triggerIcon={<Camera size={16} />}
-          triggerContentClassName="canvas-capture-button"
-          triggerContent={
-            <>
-              <Camera size={16} />
-              <span>{copy.takePhotoButton}</span>
-            </>
-          }
-        />
+        <button
+          type="button"
+          className="canvas-capture-button"
+          disabled={takePhotoDisabled}
+          aria-haspopup="dialog"
+          onClick={() => setIsExportOpen(true)}
+        >
+          <Camera size={16} />
+          <span>{copy.takePhotoButton}</span>
+        </button>
       </div>
       )}
+
+      <ExportDialog
+        backgroundSwatch={{ background: displayColor, border: circleBorder }}
+        copy={copy}
+        exportWithBg={exportWithBg}
+        isOpen={isExportOpen}
+        kind={exportKind}
+        locale={locale}
+        photoOptions={EXPORT_OPTIONS}
+        photoSizeId={photoSizeId}
+        saveTemplate={saveTemplateOnExport}
+        video={
+          video
+            ? { ...video, onSettingsChange: setVideoSettings, settings: videoSettings }
+            : undefined
+        }
+        onCancel={closeExport}
+        onExport={handleExport}
+        onExportWithBgChange={chooseExportBg}
+        onKindChange={setExportKind}
+        onPhotoSizeChange={choosePhotoSize}
+        onSaveTemplateChange={chooseSaveTemplate}
+      />
 
       {isUiHidden && (
         <button

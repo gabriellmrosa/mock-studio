@@ -6,7 +6,7 @@ import type {
 } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, RotateCcw, X } from "lucide-react";
+import { ChevronDown, Info, RotateCcw, X } from "lucide-react";
 
 type LayersPanelHeaderProps = {
   action?: ReactNode;
@@ -365,6 +365,19 @@ export function SubTabPanel({
  * aqui a marcação só diz "faça também isto". Input nativo — teclado, leitor de
  * tela e o clique no texto vêm de graça —, pintado com a cor do tema.
  */
+/**
+ * Aviso que informa sem interromper: fundo sutil, ícone e texto, sem cor de
+ * alerta. Para o que vale saber antes de uma ação, não para erros.
+ */
+export function Callout({ children }: { children: ReactNode }) {
+  return (
+    <div className="editor-callout" role="note">
+      <Info size={14} className="editor-callout-icon" aria-hidden />
+      <p className="editor-callout-text">{children}</p>
+    </div>
+  );
+}
+
 export function Checkbox({
   checked,
   label,

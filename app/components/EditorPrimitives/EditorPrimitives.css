@@ -555,6 +555,30 @@
   flex-shrink: 0;
 }
 
+/* --- Callout ---
+   Aviso discreto: a superfície sutil dos trilhos, texto pequeno e o ícone no
+   tom do texto. */
+.editor-callout {
+  align-items: flex-start;
+  background: var(--surface-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--sidebar-label);
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+
+.editor-callout-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.editor-callout-text {
+  font-size: var(--font-size-150);
+  line-height: 1.5;
+  margin: 0;
+}
+
 /* --- Checkbox --- */
 
 .editor-checkbox-row {

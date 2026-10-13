@@ -44,7 +44,7 @@
 
 - per-object keyframes shipped without any way to export the result: the animation only existed inside the editor
 - [x] in `Motion` the `Export` menu has two tabs, `Image` and `Video`; the video tab lists three destinations — social and presentations (MP4 with background, 60 fps), website with no background (transparent WebM, 30 fps) and highest quality (MP4, 60 fps, 2×) —, `Customize` exposes background, frame rate and resolution (changing any of them clears the destination), and a one-line summary sits above `Export video`
-- a separate dialog was tried first and felt like too much for a choice that fits in the menu the user already opened
+- a separate dialog was tried first and felt like too much for a choice that fits in the menu the user already opened (later revisited: see #25)
 - [x] `Save as template` became a checkbox, checked by default and remembered, and applies to image and video exports alike
 - [x] frames are rendered one at a time, not recorded: each frame poses the scene at its instant, seeks every screen video to the exact frame and renders with the PNG's supersampling — a slow machine takes longer but drops nothing, and the tab can stay in the background (R3F's `advance()` drives the frame, not `requestAnimationFrame`)
 - [x] encoding uses WebCodecs through `mediabunny` (MPL-2.0), loaded only on the first video export; Chrome's native encoder has no alpha, so `mediabunny` encodes the transparency as a second VP9 stream, which Chrome, Edge and Firefox play back as a transparent WebM
@@ -210,3 +210,16 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 
 - [x] `ResetButton` primitive: the rotate icon alone, no label or border, in `normal` (section headers) and `small` (sub-tab panels) sizes — `Transform` and the screen `Fit` / `Crop` panels now share it
 - [x] dimmed while there is nothing to reset: in `Transform` when the object is already in the default pose (`isDefaultObjectTransform`: position, rotation, scale and opacity)
+
+## 25. Export as a dialog — done
+
+- [x] `Export` opens a dialog in the middle of the screen, behind a dimmed, blurred backdrop, like the final export step of desktop creative apps: choose everything first, then export what was chosen, as it was chosen — the floating menu exported the moment a size was clicked
+- [x] every choice is a select, with a label column: `Format` (Motion only: image or video, opening on video), then for an image `Size` (Full HD, QHD, 4K badges) and `Background`, for a video `Background` (MP4 or transparent WebM), `Frame rate` and `Resolution`, plus the one-line video summary
+- [x] the footer holds `Save as template` on the left, `Cancel` and the single primary `Export` on the right; `Export` takes the focus, so `Enter` exports, and it is disabled while the video can't be exported (nothing animated, or the browser can't encode it)
+- [x] the video destinations (social, website, highest quality) are gone: with every setting in view they only repeated it; a video now starts with background, 60 fps, 1×
+- [x] a shared `Dialog` component — backdrop, title, free content, footer with `Cancel` before the actions — with `Escape` and outside clicks cancelling, `Tab` kept inside and focus returned on close; `AlertDialog` is now a `Dialog` with `role="alertdialog"`. An `Escape` already handled by an open select closes only the list
+- [x] in Safari, a transparent video shows a `Callout` (a new quiet notice primitive): Safari doesn't show transparent video yet, so it suggests Chrome, Edge or Firefox; export isn't blocked. Detected by user agent (`isSafari`), since the problem is the engine that will play the file, not a feature to test
+- a destination folder picker was considered and dropped: only Chrome and Edge can open a native "Save as", the other browsers always use their downloads folder
+- the button stays `Export`, not `Download`: the dialog sets format, size and transparency first, as in editing tools
+- next: a `Copy project link` carrying the scene in the URL hash, so a Safari user can reopen it in another browser (templates live in each browser's `localStorage`; screen images and videos would still need re-uploading)
+

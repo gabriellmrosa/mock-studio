@@ -23,36 +23,12 @@ export type VideoExportSettings = {
 
 export type VideoExportFormat = "mp4" | "webm";
 
-export type VideoExportPresetId = "web" | "social" | "master";
-
-export const VIDEO_EXPORT_PRESETS: Array<{
-  id: VideoExportPresetId;
-  settings: VideoExportSettings;
-}> = [
-  { id: "social", settings: { background: true, fps: 60, scale: 1 } },
-  { id: "web", settings: { background: false, fps: 30, scale: 1 } },
-  { id: "master", settings: { background: true, fps: 60, scale: 2 } },
-];
-
-export const DEFAULT_VIDEO_EXPORT_PRESET: VideoExportPresetId = "social";
-
-export function getVideoExportPreset(id: VideoExportPresetId) {
-  return VIDEO_EXPORT_PRESETS.find((preset) => preset.id === id)!.settings;
-}
-
-/** O atalho que as configurações formam, ou `null` se foram personalizadas. */
-export function findVideoExportPreset(
-  settings: VideoExportSettings,
-): VideoExportPresetId | null {
-  return (
-    VIDEO_EXPORT_PRESETS.find(
-      ({ settings: preset }) =>
-        preset.background === settings.background &&
-        preset.fps === settings.fps &&
-        preset.scale === settings.scale,
-    )?.id ?? null
-  );
-}
+/** Com fundo (MP4), 60 fps, no tamanho do quadro: o vídeo pronto para postar. */
+export const DEFAULT_VIDEO_EXPORT_SETTINGS: VideoExportSettings = {
+  background: true,
+  fps: 60,
+  scale: 1,
+};
 
 export function getVideoExportFormat(
   settings: VideoExportSettings,

@@ -193,6 +193,8 @@ export default function CustomSelect({
 
     function handleKeyDown(event: globalThis.KeyboardEvent) {
       if (event.key === "Escape") {
+        // Tratado: um dialog em volta não fecha junto com a lista.
+        event.preventDefault();
         close();
       }
     }

@@ -77,137 +77,44 @@
   transform: none;
 }
 
-/* Largura fixa nas duas abas: trocar de Imagem para Vídeo não mexe na
-   largura do painel, só na altura. */
-.canvas-export-context-menu {
-  width: 15rem;
+/* --- Dialog Exportar (ExportDialog) ---
+   Uma escolha por linha: o rótulo numa coluna fixa, o select ocupando o
+   resto. A largura não muda entre imagem e vídeo, só a altura. */
+.export-dialog {
+  max-width: 30rem;
 }
 
-/* --- Conteúdo do menu Exportar (ExportPanel) --- */
-.export-panel {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+.export-dialog-field {
+  align-items: start;
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: 7rem minmax(0, 1fr);
 }
 
-.export-panel .editor-segmented {
-  margin-bottom: 0;
+/* Alinhado ao texto do select, não ao topo da caixa. */
+.export-dialog-label {
+  color: var(--sidebar-label);
+  font-size: var(--font-size-200);
+  line-height: calc(var(--input-min-height) + var(--space-3));
 }
 
-.export-panel-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.export-panel-note {
-  color: var(--sidebar-muted);
-  font-size: var(--font-size-150);
-  font-variant-numeric: tabular-nums;
-  margin: 0;
-  padding: 0 0.4rem;
-}
-
-.export-panel-warning {
-  color: var(--danger-fg);
-}
-
-.export-panel-custom {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.export-panel-setting {
+.export-dialog-control {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+  min-width: 0;
 }
 
-.export-panel-setting .export-panel-note {
-  padding: 0;
-}
-
-/* O checkbox e as linhas que exportam ficam separados das opções: primeiro
-   se escolhe, depois se exporta. */
-.export-panel-template {
-  border-top: 1px solid var(--panel-border);
-  padding: var(--space-2) 0.5rem 0;
-}
-
-.export-panel-actions {
-  border-top: 1px solid var(--panel-border);
-  display: flex;
-  flex-direction: column;
-  padding-top: 0.25rem;
-}
-
-/* Explicação curta de um destino de vídeo, abaixo do nome. */
-.export-option-hint {
+.export-dialog-note {
   color: var(--sidebar-muted);
-  display: block;
-  font-size: var(--font-size-100);
+  font-size: var(--font-size-150);
   line-height: 1.4;
-  margin-top: 1px;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
 }
 
-/* Export background mode toggle (header of the export menu) */
-.export-bg-toggle {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.export-bg-toggle-label {
-  color: var(--sidebar-muted);
-  font-size: 0.62rem;
-  font-weight: var(--font-semibold);
-  letter-spacing: 0.06em;
-  padding: 0 0.4rem;
-  text-transform: uppercase;
-}
-
-.export-bg-seg {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.export-bg-seg-btn {
-  align-items: center;
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-sm);
-  color: var(--foreground);
-  cursor: pointer;
-  display: flex;
-  font-size: 0.75rem;
-  gap: var(--space-2);
-  padding: 0.35rem 0.5rem;
-  text-align: left;
-  transition: background 100ms ease;
-  width: 100%;
-}
-
-.export-bg-seg-label {
-  flex: 1 1 auto;
-}
-
-.export-bg-seg-check {
-  color: var(--foreground);
-  flex-shrink: 0;
-}
-
-.export-bg-seg-btn:hover {
-  background: var(--surface-hover);
-}
-
-[data-theme="dark"] .export-bg-seg-btn:hover {
-  background: color-mix(in srgb, var(--foreground) 12%, var(--sidebar-bg));
-}
-
-.export-bg-seg-btn.is-active {
-  background: color-mix(in srgb, var(--foreground) 10%, transparent);
+.export-dialog-warning {
+  color: var(--danger-fg);
 }
 
 .export-swatch {
