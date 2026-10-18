@@ -221,7 +221,7 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] in Safari, a transparent video shows a `Callout` (a new quiet notice primitive): Safari doesn't show transparent video yet, so it suggests Chrome, Edge or Firefox; export isn't blocked. Detected by user agent (`isSafari`), since the problem is the engine that will play the file, not a feature to test
 - a destination folder picker was considered and dropped: only Chrome and Edge can open a native "Save as", the other browsers always use their downloads folder
 - the button stays `Export`, not `Download`: the dialog sets format, size and transparency first, as in editing tools
-- next: a `Copy project link` carrying the scene in the URL hash, so a Safari user can reopen it in another browser (templates live in each browser's `localStorage`; screen images and videos would still need re-uploading)
+- the next step, a project link for Safari users, is #27
 
 ## 26. Video export progress as a dialog — done
 
@@ -231,4 +231,14 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] `Dialog` gained `dismissible={false}`: `Escape` and outside clicks do nothing, so only `Cancel` stops minutes of work; cancelling still downloads nothing and shows no error
 - the bar has no width transition: the page is busy rendering frames, so an animated width fell far behind the number (41% with an almost empty bar); progress already arrives every frame
 - the photo export keeps its short canvas notice: it takes a moment, not minutes
+
+## 27. Project link — done
+
+- [x] `Copy project link` in the Safari note of the `Export` dialog: Safari doesn't show transparent video yet, and templates live in each browser's `localStorage`, so the way to export it elsewhere is to carry the scene to another browser
+- [x] the link holds the scene as a template — objects, poses, keyframes and curves, camera, background, video size — as JSON, deflate-compressed and base64url-encoded after `#scene=`; the hash never reaches a server, so the scene doesn't leave the computer; a two-keyframe scene makes a 756-character link
+- [x] the link format has its own version (`v: 1`), separate from the template schema, and is validated and normalized like a stored template; a cut or corrupted link shows an error instead of opening half a scene
+- [x] opening it saves the scene to that browser's templates (`Project from link`), switches to its mode and applies it, then clears the hash so a reload doesn't open it again; the message reminds that screen images and videos must be uploaded again, since they don't travel in the link
+- [x] Safari only allows clipboard writes during the click, and building the link is asynchronous: `copyPendingText` hands the clipboard a `ClipboardItem` whose content is a promise, reserving the write in the click; the button confirms in place, since a toast would sit behind the dialog's backdrop
+- the template name and message are read after the link is decoded: read on the first render, they came out in the default language instead of the saved one
+- checked in the app's browser simulating Safari's user agent; the clipboard path still needs one click in a real Safari
 

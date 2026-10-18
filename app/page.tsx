@@ -66,6 +66,7 @@ import {
   type SceneTemplate,
   type TemplateMode,
 } from "./lib/scene-templates";
+import { createSceneLink, decodeSceneLink, readSceneLinkHash } from "./lib/scene-link";
 import { DEVICE_MODELS } from "./models/device-models";
 
 /** Cena de um modo guardada enquanto o outro está ativo. */
@@ -165,6 +166,8 @@ export default function Home() {
   // Câmera a restaurar assim que a cena assentar: a de um template (o canvas
   // fica bloqueado e avisa ao terminar) ou a de um modo ao voltar para ele.
   const [pendingCamera, setPendingCamera] = useState<{
+    /** Aviso ao assentar, no lugar do de template aplicado (ex.: o do link). */
+    message?: string;
     pose: CameraPose;
     source: "mode" | "template";
   } | null>(null);
@@ -527,10 +530,19 @@ export default function Home() {
   function applyTemplate(id: string) {
     const template = templates.find((item) => item.id === id);
 
-    if (!template) {
-      return;
+    if (template) {
+      applyTemplateScene(template);
     }
+  }
 
+  /**
+   * Monta a cena de um template no modo atual. `message` troca o aviso de
+   * template aplicado, que sai quando a cena assenta.
+   */
+  function applyTemplateScene(
+    template: SceneTemplate,
+    message = copy.templateAppliedMessage,
+  ) {
     const nextObjects = applySceneTemplate(template);
     const nextFrame = template.frame ?? DEFAULT_MOTION_FRAME;
 
@@ -557,12 +569,71 @@ export default function Home() {
     );
     // A câmera é o último passo: fica pendente até a cena assentar.
     setPendingCamera(
-      template.camera ? { pose: template.camera, source: "template" } : null,
+      template.camera
+        ? { message, pose: template.camera, source: "template" }
+        : null,
     );
 
     if (!template.camera) {
-      notify("success", copy.templateAppliedMessage);
+      notify("success", message);
     }
+  }
+
+  /**
+   * Abre a cena de um link de projeto: guarda como template deste navegador
+   * — os templates do outro ficaram lá —, entra no modo dela e a monta. Só
+   * acontece ao carregar a página, com a cena padrão na tela, então não há
+   * trabalho a perder.
+   *
+   * É um evento à parte, chamado depois de decodificar o link: assim ele lê
+   * o estado do render mais recente — o idioma salvo já aplicado —, e não o
+   * do primeiro.
+   */
+  const openLinkedTemplate = useEffectEvent((template: SceneTemplate | null) => {
+    if (!template) {
+      notify("error", copy.projectLinkInvalid);
+      return;
+    }
+
+    const saved = { ...template, name: copy.projectLinkTemplateName };
+
+    persistAndSetTemplates(upsertTemplate(loadTemplates(), saved));
+
+    if (saved.mode !== motionTab) {
+      switchMode(saved.mode);
+    }
+
+    applyTemplateScene(saved, copy.projectLinkOpened);
+  });
+
+  useEffect(() => {
+    const encoded = readSceneLinkHash(window.location.hash);
+
+    if (!encoded) {
+      return;
+    }
+
+    // O link já foi lido: recarregar a página não o abre de novo.
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search,
+    );
+    void decodeSceneLink(encoded).then(openLinkedTemplate);
+  }, []);
+
+  /** O link desta cena, como está agora, para abrir em outro navegador. */
+  function handleCreateProjectLink() {
+    const template = createSceneTemplate({
+      backgroundColor: canvasBgColor,
+      camera: cameraApiRef.current?.getPose() ?? null,
+      frame: motionFrame,
+      mode: motionTab,
+      name: copy.projectLinkTemplateName,
+      objects: sceneObjects,
+    });
+
+    return createSceneLink(template, window.location.href);
   }
 
   function runAction(action: PendingAction, snapshotToPark?: string) {
@@ -867,13 +938,14 @@ export default function Home() {
     cameraApiRef.current = api;
   }, []);
 
+  const appliedMessage = pendingCamera?.message;
   const handleTemplateApplied = useCallback(() => {
     setPendingCamera(null);
 
     if (isRestoringTemplate) {
-      notify("success", copy.templateAppliedMessage);
+      notify("success", appliedMessage ?? copy.templateAppliedMessage);
     }
-  }, [copy.templateAppliedMessage, isRestoringTemplate]);
+  }, [appliedMessage, copy.templateAppliedMessage, isRestoringTemplate]);
 
   function handleRenameTemplate(id: string, name: string) {
     persistAndSetTemplates(renameTemplate(templates, id, name));
@@ -931,6 +1003,7 @@ export default function Home() {
             tone,
           })
         }
+        onCreateProjectLink={handleCreateProjectLink}
         onSaveTemplate={handleSaveTemplate}
         onSelectObject={setSelectedObjectId}
         onTemplateApplied={handleTemplateApplied}

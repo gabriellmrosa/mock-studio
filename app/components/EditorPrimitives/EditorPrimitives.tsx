@@ -369,11 +369,21 @@ export function SubTabPanel({
  * Aviso que informa sem interromper: fundo sutil, ícone e texto, sem cor de
  * alerta. Para o que vale saber antes de uma ação, não para erros.
  */
-export function Callout({ children }: { children: ReactNode }) {
+export function Callout({
+  action,
+  children,
+}: {
+  /** Uma ação ligada ao aviso, abaixo do texto (ex.: copiar um link). */
+  action?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <div className="editor-callout" role="note">
       <Info size={14} className="editor-callout-icon" aria-hidden />
-      <p className="editor-callout-text">{children}</p>
+      <div className="editor-callout-body">
+        <p className="editor-callout-text">{children}</p>
+        {action}
+      </div>
     </div>
   );
 }

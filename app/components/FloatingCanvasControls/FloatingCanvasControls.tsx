@@ -36,6 +36,7 @@ type FloatingCanvasControlsProps = {
   isUiHidden: boolean;
   onBgColorChange: (color: string) => void;
   locale: Locale;
+  onCreateProjectLink?: () => Promise<string>;
   onFitToScene: () => void;
   onPanDown: () => void;
   onPanLeft: () => void;
@@ -100,6 +101,7 @@ export default function FloatingCanvasControls({
   isUiHidden,
   locale,
   onBgColorChange,
+  onCreateProjectLink,
   onFitToScene,
   onPanDown,
   onPanLeft,
@@ -448,6 +450,7 @@ export default function FloatingCanvasControls({
             : undefined
         }
         onCancel={closeExport}
+        onCreateProjectLink={onCreateProjectLink}
         onExport={handleExport}
         onExportWithBgChange={chooseExportBg}
         onKindChange={setExportKind}

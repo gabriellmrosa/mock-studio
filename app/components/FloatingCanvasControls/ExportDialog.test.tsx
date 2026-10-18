@@ -25,11 +25,15 @@ function Harness({
   durationMs = 4000,
   isMotion = true,
   onCancel = jest.fn(),
+  onCreateProjectLink = jest.fn(() =>
+    Promise.resolve("https://mock.studio/#scene=abc"),
+  ),
   onExport = jest.fn(),
 }: {
   durationMs?: number;
   isMotion?: boolean;
   onCancel?: jest.Mock;
+  onCreateProjectLink?: jest.Mock;
   onExport?: jest.Mock;
 }) {
   const [kind, setKind] = useState<ExportKind>("image");
@@ -62,6 +66,7 @@ function Harness({
           : undefined
       }
       onCancel={onCancel}
+      onCreateProjectLink={onCreateProjectLink}
       onExport={() =>
         onExport({ kind, photoSizeId, saveTemplate, settings, withBg })
       }
@@ -209,6 +214,25 @@ describe("ExportDialog", () => {
         copy.videoExportSafariTransparent,
       );
       expect(screen.getByRole("button", { name: "Export" })).toBeEnabled();
+    });
+
+    it("copies a link to the scene, to open it in another browser", async () => {
+      const writeText = jest.fn(() => Promise.resolve());
+      const onCreateProjectLink = jest.fn(() =>
+        Promise.resolve("https://mock.studio/#scene=abc"),
+      );
+
+      Object.assign(navigator, { clipboard: { writeText } });
+      render(<Harness onCreateProjectLink={onCreateProjectLink} />);
+      await chooseVideo();
+      choose("Background", /Transparent/);
+
+      fireEvent.click(screen.getByRole("button", { name: "Copy project link" }));
+      await act(async () => {});
+
+      expect(onCreateProjectLink).toHaveBeenCalled();
+      expect(writeText).toHaveBeenCalledWith("https://mock.studio/#scene=abc");
+      expect(screen.getByRole("button", { name: "Link copied" })).toBeInTheDocument();
     });
   });
 

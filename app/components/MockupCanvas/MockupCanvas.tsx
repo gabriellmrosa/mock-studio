@@ -114,6 +114,8 @@ type MockupCanvasProps = {
   objects: SceneObject[];
   onBgColorChange: (color: string | null) => void;
   onCameraApiReady: (api: CameraApi | null) => void;
+  /** A URL desta cena, para abrir em outro navegador (ver scene-link.ts). */
+  onCreateProjectLink?: () => Promise<string>;
   onNotify?: (tone: "error" | "success", message: string) => void;
   onSaveTemplate?: () => void;
   onSelectObject: (id: string) => void;
@@ -1392,6 +1394,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           onPanLeft={() => viewportControls?.panLeft()}
           onPanRight={() => viewportControls?.panRight()}
           onPanUp={() => viewportControls?.panUp()}
+          onCreateProjectLink={props.onCreateProjectLink}
           onSaveTemplate={props.onSaveTemplate}
           onTakePhoto={(resolution) => {
             void handleTakePhoto(resolution);

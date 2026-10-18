@@ -119,6 +119,12 @@ export type AppCopy = {
   videoExportHint: string;
   videoExportUnsupported: string;
   videoExportSafariTransparent: string;
+  projectLinkCopy: string;
+  projectLinkCopied: string;
+  projectLinkCopyError: string;
+  projectLinkTemplateName: string;
+  projectLinkOpened: string;
+  projectLinkInvalid: string;
   videoExportSuccess: string;
   videoExportError: string;
   motionTimelineEmpty: string;
@@ -310,7 +316,14 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "Pode usar outra aba enquanto isso. Ao terminar, o vídeo vai para a sua pasta de downloads.",
     videoExportUnsupported: "Este navegador não exporta esse formato. Use o Chrome ou o Edge.",
     videoExportSafariTransparent:
-      "O Safari ainda não mostra vídeos sem fundo. Para exportar com transparência, abra o Mock Studio no Chrome, Edge ou Firefox.",
+      "O Safari ainda não mostra vídeos sem fundo. Para exportar com transparência, copie o link do projeto e abra no Chrome, Edge ou Firefox — as imagens e vídeos das telas não vão no link.",
+    projectLinkCopy: "Copiar link do projeto",
+    projectLinkCopied: "Link copiado",
+    projectLinkCopyError: "Não foi possível copiar o link.",
+    projectLinkTemplateName: "Projeto do link",
+    projectLinkOpened:
+      "Projeto aberto do link e salvo nos templates. Envie de novo as imagens e vídeos das telas.",
+    projectLinkInvalid: "Este link de projeto está incompleto ou corrompido.",
     videoExportSuccess: "Vídeo exportado.",
     videoExportError: "Não foi possível exportar o vídeo.",
     motionTimelineEmpty: "Nenhum objeto visível na cena.",
@@ -562,7 +575,14 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "You can use another tab meanwhile. When it's done, the video goes to your downloads folder.",
     videoExportUnsupported: "This browser can't export this format. Use Chrome or Edge.",
     videoExportSafariTransparent:
-      "Safari doesn't show transparent videos yet. To export with transparency, open Mock Studio in Chrome, Edge or Firefox.",
+      "Safari doesn't show transparent videos yet. To export with transparency, copy the project link and open it in Chrome, Edge or Firefox — screen images and videos don't travel in the link.",
+    projectLinkCopy: "Copy project link",
+    projectLinkCopied: "Link copied",
+    projectLinkCopyError: "Couldn't copy the link.",
+    projectLinkTemplateName: "Project from link",
+    projectLinkOpened:
+      "Project opened from the link and saved to templates. Upload the screen images and videos again.",
+    projectLinkInvalid: "This project link is incomplete or corrupted.",
     videoExportSuccess: "Video exported.",
     videoExportError: "Couldn't export the video.",
     motionTimelineEmpty: "No visible objects in the scene.",

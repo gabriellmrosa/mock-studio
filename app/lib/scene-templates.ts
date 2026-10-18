@@ -307,7 +307,7 @@ function isValidKeyframe(value: unknown): value is TemplateKeyframe {
  * Completa o que os campos opcionais deixam de fora. Keyframes corrompidos
  * derrubam só a animação daquele objeto, não o template inteiro.
  */
-function normalizeTemplate(template: SceneTemplate): SceneTemplate {
+export function normalizeTemplate(template: SceneTemplate): SceneTemplate {
   const mode: TemplateMode = template.mode === "motion" ? "motion" : "static";
   const { frame: storedFrame, ...fields } = template;
   const frame = mode === "motion" ? normalizeMotionFrame(storedFrame) : null;
@@ -334,7 +334,7 @@ function normalizeTemplate(template: SceneTemplate): SceneTemplate {
   };
 }
 
-function isValidTemplate(value: unknown): value is SceneTemplate {
+export function isValidTemplate(value: unknown): value is SceneTemplate {
   if (!value || typeof value !== "object") {
     return false;
   }

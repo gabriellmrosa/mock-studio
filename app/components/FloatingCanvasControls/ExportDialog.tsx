@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { Check, Link } from "lucide-react";
 import CustomSelect from "../CustomSelect/CustomSelect";
 import Dialog from "../Dialog/Dialog";
 import { Callout, Checkbox } from "../EditorPrimitives/EditorPrimitives";
-import { isSafari } from "../../lib/browser";
+import { copyPendingText, isSafari } from "../../lib/browser";
 import type { AppCopy, Locale } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
 import {
@@ -49,6 +50,7 @@ export default function ExportDialog({
   kind,
   locale,
   onCancel,
+  onCreateProjectLink,
   onExport,
   onExportWithBgChange,
   onKindChange,
@@ -67,6 +69,8 @@ export default function ExportDialog({
   kind: ExportKind;
   locale: Locale;
   onCancel: () => void;
+  /** A URL desta cena; liga o "Copiar link do projeto" do aviso do Safari. */
+  onCreateProjectLink?: () => Promise<string>;
   /** Exporta o que está escolhido; quem chama já tem as escolhas. */
   onExport: () => void;
   onExportWithBgChange: (value: boolean) => void;
@@ -194,6 +198,7 @@ export default function ExportDialog({
           copy={copy}
           hasMotion={hasMotion}
           isSupported={isVideoSupported}
+          onCreateProjectLink={onCreateProjectLink}
           locale={locale}
           transparentSwatch={transparentSwatch}
           video={video!}
@@ -209,6 +214,7 @@ function VideoFields({
   hasMotion,
   isSupported,
   locale,
+  onCreateProjectLink,
   transparentSwatch,
   video,
 }: {
@@ -217,6 +223,7 @@ function VideoFields({
   hasMotion: boolean;
   isSupported: boolean;
   locale: Locale;
+  onCreateProjectLink?: () => Promise<string>;
   transparentSwatch: ReactNode;
   video: VideoExportDialogProps;
 }) {
@@ -297,9 +304,62 @@ function VideoFields({
       )}
       {/* Só sem fundo: com fundo sai MP4, que o Safari mostra bem. */}
       {!settings.background && isSafari(navigator.userAgent) ? (
-        <Callout>{copy.videoExportSafariTransparent}</Callout>
+        <Callout
+          action={
+            onCreateProjectLink ? (
+              <ProjectLinkButton copy={copy} onCreate={onCreateProjectLink} />
+            ) : null
+          }
+        >
+          {copy.videoExportSafariTransparent}
+        </Callout>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Copia o link desta cena para abrir em outro navegador. O rótulo confirma a
+ * cópia por um instante, no próprio botão: um aviso no canto da tela ficaria
+ * atrás da máscara do dialog.
+ */
+function ProjectLinkButton({
+  copy,
+  onCreate,
+}: {
+  copy: AppCopy;
+  onCreate: () => Promise<string>;
+}) {
+  const [status, setStatus] = useState<"copied" | "error" | "idle">("idle");
+
+  useEffect(() => {
+    if (status === "idle") {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setStatus("idle"), 2500);
+
+    return () => window.clearTimeout(timeout);
+  }, [status]);
+
+  return (
+    <button
+      type="button"
+      className="editor-callout-action"
+      aria-live="polite"
+      onClick={() => {
+        copyPendingText(onCreate())
+          .then(() => setStatus("copied"))
+          .catch(() => setStatus("error"));
+      }}
+    >
+      {status === "copied" ? <Check size={13} aria-hidden /> : <Link size={13} aria-hidden />}
+      {status === "copied"
+        ? copy.projectLinkCopied
+        : status === "error"
+          ? copy.projectLinkCopyError
+          : copy.projectLinkCopy}
+    </button>
   );
 }
 

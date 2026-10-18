@@ -178,7 +178,13 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - PNG renderiza fora da tela com supersampling 2×.
 - Vídeo é quadro a quadro, codificado com `mediabunny` (WebCodecs), carregado
   só no primeiro export. WebM transparente funciona no Chrome, Edge e Firefox.
-  O Safari ainda não mostra a transparência, e o dialog avisa.
+  O Safari ainda não mostra a transparência: o dialog avisa e oferece o
+  link do projeto para abrir em outro navegador.
+- **Link do projeto** ([scene-link.ts](app/lib/scene-link.ts)): a cena vai
+  comprimida no hash da URL, com formato versionado à parte dos templates
+  (`v: 1`); campo novo de template entra no link sem mudar nada. Ao abrir,
+  vira template do navegador. Copiar usa `copyPendingText`, porque o Safari
+  só deixa escrever na área de transferência durante o clique.
 - O dialog Exportar é: escolher tudo, depois um botão Exportar. O rótulo é
   "Exportar", não "Download", e não há seletor de pasta (decisões do usuário).
 
