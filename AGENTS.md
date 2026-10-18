@@ -66,6 +66,28 @@ funcionar ou muda de forma incompatível. Se o usuário recusar, não perguntar
 de novo na mesma sessão. Depois do "sim": `npm version <patch|minor|major>`
 (atualiza o `package.json`, commita e cria a tag).
 
+## Antes de escrever código
+
+Ler o código que a mudança toca e o que depende dele. Então, parar no
+primeiro degrau que resolve:
+
+1. Não fazer o que ninguém pediu — nem opção, abstração ou configuração
+   "para depois".
+2. Reusar o que o projeto tem: as primitivas da tabela abaixo, os tokens, as
+   funções de `app/lib/`.
+3. Usar a plataforma (APIs do navegador, three, drei) ou uma dependência já
+   instalada. Dependência nova só com motivo, e perguntando.
+4. Só então, escrever o mínimo que funciona.
+
+- **Preguiça na solução, não na mudança:** atualizar quem chama, os testes, as
+  cópias de `copy` nos testes e a documentação que a mudança afeta.
+- Num bug, achar todos os usos e corrigir a causa uma vez. Ao mover código,
+  manter a validação e o tratamento de erro.
+- Nunca cortar acessibilidade (rótulos, foco, contraste) nem o que o usuário
+  pediu.
+- Os comentários deste projeto explicam o porquê, em pt-BR, quantas linhas
+  precisar. Seguir esse estilo.
+
 ## Interface e design system
 
 - **Tokens sempre.** Cor, espaço, raio e tipografia vêm de
