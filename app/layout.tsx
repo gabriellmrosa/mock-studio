@@ -23,7 +23,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" data-theme="dark">
-      <body className={abhayaLibre.variable}>
+      {/* Nas gravações do Clarity, todo texto sai mascarado: nomes de
+          objetos, templates e arquivos são do usuário. */}
+      <body className={abhayaLibre.variable} data-clarity-mask="True">
         {children}
         <PwaRegistration />
         <Analytics />

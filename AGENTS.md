@@ -210,6 +210,19 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - O dialog Exportar é: escolher tudo, depois um botão Exportar. O rótulo é
   "Exportar", não "Download", e não há seletor de pasta (decisões do usuário).
 
+**Analytics**
+
+- Vercel Web Analytics e Microsoft Clarity ([analytics.ts](app/lib/analytics.ts)).
+  O Clarity só carrega depois do "Aceitar" do cartão de consentimento, e só no
+  deploy de produção. Não inicie nada que grave ou use cookies antes disso.
+- Todo texto sai mascarado nas gravações (`data-clarity-mask` no `<body>`):
+  nomes de objetos, templates e arquivos são do usuário. Não tirar.
+- Quem lê a URL chama `clearSceneLinkFromUrl()` antes: a cena de um link de
+  projeto nunca pode sair do computador.
+- Para testar o cartão localmente, rodar o dev com
+  `NEXT_PUBLIC_VERCEL_ENV=production` — e não clicar em "Aceitar", que mandaria
+  uma sessão de `localhost` para o projeto real.
+
 ## Verificar no navegador
 
 - Usar o servidor `dev` de `.claude/launch.json` e conferir no navegador do

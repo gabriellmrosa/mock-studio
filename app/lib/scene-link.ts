@@ -72,6 +72,47 @@ export function readSceneLinkHash(hash: string) {
 }
 
 /**
+ * O link que veio no endereço ao abrir a página: `undefined` enquanto ninguém
+ * olhou, depois o conteúdo (ou `null`).
+ */
+let takenFromUrl: string | null | undefined;
+
+/**
+ * Tira a cena do endereço na primeira vez que alguém olha, guardando o
+ * conteúdo. Quem lê a URL (o analytics) tem de chamar isto antes: a cena não
+ * pode sair do computador, e assim tanto faz quem roda primeiro.
+ */
+export function clearSceneLinkFromUrl() {
+  if (takenFromUrl !== undefined) {
+    return;
+  }
+
+  takenFromUrl = readSceneLinkHash(window.location.hash);
+
+  if (takenFromUrl !== null) {
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.search,
+    );
+  }
+}
+
+/**
+ * O link do endereço, uma vez só: depois de entregue, não abre de novo — nem
+ * num segundo efeito do modo estrito do React, nem ao recarregar.
+ */
+export function consumeSceneLinkFromUrl() {
+  clearSceneLinkFromUrl();
+
+  const encoded = takenFromUrl ?? null;
+
+  takenFromUrl = null;
+
+  return encoded;
+}
+
+/**
  * A cena do link, validada como um template salvo; `null` se o link estiver
  * cortado, corrompido ou for de um formato que este app não conhece.
  */

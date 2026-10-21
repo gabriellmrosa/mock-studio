@@ -249,3 +249,13 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - the zoom math (`useTimelineZoom`) now works on the axis box — where it starts and how wide it is — instead of the whole scroller: the anchor, the follow-the-playhead scroll and the ruler spacing would otherwise drift by the padding
 - checked in the browser: the first keyframe sits 5 px inside the edge, two zoom-in clicks keep the playhead on the same pixel, and scrolled to the end there's room after the axis
 
+## 29. Microsoft Clarity, with consent — done
+
+- [x] Clarity (`@microsoft/clarity`, MIT) for heatmaps and session recordings, next to Vercel Web Analytics; the project ID is public by nature and lives in code (`app/lib/analytics.ts`), so nothing needs configuring on Vercel
+- [x] consent first: a small card on the first visit (bottom left, over the objects panel footer, on the floating surface) with Accept and Decline. Clarity is lazy-loaded only after Accept, so before a choice there's no script, cookie or request, and declining never downloads it; the choice is remembered in `localStorage`. Clarity is told measuring only, no ads (`consentV2` with `ad_Storage: denied`)
+- [x] only the production deployment asks and records (`NEXT_PUBLIC_VERCEL_ENV`, set by Vercel on each deploy); `localhost` and previews stay out of the data
+- [x] privacy: every text is masked in recordings (`data-clarity-mask` on `<body>`, covering portaled menus and dialogs) since object, template and file names are the user's; the 3D canvas isn't captured; screen videos only exist as local `blob:` URLs
+- [x] the project link promise holds: Clarity records the page URL, so the `#scene=` is taken out of it before Clarity starts — `clearSceneLinkFromUrl` removes it on the first look and keeps it for the page, whoever runs first, and `consumeSceneLinkFromUrl` hands it to the page once
+- checked in the browser with a temporary server set to production: the card shows, nothing from Clarity loads before a choice, Decline hides it and survives a reload; Accept was covered by tests only, to keep `localhost` sessions out of the real project
+- left out: a way to change the choice later (an entry in the preferences menu would cover LGPD's revocation), and the pre-existing `npm audit` warnings, none of them from Clarity
+

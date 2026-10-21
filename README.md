@@ -84,6 +84,7 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - `Tailwind CSS 4`
 - `Jest` + `Testing Library`
 - `Vercel Web Analytics`
+- `Microsoft Clarity` (with consent)
 
 ## Getting Started
 
@@ -115,6 +116,13 @@ To see traffic data in production:
 1. Deploy the project to Vercel.
 2. Enable `Web Analytics` in the Vercel dashboard.
 3. Visit the Analytics tab for page views, visitors, referrers and geography data.
+
+It also uses [Microsoft Clarity](https://clarity.microsoft.com) (`@microsoft/clarity`) for heatmaps and session recordings, only with consent:
+
+- on the first visit to the published site a small card asks to accept or decline; nothing loads before the choice, and declining never loads Clarity — the choice is remembered in the browser
+- only the production deployment asks (`NEXT_PUBLIC_VERCEL_ENV`, set by Vercel); `localhost` and previews record nothing
+- every text is masked in recordings (`data-clarity-mask` on `<body>`), the 3D canvas isn't captured, and a project link's `#scene=` is removed from the URL before Clarity starts
+- the project ID is public by nature and lives in `app/lib/analytics.ts`
 
 ## Model Catalog
 

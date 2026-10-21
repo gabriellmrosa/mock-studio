@@ -125,6 +125,10 @@ export type AppCopy = {
   projectLinkTemplateName: string;
   projectLinkOpened: string;
   projectLinkInvalid: string;
+  analyticsConsentTitle: string;
+  analyticsConsentText: string;
+  analyticsConsentAccept: string;
+  analyticsConsentDecline: string;
   videoExportSuccess: string;
   videoExportError: string;
   motionTimelineEmpty: string;
@@ -324,6 +328,11 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     projectLinkOpened:
       "Projeto aberto do link e salvo nos templates. Envie de novo as imagens e vídeos das telas.",
     projectLinkInvalid: "Este link de projeto está incompleto ou corrompido.",
+    analyticsConsentTitle: "Ajude a melhorar o Mock Studio",
+    analyticsConsentText:
+      "Com sua permissão, usamos o Microsoft Clarity, com cookies, para ver como o editor é usado: cliques e rolagem, com os textos mascarados. Suas imagens, vídeos e cenas não são gravados.",
+    analyticsConsentAccept: "Aceitar",
+    analyticsConsentDecline: "Recusar",
     videoExportSuccess: "Vídeo exportado.",
     videoExportError: "Não foi possível exportar o vídeo.",
     motionTimelineEmpty: "Nenhum objeto visível na cena.",
@@ -583,6 +592,11 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     projectLinkOpened:
       "Project opened from the link and saved to templates. Upload the screen images and videos again.",
     projectLinkInvalid: "This project link is incomplete or corrupted.",
+    analyticsConsentTitle: "Help improve Mock Studio",
+    analyticsConsentText:
+      "With your permission, we use Microsoft Clarity, with cookies, to see how the editor is used: clicks and scrolling, with text masked. Your images, videos and scenes aren't recorded.",
+    analyticsConsentAccept: "Accept",
+    analyticsConsentDecline: "Decline",
     videoExportSuccess: "Video exported.",
     videoExportError: "Couldn't export the video.",
     motionTimelineEmpty: "No visible objects in the scene.",

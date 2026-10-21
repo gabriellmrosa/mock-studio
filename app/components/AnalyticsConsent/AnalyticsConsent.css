@@ -1,0 +1,39 @@
+/* Pedido de consentimento do analytics: um cartão flutuante no canto de
+   baixo à esquerda, sobre o rodapé do painel de objetos, com a superfície dos
+   menus. Fica abaixo dos dialogs, que cobrem tudo quando abertos. */
+.analytics-consent {
+  background: var(--sidebar-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  bottom: var(--space-4);
+  box-shadow: var(--canvas-shadow);
+  color: var(--foreground);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  left: var(--space-4);
+  padding: var(--space-4);
+  position: fixed;
+  width: calc(var(--editor-sidebar-width) - var(--space-4) * 2);
+  z-index: 1100;
+}
+
+.analytics-consent-title {
+  font-size: var(--font-size-200);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.analytics-consent-text {
+  color: var(--sidebar-label);
+  font-size: var(--font-size-150);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.analytics-consent-actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-top: var(--space-1);
+}

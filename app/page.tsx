@@ -15,6 +15,7 @@ import type {
   SpawnOverrides,
 } from "./components/MockupCanvas/MockupCanvas";
 import AlertDialog from "./components/AlertDialog/AlertDialog";
+import AnalyticsConsent from "./components/AnalyticsConsent/AnalyticsConsent";
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
 import MotionTimeline from "./components/MotionTimeline/MotionTimeline";
@@ -66,7 +67,11 @@ import {
   type SceneTemplate,
   type TemplateMode,
 } from "./lib/scene-templates";
-import { createSceneLink, decodeSceneLink, readSceneLinkHash } from "./lib/scene-link";
+import {
+  consumeSceneLinkFromUrl,
+  createSceneLink,
+  decodeSceneLink,
+} from "./lib/scene-link";
 import { DEVICE_MODELS } from "./models/device-models";
 
 /** Cena de um modo guardada enquanto o outro está ativo. */
@@ -607,19 +612,11 @@ export default function Home() {
   });
 
   useEffect(() => {
-    const encoded = readSceneLinkHash(window.location.hash);
+    const encoded = consumeSceneLinkFromUrl();
 
-    if (!encoded) {
-      return;
+    if (encoded) {
+      void decodeSceneLink(encoded).then(openLinkedTemplate);
     }
-
-    // O link já foi lido: recarregar a página não o abre de novo.
-    window.history.replaceState(
-      null,
-      "",
-      window.location.pathname + window.location.search,
-    );
-    void decodeSceneLink(encoded).then(openLinkedTemplate);
   }, []);
 
   /** O link desta cena, como está agora, para abrir em outro navegador. */
@@ -1159,6 +1156,7 @@ export default function Home() {
           },
         ]}
       />
+      <AnalyticsConsent copy={copy} />
       <Snackbar
         dismissLabel={copy.dismissSnackbar}
         notification={notification}
