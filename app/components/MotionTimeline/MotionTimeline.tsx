@@ -168,7 +168,7 @@ export default function MotionTimeline({
 }: MotionTimelineProps) {
   const lanesRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
-  const { reveal, viewportRef, viewportWidth, zoom, zoomTo } = useTimelineZoom(
+  const { axisWidth, reveal, viewportRef, zoom, zoomTo } = useTimelineZoom(
     objects.length > 0,
   );
   // O eixo cresce com a cena, mas congela durante um arrasto: se ele mudasse
@@ -218,7 +218,7 @@ export default function MotionTimeline({
   // Régua: o intervalo mais fino que ainda dá para ler na escala atual. Antes
   // de medir a janela, um segundo.
   const tickStepMs =
-    viewportWidth > 0 ? getTickStepMs((viewportWidth * zoom) / axisMs) : 1000;
+    axisWidth > 0 ? getTickStepMs((axisWidth * zoom) / axisMs) : 1000;
   const ticks = Array.from(
     { length: Math.floor(axisMs / tickStepMs) + 1 },
     (_, index) => index * tickStepMs,

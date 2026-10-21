@@ -242,3 +242,10 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - the template name and message are read after the link is decoded: read on the first render, they came out in the default language instead of the saved one
 - checked in the app's browser simulating Safari's user agent; the clipboard path still needs one click in a real Safari
 
+## 28. Keyframes cut at the timeline edges — fixed
+
+- a keyframe at 0 s (or at the very end of the axis) showed only half its diamond: the timeline's horizontal scroller, needed for zoom, clips at its edges, and a scroller can't clip on one axis only, so removing the `overflow` wasn't an option
+- fix: the scroller has `padding-inline: var(--space-3)`, room for half a diamond plus its selected outline, and the axis starts after it; clicks, drags and the playhead already measured the lanes themselves
+- the zoom math (`useTimelineZoom`) now works on the axis box — where it starts and how wide it is — instead of the whole scroller: the anchor, the follow-the-playhead scroll and the ruler spacing would otherwise drift by the padding
+- checked in the browser: the first keyframe sits 5 px inside the edge, two zoom-in clicks keep the playhead on the same pixel, and scrolled to the end there's room after the axis
+

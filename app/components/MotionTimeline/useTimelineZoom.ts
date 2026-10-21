@@ -24,6 +24,19 @@ const MIN_TICK_SPACING_PX = 80;
 /** A pinça manda deltas pequenos e frequentes: isto é a "força" dela. */
 const PINCH_SENSITIVITY = 0.01;
 
+/**
+ * Onde o eixo fica dentro da janela que rola: ela tem uma folga nas laterais
+ * (para os keyframes das pontas não serem cortados), e o eixo ocupa só o
+ * meio. `start` é a folga da esquerda; `width`, a largura do eixo sem zoom.
+ */
+function getAxisBox(viewport: HTMLElement) {
+  const style = getComputedStyle(viewport);
+  const start = parseFloat(style.paddingLeft) || 0;
+  const end = parseFloat(style.paddingRight) || 0;
+
+  return { start, width: Math.max(0, viewport.clientWidth - start - end) };
+}
+
 export function clampTimelineZoom(zoom: number) {
   return Math.min(MAX_TIMELINE_ZOOM, Math.max(MIN_TIMELINE_ZOOM, zoom));
 }
@@ -72,7 +85,7 @@ export function useTimelineZoom(
 ) {
   const viewportRef = useRef<HTMLDivElement>(null);
   const [zoom, setZoom] = useState(MIN_TIMELINE_ZOOM);
-  const [viewportWidth, setViewportWidth] = useState(0);
+  const [axisWidth, setAxisWidth] = useState(0);
   // O zoom mais recente, antes do React renderizar: eventos de pinça chegam
   // vários por quadro e precisam somar.
   const zoomRef = useRef(zoom);
@@ -90,14 +103,15 @@ export function useTimelineZoom(
     // rolagem ainda não foi corrigida para o zoom anterior.
     if (!anchorRef.current) {
       const rect = viewport.getBoundingClientRect();
+      const axis = getAxisBox(viewport);
       const x = clientX ?? rect.left + viewport.clientWidth / 2;
       const offsetX = x - rect.left;
 
       anchorRef.current = {
         offsetX,
         ratio:
-          (viewport.scrollLeft + offsetX) /
-          (viewport.clientWidth * zoomRef.current),
+          (viewport.scrollLeft + offsetX - axis.start) /
+          (axis.width * zoomRef.current),
       };
     }
 
@@ -117,8 +131,10 @@ export function useTimelineZoom(
       return;
     }
 
+    const axis = getAxisBox(viewport);
+
     viewport.scrollLeft =
-      anchor.ratio * viewport.clientWidth * zoom - anchor.offsetX;
+      axis.start + anchor.ratio * axis.width * zoom - anchor.offsetX;
   }, [zoom]);
 
   const handleWheel = useEffectEvent((event: WheelEvent) => {
@@ -168,10 +184,10 @@ export function useTimelineZoom(
     const observer =
       typeof ResizeObserver === "undefined"
         ? null
-        : new ResizeObserver(() => setViewportWidth(viewport.clientWidth));
+        : new ResizeObserver(() => setAxisWidth(getAxisBox(viewport).width));
 
     observer?.observe(viewport);
-    setViewportWidth(viewport.clientWidth);
+    setAxisWidth(getAxisBox(viewport).width);
 
     return () => {
       viewport.removeEventListener("wheel", onWheel);
@@ -192,14 +208,17 @@ export function useTimelineZoom(
       return;
     }
 
-    const x = ratio * viewport.clientWidth * zoomRef.current - viewport.scrollLeft;
+    const axis = getAxisBox(viewport);
+    const x =
+      axis.start + ratio * axis.width * zoomRef.current - viewport.scrollLeft;
 
     if (x < 0 || x > viewport.clientWidth * 0.9) {
       viewport.scrollLeft =
-        ratio * viewport.clientWidth * zoomRef.current -
+        axis.start +
+        ratio * axis.width * zoomRef.current -
         viewport.clientWidth * 0.1;
     }
   }
 
-  return { reveal, viewportRef, viewportWidth, zoom, zoomTo };
+  return { axisWidth, reveal, viewportRef, zoom, zoomTo };
 }

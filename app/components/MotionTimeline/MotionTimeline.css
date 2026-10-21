@@ -264,12 +264,18 @@
 }
 
 /* Janela do eixo: rola na horizontal quando há zoom. A rolagem vertical (muitas
-   trilhas) continua sendo do corpo, junto com os rótulos. */
+   trilhas) continua sendo do corpo, junto com os rótulos.
+
+   Quem rola num eixo corta no outro e nas bordas: um keyframe no 0 ou no fim
+   da cena sairia pela metade. A folga nas laterais dá lugar a ele (meio
+   losango, com o contorno de selecionado); o eixo começa depois dela, e o
+   zoom conta com isso (useTimelineZoom). */
 .motion-timeline-viewport {
   flex: 1;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  padding-inline: var(--space-3);
 }
 
 /* A largura (zoom × janela) vem do componente; tudo dentro é posicionado em %
