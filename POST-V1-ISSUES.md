@@ -259,3 +259,13 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - checked in the browser with a temporary server set to production: the card shows, nothing from Clarity loads before a choice, Decline hides it and survives a reload; Accept was covered by tests only, to keep `localhost` sessions out of the real project
 - left out: a way to change the choice later (an entry in the preferences menu would cover LGPD's revocation), and the pre-existing `npm audit` warnings, none of them from Clarity
 
+## 30. Camera safety lock — done
+
+- the camera could fly off: zoom had no limits (each `Zoom out` click multiplies the distance), pan and zoom-to-cursor dragged the orbit target away from the objects, and past 100× the fitting distance everything vanished at once, cut by the camera's far plane, while still in frame
+- [x] limits relative to the scene, so they hold for one phone or five devices: the ruler is the distance at which the whole scene fits on screen; zoom goes out to 8× it (the scene at about 1/8 of its fitted size) and in to 1/20 of it (close detail without passing through a device)
+- [x] the orbit target stays near the objects, with a margin that follows the zoom: far away it reaches the scene's size, so panning is free; close up it shrinks to half of what the camera sees, so part of the scene always stays in frame. Half, not more: in `Static` the canvas runs under the side panels, and 0.8 left the device behind the Inspector
+- [x] near and far planes cover the whole lock, so nothing is clipped inside it
+- [x] limits are recomputed on every fit, at the start of every gesture and before every navigation button, from the objects' box — cheap, and it follows objects that moved; during a gesture only the margin is updated, with the box from its start
+- [x] a template camera saved too far away is brought within the limit
+- checked in the browser: 60 `Zoom out` clicks stop with the phone at about 1/9 of the height, 80 `Zoom in` clicks stop at its screen, the wheel toward an empty corner stays on the phone, and 150 `Pan left` clicks stop with it still in view; checked in `Static` with one device
+

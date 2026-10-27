@@ -64,6 +64,7 @@ import {
   createVideoFrameRenderer,
   encodeVideo,
 } from "./export-video";
+import { getCameraLimits, getOrbitBoundary } from "./camera-limits";
 import {
   FULL_ALIGNMENT_AREA,
   collectWorldVertices,
@@ -739,6 +740,56 @@ function SceneObjectResolvedReporter({
   return null;
 }
 
+/**
+ * A caixa dos objetos da última vez que a trava foi aplicada, por controle de
+ * câmera: a folga do centro da órbita é refeita a cada movimento de um gesto,
+ * e medir a cena a cada quadro seria desperdício.
+ */
+const sceneBoxes = new WeakMap<CameraControlsImpl, THREE.Box3>();
+
+/**
+ * Aplica a trava da câmera (ver camera-limits.ts) para a cena como está
+ * agora: distância mínima e máxima, o que a câmera desenha e a caixa do
+ * centro da órbita. Barato — a caixa dos objetos, sem percorrer vértices —,
+ * por isso roda a cada enquadramento, início de gesto e botão de navegação,
+ * e acompanha objetos que se moveram.
+ */
+function applyCameraLimits(
+  controls: CameraControlsImpl,
+  sceneGroup: THREE.Object3D,
+) {
+  const camera = controls.camera;
+
+  if (!(camera instanceof THREE.PerspectiveCamera)) {
+    return;
+  }
+
+  const box = new THREE.Box3().setFromObject(sceneGroup);
+  const limits = getCameraLimits(box, camera.fov);
+
+  if (!limits) {
+    return;
+  }
+
+  sceneBoxes.set(controls, box);
+  controls.minDistance = limits.minDistance;
+  controls.maxDistance = limits.maxDistance;
+  camera.near = limits.near;
+  camera.far = limits.far;
+  camera.updateProjectionMatrix();
+  updateOrbitBoundary(controls);
+}
+
+/** A folga do centro da órbita para a distância de agora (ver getOrbitBoundary). */
+function updateOrbitBoundary(controls: CameraControlsImpl) {
+  const box = sceneBoxes.get(controls);
+  const camera = controls.camera;
+
+  if (box && camera instanceof THREE.PerspectiveCamera) {
+    controls.setBoundary(getOrbitBoundary(box, controls.distance, camera.fov));
+  }
+}
+
 // O fitToBox encosta o conteúdo nas bordas. O auto-fit inicial respira por
 // causa do <Bounds margin={1.18}>, então aqui inflamos a caixa em 9% de cada
 // lado para os dois enquadramentos ficarem visualmente iguais.
@@ -846,9 +897,9 @@ function BoundsResetController({
 
       const { center, distance } = bounds.getSize();
 
-      camera.near = distance / 100;
-      camera.far = distance * 100;
-      camera.updateProjectionMatrix();
+      // A trava vem antes da pose: um template salvo longe demais é trazido
+      // para dentro do limite.
+      applyCameraLimits(controls, sceneGroup);
 
       // Com um template em aplicação, o enquadramento salvo substitui o
       // auto-fit — sem transição, já que a cena está coberta pelo loading.
@@ -968,6 +1019,29 @@ function BoundsResetController({
       return;
     }
 
+    // A trava acompanha a cena: objetos podem ter se movido desde o último
+    // enquadramento. Antes de cada gesto e de cada botão de navegação.
+    function refreshLimits() {
+      const sceneGroup = sceneRef.current;
+
+      if (controls && sceneGroup) {
+        applyCameraLimits(controls, sceneGroup);
+      }
+    }
+
+    // Depois do movimento a distância mudou: a folga do centro acompanha.
+    const navigate = (move: () => void) => () => {
+      refreshLimits();
+      move();
+      updateOrbitBoundary(controls);
+    };
+
+    // Durante o gesto, só a folga muda com o zoom; a caixa é a do início.
+    const followGesture = () => updateOrbitBoundary(controls);
+
+    controls.addEventListener("controlstart", refreshLimits);
+    controls.addEventListener("control", followGesture);
+
     onViewportControlsReady({
       // Enquadra todos os objetos visíveis, recalculado na hora — ao contrário
       // do sceneFitKey, que só reage a entrar/sair objeto e ignora posição.
@@ -978,17 +1052,28 @@ function BoundsResetController({
           return;
         }
 
+        refreshLimits();
         fitWithMargin(controls, sceneGroup);
       },
-      panDown: () => controls.truck(0, -controls.distance * PAN_STEP_RATIO, false),
-      panLeft: () => controls.truck(-controls.distance * PAN_STEP_RATIO, 0, false),
-      panRight: () => controls.truck(controls.distance * PAN_STEP_RATIO, 0, false),
-      panUp: () => controls.truck(0, controls.distance * PAN_STEP_RATIO, false),
-      zoomIn: () => controls.dolly(controls.distance * 0.138, false),
-      zoomOut: () => controls.dolly(-controls.distance * 0.138, false),
+      panDown: navigate(() =>
+        controls.truck(0, -controls.distance * PAN_STEP_RATIO, false),
+      ),
+      panLeft: navigate(() =>
+        controls.truck(-controls.distance * PAN_STEP_RATIO, 0, false),
+      ),
+      panRight: navigate(() =>
+        controls.truck(controls.distance * PAN_STEP_RATIO, 0, false),
+      ),
+      panUp: navigate(() =>
+        controls.truck(0, controls.distance * PAN_STEP_RATIO, false),
+      ),
+      zoomIn: navigate(() => controls.dolly(controls.distance * 0.138, false)),
+      zoomOut: navigate(() => controls.dolly(-controls.distance * 0.138, false)),
     });
 
     return () => {
+      controls.removeEventListener("controlstart", refreshLimits);
+      controls.removeEventListener("control", followGesture);
       onViewportControlsReady(null);
     };
   }, [controlsRef, onViewportControlsReady, sceneRef]);

@@ -178,6 +178,11 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   pelo estado do React.
 - O export de vídeo avança os quadros com `advance()`, não com
   `requestAnimationFrame`, que congela com a aba em segundo plano.
+- **Trava da câmera** ([camera-limits.ts](app/components/MockupCanvas/camera-limits.ts)):
+  distância mínima e máxima, o centro da órbita perto dos objetos e o
+  `near`/`far` vêm sempre de `applyCameraLimits`, relativos à cena. Não
+  definir esses valores à mão em outro lugar, e chamar `applyCameraLimits`
+  antes de mexer na câmera por código.
 - `camera-controls`: não usar `saveState()`/`reset()`; a promise do
   `setLookAt` só resolve quando a transição seguinte começa. O enquadramento de
   origem fica guardado explicitamente.
