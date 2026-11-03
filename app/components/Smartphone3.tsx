@@ -146,7 +146,6 @@ type Smartphone3Props = JSX.IntrinsicElements["group"] & {
   screenSize?: [number, number];
   screenRotation?: [number, number, number];
   colors?: Record<string, string>;
-  matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
   showNotebookKeyboard?: boolean;
@@ -157,21 +156,6 @@ function createFlatColorMaterial(color: string) {
   return new THREE.MeshBasicMaterial({
     color,
     toneMapped: false,
-    polygonOffset: true,
-    polygonOffsetFactor: -1,
-    polygonOffsetUnits: -1,
-  });
-}
-
-function createAccentMaterial(color: string, matte: boolean) {
-  if (matte) {
-    return createFlatColorMaterial(color);
-  }
-
-  return new THREE.MeshPhongMaterial({
-    color,
-    shininess: 24,
-    specular: new THREE.Color("#2a2a2a"),
     polygonOffset: true,
     polygonOffsetFactor: -1,
     polygonOffsetUnits: -1,
@@ -234,7 +218,6 @@ function Smartphone3Impl({
   screenSize = [220, 470],
   screenRotation = [0, 0, 0],
   colors,
-  matteColors = true,
   debugPartColors,
   showDeviceShell = true,
   ...props
@@ -262,17 +245,17 @@ function Smartphone3Impl({
   const c = colors ?? SMARTPHONE3_THEMES[SMARTPHONE3_DEFAULT_THEME];
   const partMaterials = useMemo(
     () => ({
-      gradientSound:       createAccentMaterial(c.gradientSound, matteColors),
-      smartphoneBody:      createSimpleFinishMaterial(c.smartphoneBody, matteColors),
-      rightBigSideButton:  createAccentMaterial(c.rightBigSideButton, matteColors),
-      leftSmallSideButton: createAccentMaterial(c.leftSmallSideButton, matteColors),
-      CircleTopLeft:       createAccentMaterial(c.CircleTopLeft, matteColors),
-      CircleTopLeftMiddle: createAccentMaterial(c.CircleTopLeftMiddle, matteColors),
-      CircleTopRight:      createAccentMaterial(c.CircleTopRight, matteColors),
-      CircleTopRightMiddle:createAccentMaterial(c.CircleTopRightMiddle, matteColors),
+      gradientSound:       createFlatColorMaterial(c.gradientSound),
+      smartphoneBody:      createSimpleFinishMaterial(c.smartphoneBody),
+      rightBigSideButton:  createFlatColorMaterial(c.rightBigSideButton),
+      leftSmallSideButton: createFlatColorMaterial(c.leftSmallSideButton),
+      CircleTopLeft:       createFlatColorMaterial(c.CircleTopLeft),
+      CircleTopLeftMiddle: createFlatColorMaterial(c.CircleTopLeftMiddle),
+      CircleTopRight:      createFlatColorMaterial(c.CircleTopRight),
+      CircleTopRightMiddle:createFlatColorMaterial(c.CircleTopRightMiddle),
     }),
     [c.gradientSound, c.smartphoneBody, c.rightBigSideButton, c.leftSmallSideButton,
-     c.CircleTopLeft, c.CircleTopLeftMiddle, c.CircleTopRight, c.CircleTopRightMiddle, matteColors],
+     c.CircleTopLeft, c.CircleTopLeftMiddle, c.CircleTopRight, c.CircleTopRightMiddle],
   );
 
   useEffect(() => {

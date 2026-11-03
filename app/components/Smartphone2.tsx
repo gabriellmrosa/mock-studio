@@ -52,7 +52,6 @@ type Smartphone2Props = JSX.IntrinsicElements["group"] & {
   /** Zoom e posição do conteúdo na tela. */
   screenFit?: ScreenFit;
   colors?: Record<string, string>;
-  matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
   showNotebookKeyboard?: boolean;
@@ -102,7 +101,6 @@ function Smartphone2Impl({
   videoKey,
   screenFit,
   colors,
-  matteColors = true,
   debugPartColors,
   showDeviceShell = true,
   screenPosition: _sp,
@@ -217,12 +215,12 @@ function Smartphone2Impl({
           return [];
         }
 
-        const themedMaterial = createSimpleFinishMaterial(color, matteColors);
+        const themedMaterial = createSimpleFinishMaterial(color);
 
         return [[semantic, themedMaterial] as const];
       }),
     ) as Record<string, THREE.Material>;
-  }, [matteColors, resolvedColors]);
+  }, [resolvedColors]);
 
   useEffect(() => {
     return () => {

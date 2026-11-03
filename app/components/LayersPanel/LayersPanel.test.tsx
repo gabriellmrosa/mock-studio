@@ -71,7 +71,6 @@ const copy: AppCopy = {
   languageLabel: "Language",
   layersSectionTitle: "Objects",
   lightMode: "Light",
-  matteColorLabel: "Matte",
   moveDownButton: "Move down",
   moveLeftButton: "Move left",
   moveRightButton: "Move right",

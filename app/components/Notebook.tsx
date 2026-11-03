@@ -84,7 +84,6 @@ type NotebookProps = React.ComponentPropsWithoutRef<"group"> & {
   /** Zoom e posição do conteúdo na tela. */
   screenFit?: ScreenFit;
   colors?: Record<string, string>;
-  matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
   showNotebookKeyboard?: boolean;
@@ -109,7 +108,6 @@ function NotebookImpl({
   videoKey,
   screenFit,
   colors,
-  matteColors = true,
   debugPartColors,
   showDeviceShell = true,
   showNotebookKeyboard = true,
@@ -174,12 +172,12 @@ function NotebookImpl({
           return [];
         }
 
-        const themedMaterial = createSimpleFinishMaterial(color, matteColors);
+        const themedMaterial = createSimpleFinishMaterial(color);
         themedMaterial.needsUpdate = true;
         return [[semantic, themedMaterial] as const];
       }),
     );
-  }, [colors, matteColors]);
+  }, [colors]);
 
   useEffect(() => {
     if (!themeMaterials) return;

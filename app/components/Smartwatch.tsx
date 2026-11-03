@@ -51,7 +51,6 @@ type SmartwatchProps = React.ComponentPropsWithoutRef<"group"> & {
   /** Zoom e posição do conteúdo na tela. */
   screenFit?: ScreenFit;
   colors?: Record<string, string>;
-  matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
   showNotebookKeyboard?: boolean;
@@ -62,10 +61,15 @@ type SmartwatchProps = React.ComponentPropsWithoutRef<"group"> & {
 
 const SCREEN_RADIUS = 1.75;
 
+/**
+ * O material da caixa e da pulseira, em acabamento fosco: pouco brilho, quase
+ * sem metal e reflexo. Existia uma variante brilhante, ligada à opção
+ * "Acabamento fosco" — removida, porque nos outros aparelhos ela não mudava
+ * nada; o relógio ficou com o fosco, que era o padrão.
+ */
 function cloneShellMaterial(
   template: THREE.Material | THREE.Material[] | undefined,
   color: string,
-  matte: boolean,
 ) {
   const base =
     (Array.isArray(template) ? template[0] : template)?.clone() ??
@@ -78,22 +82,22 @@ function cloneShellMaterial(
   base.transparent = false;
   base.opacity = 1;
   if ("roughness" in base && typeof base.roughness === "number") {
-    base.roughness = matte ? Math.max(base.roughness, 0.78) : Math.min(base.roughness, 0.38);
+    base.roughness = Math.max(base.roughness, 0.78);
   }
   if ("metalness" in base && typeof base.metalness === "number") {
-    base.metalness = matte ? Math.min(base.metalness, 0.06) : Math.max(base.metalness, 0.12);
+    base.metalness = Math.min(base.metalness, 0.06);
   }
   if ("clearcoat" in base && typeof base.clearcoat === "number") {
-    base.clearcoat = matte ? Math.min(base.clearcoat, 0.04) : Math.max(base.clearcoat, 0.16);
+    base.clearcoat = Math.min(base.clearcoat, 0.04);
   }
   if ("clearcoatRoughness" in base && typeof base.clearcoatRoughness === "number") {
-    base.clearcoatRoughness = matte ? Math.max(base.clearcoatRoughness, 0.7) : Math.min(base.clearcoatRoughness, 0.3);
+    base.clearcoatRoughness = Math.max(base.clearcoatRoughness, 0.7);
   }
   if ("reflectivity" in base && typeof base.reflectivity === "number") {
-    base.reflectivity = matte ? Math.min(base.reflectivity, 0.04) : Math.max(base.reflectivity, 0.22);
+    base.reflectivity = Math.min(base.reflectivity, 0.04);
   }
   if ("envMapIntensity" in base && typeof base.envMapIntensity === "number") {
-    base.envMapIntensity = matte ? Math.min(base.envMapIntensity, 0.18) : Math.max(base.envMapIntensity, 0.7);
+    base.envMapIntensity = Math.min(base.envMapIntensity, 0.18);
   }
   base.side = THREE.DoubleSide;
   return base;
@@ -139,7 +143,6 @@ function SmartwatchImpl({
   videoKey,
   screenFit,
   colors,
-  matteColors = true,
   debugPartColors,
   showDeviceShell = true,
   screenPosition = [0.02, 14.52, -0.1],
@@ -211,20 +214,20 @@ function SmartwatchImpl({
   const c: SmartwatchColors = (colors as SmartwatchColors) ?? SMARTWATCH_THEMES[SMARTWATCH_DEFAULT_THEME];
   const partMaterials = useMemo(
     () => ({
-      twoSideButtons: cloneShellMaterial(shellMaterialTemplate, c.twoSideButtons, matteColors),
-      bandClasp:      cloneShellMaterial(shellMaterialTemplate, c.bandClasp, matteColors),
-      oneSideButton:  cloneShellMaterial(shellMaterialTemplate, c.oneSideButton, matteColors),
-      body:           cloneShellMaterial(shellMaterialTemplate, c.body, matteColors),
-      bandDetails:    cloneShellMaterial(shellMaterialTemplate, c.bandDetails, matteColors),
-      bandBottom:     cloneShellMaterial(shellMaterialTemplate, c.bandBottom, matteColors),
-      bandDetails2:   cloneShellMaterial(shellMaterialTemplate, c.bandDetails2, matteColors),
-      crownDetail:    cloneShellMaterial(shellMaterialTemplate, c.crownDetail, matteColors),
-      bandTop:        cloneShellMaterial(shellMaterialTemplate, c.bandTop, matteColors),
-      bodyBackground: cloneShellMaterial(shellMaterialTemplate, c.bodyBackground, matteColors),
+      twoSideButtons: cloneShellMaterial(shellMaterialTemplate, c.twoSideButtons),
+      bandClasp:      cloneShellMaterial(shellMaterialTemplate, c.bandClasp),
+      oneSideButton:  cloneShellMaterial(shellMaterialTemplate, c.oneSideButton),
+      body:           cloneShellMaterial(shellMaterialTemplate, c.body),
+      bandDetails:    cloneShellMaterial(shellMaterialTemplate, c.bandDetails),
+      bandBottom:     cloneShellMaterial(shellMaterialTemplate, c.bandBottom),
+      bandDetails2:   cloneShellMaterial(shellMaterialTemplate, c.bandDetails2),
+      crownDetail:    cloneShellMaterial(shellMaterialTemplate, c.crownDetail),
+      bandTop:        cloneShellMaterial(shellMaterialTemplate, c.bandTop),
+      bodyBackground: cloneShellMaterial(shellMaterialTemplate, c.bodyBackground),
     }),
     [c.twoSideButtons, c.bandClasp, c.oneSideButton, c.body,
      c.bandDetails, c.bandBottom, c.bandDetails2, c.crownDetail, c.bandTop,
-     c.bodyBackground, shellMaterialTemplate, matteColors],
+     c.bodyBackground, shellMaterialTemplate],
   );
   useEffect(() => () => Object.values(partMaterials).forEach((m) => m.dispose()), [partMaterials]);
 

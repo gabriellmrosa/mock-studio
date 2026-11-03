@@ -69,7 +69,6 @@ type TabletProps = JSX.IntrinsicElements["group"] & {
   /** Zoom e posição do conteúdo na tela. */
   screenFit?: ScreenFit;
   colors?: Record<string, string>;
-  matteColors?: boolean;
   debugPartColors?: Partial<Record<string, string>>;
   showDeviceShell?: boolean;
   showNotebookKeyboard?: boolean;
@@ -142,7 +141,6 @@ function TabletImpl({
   videoKey,
   screenFit,
   colors,
-  matteColors = true,
   debugPartColors,
   showDeviceShell = true,
   showTabletBezel = true,
@@ -238,15 +236,15 @@ function TabletImpl({
   }, [debugMaterials]);
 
   const bodyMaterial = useMemo(
-    () => createSimpleFinishMaterial(resolvedColors.body, matteColors),
-    [resolvedColors.body, matteColors],
+    () => createSimpleFinishMaterial(resolvedColors.body),
+    [resolvedColors.body],
   );
 
   useEffect(() => () => bodyMaterial.dispose(), [bodyMaterial]);
 
   const bezelMaterial = useMemo(
-    () => createSimpleFinishMaterial(resolvedColors.bezel, matteColors),
-    [resolvedColors.bezel, matteColors],
+    () => createSimpleFinishMaterial(resolvedColors.bezel),
+    [resolvedColors.bezel],
   );
 
   useEffect(() => () => bezelMaterial.dispose(), [bezelMaterial]);

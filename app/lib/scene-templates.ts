@@ -64,7 +64,6 @@ export type TemplateObject = {
   isVisible: boolean;
   /** Só em templates de Movimento. */
   keyframes?: TemplateKeyframe[];
-  matteColors: boolean;
   modelId: DeviceModelId;
   name: string;
   positionX: number;
@@ -118,7 +117,6 @@ function toTemplateObject(
     colors: { ...object.colors },
     deviceTheme: object.deviceTheme,
     isVisible: object.isVisible,
-    matteColors: object.matteColors,
     modelId: object.modelId,
     name: object.name,
     positionX: object.positionX,
@@ -194,7 +192,6 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       imageName: null,
       imageUrl: getPlaceholderImageUrl(object.modelId),
       isVisible: object.isVisible,
-      matteColors: object.matteColors,
       modelId: object.modelId,
       screenSource: "image",
       screenVideo: null,

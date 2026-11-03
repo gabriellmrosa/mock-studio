@@ -58,7 +58,6 @@ describe("scene-objects", () => {
     expect(object.isVisible).toBe(true);
     expect(object.showDeviceShell).toBe(true);
     expect(object.showNotebookKeyboard).toBe(true);
-    expect(object.matteColors).toBe(true);
     expect(object.imageUrl).toBe(getPlaceholderImageUrl("smartphone"));
     expect(object.deviceTheme).toBe(DEVICE_MODELS.smartphone.defaultTheme);
   });
@@ -76,7 +75,6 @@ describe("scene-objects", () => {
       deviceTheme: "",
       imageUrl: "data:image/png;base64,abc",
       isVisible: false,
-      matteColors: false,
       positionX: 1.25,
       positionY: -0.4,
       positionZ: 0.6,
@@ -103,7 +101,6 @@ describe("scene-objects", () => {
       id: "scene-object-copy",
       imageUrl: "data:image/png;base64,abc",
       isVisible: false,
-      matteColors: false,
       modelId: "notebook",
       name: "Workspace copy",
       positionY: -0.4,
@@ -164,7 +161,6 @@ describe("scene-objects", () => {
         ...object,
         imageUrl: "data:image/png;base64,abc",
         deviceTheme: "custom",
-        matteColors: false,
         positionX: 1,
         positionY: 4,
         positionZ: -2,
@@ -192,7 +188,6 @@ describe("scene-objects", () => {
     expect(changed.debugPartColors).toEqual(
       DEVICE_MODELS.notebook.initialDebugColors,
     );
-    expect(changed.matteColors).toBe(true);
     expect(changed.debugMode).toBe(false);
     expect(changed.positionX).toBe(1);
     expect(changed.positionY).toBe(4);

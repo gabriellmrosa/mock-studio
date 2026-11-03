@@ -1108,11 +1108,6 @@ export default function Home() {
             showTabletBezel: !selectedObject?.showTabletBezel,
           })
         }
-        onToggleMatteColors={() =>
-          selectedObject && updateSceneObject(selectedObject.id, {
-            matteColors: !selectedObject?.matteColors,
-          })
-        }
         onUpdatePosition={(positionPatch) => updateTransform(positionPatch)}
         onUpdateRotation={(rotationPatch) => updateTransform(rotationPatch)}
         onUpdateScale={(scale) => updateTransform({ scale })}

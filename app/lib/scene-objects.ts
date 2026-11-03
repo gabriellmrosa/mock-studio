@@ -181,7 +181,6 @@ export type SceneObject = {
   keyframes: Keyframe[];
   modelId: DeviceModelId;
   name: string;
-  matteColors: boolean;
   positionX: number;
   positionY: number;
   positionZ: number;
@@ -381,7 +380,6 @@ export function createSceneObject({
     keyframes: [],
     modelId,
     name,
-    matteColors: true,
     ...DEFAULT_OBJECT_TRANSFORM,
     showDeviceShell: true,
     showNotebookKeyboard: true,
@@ -450,7 +448,6 @@ export function changeSceneObjectModel(
     imageName: null,
     imageUrl: getPlaceholderImageUrl(modelId),
     modelId,
-    matteColors: true,
     screenSource: "image",
     screenVideo: null,
     showDeviceShell: true,

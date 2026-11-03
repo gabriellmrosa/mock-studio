@@ -91,7 +91,7 @@
 ## 11. Inspector option patterns — done
 
 - [x] option primitives in `EditorPrimitives`: `Switch` (on/off), `SegmentedTabs` (exclusive choice, always one selected) and `SubTabs` (optional groups that start closed)
-- [x] the four checkboxes (device body, keyboard, screen bezel, matte finish) became switches
+- [x] the four checkboxes (device body, keyboard, screen bezel, matte finish) became switches (matte finish later removed, #33)
 - [x] after an upload the screen shows one row — icon, name, `⋮` — and its options live in a floating `SidePopover` beside the Inspector: `Replace`, `Fit | Crop`, `Remove`
 - [x] `Custom` colors became a sub-tab under the always-visible theme grid; the `customColorsEnabled` flag, which only toggled the panel, left the object and the templates
 - [x] the recommended image size moved into the upload card
@@ -280,4 +280,11 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] the selected background is one indicator behind the tabs that slides to the chosen one (240 ms, the same curve as the hide-UI toggle's flight), instead of jumping between tabs; its position comes from `--segmented-count` and `--segmented-index`, since the tabs share one width — no measuring; reduced motion switches instantly
 - the alignment rails share the look but are action buttons, with no selection and no indicator
 - if the side panel gets darker later, `--segmented-track` has to follow, or the track and panel converge (`--black-000` is the darkest step of the scale)
+
+## 33. "Matte finish" removed — done
+
+- measured by toggling it with the camera still and diffing the canvas pixels (the instrument checked first against a color change, 101k pixels): 0 pixels changed on Smartphone, Smartphone 2, Notebook and Tablet, even in red; about 6k on Smartphone 3 (buttons and cameras) and 148k on the watch, a slightly stronger edge highlight
+- cause: the switch traded a Lambert material for a Phong one, and Phong's shine needs a direct light — the scene is lit only by the studio environment, so both rendered the same; the watch uses a physical material whose roughness does react to the environment
+- [x] removed instead of made to work everywhere: every device keeps the matte look it already had by default, so nothing changes on screen; the field left the scene object and templates, and templates saved with it still open (the field is ignored, with a test)
+- making it real would mean moving every device to physical materials and re-tuning each model's colors — a bigger change than the option was worth
 

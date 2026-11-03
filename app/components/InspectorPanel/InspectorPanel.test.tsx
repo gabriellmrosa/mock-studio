@@ -145,7 +145,6 @@ const copy: AppCopy = {
   languageLabel: "Language",
   layersSectionTitle: "Objects",
   lightMode: "Light",
-  matteColorLabel: "Matte finish",
   moveDownButton: "Move down",
   moveLeftButton: "Move left",
   moveRightButton: "Move right",
@@ -329,7 +328,6 @@ function renderInspector(
     onToggleDeviceShell: jest.fn(),
     onToggleNotebookKeyboard: jest.fn(),
     onToggleTabletBezel: jest.fn(),
-    onToggleMatteColors: jest.fn(),
     onUpdatePosition: jest.fn(),
     onUpdateRotation: jest.fn(),
     onUpdateScale: jest.fn(),
@@ -546,28 +544,24 @@ describe("InspectorPanel", () => {
     it("reflects the object state on each switch", () => {
       renderInspector({
         ...createSceneObject({ id: "object-1", name: "Object 1" }),
-        matteColors: false,
-        showDeviceShell: true,
+        showDeviceShell: false,
       });
 
       expect(screen.getByRole("switch", { name: "Device body" })).toHaveAttribute(
         "aria-checked",
-        "true",
-      );
-      expect(screen.getByRole("switch", { name: "Matte finish" })).toHaveAttribute(
-        "aria-checked",
         "false",
       );
+      // O "Acabamento fosco" saiu: não mudava nada na maioria dos aparelhos.
+      expect(screen.queryByRole("switch", { name: "Matte finish" })).toBeNull();
     });
 
     it("toggles from the switch and from its label text", () => {
       const handlers = renderInspector();
 
       fireEvent.click(screen.getByRole("switch", { name: "Device body" }));
-      fireEvent.click(screen.getByText("Matte finish"));
+      fireEvent.click(screen.getByText("Device body"));
 
-      expect(handlers.onToggleDeviceShell).toHaveBeenCalledTimes(1);
-      expect(handlers.onToggleMatteColors).toHaveBeenCalledTimes(1);
+      expect(handlers.onToggleDeviceShell).toHaveBeenCalledTimes(2);
     });
   });
 

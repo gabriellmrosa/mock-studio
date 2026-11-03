@@ -429,6 +429,26 @@ describe("scene-templates", () => {
     });
   });
 
+  it("still opens templates saved with the old matte finish option", () => {
+    const template = createSceneTemplate({
+      name: "Older",
+      objects: [createSceneObject({ id: "object-1", name: "Object 1" })],
+    });
+    // Como um template de antes da remoção: com o campo, ligado ou desligado.
+    const older = {
+      ...template,
+      objects: template.objects.map((object) => ({ ...object, matteColors: false })),
+    };
+
+    storeRaw([older]);
+
+    const [loaded] = loadTemplates();
+    const [rebuilt] = applySceneTemplate(loaded);
+
+    expect(rebuilt.name).toBe("Object 1");
+    expect("matteColors" in rebuilt).toBe(false);
+  });
+
   describe("video size", () => {
     const frame = { height: 412, width: 648 };
 

@@ -87,7 +87,6 @@ type InspectorPanelProps = {
   onToggleDeviceShell: () => void;
   onToggleNotebookKeyboard: () => void;
   onToggleTabletBezel: () => void;
-  onToggleMatteColors: () => void;
   onUpdateRotation: (
     patch: Pick<SceneObject, "rotationX" | "rotationY" | "rotationZ">,
   ) => void;
@@ -120,7 +119,6 @@ export default function InspectorPanel({
   onToggleDeviceShell,
   onToggleNotebookKeyboard,
   onToggleTabletBezel,
-  onToggleMatteColors,
   onUpdatePosition,
   onUpdateRotation,
   onUpdateScale,
@@ -378,16 +376,6 @@ export default function InspectorPanel({
                 </SubTabPanel>
               ) : null}
             </>
-          ) : null}
-
-          {/* Acabamento é um liga/desliga que vale para tema e cores
-              personalizadas — por isso fica fora das sub-abas. */}
-          {customizableColorKeys.length > 0 ? (
-            <Switch
-              checked={object.matteColors}
-              label={copy.matteColorLabel}
-              onChange={onToggleMatteColors}
-            />
           ) : null}
         </PanelSection>
 

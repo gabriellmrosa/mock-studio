@@ -86,7 +86,6 @@ export type AppCopy = {
   themesSectionTitle: string;
   appearanceTabsLabel: string;
   appearanceTabCustom: string;
-  matteColorLabel: string;
   debugSectionTitle: string;
   transformSectionTitle: string;
   transformStaticTab: string;
@@ -288,7 +287,6 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     themesSectionTitle: "Aparência",
     appearanceTabsLabel: "Opções de aparência",
     appearanceTabCustom: "Personalizar",
-    matteColorLabel: "Acabamento fosco",
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transformação",
     transformStaticTab: "Estático",
@@ -552,7 +550,6 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     themesSectionTitle: "Appearance",
     appearanceTabsLabel: "Appearance options",
     appearanceTabCustom: "Custom",
-    matteColorLabel: "Matte finish",
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transform",
     transformStaticTab: "Static",

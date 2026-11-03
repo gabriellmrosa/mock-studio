@@ -517,7 +517,6 @@ function SceneBridge({
                     <group position={model.pivotOffset}>
                     <model.component
                       colors={object.colors}
-                      matteColors={object.matteColors}
                       debugPartColors={
                         object.debugMode ? object.debugPartColors : undefined
                       }
