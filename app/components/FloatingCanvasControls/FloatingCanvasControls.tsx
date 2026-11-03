@@ -18,6 +18,7 @@ import {
   Eye,
   EyeOff,
   ScanSearch,
+  Video,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
@@ -428,7 +429,9 @@ export default function FloatingCanvasControls({
           aria-haspopup="dialog"
           onClick={() => setIsExportOpen(true)}
         >
-          <Camera size={16} />
+          {/* O ícone diz o que sai por padrão: foto no Estático, vídeo no
+              Movimento — onde o dialog já abre em Vídeo. */}
+          {isMotion ? <Video size={16} /> : <Camera size={16} />}
           <span>{copy.takePhotoButton}</span>
         </button>
       </div>

@@ -269,3 +269,7 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] a template camera saved too far away is brought within the limit
 - checked in the browser: 60 `Zoom out` clicks stop with the phone at about 1/9 of the height, 80 `Zoom in` clicks stop at its screen, the wheel toward an empty corner stays on the phone, and 150 `Pan left` clicks stop with it still in view; checked in `Static` with one device
 
+## 31. Export button icon follows the mode — done
+
+- [x] in `Motion` the toolbar's `Export` button shows a camcorder (`Video`, the icon already used by the screen's `Video` tab) instead of the photo camera: the icon now says what comes out by default, matching the dialog that opens on `Video` there; `Static` keeps the camera
+
