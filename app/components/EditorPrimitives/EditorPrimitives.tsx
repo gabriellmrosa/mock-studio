@@ -1,6 +1,7 @@
 import "./EditorPrimitives.css";
 import type {
   ButtonHTMLAttributes,
+  CSSProperties,
   KeyboardEvent as ReactKeyboardEvent,
   ReactNode,
 } from "react";
@@ -491,6 +492,8 @@ export function SegmentedTabs<T extends string>({
       [next]?.focus();
   }
 
+  const activeIndex = items.findIndex((item) => item.id === value);
+
   return (
     <div
       ref={listRef}
@@ -498,7 +501,19 @@ export function SegmentedTabs<T extends string>({
       aria-label={ariaLabel}
       className="editor-segmented"
       onKeyDown={handleKeyDown}
+      // O indicador da opção selecionada é uma peça só, que desliza por baixo
+      // das abas: a posição sai destas duas variáveis, sem medir nada — as
+      // abas têm a mesma largura.
+      style={
+        {
+          "--segmented-count": items.length,
+          "--segmented-index": activeIndex,
+        } as CSSProperties
+      }
     >
+      {activeIndex >= 0 ? (
+        <span className="editor-segmented-thumb" aria-hidden />
+      ) : null}
       {items.map((item) => {
         const isActive = item.id === value;
 

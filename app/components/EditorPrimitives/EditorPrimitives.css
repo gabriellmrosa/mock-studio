@@ -509,19 +509,43 @@
    Trilho de largura total com opções exclusivas; a selecionada ganha a
    superfície elevada. Ex.: Imagem | Vídeo; Ajuste | Corte. */
 .editor-segmented {
-  background: var(--surface-subtle);
-  border-radius: var(--radius-sm);
+  background: var(--segmented-track);
+  /* Pílula, como o seletor Estático | Movimento do canvas: as escolhas
+     exclusivas do app têm a mesma forma. A opção selecionada acompanha,
+     também em pílula, dentro dos 2px de respiro do trilho. */
+  border-radius: var(--radius-full);
   display: flex;
   gap: 2px;
   margin-bottom: var(--space-3);
   padding: 2px;
+  position: relative;
+}
+
+/* O fundo da opção selecionada: uma peça só, atrás das abas, que desliza até
+   a escolhida em vez de sumir de uma e aparecer na outra. As abas têm a mesma
+   largura (flex: 1), então a posição é conta: a largura de uma aba, e um
+   passo de aba mais o vão de 2px por índice. */
+.editor-segmented-thumb {
+  background: var(--surface-raised);
+  border-radius: var(--radius-full);
+  bottom: 2px;
+  left: 2px;
+  pointer-events: none;
+  position: absolute;
+  top: 2px;
+  transform: translateX(calc(var(--segmented-index) * (100% + 2px)));
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  width: calc(
+    (100% - 4px - 2px * (var(--segmented-count) - 1)) /
+      var(--segmented-count)
+  );
 }
 
 .editor-segmented-tab {
   align-items: center;
   background: transparent;
   border: none;
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-full);
   color: var(--sidebar-muted);
   cursor: pointer;
   display: flex;
@@ -531,6 +555,8 @@
   justify-content: center;
   min-width: 0;
   padding: var(--space-2);
+  /* Posicionada para ficar na frente do indicador, que vem antes dela. */
+  position: relative;
   transition:
     background-color 140ms ease,
     color 140ms ease;
@@ -540,8 +566,14 @@
   color: var(--foreground);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .editor-segmented-thumb {
+    transition: none;
+  }
+}
+
+/* O fundo vem do indicador; a aba só troca a cor do texto. */
 .editor-segmented-tab.is-active {
-  background: var(--surface-raised);
   color: var(--foreground);
 }
 

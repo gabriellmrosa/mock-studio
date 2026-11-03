@@ -31,11 +31,16 @@
   --surface-hover: #524c46;
   --surface-active: #6f675f;
   --surface-raised: rgba(78, 73, 68, 0.9);
-  /* Fundo discreto de controles em repouso sobre o painel (trilho do
-     segmentado Imagem/Vídeo, sub-abas fechadas). Derivado do texto, vale nos
-     dois temas sem redefinir — o tema claro troca o --foreground no mesmo
+  /* Fundo discreto de controles em repouso sobre o painel (sub-abas
+     fechadas, a linha do arquivo, avisos). Derivado do texto, vale nos dois
+     temas sem redefinir — o tema claro troca o --foreground no mesmo
      elemento. */
   --surface-subtle: color-mix(in srgb, var(--foreground) 6%, transparent);
+  /* Trilho do controle segmentado (Imagem | Vídeo, Ajuste | Corte, o
+     alinhamento): sólido e mais escuro que o painel, "afundado", para a opção
+     selecionada (--surface-raised) saltar dele — 1.55:1, contra 1.21:1 do
+     --surface-subtle transparente. O texto apagado fica a 6.78:1 sobre ele. */
+  --segmented-track: var(--black-000);
   /* Trilho do Switch desligado. WCAG 1.4.11 pede 3:1 para o estado ser
      percebido: 3.55:1 contra o painel e 3.99:1 com a bolinha. Ligado, o
      Switch usa o par --button-active-bg/-fg, o "selecionado" do app. */
@@ -88,6 +93,9 @@
   --surface-hover: var(--black-900);
   --surface-active: #e8ded1;
   --surface-raised: rgba(255, 253, 249, 0.92);
+  /* Afundado também no claro. O --black-800 afundaria mais, mas deixaria o
+     texto apagado a 4.25:1, abaixo do AA; aqui ele fica a 4.97:1. */
+  --segmented-track: var(--surface-active);
   /* 3.71:1 contra o painel claro, 4.03:1 com a bolinha. */
   --switch-track-off: var(--black-600);
   /* 6.16:1 sobre --panel-bg claro. */

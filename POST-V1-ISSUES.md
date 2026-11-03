@@ -273,3 +273,11 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 
 - [x] in `Motion` the toolbar's `Export` button shows a camcorder (`Video`, the icon already used by the screen's `Video` tab) instead of the photo camera: the icon now says what comes out by default, matching the dialog that opens on `Video` there; `Static` keeps the camera
 
+## 32. Segmented control: solid track, pill shape, sliding indicator — done
+
+- [x] the track used `--surface-subtle`, text color at 6% opacity, so it had no color of its own and the selected option barely stood out from it (1.21:1 in dark); it now uses a new `--segmented-track` token, solid and a step darker than the panel, "recessed": `--black-000` in dark (selected 1.55:1, unselected text 6.78:1) and `--surface-active` in light (1.29:1, 4.97:1) — `--black-800` would recess more in light but drop the unselected text to 4.25:1, below AA
+- [x] track and selected option are pills (`--radius-full`), the same shape as the canvas's `Static | Motion` toggle, so exclusive choices look alike across the app
+- [x] the selected background is one indicator behind the tabs that slides to the chosen one (240 ms, the same curve as the hide-UI toggle's flight), instead of jumping between tabs; its position comes from `--segmented-count` and `--segmented-index`, since the tabs share one width — no measuring; reduced motion switches instantly
+- the alignment rails share the look but are action buttons, with no selection and no indicator
+- if the side panel gets darker later, `--segmented-track` has to follow, or the track and panel converge (`--black-000` is the darkest step of the scale)
+

@@ -107,7 +107,7 @@ primeiro degrau que resolve:
 | Para | Use |
 |---|---|
 | liga/desliga de verdade | `Switch` |
-| escolha exclusiva, sempre uma selecionada | `SegmentedTabs` |
+| escolha exclusiva, sempre uma selecionada | `SegmentedTabs` (trilho `--segmented-track`, indicador que desliza) |
 | grupos de sub-opções que nascem fechados | `SubTabs` / `SubTabPanel` |
 | ação extra que acompanha outra ("Salvar como template") | `Checkbox` |
 | escolha numa lista | `CustomSelect` |
