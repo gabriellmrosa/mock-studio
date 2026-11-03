@@ -31,12 +31,15 @@ levar para a `main`, também `npm run build`.
 
 - **Idioma:** conversa com o usuário, este arquivo e comentários de código em
   pt-BR. O README, o POST-V1-ISSUES e as mensagens de commit são em inglês.
-- **Branch:** o trabalho é na `motion-timeline` — não apagar. Conferir
-  `git branch --show-current` antes de cada commit: o usuário faz checkout da
-  `main` para dar push, e um commit já caiu direto nela e foi publicado.
+- **Branch:** o trabalho é na `motion-timeline`, que é **só local** — não
+  apagar, e não enviar ao GitHub (desde 2026-11, o remoto tem só a `main`).
+  Conferir `git branch --show-current` antes de cada commit: o usuário faz
+  checkout da `main` para dar push, e um commit já caiu direto nela e foi
+  publicado.
 - **`main`:** só recebe fast-forward, quando o usuário pede para publicar:
   `git checkout main && git merge --ff-only motion-timeline`, e voltar para a
-  `motion-timeline`. **O push é sempre do usuário** (`git push --follow-tags`).
+  `motion-timeline`. **O push é sempre do usuário, e só da `main`**
+  (`git push --follow-tags origin main`).
 - **Commits:** só quando o usuário pede. "Documente e commite" quer dizer:
   atualizar o README (o que mudou para quem usa) e o POST-V1-ISSUES (um item
   novo com as decisões), e então commitar.
