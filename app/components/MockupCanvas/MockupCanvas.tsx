@@ -5,6 +5,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
@@ -13,6 +14,7 @@ import {
 import * as THREE from "three";
 import {
   Canvas,
+  flushSync,
   useFrame,
   useThree,
   type ThreeEvent,
@@ -56,6 +58,7 @@ import {
   formatTimestampForFilename,
 } from "./export-photo";
 import ActivityNotice from "../ActivityNotice/ActivityNotice";
+import { SegmentedTabs } from "../EditorPrimitives/EditorPrimitives";
 import ExportProgressDialog, {
   type VideoExportProgress,
 } from "../FloatingCanvasControls/ExportProgressDialog";
@@ -64,7 +67,11 @@ import {
   createVideoFrameRenderer,
   encodeVideo,
 } from "./export-video";
-import { getCameraLimits, getOrbitBoundary } from "./camera-limits";
+import {
+  getCameraLimits,
+  getOrbitBoundary,
+  type VisibleShare,
+} from "./camera-limits";
 import {
   FULL_ALIGNMENT_AREA,
   collectWorldVertices,
@@ -176,6 +183,8 @@ export type SpawnOverrides = Record<number, [number, number, number]>;
 export type ScaleOverrides = Record<number, number>;
 
 type SceneBridgeProps = MockupCanvasProps & {
+  /** Preparo do primeiro quadro de um modo (ver prepareModeFrame). */
+  modeFrameRef: { current: ((pose: CameraPose | null) => void) | null };
   /** A área de referência do alinhamento no Estático (ver `.canvas-align-area`). */
   alignmentAreaRef: { current: HTMLDivElement | null };
   canvasBgColor: string | null;
@@ -314,6 +323,7 @@ function OpacityController({
 
 function SceneBridge({
   alignmentAreaRef,
+  modeFrameRef,
   isSceneSettled,
   objects,
   onCameraApiReady,
@@ -546,6 +556,7 @@ function SceneBridge({
         />
         <BoundsResetController
           alignmentAreaRef={alignmentAreaRef}
+          modeFrameRef={modeFrameRef}
           controlsRef={controlsRef}
           isSceneSettled={isSceneSettled}
           onCameraApiReady={onCameraApiReady}
@@ -744,7 +755,10 @@ function SceneObjectResolvedReporter({
  * câmera: a folga do centro da órbita é refeita a cada movimento de um gesto,
  * e medir a cena a cada quadro seria desperdício.
  */
-const sceneBoxes = new WeakMap<CameraControlsImpl, THREE.Box3>();
+const sceneBoxes = new WeakMap<
+  CameraControlsImpl,
+  { box: THREE.Box3; visible: VisibleShare }
+>();
 
 /**
  * Aplica a trava da câmera (ver camera-limits.ts) para a cena como está
@@ -756,6 +770,7 @@ const sceneBoxes = new WeakMap<CameraControlsImpl, THREE.Box3>();
 function applyCameraLimits(
   controls: CameraControlsImpl,
   sceneGroup: THREE.Object3D,
+  visible: VisibleShare,
 ) {
   const camera = controls.camera;
 
@@ -770,7 +785,7 @@ function applyCameraLimits(
     return;
   }
 
-  sceneBoxes.set(controls, box);
+  sceneBoxes.set(controls, { box, visible });
   controls.minDistance = limits.minDistance;
   controls.maxDistance = limits.maxDistance;
   camera.near = limits.near;
@@ -781,11 +796,19 @@ function applyCameraLimits(
 
 /** A folga do centro da órbita para a distância de agora (ver getOrbitBoundary). */
 function updateOrbitBoundary(controls: CameraControlsImpl) {
-  const box = sceneBoxes.get(controls);
+  const scene = sceneBoxes.get(controls);
   const camera = controls.camera;
 
-  if (box && camera instanceof THREE.PerspectiveCamera) {
-    controls.setBoundary(getOrbitBoundary(box, controls.distance, camera.fov));
+  if (scene && camera instanceof THREE.PerspectiveCamera) {
+    controls.setBoundary(
+      getOrbitBoundary(
+        scene.box,
+        controls.distance,
+        camera.fov,
+        camera.aspect,
+        scene.visible,
+      ),
+    );
   }
 }
 
@@ -831,6 +854,7 @@ function measureAlignmentArea(
 
 function BoundsResetController({
   alignmentAreaRef,
+  modeFrameRef,
   controlsRef,
   isSceneSettled,
   onCameraApiReady,
@@ -841,6 +865,7 @@ function BoundsResetController({
   sceneRef,
 }: {
   alignmentAreaRef: { current: HTMLDivElement | null };
+  modeFrameRef: { current: ((pose: CameraPose | null) => void) | null };
   controlsRef: { current: CameraControlsImpl | null };
   isSceneSettled: boolean;
   onCameraApiReady: (api: CameraApi | null) => void;
@@ -851,7 +876,14 @@ function BoundsResetController({
   sceneRef: { current: THREE.Group | null };
 }) {
   const bounds = useBounds();
-  const { camera, gl } = useThree();
+  const { camera, gl, scene } = useThree();
+
+  /** O que se vê do canvas agora (ver VisibleShare). */
+  const getVisibleShare = useCallback((): VisibleShare => {
+    const area = measureAlignmentArea(gl.domElement, alignmentAreaRef.current);
+
+    return { height: area.bottom - area.top, width: area.right - area.left };
+  }, [alignmentAreaRef, gl]);
   // Cena cuja câmera veio de um template. Sem isso, limpar a pose pendente
   // (que está nas deps do effect) dispararia um auto-fit logo depois de
   // restaurar a câmera, desfazendo a restauração.
@@ -865,6 +897,59 @@ function BoundsResetController({
   useEffect(() => {
     onTemplateAppliedRef.current = onTemplateApplied;
   }, [onTemplateApplied]);
+
+  // O primeiro quadro de um modo, desenhado na hora da troca (ver o
+  // useLayoutEffect do MockupCanvas): o tamanho novo do canvas, a câmera de
+  // destino — a pose guardada do modo, ou o mesmo enquadramento automático
+  // que o efeito abaixo faria um quadro depois — e um render. Quando o efeito
+  // roda, a câmera já está onde ele a colocaria: nada se mexe.
+  useEffect(() => {
+    modeFrameRef.current = (pose) => {
+      const controls = controlsRef.current;
+      const sceneGroup = sceneRef.current;
+      const container = gl.domElement.parentElement;
+
+      if (
+        !controls ||
+        !sceneGroup ||
+        !container ||
+        !(camera instanceof THREE.PerspectiveCamera) ||
+        container.clientWidth === 0 ||
+        container.clientHeight === 0
+      ) {
+        return;
+      }
+
+      gl.setSize(container.clientWidth, container.clientHeight);
+      camera.aspect = container.clientWidth / container.clientHeight;
+      camera.updateProjectionMatrix();
+      applyCameraLimits(controls, sceneGroup, getVisibleShare());
+
+      if (pose) {
+        const [px, py, pz] = pose.position;
+        const [tx, ty, tz] = pose.target;
+
+        void controls.setLookAt(px, py, pz, tx, ty, tz, false);
+      } else {
+        bounds.refresh(sceneGroup);
+
+        const { center, distance } = bounds.getSize();
+
+        void controls.setLookAt(
+          center.x, center.y, center.z + distance,
+          center.x, center.y, center.z,
+          false,
+        );
+      }
+
+      controls.update(0);
+      gl.render(scene, camera);
+    };
+
+    return () => {
+      modeFrameRef.current = null;
+    };
+  }, [bounds, camera, controlsRef, getVisibleShare, gl, modeFrameRef, scene, sceneRef]);
 
   useEffect(() => {
     const controls = controlsRef.current;
@@ -898,7 +983,7 @@ function BoundsResetController({
 
       // A trava vem antes da pose: um template salvo longe demais é trazido
       // para dentro do limite.
-      applyCameraLimits(controls, sceneGroup);
+      applyCameraLimits(controls, sceneGroup, getVisibleShare());
 
       // Com um template em aplicação, o enquadramento salvo substitui o
       // auto-fit — sem transição, já que a cena está coberta pelo loading.
@@ -943,6 +1028,7 @@ function BoundsResetController({
   }, [
     bounds,
     camera,
+    getVisibleShare,
     controlsRef,
     gl,
     isSceneSettled,
@@ -1024,7 +1110,7 @@ function BoundsResetController({
       const sceneGroup = sceneRef.current;
 
       if (controls && sceneGroup) {
-        applyCameraLimits(controls, sceneGroup);
+        applyCameraLimits(controls, sceneGroup, getVisibleShare());
       }
     }
 
@@ -1075,7 +1161,7 @@ function BoundsResetController({
       controls.removeEventListener("control", followGesture);
       onViewportControlsReady(null);
     };
-  }, [controlsRef, onViewportControlsReady, sceneRef]);
+  }, [controlsRef, getVisibleShare, onViewportControlsReady, sceneRef]);
 
   return null;
 }
@@ -1119,6 +1205,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   }
   const videoExportHandlerRef = useRef<VideoExportHandler | null>(null);
   const alignmentAreaRef = useRef<HTMLDivElement | null>(null);
+  const modeFrameRef = useRef<((pose: CameraPose | null) => void) | null>(null);
   const [isVideoExportReady, setIsVideoExportReady] = useState(false);
   // Quadros prontos da exportação de vídeo em curso; null = nenhuma.
   const [videoProgress, setVideoProgress] =
@@ -1161,6 +1248,28 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   // No Movimento a cor de fundo pinta só o quadro do vídeo; em volta dele
   // fica o fundo do palco.
   const isFramed = props.motionFrame !== null;
+
+  // Troca de modo sem corte seco: o canvas muda de forma (a tela inteira no
+  // Estático, o quadro do vídeo no Movimento) no mesmo commit do clique, e
+  // aqui — depois da mudança no DOM, antes de o navegador pintar — a cena é
+  // redimensionada, posta na câmera de destino e desenhada. O primeiro quadro
+  // que aparece já é o final; sem isso, saía um quadro esticado e depois um
+  // reenquadramento.
+  const framedRef = useRef(isFramed);
+  const pendingCameraPose = props.pendingCameraPose;
+
+  useLayoutEffect(() => {
+    if (framedRef.current === isFramed) {
+      return;
+    }
+
+    framedRef.current = isFramed;
+    // A cena 3D tem a própria fila de atualização: aplica agora os objetos do
+    // modo de destino, para o quadro já sair com eles — sem isso, o primeiro
+    // quadro trazia o tamanho e a câmera novos com os objetos do modo antigo.
+    flushSync(() => undefined);
+    modeFrameRef.current?.(pendingCameraPose);
+  }, [isFramed, pendingCameraPose]);
   const stageClass =
     canvasBgColor && !isFramed
       ? "mockup-stage relative flex-1 h-screen"
@@ -1393,6 +1502,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         <SceneBridge
           {...props}
           alignmentAreaRef={alignmentAreaRef}
+          modeFrameRef={modeFrameRef}
           canvasBgColor={canvasBgColor}
           isSceneSettled={isSceneSettled}
           onExportReady={handleExportReady}
@@ -1437,22 +1547,16 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         }`}
       >
         {!props.isUiHidden ? (
-          <div className="canvas-mode-toggle" role="tablist">
-            {([false, true] as const).map((mode) => (
-              <button
-                key={String(mode)}
-                type="button"
-                role="tab"
-                aria-selected={props.isMotionMode === mode}
-                className={`canvas-mode-tab${
-                  props.isMotionMode === mode ? " is-active" : ""
-                }`}
-                onClick={() => props.onMotionModeChange(mode)}
-              >
-                {mode ? props.copy.transformMotionTab : props.copy.transformStaticTab}
-              </button>
-            ))}
-          </div>
+          <SegmentedTabs
+            ariaLabel={props.copy.canvasModeLabel}
+            className="canvas-mode-toggle"
+            items={[
+              { icon: null, id: "static", label: props.copy.transformStaticTab },
+              { icon: null, id: "motion", label: props.copy.transformMotionTab },
+            ]}
+            value={props.isMotionMode ? "motion" : "static"}
+            onChange={(id) => props.onMotionModeChange(id === "motion")}
+          />
         ) : null}
 
         {isInitialSceneLoading ? (

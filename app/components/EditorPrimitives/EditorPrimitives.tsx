@@ -455,12 +455,15 @@ export function Switch({
  */
 export function SegmentedTabs<T extends string>({
   ariaLabel,
+  className,
   idPrefix,
   items,
   onChange,
   value,
 }: {
   ariaLabel: string;
+  /** Variação de visual (ex.: o seletor Estático | Movimento do canvas). */
+  className?: string;
   idPrefix?: string;
   items: SubTabItem<T>[];
   onChange: (id: T) => void;
@@ -499,7 +502,7 @@ export function SegmentedTabs<T extends string>({
       ref={listRef}
       role="tablist"
       aria-label={ariaLabel}
-      className="editor-segmented"
+      className={`editor-segmented ${className ?? ""}`.trim()}
       onKeyDown={handleKeyDown}
       // O indicador da opção selecionada é uma peça só, que desliza por baixo
       // das abas: a posição sai destas duas variáveis, sem medir nada — as

@@ -20,12 +20,18 @@ export const MAX_DISTANCE_RATIO = 8;
 /** De perto dá para ver detalhes sem a câmera atravessar o aparelho. */
 export const MIN_DISTANCE_RATIO = 1 / 20;
 /**
- * Até onde o centro da órbita pode sair dos objetos, como fração da meia
- * altura que a câmera enxerga: abaixo de 1, sempre sobra um pedaço deles no
- * quadro. Metade, e não mais: no Estático o canvas passa por baixo dos
- * painéis, e a área livre entre eles é mais estreita que o canvas.
+ * Até onde o centro da órbita pode sair dos objetos, como fração do que fica
+ * visível do centro até a borda, em cada direção: abaixo de 1, sempre sobra
+ * um pedaço deles no quadro.
  */
-export const ORBIT_MARGIN_SHARE = 0.5;
+export const ORBIT_MARGIN_SHARE = 0.7;
+
+/**
+ * Quanto do canvas se vê, em frações (0 a 1) da largura e da altura: no
+ * Movimento o canvas inteiro, que é o quadro do vídeo; no Estático o que
+ * sobra entre os painéis, que passam por cima dele.
+ */
+export type VisibleShare = { height: number; width: number };
 
 export type CameraLimits = {
   far: number;
@@ -70,16 +76,29 @@ export function getCameraLimits(
  * tamanho da cena e o pan fica livre; de perto, a câmera enxerga pouco, e a
  * folga encolhe junto — senão o pan, ou o zoom até um canto vazio, deixaria a
  * câmera olhando para o nada ao lado dos objetos.
+ *
+ * A folga é medida em cada direção do que se vê: na horizontal pela largura,
+ * na vertical pela altura. Medida só pela altura, numa tela larga ela ficava
+ * curta demais na horizontal: um objeto alinhado à borda, ainda à vista,
+ * puxava a câmera para ele no gesto seguinte. A câmera mal gira em volta do
+ * eixo vertical (±0,85 rad), então o x do mundo é a horizontal da tela.
  */
-export function getOrbitBoundary(box: THREE.Box3, distance: number, fov: number) {
+export function getOrbitBoundary(
+  box: THREE.Box3,
+  distance: number,
+  fov: number,
+  aspect: number,
+  visible: VisibleShare,
+) {
   const size = box.getSize(new THREE.Vector3());
-  const visibleHalfHeight =
-    distance * Math.tan(THREE.MathUtils.degToRad(fov) / 2);
-  const margin = Math.min(
-    Math.max(size.x, size.y, size.z),
-    visibleHalfHeight * ORBIT_MARGIN_SHARE,
-  );
+  const maxSide = Math.max(size.x, size.y, size.z);
+  const halfHeight = distance * Math.tan(THREE.MathUtils.degToRad(fov) / 2);
+  const halfWidth = halfHeight * aspect;
+  const marginX = Math.min(maxSide, halfWidth * visible.width * ORBIT_MARGIN_SHARE);
+  const marginY = Math.min(maxSide, halfHeight * visible.height * ORBIT_MARGIN_SHARE);
 
-  return box.clone().expandByScalar(margin);
+  return box
+    .clone()
+    .expandByVector(new THREE.Vector3(marginX, marginY, Math.max(marginX, marginY)));
 }
 

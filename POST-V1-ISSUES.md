@@ -288,3 +288,18 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] removed instead of made to work everywhere: every device keeps the matte look it already had by default, so nothing changes on screen; the field left the scene object and templates, and templates saved with it still open (the field is ignored, with a test)
 - making it real would mean moving every device to physical materials and re-tuning each model's colors — a bigger change than the option was worth
 
+## 34. The Static | Motion toggle slides too — done
+
+- [x] the canvas's mode toggle was its own markup with a background that jumped between tabs; it is now a `SegmentedTabs` with a canvas look (floating surface, border and shadow, the selected option in the primary action color), so it gets the same sliding indicator and the arrow, Home and End keys
+- [x] `SegmentedTabs` takes a `className` for such looks, and the track padding the indicator counts on is a variable (`--segmented-padding`: 2px in panels, 3px on the canvas)
+- [x] the indicator needs equal tabs, so on the canvas both take the width of the widest (`Static` got slightly wider than its label); the toggle now has an accessible name, `Scene mode`
+
+## 35. Switching modes without a cut — done
+
+- switching `Static` ↔ `Motion` showed a hard cut: for a few frames the canvas had its new shape but the old drawing — stretched, then the camera jumping to the other mode's framing. Nothing was loading: both modes share the canvas and the already loaded objects
+- a loading curtain and a fade-in of the objects were tried first and dropped: the user wanted the final canvas on the very first frame, with no visible loading at all
+- [x] in a layout effect, after the DOM takes the new shape and before the browser paints, the canvas is resized, the 3D scene is made to apply the destination objects (R3F's `flushSync` — the scene has its own update queue), the camera goes to the destination pose (the mode's parked pose, or the same auto-fit the following effect would apply) and one frame is rendered; when the auto-fit runs, the camera is already where it would put it
+- checked frame by frame against the settled frame, both directions and with the device in a different place in each mode: no frame after the click differs from the final one (the instrument checked against the frame before the click, about 1k blocks apart)
+- [x] found on the way, a camera-lock bug from #30: the orbit margin was measured by the visible height only, so on a wide screen an object aligned to the edge — still in view — pulled the camera toward it on the next gesture or mode switch. It is now measured per axis, by the visible width horizontally and the height vertically, scaled by the visible area (between the panels in `Static`, the whole frame in `Motion`); `ORBIT_MARGIN_SHARE` went from 0.5 of the height to 0.7 of each
+- objects that really are loading in the other mode (a template with another device, after a reload) still show the usual small loading notice
+

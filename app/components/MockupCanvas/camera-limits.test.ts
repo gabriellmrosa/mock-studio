@@ -8,6 +8,7 @@ import {
 } from "./camera-limits";
 
 const FOV = 45;
+const FULL = { height: 1, width: 1 };
 
 /** Uma cena: um celular de 140 × 280 × 14 em volta da origem. */
 function phoneBox() {
@@ -63,22 +64,47 @@ describe("getCameraLimits", () => {
     const tanHalf = Math.tan(THREE.MathUtils.degToRad(FOV) / 2);
 
     for (const distance of [minDistance, minDistance * 10, maxDistance]) {
-      const boundary = getOrbitBoundary(box, distance, FOV);
+      const boundary = getOrbitBoundary(box, distance, FOV, 16 / 9, FULL);
       // O quanto o centro pode sair da caixa, contra o que a câmera enxerga.
-      const margin = boundary.max.x - box.max.x;
+      const marginX = boundary.max.x - box.max.x;
+      const marginY = boundary.max.y - box.max.y;
 
       expect(boundary.containsBox(box)).toBe(true);
-      expect(margin).toBeLessThanOrEqual(distance * tanHalf * ORBIT_MARGIN_SHARE + 1e-6);
+      expect(marginX).toBeLessThanOrEqual(
+        distance * tanHalf * (16 / 9) * ORBIT_MARGIN_SHARE + 1e-6,
+      );
+      expect(marginY).toBeLessThanOrEqual(distance * tanHalf * ORBIT_MARGIN_SHARE + 1e-6);
     }
   });
 
   it("frees the pan up to the scene's size when far away", () => {
     const box = phoneBox();
     const { maxDistance } = getCameraLimits(box, FOV)!;
-    const boundary = getOrbitBoundary(box, maxDistance, FOV);
+    const boundary = getOrbitBoundary(box, maxDistance, FOV, 16 / 9, FULL);
 
     // O maior lado do celular é a altura, 280.
     expect(boundary.max.x - box.max.x).toBeCloseTo(280);
+  });
+
+  it("measures the margin by the width horizontally, so an object aligned to the edge stays put", () => {
+    const box = phoneBox();
+    const distance = getCameraLimits(box, FOV)!.minDistance * 6;
+    const boundary = getOrbitBoundary(box, distance, FOV, 16 / 9, FULL);
+
+    // Numa tela 16:9, a folga horizontal é 16/9 da vertical.
+    expect((boundary.max.x - box.max.x) / (boundary.max.y - box.max.y)).toBeCloseTo(16 / 9);
+  });
+
+  it("narrows with the visible area, as between the side panels", () => {
+    const box = phoneBox();
+    const distance = getCameraLimits(box, FOV)!.minDistance * 6;
+    const full = getOrbitBoundary(box, distance, FOV, 1.6, FULL);
+    const betweenPanels = getOrbitBoundary(box, distance, FOV, 1.6, {
+      height: 0.83,
+      width: 0.58,
+    });
+
+    expect(betweenPanels.max.x - box.max.x).toBeCloseTo((full.max.x - box.max.x) * 0.58);
   });
 
   it("has nothing to limit in an empty scene", () => {

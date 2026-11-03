@@ -130,6 +130,7 @@ const copy: AppCopy = {
   themesSectionTitle: "Themes",
   transformSectionTitle: "Transform",
   transformStaticTab: "Static",
+  canvasModeLabel: "Scene mode",
   motionTimeline: "Timeline",
   motionZoomLabel: APP_COPY["en-US"].motionZoomLabel,
   motionZoomIn: APP_COPY["en-US"].motionZoomIn,

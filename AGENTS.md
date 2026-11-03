@@ -185,7 +185,13 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   distância mínima e máxima, o centro da órbita perto dos objetos e o
   `near`/`far` vêm sempre de `applyCameraLimits`, relativos à cena. Não
   definir esses valores à mão em outro lugar, e chamar `applyCameraLimits`
-  antes de mexer na câmera por código.
+  antes de mexer na câmera por código. A folga do centro é medida por eixo
+  (largura na horizontal, altura na vertical) e pela área visível.
+- **Troca de modo sem corte:** o primeiro quadro do modo de destino é
+  preparado num `useLayoutEffect` do `MockupCanvas` (tamanho novo, objetos
+  aplicados com o `flushSync` do R3F, câmera de destino, um render) antes de o
+  navegador pintar. Não trocar por cortina ou loading: não há o que carregar,
+  os objetos já estão na memória.
 - `camera-controls`: não usar `saveState()`/`reset()`; a promise do
   `setLookAt` só resolve quando a transição seguinte começa. O enquadramento de
   origem fica guardado explicitamente.

@@ -143,16 +143,22 @@
 
 /* Toggle de modo: fica no topo do canvas porque movimento é estado da cena,
    não de um objeto. */
-.canvas-mode-toggle {
+/* O seletor Estático | Movimento é um SegmentedTabs com outra roupa:
+   flutuante sobre o canvas, com borda e sombra, e o selecionado na cor da
+   ação principal. Mesma peça que desliza entre as opções. As abas ficam com a
+   largura da maior (grid de colunas iguais), porque o indicador conta com
+   abas iguais. */
+.editor-segmented.canvas-mode-toggle {
+  --segmented-padding: 3px;
   background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
   border: 1px solid var(--button-border);
-  border-radius: var(--radius-full);
   box-shadow: var(--canvas-shadow);
-  display: flex;
-  gap: 2px;
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
   height: var(--canvas-mode-toggle-height);
   left: 50%;
-  padding: 3px;
+  margin-bottom: 0;
   pointer-events: auto;
   position: absolute;
   top: var(--canvas-mode-toggle-top);
@@ -160,25 +166,16 @@
   z-index: 3;
 }
 
-.canvas-mode-tab {
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-full);
-  color: var(--sidebar-muted);
-  cursor: pointer;
-  font-size: var(--font-size-150);
-  padding: 0 var(--space-4);
-  transition:
-    background-color 140ms ease,
-    color 140ms ease;
-}
-
-.canvas-mode-tab:hover {
-  color: var(--foreground);
-}
-
-.canvas-mode-tab.is-active {
+.canvas-mode-toggle .editor-segmented-thumb {
   background: var(--button-active-bg);
+}
+
+.canvas-mode-toggle .editor-segmented-tab {
+  padding: 0 var(--space-4);
+  white-space: nowrap;
+}
+
+.canvas-mode-toggle .editor-segmented-tab.is-active {
   color: var(--button-active-fg);
 }
 

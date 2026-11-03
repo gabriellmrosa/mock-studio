@@ -517,7 +517,9 @@
   display: flex;
   gap: 2px;
   margin-bottom: var(--space-3);
-  padding: 2px;
+  /* Respiro entre o trilho e as abas; o indicador conta com ele. */
+  --segmented-padding: 2px;
+  padding: var(--segmented-padding);
   position: relative;
 }
 
@@ -528,15 +530,15 @@
 .editor-segmented-thumb {
   background: var(--surface-raised);
   border-radius: var(--radius-full);
-  bottom: 2px;
-  left: 2px;
+  bottom: var(--segmented-padding);
+  left: var(--segmented-padding);
   pointer-events: none;
   position: absolute;
-  top: 2px;
+  top: var(--segmented-padding);
   transform: translateX(calc(var(--segmented-index) * (100% + 2px)));
   transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
   width: calc(
-    (100% - 4px - 2px * (var(--segmented-count) - 1)) /
+    (100% - var(--segmented-padding) * 2 - 2px * (var(--segmented-count) - 1)) /
       var(--segmented-count)
   );
 }

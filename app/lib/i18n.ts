@@ -89,6 +89,7 @@ export type AppCopy = {
   debugSectionTitle: string;
   transformSectionTitle: string;
   transformStaticTab: string;
+  canvasModeLabel: string;
   motionTimeline: string;
   motionZoomLabel: string;
   motionZoomIn: string;
@@ -290,6 +291,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transformação",
     transformStaticTab: "Estático",
+    canvasModeLabel: "Modo da cena",
     motionTimeline: "Linha do tempo",
     motionZoomLabel: "Zoom da linha do tempo",
     motionZoomIn: "Aproximar (ou faça pinça no trackpad)",
@@ -553,6 +555,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transform",
     transformStaticTab: "Static",
+    canvasModeLabel: "Scene mode",
     motionTimeline: "Timeline",
     motionZoomLabel: "Timeline zoom",
     motionZoomIn: "Zoom in (or pinch on the trackpad)",
