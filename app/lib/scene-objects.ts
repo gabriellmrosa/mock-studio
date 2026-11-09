@@ -19,10 +19,16 @@ import { cloneKeyframes, type Keyframe } from "./scene-motion";
  *   cortada mostra o `background`.
  * - `zoom`: 0.5 a 3. Abaixo de 1 o conteúdo fica menor que a tela e o resto é
  *   preenchido com `background`, como as faixas cortadas.
- * - `panX`/`panY`: -1 a 1, a fração da folga usada para mover o conteúdo. Com
- *   zoom ≥ 1, ±1 encosta a borda do conteúdo na da tela (nunca aparece vão);
- *   abaixo de 1, encosta o conteúdo numa borda da tela. Positivo move o
- *   conteúdo para a direita e para cima.
+ * - `panX`/`panY`: -1 a 1, o deslocamento em frações do tamanho da imagem na
+ *   tela (já com o zoom): 0,5 anda meia largura dela, 1 uma largura inteira.
+ *   O vão que fica mostra o `background` — dá para compor um print que vaza
+ *   da tela. Positivo move o conteúdo para a direita e para cima, em qualquer
+ *   zoom.
+ *
+ *   Já foi a fração da folga (o quanto a imagem passa da tela): num eixo sem
+ *   folga — uma imagem quadrada na tela alta do relógio — a posição não movia
+ *   nada, e abaixo de 100% de zoom a direção se invertia. O enquadramento não
+ *   vai para templates nem links, então mudar a unidade não afeta nada salvo.
  */
 export type ScreenFit = {
   background: string;
@@ -48,6 +54,8 @@ export const DEFAULT_SCREEN_FIT: ScreenFit = {
 };
 export const MIN_SCREEN_ZOOM = 0.5;
 export const MAX_SCREEN_ZOOM = 3;
+/** Até onde a posição vai: ±1 = uma largura (ou altura) inteira da imagem. */
+export const MAX_SCREEN_PAN = 1;
 export const MAX_SCREEN_CROP = 0.25;
 
 /**

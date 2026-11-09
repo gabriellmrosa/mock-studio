@@ -14,6 +14,7 @@ import {
 import {
   DEFAULT_SCREEN_FIT,
   MAX_SCREEN_CROP,
+  MAX_SCREEN_PAN,
   MAX_SCREEN_ZOOM,
   MIN_SCREEN_ZOOM,
   type ScreenFit,
@@ -122,8 +123,8 @@ export function getScreenLayout(
     targetHeight,
   );
   const zoom = Math.min(MAX_SCREEN_ZOOM, Math.max(MIN_SCREEN_ZOOM, fit.zoom));
-  const panX = Math.min(1, Math.max(-1, fit.panX));
-  const panY = Math.min(1, Math.max(-1, fit.panY));
+  const panX = Math.min(MAX_SCREEN_PAN, Math.max(-MAX_SCREEN_PAN, fit.panX));
+  const panY = Math.min(MAX_SCREEN_PAN, Math.max(-MAX_SCREEN_PAN, fit.panY));
 
   // Janela em frações da origem. Com zoom < 1 passa de 1 e a folga fica
   // negativa: o mesmo cálculo de posição passa a mover o conteúdo dentro da
@@ -138,10 +139,12 @@ export function getScreenLayout(
   return {
     contentMax: [1 - cropRight, 1 - cropAtV1] as const,
     contentMin: [cropLeft, cropAtV0] as const,
-    // Mover o conteúdo para a direita é levar a janela para a esquerda.
+    // Centralizado, e então deslocado. A janela é medida em frações da
+    // imagem, que é a mesma unidade da posição: mover o conteúdo para a
+    // direita em `panX` larguras é levar a janela `panX` para a esquerda.
     offset: [
-      ((1 - windowU) / 2) * (1 - panX),
-      ((1 - windowV) / 2) * (flipY ? 1 - panY : 1 + panY),
+      (1 - windowU) / 2 - panX,
+      (1 - windowV) / 2 + (flipY ? -panY : panY),
     ] as const,
     repeat: [windowU, windowV] as const,
   };

@@ -1,14 +1,19 @@
 <p align="center">
-  <img src="./public/readme-header.png" alt="Mock Studio editor preview showing smartphone, notebook and smartwatch mockups in a 3D scene" />
+  <img src="./public/readme-header.png" alt="Mock Studio editor with a phone, a floating notebook screen and a smartwatch showing the same Apple product page in a 3D scene" />
 </p>
 
 <h1 align="center">Mock Studio</h1>
 
 <p align="center">
-  Open source editor for composing app screens inside interactive 3D device mockups.
+  <strong>Put your screens inside 3D devices — and export a PNG or an animated video, right from the browser.</strong>
 </p>
 
 <p align="center">
+  <a href="https://www.mockstudio.app.br"><strong>Open the editor →</strong></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/github/package-json/v/gabriellmrosa/mock-studio?color=111111&label=version" alt="Version" />
   <img src="https://img.shields.io/badge/Next.js-16-111111?logo=next.js" alt="Next.js 16" />
   <img src="https://img.shields.io/badge/React-19-20232a?logo=react" alt="React 19" />
   <img src="https://img.shields.io/badge/Three.js-R3F-000000?logo=three.js" alt="Three.js and React Three Fiber" />
@@ -18,32 +23,50 @@
 
 <p align="center">
   <a href="#features">Features</a> •
-  <a href="#getting-started">Getting Started</a> •
-  <a href="#model-catalog">Model Catalog</a> •
-  <a href="#project-structure">Project Structure</a>
+  <a href="#quick-start">Quick start</a> •
+  <a href="#how-it-works">How it works</a> •
+  <a href="#contributing">Contributing</a> •
+  <a href="#model-catalog">Model catalog</a>
 </p>
 
-Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose marketing shots, product screens and device scenes with per-object controls, layered editing and PNG export with an optional canvas background.
-
-## Highlights
-
-- compose multiple devices in one scene with independent transforms and uploaded screens — images or screen recordings
-- switch between themes, semantic part colors and model-specific placeholders
-- export PNGs at `1080p`, `1440p` or `4K` — transparent, or with the canvas background and floor grid
-- hide the entire interface for clean, full-canvas captures
-- manage objects with selection, duplication and inspector-driven editing
-- save a composition or an animation as a local template and rebuild it later, camera framing included
-- animate an object between poses with keyframes, previewed in the editor
-- support `pt-BR` and `en-US` UI modes
+Mock Studio is an open source editor for marketing shots and product videos. Drop phones, a watch, a notebook and a tablet into a 3D scene, put an image or a screen recording on each screen, frame the camera and export. Everything runs on your machine: there is no account, no upload and no backend.
 
 ## Features
+
+### Compose
+
+- **Six devices** — three phones, a smartwatch, a notebook and a tablet — side by side in one scene, each with its own position, rotation, scale and opacity.
+- **Images or screen recordings** on every screen (PNG, JPEG, WebP, MP4, MOV, WebM), with zoom, position — far enough to slide the content off the screen — background color and edge cropping. HDR recordings from iPhone and Mac are converted to show their real colors.
+- **Themes and colors** per device part, plus switches for the device body, the notebook keyboard and the tablet bezel.
+- **Alignment and framing**: align objects to the visible canvas in one click, `Fit scene`, and a camera lock that never lets the scene get lost.
+
+### Animate
+
+- **`Static` and `Motion`** are two independent environments; switching between them is instant.
+- **Keyframes on a timeline**, one track per object: drag them in time, pick an easing preset or draw a `cubic-bezier` curve with overshoot, fade objects in and out, and press `Space` to play.
+- **Screen recordings are clips** on the timeline: drag to set when they start, trim either edge.
+
+### Export
+
+- **PNG** at 1080p, 1440p or 4K, supersampled, transparent or with the background.
+- **Video** at 30 or 60 fps, 1× or 2×: MP4 with the background, or transparent WebM, encoded in the browser with WebCodecs.
+- Any frame size for video — 16:9, 1:1, 4:5, 9:16 or custom.
+
+### Keep and share
+
+- **Templates** saved in your browser: composition, camera and keyframes, rebuilt in one click.
+- **Project links**: the whole scene compressed into the URL hash, to open in another browser. It is never sent to a server.
+- `pt-BR` and `en-US`, dark and light themes, and a `Hide UI` mode for clean captures.
+
+<details>
+<summary><strong>Every feature, in detail</strong></summary>
 
 - multi-object composition with `smartphone`, `smartphone2`, `smartphone3`, `smartwatch`, `notebook` and `tablet`
 - object duplication that preserves transform, image and inspector settings
 - per-object screen content: an image or a video (MP4, MOV or WebM), switched from the `Image` / `Video` control in the `Screen` section, with model-specific placeholders generated at runtime
 - screen videos exist only in `Motion`, where they follow the playhead and the recording is a clip on its own track under the object — drag it to set when it starts, drag its edges to trim the start or the end, and outside the clip the screen shows only its background; `Static` is a still image, so its `Screen` section goes straight to the image upload, with no `Image | Video` choice
-- per-file screen framing: zoom (50–300%), X/Y position, a background color for whatever the content leaves uncovered, and edge cropping that masks borders recorded into the file — the background color is offered in both `Fit` and `Crop`, since cropped bands show it too
-- once a file is uploaded, the `Screen` section shrinks to a single row — type icon, file name and a `⋮` menu — and the menu opens a floating panel beside the Inspector with `Replace`, the `Fit | Crop` options and `Remove`
+- per-file screen framing: zoom (50–300%), X/Y position measured in the image's own size (50% moves it half its width or height, ±100% takes it fully off the screen, the same way at any zoom), a background color for whatever the content leaves uncovered, and edge cropping that masks borders recorded into the file — the background color is offered in both `Fit` and `Crop`, since cropped bands show it too
+- once a file is uploaded, the `Screen` section shrinks to a single row — type icon, file name and a `⋮` menu — and the menu opens a floating panel beside the Inspector with `Replace`, the `Fit | Crop` options and `Remove` — drag it by its top bar anywhere on screen, like a window, when it covers the part of the scene being adjusted
 - HDR screen recordings (HEVC with PQ or HLG, common from iPhone and Mac) are converted to SDR, so they show the same colors as the app they recorded
 - per-model options like the device body toggle, the notebook keyboard and the tablet screen bezel, all as switches
 - per-object transform controls for position, rotation and scale
@@ -75,55 +98,53 @@ Built with `Next.js`, `React`, `Three.js` and `React Three Fiber` to compose mar
 - `pt-BR` and `en-US` UI support
 - dark and light themes
 
-## Stack
+</details>
 
-- `Next.js 16`
-- `React 19`
-- `Three.js`
-- `@react-three/fiber`
-- `@react-three/drei`
-- `Tailwind CSS 4`
-- `Jest` + `Testing Library`
-- `Vercel Web Analytics`
-- `Microsoft Clarity` (with consent)
+## Quick start
 
-## Getting Started
+Requires Node.js 20.9 or later.
 
 ```bash
+git clone https://github.com/gabriellmrosa/mock-studio.git
+cd mock-studio
 npm install
 npm run dev
 ```
 
-Production build:
+Open [localhost:3000](http://localhost:3000).
 
-```bash
-npm run build
-```
+| Command | What it does |
+|---|---|
+| `npm run dev` | development server (Turbopack) |
+| `npm test` | Jest + Testing Library |
+| `npx tsc --noEmit` | type check |
+| `npx eslint app` | lint |
+| `npm run build` | production build |
 
-Quality checks:
+## How it works
 
-```bash
-npx tsc --noEmit
-npm run lint
-npm test -- --runInBand
-```
+- **Stack:** Next.js 16 (App Router), React 19, Three.js r183 with React Three Fiber and drei, Tailwind CSS 4, `mediabunny` for video encoding, Jest.
+- **Client only:** the 3D scene, the screen compositing and the export all run in the browser. Templates live in `localStorage`; screen files stay as local blob URLs and are never stored or uploaded.
+- **Under the hood:** how playback writes straight to the 3D scene instead of React state, how mode switches land on the first frame, how video is exported frame by frame in a background tab, and other lessons learned are in [docs/technical-notes.md](docs/technical-notes.md). The story of each decision is in [POST-V1-ISSUES.md](POST-V1-ISSUES.md).
 
-## Analytics
+## Privacy and analytics
 
-This project includes the minimal Vercel Web Analytics integration through `@vercel/analytics`.
+The published site uses [Vercel Web Analytics](https://vercel.com/docs/analytics) for anonymous page views, and [Microsoft Clarity](https://clarity.microsoft.com) for heatmaps and session recordings **only after you accept** the consent card:
 
-To see traffic data in production:
-
-1. Deploy the project to Vercel.
-2. Enable `Web Analytics` in the Vercel dashboard.
-3. Visit the Analytics tab for page views, visitors, referrers and geography data.
-
-It also uses [Microsoft Clarity](https://clarity.microsoft.com) (`@microsoft/clarity`) for heatmaps and session recordings, only with consent:
-
-- on the first visit to the published site a small card asks to accept or decline; nothing loads before the choice, and declining never loads Clarity — the choice is remembered in the browser
-- only the production deployment asks (`NEXT_PUBLIC_VERCEL_ENV`, set by Vercel); `localhost` and previews record nothing
+- nothing from Clarity loads before the choice, and declining never loads it; the choice is remembered in the browser
+- only the production deployment asks (`NEXT_PUBLIC_VERCEL_ENV`); `localhost` and previews record nothing
 - every text is masked in recordings (`data-clarity-mask` on `<body>`), the 3D canvas isn't captured, and a project link's `#scene=` is removed from the URL before Clarity starts
-- the project ID is public by nature and lives in `app/lib/analytics.ts`
+- the project ID is public by nature and lives in [app/lib/analytics.ts](app/lib/analytics.ts)
+
+## Contributing
+
+Issues and pull requests are welcome. Before opening a PR:
+
+1. Read [AGENTS.md](AGENTS.md) — the working rules for people and coding agents: design tokens, shared UI primitives, i18n, and the architecture that must not break.
+2. Make sure `npm test`, `npx tsc --noEmit` and `npx eslint app` pass.
+3. For visible changes, include a screenshot.
+
+To add a device, follow [Adding a new 3D model](#adding-a-new-3d-model).
 
 ## Model Catalog
 
@@ -174,12 +195,6 @@ Checklist:
 - list the customizable part keys in the model's `customizableColorKeys`, and add their display labels to `colorPartLabels` in `app/lib/i18n.ts` for both locales (labels live in i18n, not in the model definition)
 - register the placeholder size in `MODEL_PLACEHOLDER_SIZES` (the image is generated at runtime) and define the final themes
 - set `pivotOffset` to the negative of the visible bounding-box center (GLTF units) so the model is centered on its pivot — rotation then happens around the visual center and alignment with the other models is automatic
-
-## Technical Notes
-
-How it works under the hood, and the lessons learned building it, are in
-[docs/technical-notes.md](docs/technical-notes.md). Working rules for
-contributors and coding agents are in [AGENTS.md](AGENTS.md).
 
 ## Asset Scripts
 

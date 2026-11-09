@@ -114,7 +114,7 @@ primeiro degrau que resolve:
 | grupos de sub-opções que nascem fechados | `SubTabs` / `SubTabPanel` |
 | ação extra que acompanha outra ("Salvar como template") | `Checkbox` |
 | escolha numa lista | `CustomSelect` |
-| painel de opções ao lado do Inspector | `SidePopover` |
+| painel de opções ao lado do Inspector (arrastável pelo topo) | `SidePopover` |
 | menu de ações (`⋮`) | `ContextMenu` |
 | decisão central com máscara (Exportar) | `Dialog` |
 | confirmação que interrompe um fluxo | `AlertDialog` (é um `Dialog`) |

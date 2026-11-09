@@ -53,13 +53,14 @@ describe("getScreenLayout", () => {
     });
 
     it("moves the content right and up by sliding the window the other way", () => {
+      // Zoom 200%: a imagem tem duas telas. Andar um quarto dela (meia tela)
+      // encosta a borda esquerda e a de baixo na tela: a janela vai para a
+      // esquerda (U = 0) e, com flipY, para baixo (V = 0).
       const { offset } = getScreenLayout(
         ...matching,
-        fit({ panX: 1, panY: 1, zoom: 2 }),
+        fit({ panX: 0.25, panY: 0.25, zoom: 2 }),
       );
 
-      // Conteúdo encostado à direita e ao topo: a janela vai para a esquerda
-      // (U = 0) e, com flipY, para baixo (V = 0).
       expect(offset[0]).toBeCloseTo(0);
       expect(offset[1]).toBeCloseTo(0);
     });
@@ -67,7 +68,7 @@ describe("getScreenLayout", () => {
     it("inverts the vertical direction on models without flipY", () => {
       const { offset } = getScreenLayout(
         ...matching,
-        fit({ panY: 1, zoom: 2 }),
+        fit({ panY: 0.25, zoom: 2 }),
         false,
       );
 
@@ -75,11 +76,36 @@ describe("getScreenLayout", () => {
     });
 
     it("pans a taller source even at 100% zoom", () => {
-      // Screenshot comprido: sobra altura, então dá para mostrar o topo.
-      const top = getScreenLayout(1000, 4000, 500, 1000, fit({ panY: -1 }));
+      // Screenshot comprido: sobra metade da altura; descer um quarto da
+      // imagem mostra o topo dela.
+      const top = getScreenLayout(1000, 4000, 500, 1000, fit({ panY: -0.25 }));
 
       expect(top.repeat[1]).toBeCloseTo(0.5);
       expect(top.offset[1]).toBeCloseTo(0.5);
+    });
+  });
+
+  describe("watch case", () => {
+    it("moves a square image vertically on the taller watch screen", () => {
+      // 850×850 na tela do relógio (1290×1452): a imagem cobre a altura
+      // exata, sem sobra. Mesmo assim a posição Y tem que mover.
+      const { offset } = getScreenLayout(850, 850, 1290, 1452, fit({ panY: 0.5 }));
+
+      expect(offset[1]).toBeCloseTo(-0.5);
+    });
+  });
+
+  describe("without slack", () => {
+    it("pushes the content past the screen edge, showing the background", () => {
+      // Sem folga nenhuma (mesma proporção, 100%): meia imagem para a direita
+      // deixa a metade esquerda da tela com o fundo.
+      const { offset, repeat } = getScreenLayout(
+        ...matching,
+        fit({ panX: 0.5 }),
+      );
+
+      expect(repeat[0]).toBeCloseTo(1);
+      expect(offset[0]).toBeCloseTo(-0.5);
     });
   });
 
@@ -98,14 +124,15 @@ describe("getScreenLayout", () => {
       expect(contentMax).toEqual([1, 1]);
     });
 
-    it("pins the shrunk content to an edge at ±100%", () => {
+    it("moves the shrunk content the same way as at full size", () => {
+      // Zoom 50%: o conteúdo é meia tela, centralizado. Meia imagem para a
+      // esquerda o encosta na borda esquerda: a janela começa nele.
       const { offset } = getScreenLayout(
         ...matching,
-        fit({ panX: -1, zoom: 0.5 }),
+        fit({ panX: -0.5, zoom: 0.5 }),
       );
 
-      // Conteúdo encostado à esquerda: a janela começa no próprio conteúdo.
-      expect(offset[0]).toBeCloseTo(-1);
+      expect(offset[0]).toBeCloseTo(0);
     });
   });
 

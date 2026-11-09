@@ -10,6 +10,7 @@ import type { ObjectAlignment } from "../MockupCanvas/object-alignment";
 import {
   DEFAULT_SCREEN_FIT,
   MAX_SCREEN_CROP,
+  MAX_SCREEN_PAN,
   MAX_SCREEN_ZOOM,
   MIN_SCREEN_ZOOM,
   getActiveScreenFit,
@@ -784,9 +785,10 @@ function SubPanelReset({
 }
 
 /**
- * Ajuste do conteúdo na tela, tudo em %. A posição é a fração da folga: com
- * zoom ≥ 100%, ±100% encosta a borda do conteúdo na da tela (nunca sobra vão);
- * abaixo de 100% o conteúdo fica menor que a tela e o resto é o fundo.
+ * Ajuste do conteúdo na tela, tudo em %. A posição é medida no tamanho da
+ * própria imagem: 50% anda meia largura (ou altura) dela, 100% uma inteira —
+ * o bastante para tirá-la da tela, deixando o fundo à vista. Abaixo de 100%
+ * de zoom o conteúdo fica menor que a tela e o resto é o fundo.
  */
 function ScreenFitPanel({
   copy,
@@ -830,15 +832,15 @@ function ScreenFitPanel({
         label={copy.screenFitX}
         value={Math.round(fit.panX * 100)}
         setValue={(value) => onChange({ panX: value / 100 })}
-        min={-100}
-        max={100}
+        min={-MAX_SCREEN_PAN * 100}
+        max={MAX_SCREEN_PAN * 100}
       />
       <Control
         label={copy.screenFitY}
         value={Math.round(fit.panY * 100)}
         setValue={(value) => onChange({ panY: value / 100 })}
-        min={-100}
-        max={100}
+        min={-MAX_SCREEN_PAN * 100}
+        max={MAX_SCREEN_PAN * 100}
       />
       <ColorRow
         compact

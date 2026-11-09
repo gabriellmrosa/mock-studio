@@ -700,8 +700,24 @@
 
 .side-popover-header {
   align-items: center;
+  cursor: grab;
   display: flex;
   justify-content: space-between;
+  /* A alça é a faixa inteira do topo, como a barra de título de uma janela:
+     ocupa também o respiro do popover acima e dos lados do título. */
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) 0;
+  padding: var(--space-4) var(--space-4) 0;
+  /* Sem isto, arrastar no touch rola a página em vez de mover o popover. */
+  touch-action: none;
+  user-select: none;
+}
+
+.side-popover[data-dragging] {
+  user-select: none;
+}
+
+.side-popover[data-dragging] .side-popover-header {
+  cursor: grabbing;
 }
 
 @keyframes side-popover-appear {

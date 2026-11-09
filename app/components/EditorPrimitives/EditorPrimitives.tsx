@@ -3,6 +3,7 @@ import type {
   ButtonHTMLAttributes,
   CSSProperties,
   KeyboardEvent as ReactKeyboardEvent,
+  PointerEvent as ReactPointerEvent,
   ReactNode,
 } from "react";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -576,6 +577,12 @@ const SIDE_POPOVER_GAP = 12;
  * Vai para um portal (o painel lateral rola e recortaria o popover) e
  * acompanha a rolagem e o redimensionamento. Fecha com Esc, clique fora ou o
  * botão de fechar, e devolve o foco a quem o abriu.
+ *
+ * Arrasta-se pelo cabeçalho, como uma janela, para qualquer lugar da tela —
+ * às vezes ele cobre justo a parte da cena que se está ajustando. Depois de
+ * arrastado, para de seguir o item que o abriu e fica onde foi solto, sempre
+ * inteiro dentro da janela. Ao fechar e abrir de novo, volta para o lado do
+ * item.
  */
 export function SidePopover({
   anchorRef,
@@ -592,6 +599,10 @@ export function SidePopover({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
+  // Onde o usuário soltou o popover; `null` enquanto segue o item.
+  const droppedAtRef = useRef<{ left: number; top: number } | null>(null);
+  const placeRef = useRef<() => void>(() => {});
+  const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -611,13 +622,32 @@ export function SidePopover({
         return;
       }
 
-      const anchorRect = anchor.getBoundingClientRect();
-      const sidebar = anchor.closest("aside") ?? anchor;
-      const sidebarLeft = sidebar.getBoundingClientRect().left;
       // Área útil sem a barra de rolagem: é nela que o `position: fixed`
       // mede — o window.innerWidth a inclui e roubava o espaçamento.
       const { clientHeight, clientWidth } = document.documentElement;
       const maxTop = clientHeight - panel.offsetHeight - SIDE_POPOVER_GAP;
+      const droppedAt = droppedAtRef.current;
+
+      if (droppedAt) {
+        // Inteiro na janela: o cabeçalho nunca sai dela, então sempre dá
+        // para pegá-lo de novo. Também vale ao encolher a janela.
+        const maxLeft = clientWidth - panel.offsetWidth - SIDE_POPOVER_GAP;
+
+        panel.style.right = "auto";
+        panel.style.left = `${Math.max(
+          SIDE_POPOVER_GAP,
+          Math.min(droppedAt.left, maxLeft),
+        )}px`;
+        panel.style.top = `${Math.max(
+          SIDE_POPOVER_GAP,
+          Math.min(droppedAt.top, maxTop),
+        )}px`;
+        return;
+      }
+
+      const anchorRect = anchor.getBoundingClientRect();
+      const sidebar = anchor.closest("aside") ?? anchor;
+      const sidebarLeft = sidebar.getBoundingClientRect().left;
 
       panel.style.right = `${clientWidth - sidebarLeft + SIDE_POPOVER_GAP}px`;
       panel.style.top = `${Math.max(
@@ -626,6 +656,7 @@ export function SidePopover({
       )}px`;
     }
 
+    placeRef.current = place;
     place();
 
     // A altura muda ao trocar de sub-aba; a posição precisa acompanhar.
@@ -680,6 +711,56 @@ export function SidePopover({
     };
   }, [anchorRef]);
 
+  function handleDragStart(event: ReactPointerEvent<HTMLDivElement>) {
+    const panel = panelRef.current;
+
+    // Só o botão principal, e não no ✕ de fechar.
+    if (
+      !panel ||
+      event.button !== 0 ||
+      (event.target as HTMLElement).closest("button")
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+
+    const handle = event.currentTarget;
+    const rect = panel.getBoundingClientRect();
+    const grabX = event.clientX - rect.left;
+    const grabY = event.clientY - rect.top;
+
+    handle.setPointerCapture(event.pointerId);
+    setIsDragging(true);
+
+    function handleMove(moveEvent: PointerEvent) {
+      droppedAtRef.current = {
+        left: moveEvent.clientX - grabX,
+        top: moveEvent.clientY - grabY,
+      };
+      placeRef.current();
+    }
+
+    function handleEnd() {
+      // Guarda onde ficou de fato, já dentro da janela: encolher e voltar a
+      // crescer a janela não o leva de volta para fora.
+      if (droppedAtRef.current && panel) {
+        const placed = panel.getBoundingClientRect();
+
+        droppedAtRef.current = { left: placed.left, top: placed.top };
+      }
+
+      setIsDragging(false);
+      handle.removeEventListener("pointermove", handleMove);
+      handle.removeEventListener("pointerup", handleEnd);
+      handle.removeEventListener("pointercancel", handleEnd);
+    }
+
+    handle.addEventListener("pointermove", handleMove);
+    handle.addEventListener("pointerup", handleEnd);
+    handle.addEventListener("pointercancel", handleEnd);
+  }
+
   return createPortal(
     <div
       ref={panelRef}
@@ -687,8 +768,9 @@ export function SidePopover({
       aria-label={title}
       tabIndex={-1}
       className="side-popover"
+      data-dragging={isDragging || undefined}
     >
-      <div className="side-popover-header">
+      <div className="side-popover-header" onPointerDown={handleDragStart}>
         <span className="editor-sidebar-label">{title}</span>
         <IconButton
           aria-label={closeLabel}

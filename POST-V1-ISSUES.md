@@ -303,3 +303,22 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] found on the way, a camera-lock bug from #30: the orbit margin was measured by the visible height only, so on a wide screen an object aligned to the edge — still in view — pulled the camera toward it on the next gesture or mode switch. It is now measured per axis, by the visible width horizontally and the height vertically, scaled by the visible area (between the panels in `Static`, the whole frame in `Motion`); `ORBIT_MARGIN_SHARE` went from 0.5 of the height to 0.7 of each
 - objects that really are loading in the other mode (a template with another device, after a reload) still show the usual small loading notice
 
+## 36. Screen position measured in the image's size — done
+
+- the screen's X/Y position was a fraction of the overflow (how much the image passes the screen): ±100% touched the image edge to the screen edge. On an axis with no overflow it did nothing — a square image on the watch's taller screen couldn't move vertically, even at 400% — and below 100% zoom the direction flipped
+- pixels were considered and dropped: the screen has no fixed pixel size (it changes with the camera and the export resolution), and pixels of the recommended screen size would mean a different effect on each device
+- [x] the position is now a fraction of the image's on-screen size, zoom included: 50% moves it half its width or height, ±100% takes it fully off the screen and the gap shows the background color; positive is right and up at any zoom. The range went back to ±100% (briefly ±200% and ±400% under the old unit)
+- framing lives with the screen file and isn't saved in templates or project links, so nothing saved needed migrating
+- checked on the watch with a square image: `Y` at 30% lifts it and shows the background below
+
+## 37. Floating panels can be dragged — done
+
+- [x] the `SidePopover` (the screen's image and video options) is dragged by its top bar, like a window, anywhere on screen — over the side panels too — when it covers the part of the scene being adjusted; the close button still just closes
+- [x] once dropped it stays there instead of following the item that opened it, always whole inside the window so its bar can be grabbed again, also when the window shrinks; reopened, it goes back beside the item
+- the centered dialogs (`Export`, confirmations, progress) stay fixed: they are decisions behind a backdrop, not panels used next to the scene
+- left out: moving it with the keyboard, and remembering the dropped position between openings
+
+## 38. README refresh — done
+
+- [x] rewritten after the best-rated open source READMEs (awesome-readme, Excalidraw, tldraw): hero image, one-line pitch, a link to the live editor, features grouped by task (Compose, Animate, Export, Keep and share) with the full list folded into a `<details>`, a quick start with a command table, how it works, privacy, contributing; the model catalog, project structure and model checklist kept
+- [x] new hero image of the current editor
