@@ -321,5 +321,5 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 ## 38. README refresh — done
 
 - [x] rewritten after the best-rated open source READMEs (awesome-readme, Excalidraw, tldraw): hero image, one-line pitch, a link to the live editor, features grouped by task (Compose, Animate, Export, Keep and share) with the full list folded into a `<details>`, a quick start with a command table, how it works, privacy, contributing; the model catalog, project structure and model checklist kept
-- [x] new hero image: the editor at 1920 × 965, with the rounded corners and the 1px border drawn into the PNG — GitHub strips `style` from README HTML, so CSS can't round it
+- [x] new hero image: a Retina screenshot of the editor, scaled to 2560 × 1386, with the rounded corners and the 1px border drawn into the PNG — GitHub strips `style` from README HTML, so CSS can't round it
 - [x] `public/temp/` (local test images) left git: committed by mistake, it also shipped with the deploy, since everything in `public/` is served
