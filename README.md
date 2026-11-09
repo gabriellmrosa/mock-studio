@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./public/readme-header.png" alt="Mock Studio editor with a phone, a floating notebook screen and a smartwatch showing the same Apple product page in a 3D scene" style="border-radius: 12px; border:1px solid #000" />
+  <img src="./public/readme-header.png" alt="A 4K export from Mock Studio: a phone, a floating notebook screen and a smartwatch showing the same Apple product page in a 3D scene" />
 </p>
 
 <h1 align="center">Mock Studio</h1>

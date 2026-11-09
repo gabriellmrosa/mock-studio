@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# imagens de teste locais (não vão para o git nem para o deploy)
+/public/temp/
