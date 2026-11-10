@@ -395,7 +395,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     desktopOnlyBody:
       "Este app roda apenas em desktop ou notebook com janela de no mínimo {size}.",
     desktopOnlyHint: "Abra em uma tela maior ou aumente a janela do navegador.",
-    uploadImageError: "Não foi possível carregar essa imagem.",
+    uploadImageError: "Este navegador não consegue abrir essa imagem. Use PNG, JPEG ou WebP — fotos HEIC do iPhone abrem só no Safari; em outro navegador, converta antes.",
     creditsLabel: "CRÉDITOS",
     creditsDescription: "dos modelos 3D",
     creditsEyebrow: "Modelos 3D e licenças",
@@ -659,7 +659,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     desktopOnlyBody:
       "This app works only on desktop or laptop screens with a minimum viewport of {size}.",
     desktopOnlyHint: "Open it on a larger screen or make the browser window bigger.",
-    uploadImageError: "Could not load this image.",
+    uploadImageError: "This browser can't open that image. Use PNG, JPEG or WebP — iPhone HEIC photos only open in Safari; elsewhere, convert them first.",
     creditsLabel: "CREDITS",
     creditsDescription: "for 3D models",
     creditsEyebrow: "3D models and licensing",

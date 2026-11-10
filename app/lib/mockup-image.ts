@@ -96,6 +96,37 @@ export function readFileAsDataUrl(file: File) {
   });
 }
 
+/**
+ * Confere se o navegador consegue mostrar a imagem antes de aceitá-la.
+ *
+ * Sem isto, qualquer arquivo virava data URL e só falhava dentro do canvas,
+ * ao carregar a textura — e o erro derrubava o app inteiro (um HEIC no
+ * Chrome, por exemplo). Nem a extensão nem o `type` do arquivo servem de
+ * prova: os dois vêm do sistema, e o `accept` do input é só uma sugestão ao
+ * seletor. O teste confiável é decodificar com o mesmo caminho da textura, um
+ * `<img>` (o `TextureLoader` usa um): o que passar aqui a tela consegue
+ * mostrar. Isso também acompanha o navegador sem lista de formatos para
+ * manter — o Safari abre HEIC, e AVIF passa em todos os atuais.
+ */
+export async function probeImageFile(file: File) {
+  const url = URL.createObjectURL(file);
+  const image = new Image();
+
+  try {
+    image.src = url;
+    await image.decode();
+
+    // Um SVG sem tamanho decodifica com 0×0 e não vira textura.
+    if (!image.naturalWidth || !image.naturalHeight) {
+      throw new Error("A imagem não tem tamanho.");
+    }
+  } catch {
+    throw new Error("O navegador não decodifica esta imagem.");
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 /** Tempo máximo para o navegador decodificar o primeiro quadro do vídeo. */
 const VIDEO_PROBE_TIMEOUT_MS = 10000;
 

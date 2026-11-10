@@ -27,7 +27,11 @@ import Snackbar, {
 import { APP_VERSION } from "./lib/app-version";
 import { buildNextDeviceColors } from "./lib/device-colors";
 import { APP_COPY, type Locale, type UiTheme } from "./lib/i18n";
-import { probeVideoFile, readFileAsDataUrl } from "./lib/mockup-image";
+import {
+  probeImageFile,
+  probeVideoFile,
+  readFileAsDataUrl,
+} from "./lib/mockup-image";
 import { DEFAULT_MOTION_FRAME, type MotionFrame } from "./lib/motion-frame";
 import {
   findKeyframeAt,
@@ -260,6 +264,7 @@ export default function Home() {
     }
 
     try {
+      await probeImageFile(file);
       const nextImage = await readFileAsDataUrl(file);
       // Imagem nova, enquadramento novo: o anterior foi feito para outra.
       updateSceneObject(selectedObject.id, {

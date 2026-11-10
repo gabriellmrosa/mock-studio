@@ -321,5 +321,13 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 ## 38. README refresh — done
 
 - [x] rewritten after the best-rated open source READMEs (awesome-readme, Excalidraw, tldraw): hero image, one-line pitch, a link to the live editor, features grouped by task (Compose, Animate, Export, Keep and share) with the full list folded into a `<details>`, a quick start with a command table, how it works, privacy, contributing; the model catalog, project structure and model checklist kept
-- [x] new hero image: a Retina screenshot of the editor, scaled to 2560 × 1386, with the rounded corners and the 1px border drawn into the PNG — GitHub strips `style` from README HTML, so CSS can't round it
+- [x] new hero image: a Retina screenshot of the editor, scaled to 2560 × 1380, with the rounded corners and the 1px border drawn into the PNG — GitHub strips `style` from README HTML, so CSS can't round it
 - [x] `public/temp/` (local test images) left git: committed by mistake, it also shipped with the deploy, since everything in `public/` is served
+
+## 39. Unreadable images no longer break the editor — done
+
+- uploading a HEIC photo in Chrome took the whole app down ("This page couldn't load"): any file was read into a data URL and only failed inside the 3D canvas, where the texture loader threw with nothing to catch it
+- [x] an image is accepted only after the browser decodes it, through an `<img>` like the texture loader (`probeImageFile`, next to the video's `probeVideoFile`); if it can't, nothing changes on screen and a note asks for PNG, JPEG or WebP, mentioning that HEIC opens only in Safari
+- a fixed list of formats was considered and dropped: the extension and file type come from the system and prove nothing, `accept` is only a hint to the picker, and a list would refuse HEIC even in Safari, which shows it; decoding follows each browser, AVIF included
+- left out: converting HEIC in the app (a ~1 MB library), and a safety net around the 3D screen — images only enter through the upload, which is now checked
+- checked in Chrome: a HEIC shows the note and the editor keeps working, a PNG right after goes in normally; not checked in a real Safari
