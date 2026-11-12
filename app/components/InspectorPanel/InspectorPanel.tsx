@@ -1,5 +1,6 @@
 "use client";
 
+import { DEFAULT_FOLD_ANGLE } from "../../lib/scene-presets";
 import "./InspectorPanel.css";
 import { useRef, useState, type ReactNode } from "react";
 import ColorRow from "../ColorRow/ColorRow";
@@ -9,6 +10,7 @@ import type { AppCopy, UiTheme } from "../../lib/i18n";
 import type { ObjectAlignment } from "../MockupCanvas/object-alignment";
 import {
   DEFAULT_SCREEN_FIT,
+  DUO_OUTER_SCREEN_SIZE,
   MAX_SCREEN_CROP,
   MAX_SCREEN_PAN,
   MAX_SCREEN_ZOOM,
@@ -88,6 +90,7 @@ type InspectorPanelProps = {
   onToggleDeviceShell: () => void;
   onToggleNotebookKeyboard: () => void;
   onToggleTabletBezel: () => void;
+  onToggleMatteFinish: () => void;
   onUpdateRotation: (
     patch: Pick<SceneObject, "rotationX" | "rotationY" | "rotationZ">,
   ) => void;
@@ -97,6 +100,12 @@ type InspectorPanelProps = {
   onUpdateScale: (scale: number) => void;
   /** 0 a 1; o controle mostra em %. */
   onUpdateOpacity: (opacity: number) => void;
+  /** Abertura do dobrável em graus: 180 aberto, 0 fechado. */
+  onUpdateFoldAngle: (foldAngle: number) => void;
+  /** A tela de fora do dobrável: só imagem, com o enquadramento dela. */
+  onOuterImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveOuterImage: () => void;
+  onUpdateOuterScreenFit: (patch: Partial<ScreenFit>) => void;
   motionTab: "static" | "motion";
   selectedKeyframeId: string;
   uiTheme: UiTheme;
@@ -120,10 +129,15 @@ export default function InspectorPanel({
   onToggleDeviceShell,
   onToggleNotebookKeyboard,
   onToggleTabletBezel,
+  onToggleMatteFinish,
   onUpdatePosition,
   onUpdateRotation,
   onUpdateScale,
   onUpdateOpacity,
+  onUpdateFoldAngle,
+  onOuterImageUpload,
+  onRemoveOuterImage,
+  onUpdateOuterScreenFit,
   motionTab,
   selectedKeyframeId,
   uiTheme,
@@ -239,12 +253,25 @@ export default function InspectorPanel({
               onChange={onToggleTabletBezel}
             />
           ) : null}
+          {object.modelId === "duo" ? (
+            <Switch
+              checked={object.matteFinish}
+              label={copy.matteFinishToggleLabel}
+              onChange={onToggleMatteFinish}
+            />
+          ) : null}
         </PanelSection>
 
         <PanelSection
           title={copy.screenSectionTitle}
           className="--without-border-bottom"
         >
+          {/* O dobrável tem duas telas: cada uma ganha o nome dela. */}
+          {object.modelId === "duo" ? (
+            <span className="transform-reset-label">
+              {copy.innerScreenLabel}
+            </span>
+          ) : null}
           {motionTab === "motion" ? (
             <SegmentedTabs
               ariaLabel={copy.screenSectionTitle}
@@ -319,6 +346,43 @@ export default function InspectorPanel({
               onUpload={onVideoUpload}
             />
           )}
+          {object.modelId === "duo" ? (
+            <>
+              <span className="transform-reset-label">
+                {copy.outerScreenLabel}
+              </span>
+              {object.outerImageUrl ? (
+                <ScreenFileRow
+                  key={`${object.id}-outer`}
+                  closeLabel={copy.closeLabel}
+                  icon={<ImageIcon size={16} />}
+                  menuLabel={`${copy.imageOptions} (${copy.outerScreenLabel})`}
+                  name={object.outerImageName ?? copy.screenSourceImage}
+                >
+                  <ScreenSettings
+                    accept={IMAGE_ACCEPT}
+                    copy={copy}
+                    fit={{ ...DEFAULT_SCREEN_FIT, ...object.outerImageFit }}
+                    onFitChange={onUpdateOuterScreenFit}
+                    onRemove={onRemoveOuterImage}
+                    onReplace={onOuterImageUpload}
+                    removeLabel={copy.removeImage}
+                    replaceLabel={copy.uploadImage}
+                    replaceMeta={DUO_OUTER_SCREEN_SIZE.join("x")}
+                    uiTheme={uiTheme}
+                  />
+                </ScreenFileRow>
+              ) : (
+                <UploadCard
+                  accept={IMAGE_ACCEPT}
+                  label={`${copy.screenUploadImage} (${copy.outerScreenLabel})`}
+                  meta={DUO_OUTER_SCREEN_SIZE.join("x")}
+                  metaTitle={`${copy.screenSectionHintPrefix} ${DUO_OUTER_SCREEN_SIZE.join("x")}`}
+                  onUpload={onOuterImageUpload}
+                />
+              )}
+            </>
+          ) : null}
           {uploadError ? (
             <p className="inspector-error-note">{uploadError}</p>
           ) : null}
@@ -410,6 +474,23 @@ export default function InspectorPanel({
           ) : (
           <div className="transform-groups">
             <AlignmentControl copy={copy} onAlign={onAlignObject} />
+
+            {/* A abertura é pose: no Movimento, cada keyframe tem a sua, e o
+                aparelho abre ou fecha entre eles. */}
+            {object.modelId === "duo" ? (
+              <div className="transform-group transform-group-offset">
+                <Control
+                  label={copy.foldAngle}
+                  value={Math.round(
+                    editedTransform.foldAngle ?? DEFAULT_FOLD_ANGLE,
+                  )}
+                  setValue={onUpdateFoldAngle}
+                  min={0}
+                  max={180}
+                  step={1}
+                />
+              </div>
+            ) : null}
 
             <div className="transform-group transform-group-offset">
               <Control

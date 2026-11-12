@@ -12,7 +12,7 @@ import {
   type SceneTemplate,
 } from "./scene-templates";
 import { createSceneObject, getPlaceholderImageUrl } from "./scene-objects";
-import { captureTransform, insertKeyframe } from "./scene-motion";
+import { captureTransform, createKeyframe, insertKeyframe } from "./scene-motion";
 
 const STORAGE_KEY = "mock-photo-templates";
 
@@ -426,6 +426,52 @@ describe("scene-templates", () => {
       expect(rebuilt.keyframes).toHaveLength(2);
       expect(rebuilt.opacity).toBe(1);
       expect(rebuilt.keyframes.every((keyframe) => keyframe.transform.opacity === 1)).toBe(true);
+    });
+  });
+
+  describe("fold angle", () => {
+    it("keeps how far a foldable is open, on the object and on keyframes", () => {
+      const duo = {
+        ...createSceneObject({ id: "duo-1", modelId: "duo", name: "Duo" }),
+        foldAngle: 90,
+      };
+      const closed = createKeyframe(0, { ...captureTransform(duo), foldAngle: 0 });
+      const template = createSceneTemplate({
+        mode: "motion",
+        name: "Template 1",
+        objects: [{ ...duo, keyframes: [closed] }],
+      });
+      const [rebuilt] = applySceneTemplate(template);
+
+      expect(rebuilt.foldAngle).toBe(90);
+      expect(rebuilt.keyframes[0].transform.foldAngle).toBe(0);
+    });
+
+    it("leaves it out of templates of devices that don't fold", () => {
+      const template = createSceneTemplate({
+        name: "Template 1",
+        objects: [createSceneObject({ id: "object-1", name: "Object 1" })],
+      });
+
+      expect(template.objects[0]).not.toHaveProperty("foldAngle");
+      expect(template.objects[0]).not.toHaveProperty("matteFinish");
+      // Ao abrir, o objeto volta com os padrões: aberto e fosco.
+      expect(applySceneTemplate(template)[0].foldAngle).toBe(180);
+      expect(applySceneTemplate(template)[0].matteFinish).toBe(true);
+    });
+
+    it("keeps the Duo's polished finish", () => {
+      const template = createSceneTemplate({
+        name: "Template 1",
+        objects: [
+          {
+            ...createSceneObject({ id: "duo-1", modelId: "duo", name: "Duo" }),
+            matteFinish: false,
+          },
+        ],
+      });
+
+      expect(applySceneTemplate(template)[0].matteFinish).toBe(false);
     });
   });
 

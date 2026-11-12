@@ -142,6 +142,7 @@ const copy: AppCopy = {
   hiddenObjectLabel: "Hidden",
   keyboardToggleLabel: "Keyboard",
   tabletBezelToggleLabel: "Screen bezel",
+  matteFinishToggleLabel: "Matte finish",
   languageLabel: "Language",
   layersSectionTitle: "Objects",
   lightMode: "Light",
@@ -173,6 +174,9 @@ const copy: AppCopy = {
   rotationZ: "Rotation Z",
   scale: "Scale",
   opacity: "Opacity (%)",
+  foldAngle: "Opening (°)",
+  innerScreenLabel: "Inner screen",
+  outerScreenLabel: "Outer screen",
   sceneSectionHint: "Device body",
   screenSectionHintPrefix: "Ideal size:",
   screenSectionTitle: "App Screen",
@@ -329,10 +333,15 @@ function renderInspector(
     onToggleDeviceShell: jest.fn(),
     onToggleNotebookKeyboard: jest.fn(),
     onToggleTabletBezel: jest.fn(),
+    onToggleMatteFinish: jest.fn(),
     onUpdatePosition: jest.fn(),
     onUpdateRotation: jest.fn(),
     onUpdateScale: jest.fn(),
     onUpdateOpacity: jest.fn(),
+    onUpdateFoldAngle: jest.fn(),
+    onOuterImageUpload: jest.fn(),
+    onRemoveOuterImage: jest.fn(),
+    onUpdateOuterScreenFit: jest.fn(),
   };
 
   render(
@@ -680,6 +689,65 @@ describe("InspectorPanel", () => {
     fireEvent.click(screen.getByText("control:Opacity (%)"));
 
     expect(handlers.onUpdateOpacity).toHaveBeenCalledWith(0.12);
+  });
+
+  describe("Duo, the foldable", () => {
+    const duo = createSceneObject({ id: "duo-1", modelId: "duo", name: "Duo" });
+
+    it("has an opening control, which other devices don't", () => {
+      const handlers = renderInspector(duo);
+
+      // O Control mockado sempre envia 12.
+      fireEvent.click(screen.getByText("control:Opening (°)"));
+
+      expect(handlers.onUpdateFoldAngle).toHaveBeenCalledWith(12);
+    });
+
+    it("hides the opening control on a device that doesn't fold", () => {
+      renderInspector();
+
+      expect(screen.queryByText("control:Opening (°)")).toBeNull();
+      expect(screen.queryByText("Outer screen")).toBeNull();
+      expect(screen.queryByText("Matte finish")).toBeNull();
+    });
+
+    it("starts matte and can be switched to the polished finish", () => {
+      const handlers = renderInspector(duo);
+      const finish = screen.getByRole("switch", { name: "Matte finish" });
+
+      expect(finish).toBeChecked();
+
+      fireEvent.click(finish);
+
+      expect(handlers.onToggleMatteFinish).toHaveBeenCalled();
+    });
+
+    it("uploads an image to the outer screen separately from the inner one", () => {
+      const handlers = renderInspector(duo);
+
+      expect(screen.getByText("Inner screen")).toBeInTheDocument();
+      expect(screen.getByText("Outer screen")).toBeInTheDocument();
+
+      fireEvent.change(screen.getByLabelText("Choose image (Outer screen)"), {
+        target: { files: [new File(["x"], "cover.png", { type: "image/png" })] },
+      });
+
+      expect(handlers.onOuterImageUpload).toHaveBeenCalled();
+      expect(handlers.onImageUpload).not.toHaveBeenCalled();
+    });
+
+    it("shows the outer screen's file once it has one", () => {
+      renderInspector({
+        ...duo,
+        outerImageName: "cover.png",
+        outerImageUrl: "data:image/png;base64,AAAA",
+      });
+
+      expect(screen.getByText("cover.png")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Image options (Outer screen)" }),
+      ).toBeInTheDocument();
+    });
   });
 
   it("shows notebook keyboard toggle only for notebook objects", () => {

@@ -178,6 +178,14 @@ export type SceneObject = {
    */
   imageName: string | null;
   imageUrl: string;
+  /**
+   * A segunda tela de um dobrável, a de fora: imagem, nome e enquadramento
+   * próprios. `null` = placeholder. Os outros modelos não a usam. Só imagem:
+   * o vídeo é da tela principal.
+   */
+  outerImageFit: ScreenFit;
+  outerImageName: string | null;
+  outerImageUrl: string | null;
   isVisible: boolean;
   /**
    * O que a tela mostra. Imagem e vídeo são guardados lado a lado: trocar de
@@ -198,9 +206,17 @@ export type SceneObject = {
   scale: number;
   /** 0 a 1; em 0 o objeto some da cena (mas continua na lista). */
   opacity: number;
+  /** Abertura do dobrável em graus: 180 aberto, 0 fechado. */
+  foldAngle: number;
   showDeviceShell: boolean;
   showNotebookKeyboard: boolean;
   showTabletBezel: boolean;
+  /**
+   * Acabamento fosco, no lugar do polido do arquivo. Só o Duo usa: os
+   * materiais dele reagem ao ambiente da cena, então a troca aparece. Nasce
+   * ligado, para o aparelho entrar na cena com o visual dos outros.
+   */
+  matteFinish: boolean;
 };
 
 // Placeholders são gerados em runtime (canvas) no tamanho de upload
@@ -212,7 +228,12 @@ const MODEL_PLACEHOLDER_SIZES: Record<DeviceModelId, [number, number]> = {
   smartwatch: [1290, 1452],
   notebook: [2755, 1684],
   tablet: [1668, 2388],
+  // A tela de dentro, deitada: é a principal do dobrável.
+  duo: [2670, 1878],
 };
+
+/** A tela de fora do Duo, em pé. */
+export const DUO_OUTER_SCREEN_SIZE: [number, number] = [1398, 2034];
 
 // Fração da altura usada como fonte no placeholder. O padrão (0.042) deixa o
 // texto uniforme na maioria dos modelos; smartwatch e notebook têm a tela
@@ -222,6 +243,7 @@ const DEFAULT_PLACEHOLDER_FONT_SCALE = 0.042;
 const MODEL_PLACEHOLDER_FONT_SCALE: Partial<Record<DeviceModelId, number>> = {
   smartwatch: 0.098,
   notebook: 0.066,
+  duo: 0.06,
 };
 
 // Sentinel usado quando o canvas 2D não está disponível (SSR/jsdom); no
@@ -247,6 +269,17 @@ export function getPlaceholderImageUrl(modelId: DeviceModelId = "smartphone") {
 
   placeholderUrlCache.set(modelId, url);
   return url;
+}
+
+let duoOuterPlaceholderUrl: string | null = null;
+
+/** Placeholder da tela de fora do Duo, no tamanho recomendado dela. */
+export function getDuoOuterPlaceholderImageUrl() {
+  duoOuterPlaceholderUrl ??=
+    createPlaceholderDataUrl(...DUO_OUTER_SCREEN_SIZE, 0.05) ??
+    `${PLACEHOLDER_URL_PREFIX}duo-outer`;
+
+  return duoOuterPlaceholderUrl;
 }
 
 export function isPlaceholderImageUrl(imageUrl: string) {
@@ -382,6 +415,9 @@ export function createSceneObject({
     imageFit: { ...DEFAULT_SCREEN_FIT },
     imageName: null,
     imageUrl: getPlaceholderImageUrl(modelId),
+    outerImageFit: { ...DEFAULT_SCREEN_FIT },
+    outerImageName: null,
+    outerImageUrl: null,
     isVisible: true,
     screenSource: "image",
     screenVideo: null,
@@ -392,6 +428,7 @@ export function createSceneObject({
     showDeviceShell: true,
     showNotebookKeyboard: true,
     showTabletBezel: true,
+    matteFinish: true,
   };
 }
 
@@ -455,11 +492,15 @@ export function changeSceneObjectModel(
     imageFit: { ...DEFAULT_SCREEN_FIT },
     imageName: null,
     imageUrl: getPlaceholderImageUrl(modelId),
+    outerImageFit: { ...DEFAULT_SCREEN_FIT },
+    outerImageName: null,
+    outerImageUrl: null,
     modelId,
     screenSource: "image",
     screenVideo: null,
     showDeviceShell: true,
     showNotebookKeyboard: true,
     showTabletBezel: true,
+    matteFinish: true,
   };
 }

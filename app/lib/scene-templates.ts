@@ -13,6 +13,7 @@ import {
   type MotionTransform,
 } from "./scene-motion";
 import { normalizeMotionFrame, type MotionFrame } from "./motion-frame";
+import { DEFAULT_FOLD_ANGLE } from "./scene-presets";
 
 // ---------------------------------------------------------------------------
 // Templates de cena — composição reutilizável salva no localStorage.
@@ -75,6 +76,10 @@ export type TemplateObject = {
   scale: number;
   /** Templates de antes da opacidade não a têm: valem 100%. */
   opacity?: number;
+  /** Só no dobrável; sem ela, aberto. */
+  foldAngle?: number;
+  /** Só no Duo; sem ele, fosco. */
+  matteFinish?: boolean;
   showDeviceShell: boolean;
   showNotebookKeyboard: boolean;
   showTabletBezel: boolean;
@@ -127,6 +132,11 @@ function toTemplateObject(
     rotationZ: object.rotationZ,
     scale: object.scale,
     opacity: object.opacity,
+    // Só o Duo guarda a abertura e o acabamento: os templates dos outros
+    // modelos ficam como sempre foram.
+    ...(object.modelId === "duo"
+      ? { foldAngle: object.foldAngle, matteFinish: object.matteFinish }
+      : {}),
     showDeviceShell: object.showDeviceShell,
     showNotebookKeyboard: object.showNotebookKeyboard,
     showTabletBezel: object.showTabletBezel,
@@ -191,6 +201,9 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       imageFit: { ...DEFAULT_SCREEN_FIT },
       imageName: null,
       imageUrl: getPlaceholderImageUrl(object.modelId),
+      outerImageFit: { ...DEFAULT_SCREEN_FIT },
+      outerImageName: null,
+      outerImageUrl: null,
       isVisible: object.isVisible,
       modelId: object.modelId,
       screenSource: "image",
@@ -204,9 +217,11 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       rotationZ: object.rotationZ,
       scale: object.scale,
       opacity: object.opacity ?? 1,
+      foldAngle: object.foldAngle ?? DEFAULT_FOLD_ANGLE,
       showDeviceShell: object.showDeviceShell,
       showNotebookKeyboard: object.showNotebookKeyboard,
       showTabletBezel: object.showTabletBezel,
+      matteFinish: object.matteFinish ?? true,
     };
   });
 }
@@ -296,7 +311,9 @@ function isValidKeyframe(value: unknown): value is TemplateKeyframe {
         keyframe.bezier.every((value) => typeof value === "number"))) &&
     !!transform &&
     TRANSFORM_KEYS.every((key) => typeof transform[key] === "number") &&
-    (transform.opacity === undefined || typeof transform.opacity === "number")
+    (transform.opacity === undefined || typeof transform.opacity === "number") &&
+    (transform.foldAngle === undefined ||
+      typeof transform.foldAngle === "number")
   );
 }
 

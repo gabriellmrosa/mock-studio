@@ -257,7 +257,11 @@ export default function Home() {
     );
   }
 
-  async function handleImageUpload(event: ChangeEvent<HTMLInputElement>) {
+  /** `screen`: a tela do aparelho ou, no dobrável, a de fora. */
+  async function handleImageUpload(
+    event: ChangeEvent<HTMLInputElement>,
+    screen: "main" | "outer" = "main",
+  ) {
     const file = event.target.files?.[0];
     if (!file || !selectedObject) {
       return;
@@ -267,11 +271,20 @@ export default function Home() {
       await probeImageFile(file);
       const nextImage = await readFileAsDataUrl(file);
       // Imagem nova, enquadramento novo: o anterior foi feito para outra.
-      updateSceneObject(selectedObject.id, {
-        imageFit: { ...DEFAULT_SCREEN_FIT },
-        imageName: file.name,
-        imageUrl: nextImage,
-      });
+      updateSceneObject(
+        selectedObject.id,
+        screen === "outer"
+          ? {
+              outerImageFit: { ...DEFAULT_SCREEN_FIT },
+              outerImageName: file.name,
+              outerImageUrl: nextImage,
+            }
+          : {
+              imageFit: { ...DEFAULT_SCREEN_FIT },
+              imageName: file.name,
+              imageUrl: nextImage,
+            },
+      );
       setUploadError("");
     } catch (error) {
       console.error(error);
@@ -1108,6 +1121,11 @@ export default function Home() {
             showNotebookKeyboard: !selectedObject?.showNotebookKeyboard,
           })
         }
+        onToggleMatteFinish={() =>
+          selectedObject && updateSceneObject(selectedObject.id, {
+            matteFinish: !selectedObject?.matteFinish,
+          })
+        }
         onToggleTabletBezel={() =>
           selectedObject && updateSceneObject(selectedObject.id, {
             showTabletBezel: !selectedObject?.showTabletBezel,
@@ -1117,6 +1135,22 @@ export default function Home() {
         onUpdateRotation={(rotationPatch) => updateTransform(rotationPatch)}
         onUpdateScale={(scale) => updateTransform({ scale })}
         onUpdateOpacity={(opacity) => updateTransform({ opacity })}
+        onUpdateFoldAngle={(foldAngle) => updateTransform({ foldAngle })}
+        onOuterImageUpload={(event) => handleImageUpload(event, "outer")}
+        onRemoveOuterImage={() =>
+          selectedObject &&
+          updateSceneObject(selectedObject.id, {
+            outerImageFit: { ...DEFAULT_SCREEN_FIT },
+            outerImageName: null,
+            outerImageUrl: null,
+          })
+        }
+        onUpdateOuterScreenFit={(patch) =>
+          selectedObject &&
+          updateSceneObject(selectedObject.id, (object) => ({
+            outerImageFit: { ...object.outerImageFit, ...patch },
+          }))
+        }
         motionTab={motionTab}
         selectedKeyframeId={selectedKeyframeId}
         uiTheme={uiTheme}

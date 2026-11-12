@@ -80,6 +80,7 @@ import {
   type ObjectAlignment,
 } from "./object-alignment";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
+import { applyDuoFoldAngle, Duo } from "../Duo";
 import TimelineResizeHandle, {
   clampTimelineHeight,
 } from "../MotionTimeline/TimelineResizeHandle";
@@ -297,6 +298,11 @@ function applyMotionPose(
   // invisível piscaria). O userData fica para ele manter o valor depois.
   group.userData.opacity = sampled.opacity;
   applyObjectOpacity(group, sampled.opacity);
+
+  // A abertura do dobrável é pose também, e vai pelo mesmo caminho.
+  if (object.modelId === "duo") {
+    applyDuoFoldAngle(group, sampled.foldAngle ?? object.foldAngle);
+  }
 }
 
 /**
@@ -525,6 +531,25 @@ function SceneBridge({
                     scale={model.modelScale.map((s) => s * (scaleOverrides[index] ?? 1)) as [number, number, number]}
                   >
                     <group position={model.pivotOffset}>
+                    {object.modelId === "duo" ? (
+                      // O único com duas telas e dobra: recebe a tela de
+                      // fora e a abertura, que os outros não têm.
+                      <Duo
+                        colors={object.colors}
+                        debugPartColors={
+                          object.debugMode ? object.debugPartColors : undefined
+                        }
+                        foldAngle={displayed.foldAngle}
+                        matteFinish={object.matteFinish}
+                        imageUrl={object.imageUrl}
+                        outerImageUrl={object.outerImageUrl}
+                        outerScreenFit={object.outerImageFit}
+                        videoUrl={getActiveScreenVideo(object)?.url ?? null}
+                        videoKey={object.id}
+                        screenFit={getActiveScreenFit(object)}
+                        showDeviceShell={object.showDeviceShell}
+                      />
+                    ) : (
                     <model.component
                       colors={object.colors}
                       debugPartColors={
@@ -540,6 +565,7 @@ function SceneBridge({
                       showNotebookKeyboard={object.showNotebookKeyboard}
                       showTabletBezel={object.showTabletBezel}
                     />
+                    )}
                     </group>
                   </group>
                 </group>

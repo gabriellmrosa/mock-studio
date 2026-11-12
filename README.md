@@ -35,7 +35,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 
 ### Compose
 
-- **Six devices** — three phones, a smartwatch, a notebook and a tablet — side by side in one scene, each with its own position, rotation, scale and opacity.
+- **Seven devices** — three phones, a foldable that opens and closes, a smartwatch, a notebook and a tablet — side by side in one scene, each with its own position, rotation, scale and opacity.
 - **Images or screen recordings** on every screen (PNG, JPEG, WebP, MP4, MOV, WebM), with zoom, position — far enough to slide the content off the screen — background color and edge cropping. HDR recordings from iPhone and Mac are converted to show their real colors.
 - **Themes and colors** per device part, plus switches for the device body, the notebook keyboard and the tablet bezel.
 - **Alignment and framing**: align objects to the visible canvas in one click, `Fit scene`, and a camera lock that never lets the scene get lost.
@@ -61,7 +61,8 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 <details>
 <summary><strong>Every feature, in detail</strong></summary>
 
-- multi-object composition with `smartphone`, `smartphone2`, `smartphone3`, `smartwatch`, `notebook` and `tablet`
+- multi-object composition with `smartphone`, `smartphone2`, `smartphone3`, `smartwatch`, `notebook`, `tablet` and `duo`
+- `Duo`, a book-style foldable: an `Opening` control in `Transform` goes from 180° (open) to 0° (closed, outer screen facing you); it is part of the pose, so in `Motion` each keyframe has its own and the phone opens or closes between them. It has two screens, each with its own file and framing — the inner one (image or video) spans both halves, the outer one takes an image. A `Matte finish` switch, on by default, trades the model's polished titanium for the flat look of the other devices
 - object duplication that preserves transform, image and inspector settings
 - per-object screen content: an image or a video (MP4, MOV or WebM), switched from the `Image` / `Video` control in the `Screen` section, with model-specific placeholders generated at runtime
 - screen videos exist only in `Motion`, where they follow the playhead and the recording is a clip on its own track under the object — drag it to set when it starts, drag its edges to trim the start or the end, and outside the clip the screen shows only its background; `Static` is a still image, so its `Screen` section goes straight to the image upload, with no `Image | Video` choice
@@ -157,12 +158,15 @@ To add a device, follow [Adding a new 3D model](#adding-a-new-3d-model).
 | smartwatch | smartwatch.glb | [19.44, 19.44, 19.44] | [0, -π/2, 0] | [-7.3, -14.48, 0.08] | 1290x1452 | |
 | notebook | notebook.glb | [2311, 2311, 2311] | [0, π, 0] | [0, -0.0964, 0.0397] | 2755x1684 | |
 | tablet | — (procedural) | [1, 1, 1] | [0, π, 0] | [0, 0, 0] | 1668x2388 | fully code-drawn, no GLB asset |
+| duo | iphone-duo.glb | [720, 720, 720] | [0, π, 0] | [0, 0, 0.012] | 2670x1878 (inner), 1398x2034 (outer) | foldable; two screens |
 
 Every model's `pivotOffset` (GLTF units, applied inside the scaled group) centers its visible geometry on the group origin, so Inspector rotations pivot around the visual center and all models align with each other by construction — `modelSpawnOffset` is now `[0, 0, 0]` everywhere and reserved for intentional offsets.
 
 The `smartphone` (default) and `smartphone2` share the same iPhone GLB. `smartphone` hides the notched screen mesh and covers the molded notch with a generated clean rounded-rectangle screen plane pushed slightly in front; `smartphone2` keeps the original notch.
 
 The `tablet` has no GLB: its body is an extruded rounded rectangle with beveled edges, and the bezel and screen are generated rounded planes in front of it — the same clean-screen technique used by the smartphones. Toggling off the device body leaves just the floating screen, and a dedicated `Screen bezel` toggle removes the black frame around the screen.
+
+The `duo` is the only model that moves: its GLB keeps the two halves and the hinge spine as separate nodes under a `duo-fold` node, and the component folds the phone by rotating them. The pivot is the hinge, and the model slides back toward it as it closes, so the closed phone still rotates and aligns around its visual center. Both screens are generated planes, like the other models' — the inner one as two flat halves sharing one image, one on each half of the phone.
 
 ## Project Structure
 
@@ -173,6 +177,7 @@ The `tablet` has no GLB: its body is an extruded rounded rectangle with beveled 
 - [app/components/MotionTimeline/](app/components/MotionTimeline/): motion timeline, keyframe tracks and the cubic-bezier curve editor
 - [app/components/Dialog/](app/components/Dialog/): the centered dialog behind `Export`, the export progress and the `AlertDialog` confirmations
 - [app/models/device-models.ts](app/models/device-models.ts): device catalog and model metadata
+- [app/components/Duo.tsx](app/components/Duo.tsx) and [app/lib/duo-fold.ts](app/lib/duo-fold.ts): the foldable — the model, its screens and the fold math
 - [app/lib/scene-objects.ts](app/lib/scene-objects.ts): object creation, reset and model switching
 - [app/lib/scene-templates.ts](app/lib/scene-templates.ts): template capture, rebuild and `localStorage` persistence
 - [app/lib/scene-motion.ts](app/lib/scene-motion.ts): keyframes, easing curves and transform sampling over time
@@ -201,6 +206,7 @@ Checklist:
 
 - [scripts/extract-orange-iphone.mjs](scripts/extract-orange-iphone.mjs): isolates the cropped iPhone node used by the app from the source GLB
 - [scripts/extract-iphone-textures.mjs](scripts/extract-iphone-textures.mjs): exports selected textures from the original GLB into `tmp/`
+- [scripts/extract-iphone-duo.mjs](scripts/extract-iphone-duo.mjs): builds `iphone-duo.glb` from the source file — keeps one of its four copies of the phone, sets the app's axes, groups the folding parts and drops the bendable screen. No dependencies: `node scripts/extract-iphone-duo.mjs <source.glb>`
 
 These scripts are development utilities for asset preparation and are not part of the normal app runtime.
 

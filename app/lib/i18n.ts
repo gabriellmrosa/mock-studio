@@ -55,6 +55,8 @@ export type AppCopy = {
   sceneSectionHint: string;
   keyboardToggleLabel: string;
   tabletBezelToggleLabel: string;
+  /** Só no Duo, o único em que o acabamento muda o que se vê. */
+  matteFinishToggleLabel: string;
   screenSectionTitle: string;
   uploadImage: string;
   screenUploadImage: string;
@@ -163,6 +165,11 @@ export type AppCopy = {
   rotationZ: string;
   scale: string;
   opacity: string;
+  /** Abertura do dobrável, em graus. */
+  foldAngle: string;
+  /** As duas telas do dobrável, no Inspector. */
+  innerScreenLabel: string;
+  outerScreenLabel: string;
   moveUpButton: string;
   moveDownButton: string;
   moveLeftButton: string;
@@ -257,6 +264,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     sceneSectionHint: "Corpo do dispositivo",
     keyboardToggleLabel: "Teclado",
     tabletBezelToggleLabel: "Moldura da tela",
+    matteFinishToggleLabel: "Acabamento fosco",
     screenSectionTitle: "Tela",
     uploadImage: "Substituir imagem",
     screenUploadImage: "Enviar imagem",
@@ -373,6 +381,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     rotationZ: "Rotação Z",
     scale: "Escala",
     opacity: "Opacidade (%)",
+    foldAngle: "Abertura (°)",
+    innerScreenLabel: "Tela interna",
+    outerScreenLabel: "Tela externa",
     moveUpButton: "Mover para cima",
     moveDownButton: "Mover para baixo",
     moveLeftButton: "Mover para a esquerda",
@@ -415,6 +426,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       black: "Preto",
       "light-gray": "Cinza Claro",
       blood: "Vermelho",
+      "night-sky": "Night Sky",
+      "star-white": "Star White",
     },
     colorPartLabels: {
       // Smartphone / Smartphone 2
@@ -465,6 +478,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       hingeRubberSeal: "Borracha da dobradica",
       // Tablet
       bezel: "Moldura da tela",
+      // Duo
+      frameHighlight: "Filetes do frame",
+      logo: "Logo",
     },
   },
   "en-US": {
@@ -521,6 +537,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     sceneSectionHint: "Device body",
     keyboardToggleLabel: "Keyboard",
     tabletBezelToggleLabel: "Screen bezel",
+    matteFinishToggleLabel: "Matte finish",
     screenSectionTitle: "Screen",
     uploadImage: "Replace image",
     screenUploadImage: "Upload image",
@@ -637,6 +654,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     rotationZ: "Rotation Z",
     scale: "Scale",
     opacity: "Opacity (%)",
+    foldAngle: "Opening (°)",
+    innerScreenLabel: "Inner screen",
+    outerScreenLabel: "Outer screen",
     moveUpButton: "Move up",
     moveDownButton: "Move down",
     moveLeftButton: "Move left",
@@ -679,6 +699,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       black: "Black",
       "light-gray": "Light Gray",
       blood: "Red",
+      "night-sky": "Night Sky",
+      "star-white": "Star White",
     },
     colorPartLabels: {
       // Smartphone / Smartphone 2
@@ -729,6 +751,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       hingeRubberSeal: "Hinge rubber seal",
       // Tablet
       bezel: "Screen bezel",
+      // Duo
+      frameHighlight: "Frame highlights",
+      logo: "Logo",
     },
   },
 };

@@ -19,6 +19,12 @@ import {
 import { Smartwatch, type SmartwatchDebugPartKey } from "../components/Smartwatch";
 import { Notebook, type NotebookDebugPartKey } from "../components/Notebook";
 import { Tablet, type TabletDebugPartKey } from "../components/Tablet";
+import { Duo, DUO_HINGE_Z, type DuoDebugPartKey } from "../components/Duo";
+import {
+  DUO_DEFAULT_THEME,
+  DUO_THEMES,
+  buildDuoColorsFromPrimary,
+} from "../lib/3d-tokens/duo";
 import {
   TABLET_DEFAULT_THEME,
   TABLET_THEMES,
@@ -46,7 +52,8 @@ export type DeviceModelId =
   | "smartphone3"
   | "smartwatch"
   | "notebook"
-  | "tablet";
+  | "tablet"
+  | "duo";
 
 export type DeviceThemeOption = {
   id: string;
@@ -67,7 +74,8 @@ export type DeviceModelDefinition = {
     | typeof Smartphone3
     | typeof Smartwatch
     | typeof Notebook
-    | typeof Tablet;
+    | typeof Tablet
+    | typeof Duo;
   defaultTheme: string;
   id: DeviceModelId;
   initialDebugColors: Record<string, string>;
@@ -340,6 +348,23 @@ const TABLET_DEBUG_COLORS: Record<TabletDebugPartKey, string> = {
 };
 
 // ---------------------------------------------------------------------------
+// Duo — dobrável tipo livro (GLB). Temas: as duas cores do aparelho.
+// ---------------------------------------------------------------------------
+const DUO_THEME_OPTIONS: DeviceThemeOption[] = [
+  { id: "star-white", label: "Star White", preview: "#efefea" },
+  { id: "night-sky",  label: "Night Sky",  preview: "#2b3442" },
+];
+
+const DUO_CUSTOMIZABLE_COLOR_KEYS = ["body", "frame", "frameHighlight", "logo"];
+
+const DUO_DEBUG_COLORS: Record<DuoDebugPartKey, string> = {
+  body: "#cc00ff",
+  frame: "#00ff99",
+  frameHighlight: "#ffcc00",
+  logo: "#ff3300",
+};
+
+// ---------------------------------------------------------------------------
 export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
   // Modelo principal/default = variante SEM notch (GLB do iPhone).
   smartphone: {
@@ -485,6 +510,34 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     spawnFootprintWidth: 358,
     themeOptions: TABLET_THEME_OPTIONS,
     themes: TABLET_THEMES,
+  },
+  duo: {
+    customizableColorKeys: DUO_CUSTOMIZABLE_COLOR_KEYS,
+    primaryColorKey: "body",
+    // O GLB é preparado com a tela de dentro voltada para +Z, como o Tablet.
+    baseRotation: [0, Math.PI, 0],
+    buildColorsFromPrimary: buildDuoColorsFromPrimary,
+    component: Duo,
+    defaultTheme: DUO_DEFAULT_THEME,
+    id: "duo",
+    initialDebugColors: DUO_DEBUG_COLORS,
+    // 1 unidade do GLB ≈ 212 mm (altura de 0,556 para 117,8 mm). Na escala
+    // dos smartphones, ~3,4 por mm, o aparelho fica com ~400 de altura.
+    modelScale: [720, 720, 720],
+    modelSpawnOffset: [0, 0, 0],
+    name: "Duo",
+    // O pivô é a dobradiça, na face da tela: meia espessura à frente do
+    // centro do aparelho aberto. Ao fechar, o próprio modelo desliza para
+    // manter o centro visual nele (duo-fold.ts).
+    pivotOffset: [0, 0, DUO_HINGE_Z],
+    // A tela de dentro; a de fora tem o tamanho dela no Inspector.
+    recommendedUploadSize: "2670x1878",
+    screenPosition: [0, 0, 0],
+    screenSize: [0, 0],
+    // Aberto, que é como nasce.
+    spawnFootprintWidth: 562,
+    themeOptions: DUO_THEME_OPTIONS,
+    themes: DUO_THEMES,
   },
 };
 

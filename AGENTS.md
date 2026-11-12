@@ -6,7 +6,7 @@ técnico está em [docs/technical-notes.md](docs/technical-notes.md) e a
 história de cada decisão em [POST-V1-ISSUES.md](POST-V1-ISSUES.md). O
 [README](README.md) é a vitrine do produto.
 
-Mock Studio é um editor de mockups 3D no navegador: aparelhos (celulares,
+Mock Studio é um editor de mockups 3D no navegador: aparelhos (celulares, dobrável,
 relógio, notebook, tablet) numa cena, com imagem ou gravação de tela na tela
 de cada um, exportados como PNG ou, no modo Movimento, como vídeo animado por
 keyframes. Next.js 16 (App Router, Turbopack), React 19, three r183 com
@@ -156,6 +156,11 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - Todo modelo é centrado no próprio pivô (`pivotOffset` = negativo do centro
   do bounding box visível), para girar no centro visual e alinhar com os
   outros. Checklist de modelo novo: [README](README.md#adding-a-new-3d-model).
+- O Duo é o único modelo que se mexe: a abertura (`foldAngle`) é pose, como
+  posição e opacidade — vive no objeto e em cada keyframe, e em movimento é
+  escrita direto nos nós do modelo (`applyDuoFoldAngle`), sem passar pelo
+  React. Um campo de pose novo é opcional nos keyframes e templates salvos.
+  As telas dele são planos nossos presos às metades, não as do arquivo.
 
 **Templates**
 

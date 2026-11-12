@@ -3,6 +3,7 @@ import {
   getScreenVideoClipDuration,
   type SceneObject,
 } from "./scene-objects";
+import { DEFAULT_FOLD_ANGLE } from "./scene-presets";
 
 /**
  * Motion por objeto: uma lista de keyframes, cada um um retrato dos sete
@@ -75,6 +76,11 @@ export type MotionTransform = {
   scale: number;
   /** 0 a 1. Para um objeto entrar em cena: 0 no primeiro keyframe. */
   opacity: number;
+  /**
+   * Abertura do dobrável, em graus. Opcional: keyframes de antes dele (em
+   * templates salvos) não a têm, e valem aberto.
+   */
+  foldAngle?: number;
 };
 
 export type Keyframe = {
@@ -188,6 +194,7 @@ export function captureTransform(object: SceneObject): MotionTransform {
     rotationZ: object.rotationZ,
     scale: object.scale,
     opacity: object.opacity,
+    foldAngle: object.foldAngle,
   };
 }
 
@@ -354,6 +361,11 @@ function lerpTransform(
     rotationZ: lerp(from.rotationZ, to.rotationZ, t),
     scale: lerp(from.scale, to.scale, t),
     opacity: lerp(from.opacity, to.opacity, t),
+    foldAngle: lerp(
+      from.foldAngle ?? DEFAULT_FOLD_ANGLE,
+      to.foldAngle ?? DEFAULT_FOLD_ANGLE,
+      t,
+    ),
   };
 }
 

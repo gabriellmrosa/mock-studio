@@ -51,6 +51,15 @@ const ASSET_CREDITS: readonly AssetCredit[] = [
     licenseLabel: "CC BY 4.0",
   },
   {
+    title: "Duo — iPhone Duo 3D Model",
+    author: "PikkmeStudios",
+    sourceHref:
+      "https://sketchfab.com/3d-models/iphone-duo-3d-model-by-pikkme-studio-d2ca6bff92c141d1b1c5759b19d533e0",
+    sourceLabel: "Sketchfab",
+    licenseHref: "https://creativecommons.org/licenses/by/4.0/",
+    licenseLabel: "CC BY 4.0",
+  },
+  {
     title: "Smartphone — iPhone 8",
     author: "egosimx",
     sourceHref: "https://free3d.com/3d-model/iphone-8-84108.html",

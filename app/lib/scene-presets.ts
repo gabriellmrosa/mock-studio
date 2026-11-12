@@ -10,7 +10,15 @@ export const DEFAULT_OBJECT_TRANSFORM = {
   scale: 1,
   /** 0 a 1. Faz parte da pose: anima nos keyframes como posição e escala. */
   opacity: 1,
+  /**
+   * Abertura de um aparelho dobrável, em graus: 180 aberto, 0 fechado. Faz
+   * parte da pose, para animar o aparelho abrindo; os outros modelos a
+   * ignoram.
+   */
+  foldAngle: 180,
 } as const;
+
+export const DEFAULT_FOLD_ANGLE = DEFAULT_OBJECT_TRANSFORM.foldAngle;
 
 export const OBJECT_POSITION_MULTIPLIER = 140;
 export const OBJECT_POSITION_MULTIPLIER_Z = 420;
