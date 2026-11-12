@@ -404,6 +404,8 @@ function createOverlay() {
     base: [baseBezel, baseScreen],
     innerScreens: [coverScreen, baseScreen],
     outerScreen,
+    /** A moldura preta em volta da tela de dentro, uma por metade. */
+    bezels: [coverBezel, baseBezel],
     /** O que some com "Corpo do dispositivo" desligado; as telas ficam. */
     shell: [coverBezel, baseBezel, hole],
   };
@@ -484,14 +486,15 @@ function DuoImpl({
   debugPartColors,
   showDeviceShell = true,
   showNotebookKeyboard: _keyboard,
-  showTabletBezel: _bezel,
+  // Nome herdado do tablet, o primeiro a ter a opção; vale para a moldura da
+  // tela em qualquer aparelho que a tenha.
+  showTabletBezel: showBezel = true,
   screenPosition: _sp,
   screenSize: _ss,
   screenRotation: _sr,
   ...props
 }: DuoProps) {
   void _keyboard;
-  void _bezel;
   void _sp;
   void _ss;
   void _sr;
@@ -667,16 +670,23 @@ function DuoImpl({
     }
   }, [debugMaterials, partMaterials, shellMeshes]);
 
-  // "Corpo do dispositivo" desligado: ficam só as telas, dobrando no ar.
+  // "Corpo do dispositivo" desligado: ficam só as telas, dobrando no ar. A
+  // moldura é um pedaço do corpo que se liga e desliga à parte: o anel preto
+  // da tela de fora (o material "black" do arquivo) e as molduras que
+  // desenhamos na de dentro.
   useLayoutEffect(() => {
-    for (const { mesh } of shellMeshes) {
-      mesh.visible = showDeviceShell;
+    for (const { mesh, source } of shellMeshes) {
+      mesh.visible =
+        showDeviceShell && (source.name === "black" ? showBezel : true);
     }
 
     overlay.shell.forEach((mesh) => {
       mesh.visible = showDeviceShell;
     });
-  }, [overlay, shellMeshes, showDeviceShell]);
+    overlay.bezels.forEach((mesh) => {
+      mesh.visible = showDeviceShell && showBezel;
+    });
+  }, [overlay, shellMeshes, showBezel, showDeviceShell]);
 
   // A abertura parada vem daqui; em movimento, o canvas a escreve direto.
   useLayoutEffect(() => {

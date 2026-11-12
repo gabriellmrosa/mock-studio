@@ -8,27 +8,6 @@ import {
 } from "../../lib/scene-objects";
 import { APP_COPY, type AppCopy } from "../../lib/i18n";
 
-jest.mock("../CustomSelect/CustomSelect", () => ({
-  __esModule: true,
-  default: ({
-    ariaLabel,
-    onChange,
-    value,
-  }: {
-    ariaLabel: string;
-    onChange: (value: string) => void;
-    value: string;
-  }) => (
-    <button
-      type="button"
-      aria-label={ariaLabel}
-      onClick={() => onChange(value === "smartphone" ? "notebook" : "smartphone")}
-    >
-      select-model
-    </button>
-  ),
-}));
-
 jest.mock("../ColorRow/ColorRow", () => ({
   __esModule: true,
   default: ({
@@ -319,6 +298,11 @@ const copy: AppCopy = {
   },
 };
 
+/** O aparelho fica numa faixa; a lista e o corpo abrem pelo "⋮" dela. */
+function openDevice() {
+  fireEvent.click(screen.getByRole("button", { name: "Model" }));
+}
+
 /** A cor do aparelho fica numa faixa; as opções abrem pelo "⋮" dela. */
 function openAppearance() {
   fireEvent.click(screen.getByRole("button", { name: "Appearance options" }));
@@ -376,12 +360,65 @@ function renderInspector(
 }
 
 describe("InspectorPanel", () => {
-  it("calls model change from the custom select", () => {
-    const handlers = renderInspector();
+  describe("device row", () => {
+    it("shows the device on a row, with the list behind its menu", () => {
+      renderInspector();
 
-    fireEvent.click(screen.getByLabelText("Model"));
+      expect(screen.getByText("Smartphone")).toBeInTheDocument();
+      expect(screen.queryByRole("radio")).toBeNull();
 
-    expect(handlers.onModelChange).toHaveBeenCalledWith("notebook");
+      openDevice();
+
+      expect(screen.getAllByRole("radio")).toHaveLength(7);
+      expect(screen.getByRole("radio", { name: "Smartphone" })).toBeChecked();
+      expect(screen.getByRole("radio", { name: "Duo" })).not.toBeChecked();
+    });
+
+    it("changes the model from the list", () => {
+      const handlers = renderInspector();
+
+      openDevice();
+      fireEvent.click(screen.getByRole("radio", { name: "Notebook" }));
+
+      expect(handlers.onModelChange).toHaveBeenCalledWith("notebook");
+    });
+
+    it("offers the keyboard only on the notebook and the bezel only on the tablet", () => {
+      renderInspector();
+      openDevice();
+
+      expect(screen.queryByRole("switch", { name: "Keyboard" })).toBeNull();
+      expect(screen.queryByRole("switch", { name: "Screen bezel" })).toBeNull();
+    });
+
+    it("shows the bezel switch for the Duo too, and keeps its color editable", () => {
+      renderInspector(
+        createSceneObject({ id: "d-1", modelId: "duo", name: "Duo" }),
+      );
+      openDevice();
+
+      expect(screen.getByRole("switch", { name: "Screen bezel" })).toBeInTheDocument();
+    });
+
+    it("shows the bezel switch for a tablet", () => {
+      renderInspector(
+        createSceneObject({ id: "t-1", modelId: "tablet", name: "Tablet" }),
+      );
+      openDevice();
+
+      expect(screen.getByRole("switch", { name: "Screen bezel" })).toBeInTheDocument();
+      expect(screen.getByRole("radio", { name: "Tablet" })).toBeChecked();
+    });
+
+    it("keeps the body switches inside the panel", () => {
+      renderInspector();
+
+      expect(screen.queryByRole("switch", { name: "Device body" })).toBeNull();
+
+      openDevice();
+
+      expect(screen.getByRole("switch", { name: "Device body" })).toBeInTheDocument();
+    });
   });
 
   it("goes straight to the image upload in Static, with no source choice", () => {
@@ -574,6 +611,7 @@ describe("InspectorPanel", () => {
         ...createSceneObject({ id: "object-1", name: "Object 1" }),
         showDeviceShell: false,
       });
+      openDevice();
 
       expect(screen.getByRole("switch", { name: "Device body" })).toHaveAttribute(
         "aria-checked",
@@ -586,6 +624,7 @@ describe("InspectorPanel", () => {
     it("toggles from the switch and from its label text", () => {
       const handlers = renderInspector();
 
+      openDevice();
       fireEvent.click(screen.getByRole("switch", { name: "Device body" }));
       fireEvent.click(screen.getByText("Device body"));
 
@@ -647,7 +686,7 @@ describe("InspectorPanel", () => {
   });
   it("no longer lists video as a device model", () => {
     renderInspector();
-    fireEvent.click(screen.getByLabelText("Model"));
+    openDevice();
 
     expect(screen.queryByText("Video MP4")).not.toBeInTheDocument();
   });
@@ -813,6 +852,7 @@ describe("InspectorPanel", () => {
     });
 
     renderInspector(notebook);
+    openDevice();
 
     expect(screen.getByText("Keyboard")).toBeInTheDocument();
   });

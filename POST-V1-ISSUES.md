@@ -393,3 +393,11 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - [x] the video controller returns before building its per-frame list when no screen chose video, which is the common case: it ran at 60 fps and allocated an array every frame
 - not done, worth knowing: the Duo's GLB embeds a 2000 × 2000 PNG (3.5 MB) that only the lenses use, ~21 MB of GPU memory with mipmaps — halving it would be cheap but needs an image library in the preparation script, which is dependency-free by design; the preload of Smartphone 3 (22 MB) is the largest single file and a candidate for compression (Draco or meshopt, both already in `node_modules`) if the first visit to it feels slow
 
+## 46. The device as a row — done
+
+- [x] the device block was a `CustomSelect` with up to three switches under it, while the screen and the color were already rows with a `⋮`. It is now the same row: the model's icon and name, the whole row opening a floating panel (`ScreenFileRow` + `SidePopover`)
+- [x] the panel holds the list of devices — a `radiogroup`, each model a `radio` marked by background and color — and below it the body switches: `Device body` for all, `Keyboard` on the notebook, `Screen bezel` on the tablet. It stays open after choosing a model, so devices can be compared in the scene, and the switches follow the chosen model
+- [x] the screen bezel switch of the tablet is on the Duo too. The Duo has two bezels: the black ring around the outer screen, from the file (the `black` material), and the black plane we draw around each half of the inner screen. Both hide with the switch, leaving the titanium rim around the screen; both were already one color part, `Bezel`, so their color needed nothing new. The camera pill is not bezel and stays. Checked in the browser open and closed
+- the Inspector's top section is now three rows of one family (device, screen, appearance), which also drops its use of `CustomSelect`
+- checked in the browser: the row, the panel with seven devices, switching to the notebook (the panel stays open, the row reads Notebook, the `Keyboard` switch appears); not checked: keyboard navigation inside the list (it is plain buttons with `radio` roles, without arrow-key movement) and the light UI theme
+

@@ -555,6 +555,7 @@ function SceneBridge({
                         videoKey={object.id}
                         screenFit={getActiveScreenFit(object)}
                         showDeviceShell={object.showDeviceShell}
+                        showTabletBezel={object.showTabletBezel}
                       />
                     ) : (
                     <model.component

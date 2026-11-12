@@ -114,6 +114,7 @@ primeiro degrau que resolve:
 | grupos de sub-opções que nascem fechados | `SubTabs` / `SubTabPanel` |
 | ação extra que acompanha outra ("Salvar como template") | `Checkbox` |
 | escolha numa lista | `CustomSelect` |
+| uma faixa cuja única ação é abrir um painel (arquivo da tela, cor, aparelho) | `ScreenFileRow` + `SidePopover` — a faixa inteira é o alvo, o `⋮` é o indício |
 | painel de opções ao lado do Inspector (arrastável pelo topo) | `SidePopover` |
 | menu de ações (`⋮`) | `ContextMenu` |
 | decisão central com máscara (Exportar) | `Dialog` |

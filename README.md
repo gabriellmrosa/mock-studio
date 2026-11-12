@@ -37,6 +37,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 
 - **Seven devices** — three phones, a foldable that opens and closes, a smartwatch, a notebook and a tablet — side by side in one scene, each with its own position, rotation, scale and opacity.
 - **Images or screen recordings** on every screen (PNG, JPEG, WebP, MP4, MOV, WebM), with zoom, position — far enough to slide the content off the screen — background color and edge cropping. HDR recordings from iPhone and Mac are converted to show their real colors.
+- **The device** is one row too: it shows the chosen model, and the row opens a panel with the list of devices and the body options (the body itself, the notebook's keyboard, and the screen bezel on the tablet and the Duo — on the Duo it hides the black ring around both screens, and its color is the `Bezel` part).
 - **Colors** in one row, like the screen file: the chosen color is shown, and the row (or its `⋮`) opens a floating panel with the ready-made colors and a `Custom` tab for each part (the row then reads `Custom`) — on the Duo every part of the 3D model is there, down to the grooves, the screen bezels and the lenses, so it can go fully black. The Duo has eight colors, from Star White and Night Sky to blue, green, red and pink. Plus switches for the device body, the notebook keyboard and the tablet bezel.
 - **Alignment and framing**: align objects to the visible canvas in one click, `Fit scene`, and a camera lock that never lets the scene get lost.
 

@@ -17,10 +17,48 @@
   padding-bottom: var(--space-6);
 }
 
-/* --- Model select --- */
+/* --- Painel do aparelho --- */
 
-.model-select {
-  width: 100%;
+.device-option-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.device-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Uma linha da lista de aparelhos. Escolhido é fundo e cor, nunca negrito. */
+.device-option {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--button-fg);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--font-size-150);
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  transition: background-color 160ms ease;
+}
+
+.device-option:hover {
+  background: var(--surface-hover);
+}
+
+.device-option-active,
+.device-option-active:hover {
+  background: var(--surface-active);
+}
+
+.device-option:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 1px;
 }
 
 /* --- Upload card --- */

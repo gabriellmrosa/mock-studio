@@ -6,7 +6,6 @@ import "./InspectorPanel.css";
 import { useRef, useState, type ReactNode } from "react";
 import ColorRow from "../ColorRow/ColorRow";
 import Control from "../Control/Control";
-import CustomSelect, { type CustomSelectOption } from "../CustomSelect/CustomSelect";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
 import type { ObjectAlignment } from "../MockupCanvas/object-alignment";
 import {
@@ -195,27 +194,6 @@ export default function InspectorPanel({
       ? object.colors[model.primaryColorKey]
       : model?.themeOptions.find((theme) => theme.id === object.deviceTheme)
           ?.preview) ?? "transparent";
-  const modelOptions: CustomSelectOption[] = [
-    ...DEVICE_MODEL_LIST.map((device) => ({
-      value: device.id,
-      label: device.name,
-      icon:
-        device.id === "smartphone" ||
-        device.id === "smartphone2" ||
-        device.id === "smartphone3" ? (
-          <Smartphone size={14} />
-        ) : device.id === "smartwatch" ? (
-          <Watch size={14} />
-        ) : device.id === "tablet" ? (
-          <Tablet size={14} />
-        ) : device.id === "duo" ? (
-          <FoldableIcon size={14} />
-        ) : (
-          <Laptop size={14} />
-        ),
-    })),
-  ];
-
   return (
     <aside className="editor-sidebar editor-sidebar-shell inspector-sidebar inspector-sidebar-scroll">
       <InspectorPanelHeader
@@ -229,32 +207,24 @@ export default function InspectorPanel({
           title={copy.modelLabel}
           className="--without-border-bottom"
         >
-          <CustomSelect
-            ariaLabel={copy.modelLabel}
-            className="model-select"
-            value={object.modelId}
-            options={modelOptions}
-            onChange={(value) => onModelChange(value as SceneObject["modelId"])}
-          />
-          <Switch
-            checked={object.showDeviceShell}
-            label={copy.sceneSectionHint}
-            onChange={onToggleDeviceShell}
-          />
-          {object.modelId === "notebook" ? (
-            <Switch
-              checked={object.showNotebookKeyboard}
-              label={copy.keyboardToggleLabel}
-              onChange={onToggleNotebookKeyboard}
+          {/* Como a tela e a cor: o aparelho numa faixa, e o painel que ela
+              abre tem a lista de aparelhos e as opções do corpo. */}
+          <ScreenFileRow
+            key={object.id}
+            closeLabel={copy.closeLabel}
+            icon={getDeviceIcon(object.modelId, 16)}
+            menuLabel={copy.modelLabel}
+            name={model?.name ?? object.modelId}
+          >
+            <DeviceSettings
+              copy={copy}
+              object={object}
+              onModelChange={onModelChange}
+              onToggleDeviceShell={onToggleDeviceShell}
+              onToggleNotebookKeyboard={onToggleNotebookKeyboard}
+              onToggleTabletBezel={onToggleTabletBezel}
             />
-          ) : null}
-          {object.modelId === "tablet" ? (
-            <Switch
-              checked={object.showTabletBezel}
-              label={copy.tabletBezelToggleLabel}
-              onChange={onToggleTabletBezel}
-            />
-          ) : null}
+          </ScreenFileRow>
         </PanelSection>
 
         <PanelSection
@@ -589,6 +559,95 @@ function AlignmentControl({
         ))}
       </div>
     </div>
+  );
+}
+
+/** O ícone de cada aparelho: o da lista e o da faixa. */
+function getDeviceIcon(modelId: SceneObject["modelId"], size: number) {
+  switch (modelId) {
+    case "smartphone":
+    case "smartphone2":
+    case "smartphone3":
+      return <Smartphone size={size} />;
+    case "smartwatch":
+      return <Watch size={size} />;
+    case "tablet":
+      return <Tablet size={size} />;
+    case "duo":
+      return <FoldableIcon size={size} />;
+    default:
+      return <Laptop size={size} />;
+  }
+}
+
+/**
+ * O que o painel do aparelho mostra: a lista de modelos, com o escolhido
+ * marcado por fundo e cor, e, abaixo, as opções do corpo — o corpo em si e, em
+ * quem os tem, o teclado do notebook e a moldura do tablet.
+ *
+ * É uma escolha exclusiva, então cada modelo é um `radio`: o leitor de tela
+ * anuncia "1 de 7" e qual está marcado. A lista fica aberta ao escolher, como
+ * as cores: o efeito aparece na cena ao lado e dá para comparar.
+ */
+function DeviceSettings({
+  copy,
+  object,
+  onModelChange,
+  onToggleDeviceShell,
+  onToggleNotebookKeyboard,
+  onToggleTabletBezel,
+}: {
+  copy: AppCopy;
+  object: SceneObject;
+  onModelChange: (modelId: SceneObject["modelId"]) => void;
+  onToggleDeviceShell: () => void;
+  onToggleNotebookKeyboard: () => void;
+  onToggleTabletBezel: () => void;
+}) {
+  return (
+    <>
+      <div role="radiogroup" aria-label={copy.modelLabel} className="device-option-list">
+        {DEVICE_MODEL_LIST.map((device) => {
+          const isSelected = device.id === object.modelId;
+
+          return (
+            <button
+              key={device.id}
+              type="button"
+              role="radio"
+              aria-checked={isSelected}
+              className={`device-option ${isSelected ? "device-option-active" : ""}`.trim()}
+              onClick={() => onModelChange(device.id)}
+            >
+              {getDeviceIcon(device.id, 14)}
+              <span>{device.name}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div className="device-options">
+        <Switch
+          checked={object.showDeviceShell}
+          label={copy.sceneSectionHint}
+          onChange={onToggleDeviceShell}
+        />
+        {object.modelId === "notebook" ? (
+          <Switch
+            checked={object.showNotebookKeyboard}
+            label={copy.keyboardToggleLabel}
+            onChange={onToggleNotebookKeyboard}
+          />
+        ) : null}
+        {object.modelId === "tablet" || object.modelId === "duo" ? (
+          <Switch
+            checked={object.showTabletBezel}
+            label={copy.tabletBezelToggleLabel}
+            onChange={onToggleTabletBezel}
+          />
+        ) : null}
+      </div>
+    </>
   );
 }
 
