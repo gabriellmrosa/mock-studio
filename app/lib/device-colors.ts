@@ -37,3 +37,18 @@ export function buildNextDeviceColors({
     ),
   };
 }
+
+/**
+ * Se o objeto tem alguma parte pintada à mão: compara as cores dele com as do
+ * tema escolhido. Sem isso, o nome do tema continuaria na tela depois de uma
+ * edição, e a cor mostrada não seria a dele.
+ */
+export function isCustomDeviceTheme(
+  model: DeviceModelDefinition,
+  deviceTheme: string,
+  colors: Record<string, string>,
+) {
+  const theme = model.themes[deviceTheme];
+
+  return !theme || model.customizableColorKeys.some((key) => colors[key] !== theme[key]);
+}

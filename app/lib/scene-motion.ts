@@ -1,5 +1,5 @@
 import {
-  getActiveScreenVideo,
+  getActiveScreenVideos,
   getScreenVideoClipDuration,
   type SceneObject,
 } from "./scene-objects";
@@ -319,16 +319,18 @@ export function hasMotion(object: SceneObject): boolean {
 }
 
 /**
- * Instante em que este objeto termina: o último keyframe ou o fim do vídeo da
- * tela, o que vier depois — senão o play cortaria a gravação no meio.
+ * Instante em que este objeto termina: o último keyframe ou o fim do vídeo de
+ * qualquer das telas, o que vier depois — senão o play cortaria a gravação no
+ * meio.
  */
 export function getObjectMotionEnd(object: SceneObject): number {
   const lastKeyframe = object.keyframes[object.keyframes.length - 1]?.timeMs ?? 0;
-  const video = getActiveScreenVideo(object);
 
   return Math.max(
     lastKeyframe,
-    video ? video.startMs + getScreenVideoClipDuration(video) : 0,
+    ...getActiveScreenVideos(object).map(
+      ({ video }) => video.startMs + getScreenVideoClipDuration(video),
+    ),
   );
 }
 

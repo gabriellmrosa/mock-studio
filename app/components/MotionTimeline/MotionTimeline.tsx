@@ -32,10 +32,12 @@ import {
 import type { AppCopy, Locale } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
 import {
-  getActiveScreenVideo,
+  getActiveScreenVideos,
   getScreenVideoClipDuration,
   trimVideoClip,
+  type ActiveScreenVideo,
   type SceneObject,
+  type ScreenId,
   type ScreenVideo,
   type VideoClipPatch,
 } from "../../lib/scene-objects";
@@ -70,8 +72,12 @@ type MotionTimelineProps = {
   onToggleKeyframeAtPlayhead: (objectId: string) => void;
   onChangeFrame: (frame: MotionFrame) => void;
   onChangeKeyframes: (objectId: string, keyframes: Keyframe[]) => void;
-  /** Move ou corta o clipe do vídeo da tela. */
-  onChangeVideo: (objectId: string, patch: VideoClipPatch) => void;
+  /** Move ou corta o clipe do vídeo de uma tela do objeto. */
+  onChangeVideo: (
+    objectId: string,
+    screen: ScreenId,
+    patch: VideoClipPatch,
+  ) => void;
   onRemoveKeyframe: (objectId: string, keyframeId: string) => void;
   onScrub: (timeMs: number) => void;
   onSelectKeyframe: (objectId: string, keyframeId: string) => void;
@@ -98,6 +104,7 @@ type DragState =
       kind: "video";
       moved: boolean;
       objectId: string;
+      screen: ScreenId;
       startMs: number;
       startX: number;
     }
@@ -107,6 +114,7 @@ type DragState =
       kind: "video-trim";
       moved: boolean;
       objectId: string;
+      screen: ScreenId;
       startX: number;
       video: ScreenVideo;
     }
@@ -306,7 +314,7 @@ export default function MotionTimeline({
     const deltaMs = msFromDeltaX(deltaX);
 
     if (drag.kind === "video") {
-      onChangeVideo(drag.objectId, {
+      onChangeVideo(drag.objectId, drag.screen, {
         startMs: Math.max(0, snap(drag.startMs + deltaMs)),
       });
       return;
@@ -315,6 +323,7 @@ export default function MotionTimeline({
     if (drag.kind === "video-trim") {
       onChangeVideo(
         drag.objectId,
+        drag.screen,
         trimVideoClip(drag.video, drag.edge, snap(deltaMs)),
       );
       return;
@@ -386,21 +395,20 @@ export default function MotionTimeline({
   }
 
   /**
-   * Trilha do vídeo da tela, logo abaixo da trilha de keyframes do objeto —
-   * como um clipe num editor de vídeo. Arrastar o clipe muda o instante em que
-   * a gravação começa na cena.
+   * Trilha do vídeo de uma tela, logo abaixo da trilha de keyframes do objeto
+   * — como um clipe num editor de vídeo. Arrastar o clipe muda o instante em
+   * que a gravação começa na cena. Um objeto com duas telas (o dobrável) tem
+   * duas trilhas, uma por tela, independentes.
    */
-  function renderVideoLane(object: SceneObject) {
-    const video = getActiveScreenVideo(object);
-
-    if (!video) {
-      return null;
-    }
-
+  function renderVideoLane(
+    object: SceneObject,
+    { key, screen, video }: ActiveScreenVideo,
+  ) {
     const clipDuration = getScreenVideoClipDuration(video);
 
     return (
       <div
+        key={key}
         className={`motion-timeline-lane motion-timeline-lane-video${
           object.id === selectedObjectId ? " is-active" : ""
         }`}
@@ -422,6 +430,7 @@ export default function MotionTimeline({
               kind: "video",
               moved: false,
               objectId: object.id,
+              screen,
               startMs: video.startMs,
               startX: event.clientX,
             });
@@ -451,6 +460,7 @@ export default function MotionTimeline({
                   kind: "video-trim",
                   moved: false,
                   objectId: object.id,
+                  screen,
                   startX: event.clientX,
                   video,
                 });
@@ -555,17 +565,30 @@ export default function MotionTimeline({
                 </div>
               );
 
-              return getActiveScreenVideo(object) ? (
+              const videos = getActiveScreenVideos(object);
+
+              return videos.length > 0 ? (
                 <Fragment key={object.id}>
                   {label}
-                  <div
-                    className={`motion-timeline-label motion-timeline-label-video${
-                      object.id === selectedObjectId ? " is-active" : ""
-                    }`}
-                  >
-                    <Video size={11} aria-hidden />
-                    <span>{copy.screenSourceVideo}</span>
-                  </div>
+                  {videos.map(({ key, screen }) => (
+                    <div
+                      key={key}
+                      className={`motion-timeline-label motion-timeline-label-video${
+                        object.id === selectedObjectId ? " is-active" : ""
+                      }`}
+                    >
+                      <Video size={11} aria-hidden />
+                      {/* O dobrável tem duas trilhas de vídeo: o rótulo diz a
+                          tela. Nos outros aparelhos, só "Vídeo". */}
+                      <span>
+                        {object.modelId !== "duo"
+                          ? copy.screenSourceVideo
+                          : screen === "outer"
+                            ? copy.outerScreenLabel
+                            : copy.innerScreenLabel}
+                      </span>
+                    </div>
+                  ))}
                 </Fragment>
               ) : (
                 <Fragment key={object.id}>{label}</Fragment>
@@ -701,7 +724,9 @@ export default function MotionTimeline({
                   );
                 })}
               </div>
-              {renderVideoLane(object)}
+              {getActiveScreenVideos(object).map((entry) =>
+                renderVideoLane(object, entry),
+              )}
               </Fragment>
             ))}
 

@@ -381,6 +381,19 @@ describe("scene-motion", () => {
       expect(trimVideoClip(video, "end", -99999)).toEqual({ trimEndMs: 3900 });
     });
 
+    it("extends the scene to the end of whichever screen's video ends last", () => {
+      const duo = {
+        ...createSceneObject({ id: "d", modelId: "duo", name: "Duo" }),
+        outerScreenSource: "video" as const,
+        outerScreenVideo: { ...video, startMs: 3000 },
+        screenSource: "video" as const,
+        screenVideo: video,
+      };
+
+      // A de dentro termina em 5 s; a de fora começa em 3 s e vai até 7 s.
+      expect(getObjectMotionEnd(duo)).toBe(7000);
+    });
+
     it("extends the scene to the end of the video", () => {
       const object = {
         ...withKeyframes([

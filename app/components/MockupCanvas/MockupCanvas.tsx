@@ -30,8 +30,12 @@ import CameraControlsImpl from "camera-controls";
 import type { AppCopy, Locale, UiTheme } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
 import {
+  getActiveOuterScreenFit,
+  getActiveOuterScreenVideo,
   getActiveScreenFit,
   getActiveScreenVideo,
+  getActiveScreenVideos,
+  getScreenVideoKey,
   getScreenVideoTime,
   type SceneObject,
 } from "../../lib/scene-objects";
@@ -543,7 +547,9 @@ function SceneBridge({
                         matteFinish={object.matteFinish}
                         imageUrl={object.imageUrl}
                         outerImageUrl={object.outerImageUrl}
-                        outerScreenFit={object.outerImageFit}
+                        outerScreenFit={getActiveOuterScreenFit(object)}
+                        outerVideoKey={getScreenVideoKey(object.id, "outer")}
+                        outerVideoUrl={getActiveOuterScreenVideo(object)?.url ?? null}
                         videoUrl={getActiveScreenVideo(object)?.url ?? null}
                         videoKey={object.id}
                         screenFit={getActiveScreenFit(object)}
@@ -564,6 +570,11 @@ function SceneBridge({
                       showDeviceShell={object.showDeviceShell}
                       showNotebookKeyboard={object.showNotebookKeyboard}
                       showTabletBezel={object.showTabletBezel}
+                      // Só o relógio tem a opção; nos outros a prop iria parar
+                      // no grupo 3D, que não a conhece.
+                      {...(object.modelId === "smartwatch"
+                        ? { matteFinish: object.matteFinish }
+                        : {})}
                     />
                     )}
                     </group>
@@ -653,11 +664,12 @@ function ScreenVideoController({
       return;
     }
 
-    for (const object of objects) {
-      const video = getActiveScreenVideo(object);
-      const element = video ? getScreenVideoElement(object.id) : null;
+    // Um vídeo por tela: o dobrável pode ter dois, cada um no seu elemento e
+    // no seu trecho da timeline.
+    for (const { key, video } of objects.flatMap(getActiveScreenVideos)) {
+      const element = getScreenVideoElement(key);
 
-      if (!video || !element || element.readyState < 1) {
+      if (!element || element.readyState < 1) {
         continue;
       }
 
@@ -670,7 +682,7 @@ function ScreenVideoController({
       const targetMs = getScreenVideoTime(video, sceneTimeMs);
 
       // Fora do trecho do clipe a tela fica sem vídeo, só com o fundo.
-      setScreenVideoShown(object.id, targetMs !== null);
+      setScreenVideoShown(key, targetMs !== null);
 
       if (targetMs === null) {
         if (!element.paused) {

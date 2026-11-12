@@ -219,6 +219,17 @@
   line-height: 1.2;
 }
 
+/* O título de uma segunda tela abre espaço antes de si: o intervalo entre
+   dois grupos de controles precisa ser maior que o de dentro de cada um. */
+.screen-group-title-following {
+  /* É um <span>: sem ser bloco, a margem de cima não vale. Como bloco ele
+     perde o respiro que a linha dava embaixo (4px nos outros títulos), e a
+     margem de baixo o devolve. */
+  display: block;
+  margin-bottom: var(--space-1);
+  margin-top: var(--space-4);
+}
+
 .transform-groups {
   display: flex;
   flex-direction: column;
@@ -284,6 +295,22 @@
   font-size: var(--font-size-150);
   gap: var(--space-2);
   padding: var(--space-3);
+}
+
+/* A linha com uma só ação, abrir um painel: ela inteira é o alvo do clique. */
+.screen-file-row-action {
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.screen-file-row-action:hover {
+  background: var(--surface-hover);
+}
+
+/* O quadradinho da cor na faixa de aparência: o mesmo do tema, menor. */
+.screen-file-swatch {
+  height: 1rem;
+  width: 1rem;
 }
 
 .screen-file-icon {

@@ -1,9 +1,13 @@
 import {
+  DEFAULT_SCREEN_FIT,
   changeSceneObjectModel,
   createSceneObject,
   duplicateSceneObject,
+  getActiveOuterScreenFit,
+  getActiveScreenVideos,
   getOffsetSpawnTransform,
   getPlaceholderImageUrl,
+  getScreenVideoKey,
   getSequentialSpawnTransform,
   isPlaceholderImageUrl,
   isDefaultObjectTransform,
@@ -285,5 +289,68 @@ describe("scene-objects", () => {
     expect(spawn.positionX).toBeCloseTo(1.6471785714285714);
     expect(spawn.positionY).toBe(0);
     expect(spawn.positionZ).toBe(0);
+  });
+
+  describe("one video per screen", () => {
+    const video = {
+      durationMs: 4000,
+      fit: { ...DEFAULT_SCREEN_FIT },
+      name: "a.mov",
+      startMs: 0,
+      trimEndMs: 0,
+      trimStartMs: 0,
+      url: "blob:a",
+    };
+    const duo = createSceneObject({ id: "d", modelId: "duo", name: "Duo" });
+
+    it("lists no video while both screens show images", () => {
+      expect(getActiveScreenVideos(duo)).toEqual([]);
+    });
+
+    it("lists the videos of the screens that chose video, each under its own key", () => {
+      const both = {
+        ...duo,
+        outerScreenSource: "video" as const,
+        outerScreenVideo: { ...video, name: "b.mov" },
+        screenSource: "video" as const,
+        screenVideo: video,
+      };
+
+      expect(getActiveScreenVideos(both).map((entry) => [entry.screen, entry.key, entry.video.name])).toEqual([
+        ["main", "d", "a.mov"],
+        ["outer", "d:outer", "b.mov"],
+      ]);
+    });
+
+    it("ignores an uploaded video while its screen shows the image", () => {
+      // Imagem e vídeo ficam lado a lado: trocar de fonte não apaga a outra.
+      const onlyOuter = {
+        ...duo,
+        outerScreenSource: "video" as const,
+        outerScreenVideo: video,
+        screenVideo: video,
+      };
+
+      expect(getActiveScreenVideos(onlyOuter).map((entry) => entry.screen)).toEqual(["outer"]);
+    });
+
+    it("keeps the main screen's key as the object id, as it always was", () => {
+      expect(getScreenVideoKey("x")).toBe("x");
+      expect(getScreenVideoKey("x", "outer")).toBe("x:outer");
+    });
+
+    it("frames the outer screen by the source it shows", () => {
+      const zoomed = { ...DEFAULT_SCREEN_FIT, zoom: 2 };
+      const image = { ...duo, outerImageFit: { ...DEFAULT_SCREEN_FIT, zoom: 1.5 } };
+
+      expect(getActiveOuterScreenFit(image).zoom).toBe(1.5);
+      expect(
+        getActiveOuterScreenFit({
+          ...image,
+          outerScreenSource: "video",
+          outerScreenVideo: { ...video, fit: zoomed },
+        }).zoom,
+      ).toBe(2);
+    });
   });
 });

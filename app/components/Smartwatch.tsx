@@ -55,6 +55,8 @@ type SmartwatchProps = React.ComponentPropsWithoutRef<"group"> & {
   showDeviceShell?: boolean;
   showNotebookKeyboard?: boolean;
   showTabletBezel?: boolean;
+  /** Fosco (o padrão) ou o polido do arquivo. */
+  matteFinish?: boolean;
   screenPosition?: [number, number, number];
   screenSize?: [number, number];
 };
@@ -62,14 +64,15 @@ type SmartwatchProps = React.ComponentPropsWithoutRef<"group"> & {
 const SCREEN_RADIUS = 1.75;
 
 /**
- * O material da caixa e da pulseira, em acabamento fosco: pouco brilho, quase
- * sem metal e reflexo. Existia uma variante brilhante, ligada à opção
- * "Acabamento fosco" — removida, porque nos outros aparelhos ela não mudava
- * nada; o relógio ficou com o fosco, que era o padrão.
+ * O material da caixa e da pulseira. Fosco (o padrão): pouco brilho, quase sem
+ * metal e reflexo. Polido: o material como o arquivo o trouxe. O relógio é um
+ * dos dois modelos em que a opção muda o que se vê — o interruptor saiu dos
+ * outros aparelhos (POST-V1 #33) e voltou aqui e no Duo.
  */
 function cloneShellMaterial(
   template: THREE.Material | THREE.Material[] | undefined,
   color: string,
+  matte: boolean,
 ) {
   const base =
     (Array.isArray(template) ? template[0] : template)?.clone() ??
@@ -81,6 +84,13 @@ function cloneShellMaterial(
 
   base.transparent = false;
   base.opacity = 1;
+  base.side = THREE.DoubleSide;
+
+  // Polido: fica como o arquivo trouxe, com o brilho do próprio material.
+  if (!matte) {
+    return base;
+  }
+
   if ("roughness" in base && typeof base.roughness === "number") {
     base.roughness = Math.max(base.roughness, 0.78);
   }
@@ -99,7 +109,6 @@ function cloneShellMaterial(
   if ("envMapIntensity" in base && typeof base.envMapIntensity === "number") {
     base.envMapIntensity = Math.min(base.envMapIntensity, 0.18);
   }
-  base.side = THREE.DoubleSide;
   return base;
 }
 
@@ -145,6 +154,7 @@ function SmartwatchImpl({
   colors,
   debugPartColors,
   showDeviceShell = true,
+  matteFinish = true,
   screenPosition = [0.02, 14.52, -0.1],
   screenSize = [6.87, 7.73],
   ...props
@@ -214,20 +224,20 @@ function SmartwatchImpl({
   const c: SmartwatchColors = (colors as SmartwatchColors) ?? SMARTWATCH_THEMES[SMARTWATCH_DEFAULT_THEME];
   const partMaterials = useMemo(
     () => ({
-      twoSideButtons: cloneShellMaterial(shellMaterialTemplate, c.twoSideButtons),
-      bandClasp:      cloneShellMaterial(shellMaterialTemplate, c.bandClasp),
-      oneSideButton:  cloneShellMaterial(shellMaterialTemplate, c.oneSideButton),
-      body:           cloneShellMaterial(shellMaterialTemplate, c.body),
-      bandDetails:    cloneShellMaterial(shellMaterialTemplate, c.bandDetails),
-      bandBottom:     cloneShellMaterial(shellMaterialTemplate, c.bandBottom),
-      bandDetails2:   cloneShellMaterial(shellMaterialTemplate, c.bandDetails2),
-      crownDetail:    cloneShellMaterial(shellMaterialTemplate, c.crownDetail),
-      bandTop:        cloneShellMaterial(shellMaterialTemplate, c.bandTop),
-      bodyBackground: cloneShellMaterial(shellMaterialTemplate, c.bodyBackground),
+      twoSideButtons: cloneShellMaterial(shellMaterialTemplate, c.twoSideButtons, matteFinish),
+      bandClasp:      cloneShellMaterial(shellMaterialTemplate, c.bandClasp, matteFinish),
+      oneSideButton:  cloneShellMaterial(shellMaterialTemplate, c.oneSideButton, matteFinish),
+      body:           cloneShellMaterial(shellMaterialTemplate, c.body, matteFinish),
+      bandDetails:    cloneShellMaterial(shellMaterialTemplate, c.bandDetails, matteFinish),
+      bandBottom:     cloneShellMaterial(shellMaterialTemplate, c.bandBottom, matteFinish),
+      bandDetails2:   cloneShellMaterial(shellMaterialTemplate, c.bandDetails2, matteFinish),
+      crownDetail:    cloneShellMaterial(shellMaterialTemplate, c.crownDetail, matteFinish),
+      bandTop:        cloneShellMaterial(shellMaterialTemplate, c.bandTop, matteFinish),
+      bodyBackground: cloneShellMaterial(shellMaterialTemplate, c.bodyBackground, matteFinish),
     }),
     [c.twoSideButtons, c.bandClasp, c.oneSideButton, c.body,
      c.bandDetails, c.bandBottom, c.bandDetails2, c.crownDetail, c.bandTop,
-     c.bodyBackground, shellMaterialTemplate],
+     c.bodyBackground, shellMaterialTemplate, matteFinish],
   );
   useEffect(() => () => Object.values(partMaterials).forEach((m) => m.dispose()), [partMaterials]);
 

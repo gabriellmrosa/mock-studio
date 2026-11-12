@@ -138,9 +138,67 @@ describe("MotionTimeline", () => {
     fireEvent.pointerDown(handle, { button: 0, clientX: 100, pointerId: 1 });
     fireEvent.pointerMove(handle, { clientX: 150, pointerId: 1 });
 
-    expect(handlers.onChangeVideo).toHaveBeenLastCalledWith("a", {
+    expect(handlers.onChangeVideo).toHaveBeenLastCalledWith("a", "main", {
       startMs: 1500,
       trimStartMs: 500,
+    });
+  });
+
+  describe("a foldable with a video on each screen", () => {
+    const duoWithTwoVideos = () => {
+      const duo = withVideo(
+        createSceneObject({ id: "d", modelId: "duo", name: "Duo" }),
+      );
+
+      return {
+        ...duo,
+        outerScreenSource: "video" as const,
+        outerScreenVideo: {
+          ...duo.screenVideo!,
+          name: "cover.mov",
+          startMs: 2000,
+        },
+      };
+    };
+
+    it("gives each screen its own track, named after the screen", () => {
+      const { container } = renderTimeline([duoWithTwoVideos()]);
+
+      expect(
+        container.querySelectorAll(".motion-timeline-lane-video"),
+      ).toHaveLength(2);
+      expect(screen.getByText("recording.mov")).toBeInTheDocument();
+      expect(screen.getByText("cover.mov")).toBeInTheDocument();
+      // O rótulo diz a tela, já que "Vídeo" duas vezes não diria nada.
+      expect(screen.getByText("Inner screen")).toBeInTheDocument();
+      expect(screen.getByText("Outer screen")).toBeInTheDocument();
+    });
+
+    it("moves one clip without touching the other", () => {
+      const { container, handlers } = renderTimeline([duoWithTwoVideos()]);
+      const [, outerClip] = container.querySelectorAll<HTMLElement>(
+        ".motion-timeline-clip",
+      );
+      const lanes = container.querySelector(".motion-timeline-lanes") as HTMLElement;
+
+      lanes.getBoundingClientRect = () => ({ left: 0, width: 600 }) as DOMRect;
+      outerClip.setPointerCapture = jest.fn();
+      fireEvent.pointerDown(outerClip, { button: 0, clientX: 300, pointerId: 1 });
+      fireEvent.pointerMove(outerClip, { clientX: 400, pointerId: 1 });
+
+      // 100 px = 1 s: a de fora sai de 2 s para 3 s, e só ela.
+      expect(handlers.onChangeVideo).toHaveBeenLastCalledWith("d", "outer", {
+        startMs: 3000,
+      });
+    });
+
+    it("shows a single track for a device with one screen, labelled Video", () => {
+      renderTimeline([
+        withVideo(createSceneObject({ id: "a", name: "Phone" })),
+      ]);
+
+      expect(screen.getByText("Video")).toBeInTheDocument();
+      expect(screen.queryByText("Inner screen")).toBeNull();
     });
   });
 

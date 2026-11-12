@@ -3,7 +3,7 @@
 import * as THREE from "three";
 import type { MotionFrame } from "../../lib/motion-frame";
 import {
-  getActiveScreenVideo,
+  getActiveScreenVideos,
   getScreenVideoTime,
   type SceneObject,
 } from "../../lib/scene-objects";
@@ -108,8 +108,8 @@ export function createVideoFrameRenderer(
   const previousGridVisible = gridRef.current?.visible ?? true;
   const previousBackground = scene.background;
 
-  for (const object of objects()) {
-    getScreenVideoElement(object.id)?.pause();
+  for (const { key } of objects().flatMap(getActiveScreenVideos)) {
+    getScreenVideoElement(key)?.pause();
   }
 
   return {
@@ -121,18 +121,17 @@ export function createVideoFrameRenderer(
       // reaplicar a pose do instante parado na timeline; por isso a pose do
       // quadro vem depois, e daí até o render nada mais espera.
       await Promise.all(
-        objects().map((object) => {
-          const video = getActiveScreenVideo(object);
-          const element = getScreenVideoElement(object.id);
+        objects().flatMap(getActiveScreenVideos).map(({ key, video }) => {
+          const element = getScreenVideoElement(key);
 
-          if (!video || !element) {
+          if (!element) {
             return undefined;
           }
 
           const sourceMs = getScreenVideoTime(video, timeMs);
 
           // Como no editor: fora do clipe, a tela só com o fundo.
-          setScreenVideoShown(object.id, sourceMs !== null);
+          setScreenVideoShown(key, sourceMs !== null);
 
           if (sourceMs === null) {
             return undefined;

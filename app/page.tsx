@@ -45,12 +45,14 @@ import {
   changeSceneObjectModel,
   DEFAULT_SCREEN_FIT,
   createSceneObject,
+  getActiveOuterScreenVideo,
   getActiveScreenVideo,
   getPlaceholderImageUrl,
   duplicateSceneObject,
   getSequentialSpawnTransform,
   resetSceneObject,
   type SceneObject,
+  type ScreenId,
 } from "./lib/scene-objects";
 import {
   OBJECT_POSITION_MULTIPLIER,
@@ -294,7 +296,11 @@ export default function Home() {
     }
   }
 
-  async function handleVideoUpload(event: ChangeEvent<HTMLInputElement>) {
+  /** `screen`: a tela do aparelho ou, no dobrável, a de fora. */
+  async function handleVideoUpload(
+    event: ChangeEvent<HTMLInputElement>,
+    screen: ScreenId = "main",
+  ) {
     const file = event.target.files?.[0];
     const target = selectedObject;
 
@@ -307,18 +313,22 @@ export default function Home() {
     try {
       const { durationMs, url } = await probeVideoFile(file);
 
-      updateSceneObject(target.id, {
-        screenSource: "video",
-        screenVideo: {
-          durationMs,
-          fit: { ...DEFAULT_SCREEN_FIT },
-          name: file.name,
-          startMs: 0,
-          trimEndMs: 0,
-          trimStartMs: 0,
-          url,
-        },
-      });
+      const screenVideo = {
+        durationMs,
+        fit: { ...DEFAULT_SCREEN_FIT },
+        name: file.name,
+        startMs: 0,
+        trimEndMs: 0,
+        trimStartMs: 0,
+        url,
+      };
+
+      updateSceneObject(
+        target.id,
+        screen === "outer"
+          ? { outerScreenSource: "video", outerScreenVideo: screenVideo }
+          : { screenSource: "video", screenVideo },
+      );
       setUploadError("");
     } catch (error) {
       console.error(error);
@@ -1043,12 +1053,19 @@ export default function Home() {
             objects={sceneObjects.filter((object) => object.isVisible)}
             onChangeFrame={setMotionFrame}
             onChangeKeyframes={handleChangeKeyframes}
-            onChangeVideo={(objectId, patch) =>
-              updateSceneObject(objectId, (object) =>
-                object.screenVideo
-                  ? { screenVideo: { ...object.screenVideo, ...patch } }
-                  : {},
-              )
+            onChangeVideo={(objectId, screen, patch) =>
+              updateSceneObject(objectId, (object) => {
+                const video =
+                  screen === "outer" ? object.outerScreenVideo : object.screenVideo;
+
+                if (!video) {
+                  return {};
+                }
+
+                return screen === "outer"
+                  ? { outerScreenVideo: { ...video, ...patch } }
+                  : { screenVideo: { ...video, ...patch } };
+              })
             }
             onRemoveKeyframe={handleRemoveKeyframe}
             onScrub={handleScrub}
@@ -1137,6 +1154,17 @@ export default function Home() {
         onUpdateOpacity={(opacity) => updateTransform({ opacity })}
         onUpdateFoldAngle={(foldAngle) => updateTransform({ foldAngle })}
         onOuterImageUpload={(event) => handleImageUpload(event, "outer")}
+        onOuterVideoUpload={(event) => handleVideoUpload(event, "outer")}
+        onRemoveOuterVideo={() =>
+          selectedObject &&
+          updateSceneObject(selectedObject.id, { outerScreenVideo: null })
+        }
+        onOuterScreenSourceChange={(outerScreenSource) => {
+          if (!selectedObject) return;
+
+          setUploadError("");
+          updateSceneObject(selectedObject.id, { outerScreenSource });
+        }}
         onRemoveOuterImage={() =>
           selectedObject &&
           updateSceneObject(selectedObject.id, {
@@ -1147,9 +1175,14 @@ export default function Home() {
         }
         onUpdateOuterScreenFit={(patch) =>
           selectedObject &&
-          updateSceneObject(selectedObject.id, (object) => ({
-            outerImageFit: { ...object.outerImageFit, ...patch },
-          }))
+          // Grava no enquadramento da fonte que está na tela de fora.
+          updateSceneObject(selectedObject.id, (object) => {
+            const video = getActiveOuterScreenVideo(object);
+
+            return video
+              ? { outerScreenVideo: { ...video, fit: { ...video.fit, ...patch } } }
+              : { outerImageFit: { ...object.outerImageFit, ...patch } };
+          })
         }
         motionTab={motionTab}
         selectedKeyframeId={selectedKeyframeId}

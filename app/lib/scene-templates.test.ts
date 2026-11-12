@@ -460,6 +460,21 @@ describe("scene-templates", () => {
       expect(applySceneTemplate(template)[0].matteFinish).toBe(true);
     });
 
+    it("keeps the watch's finish too, the other model that has one", () => {
+      const template = createSceneTemplate({
+        name: "Template 1",
+        objects: [
+          {
+            ...createSceneObject({ id: "w-1", modelId: "smartwatch", name: "Watch" }),
+            matteFinish: false,
+          },
+        ],
+      });
+
+      expect(template.objects[0]).not.toHaveProperty("foldAngle");
+      expect(applySceneTemplate(template)[0].matteFinish).toBe(false);
+    });
+
     it("keeps the Duo's polished finish", () => {
       const template = createSceneTemplate({
         name: "Template 1",

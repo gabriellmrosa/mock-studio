@@ -151,6 +151,64 @@ export function getActiveScreenVideo(object: SceneObject) {
   return object.screenSource === "video" ? object.screenVideo : null;
 }
 
+/** As telas de um objeto: a principal e, no dobrável, a de fora. */
+export type ScreenId = "main" | "outer";
+
+/**
+ * Chave de uma tela no registro de elementos de vídeo (`getScreenVideoElement`)
+ * e nas telas escondidas fora do clipe. A principal usa o id do objeto, como
+ * sempre usou; a de fora, o id com um sufixo — assim dois vídeos do mesmo
+ * objeto nunca dividem o elemento nem a posição no tempo.
+ */
+export function getScreenVideoKey(objectId: string, screen: ScreenId = "main") {
+  return screen === "outer" ? `${objectId}:outer` : objectId;
+}
+
+/** O vídeo da tela de fora do dobrável, se for a fonte escolhida nela. */
+export function getActiveOuterScreenVideo(object: SceneObject) {
+  return object.outerScreenSource === "video" ? object.outerScreenVideo : null;
+}
+
+/** Enquadramento do que a tela de fora mostra agora: o do vídeo ou o da imagem. */
+export function getActiveOuterScreenFit(object: SceneObject): ScreenFit {
+  return {
+    ...DEFAULT_SCREEN_FIT,
+    ...(getActiveOuterScreenVideo(object)?.fit ?? object.outerImageFit),
+  };
+}
+
+export type ActiveScreenVideo = {
+  /** Chave no registro de elementos de vídeo. */
+  key: string;
+  screen: ScreenId;
+  video: ScreenVideo;
+};
+
+/**
+ * Todos os vídeos que o objeto mostra agora, um por tela: quem posiciona o
+ * vídeo no tempo (o canvas, a exportação, a timeline) passa por aqui, e
+ * assim vale igual para uma tela ou duas.
+ */
+export function getActiveScreenVideos(object: SceneObject): ActiveScreenVideo[] {
+  const main = getActiveScreenVideo(object);
+  const outer = getActiveOuterScreenVideo(object);
+
+  return [
+    ...(main
+      ? [{ key: getScreenVideoKey(object.id), screen: "main" as const, video: main }]
+      : []),
+    ...(outer
+      ? [
+          {
+            key: getScreenVideoKey(object.id, "outer"),
+            screen: "outer" as const,
+            video: outer,
+          },
+        ]
+      : []),
+  ];
+}
+
 /**
  * Enquadramento do que a tela mostra agora: o do vídeo ou o da imagem.
  * Completa com os padrões para aceitar enquadramentos de antes dos campos
@@ -179,13 +237,15 @@ export type SceneObject = {
   imageName: string | null;
   imageUrl: string;
   /**
-   * A segunda tela de um dobrável, a de fora: imagem, nome e enquadramento
-   * próprios. `null` = placeholder. Os outros modelos não a usam. Só imagem:
-   * o vídeo é da tela principal.
+   * A segunda tela de um dobrável, a de fora: imagem ou vídeo, cada um com o
+   * nome e o enquadramento próprios, como na tela principal. `null` =
+   * placeholder. Os outros modelos não a usam.
    */
   outerImageFit: ScreenFit;
   outerImageName: string | null;
   outerImageUrl: string | null;
+  outerScreenSource: "image" | "video";
+  outerScreenVideo: ScreenVideo | null;
   isVisible: boolean;
   /**
    * O que a tela mostra. Imagem e vídeo são guardados lado a lado: trocar de
@@ -212,9 +272,10 @@ export type SceneObject = {
   showNotebookKeyboard: boolean;
   showTabletBezel: boolean;
   /**
-   * Acabamento fosco, no lugar do polido do arquivo. Só o Duo usa: os
-   * materiais dele reagem ao ambiente da cena, então a troca aparece. Nasce
-   * ligado, para o aparelho entrar na cena com o visual dos outros.
+   * Acabamento fosco, no lugar do polido do arquivo. Só o Duo e o relógio
+   * usam (`MODELS_WITH_FINISH`): os materiais deles reagem ao ambiente da
+   * cena, então a troca aparece. Nasce ligado, para o aparelho entrar na cena
+   * com o visual dos outros.
    */
   matteFinish: boolean;
 };
@@ -418,6 +479,8 @@ export function createSceneObject({
     outerImageFit: { ...DEFAULT_SCREEN_FIT },
     outerImageName: null,
     outerImageUrl: null,
+    outerScreenSource: "image",
+    outerScreenVideo: null,
     isVisible: true,
     screenSource: "image",
     screenVideo: null,
@@ -495,6 +558,8 @@ export function changeSceneObjectModel(
     outerImageFit: { ...DEFAULT_SCREEN_FIT },
     outerImageName: null,
     outerImageUrl: null,
+    outerScreenSource: "image",
+    outerScreenVideo: null,
     modelId,
     screenSource: "image",
     screenVideo: null,

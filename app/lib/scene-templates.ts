@@ -1,6 +1,10 @@
 "use client";
 
-import { DEVICE_MODELS, type DeviceModelId } from "../models/device-models";
+import {
+  DEVICE_MODELS,
+  MODELS_WITH_FINISH,
+  type DeviceModelId,
+} from "../models/device-models";
 import {
   DEFAULT_SCREEN_FIT,
   getPlaceholderImageUrl,
@@ -78,7 +82,7 @@ export type TemplateObject = {
   opacity?: number;
   /** Só no dobrável; sem ela, aberto. */
   foldAngle?: number;
-  /** Só no Duo; sem ele, fosco. */
+  /** Só nos modelos com a opção (`MODELS_WITH_FINISH`); sem ele, fosco. */
   matteFinish?: boolean;
   showDeviceShell: boolean;
   showNotebookKeyboard: boolean;
@@ -132,10 +136,11 @@ function toTemplateObject(
     rotationZ: object.rotationZ,
     scale: object.scale,
     opacity: object.opacity,
-    // Só o Duo guarda a abertura e o acabamento: os templates dos outros
-    // modelos ficam como sempre foram.
-    ...(object.modelId === "duo"
-      ? { foldAngle: object.foldAngle, matteFinish: object.matteFinish }
+    // Só quem tem a opção guarda a abertura e o acabamento: os templates dos
+    // outros modelos ficam como sempre foram.
+    ...(object.modelId === "duo" ? { foldAngle: object.foldAngle } : {}),
+    ...(MODELS_WITH_FINISH.includes(object.modelId)
+      ? { matteFinish: object.matteFinish }
       : {}),
     showDeviceShell: object.showDeviceShell,
     showNotebookKeyboard: object.showNotebookKeyboard,
@@ -204,6 +209,8 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       outerImageFit: { ...DEFAULT_SCREEN_FIT },
       outerImageName: null,
       outerImageUrl: null,
+      outerScreenSource: "image",
+      outerScreenVideo: null,
       isVisible: object.isVisible,
       modelId: object.modelId,
       screenSource: "image",

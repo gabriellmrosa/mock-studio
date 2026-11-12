@@ -348,20 +348,46 @@ const TABLET_DEBUG_COLORS: Record<TabletDebugPartKey, string> = {
 };
 
 // ---------------------------------------------------------------------------
-// Duo — dobrável tipo livro (GLB). Temas: as duas cores do aparelho.
+// Duo — dobrável tipo livro (GLB). Temas: as duas cores do aparelho e mais
+// algumas; o quadradinho de cada um é a cor do corpo.
 // ---------------------------------------------------------------------------
-const DUO_THEME_OPTIONS: DeviceThemeOption[] = [
-  { id: "star-white", label: "Star White", preview: "#efefea" },
-  { id: "night-sky",  label: "Night Sky",  preview: "#2b3442" },
-];
+const DUO_THEME_LABELS: Record<keyof typeof DUO_THEMES, string> = {
+  "star-white": "Star White",
+  "night-sky": "Night Sky",
+  black: "Black",
+  gray: "Gray",
+  blue: "Blue",
+  green: "Green",
+  blood: "Red",
+  pink: "Pink",
+};
 
-const DUO_CUSTOMIZABLE_COLOR_KEYS = ["body", "frame", "frameHighlight", "logo"];
+const DUO_THEME_OPTIONS: DeviceThemeOption[] = (
+  Object.keys(DUO_THEME_LABELS) as (keyof typeof DUO_THEMES)[]
+).map((id) => ({
+  id,
+  label: DUO_THEME_LABELS[id],
+  preview: DUO_THEMES[id].body,
+}));
+
+const DUO_CUSTOMIZABLE_COLOR_KEYS = [
+  "body",
+  "frame",
+  "frameHighlight",
+  "grooves",
+  "logo",
+  "bezel",
+  "lens",
+];
 
 const DUO_DEBUG_COLORS: Record<DuoDebugPartKey, string> = {
   body: "#cc00ff",
   frame: "#00ff99",
   frameHighlight: "#ffcc00",
+  grooves: "#0066ff",
   logo: "#ff3300",
+  bezel: "#00ffff",
+  lens: "#ff0099",
 };
 
 // ---------------------------------------------------------------------------
@@ -540,6 +566,13 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
     themes: DUO_THEMES,
   },
 };
+
+/**
+ * Os modelos em que o acabamento fosco/polido muda o que se vê: os materiais
+ * deles são físicos e reagem ao ambiente da cena. Nos outros a opção não
+ * mudava nada (POST-V1 #33) e não existe.
+ */
+export const MODELS_WITH_FINISH: readonly DeviceModelId[] = ["duo", "smartwatch"];
 
 export const DEVICE_MODEL_LIST = Object.values(DEVICE_MODELS);
 export const DEFAULT_DEVICE_MODEL = DEVICE_MODELS.smartphone;

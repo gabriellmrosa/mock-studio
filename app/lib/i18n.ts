@@ -70,6 +70,11 @@ export type AppCopy = {
   uploadVideo: string;
   replaceVideo: string;
   screenVideoHint: string;
+  /** Linha da tela ainda sem arquivo: convida a adicionar um. */
+  screenAddImage: string;
+  screenAddVideo: string;
+  /** Nome da cor do aparelho quando alguma parte foi editada à mão. */
+  themeCustomName: string;
   uploadVideoError: string;
   screenTabsLabel: string;
   screenTabFit: string;
@@ -278,6 +283,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     uploadVideo: "Enviar vídeo",
     replaceVideo: "Substituir vídeo",
     screenVideoHint: "MP4, MOV ou WebM",
+    screenAddImage: "Adicionar imagem",
+    screenAddVideo: "Adicionar vídeo",
+    themeCustomName: "Personalizada",
     screenTabsLabel: "Opções da tela",
     screenTabFit: "Ajuste",
     screenTabCrop: "Corte",
@@ -428,6 +436,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       blood: "Vermelho",
       "night-sky": "Night Sky",
       "star-white": "Star White",
+      blue: "Azul",
+      green: "Verde",
+      pink: "Rosa",
     },
     colorPartLabels: {
       // Smartphone / Smartphone 2
@@ -477,10 +488,12 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       lowerHingeBar: "Barra da dobradica",
       hingeRubberSeal: "Borracha da dobradica",
       // Tablet
-      bezel: "Moldura da tela",
+      bezel: "Moldura",
       // Duo
-      frameHighlight: "Filetes do frame",
+      frameHighlight: "Filetes",
+      grooves: "Sulcos",
       logo: "Logo",
+      lens: "Lentes",
     },
   },
   "en-US": {
@@ -551,6 +564,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     uploadVideo: "Upload video",
     replaceVideo: "Replace video",
     screenVideoHint: "MP4, MOV or WebM",
+    screenAddImage: "Add image",
+    screenAddVideo: "Add video",
+    themeCustomName: "Custom",
     screenTabsLabel: "Screen options",
     screenTabFit: "Fit",
     screenTabCrop: "Crop",
@@ -701,6 +717,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       blood: "Red",
       "night-sky": "Night Sky",
       "star-white": "Star White",
+      blue: "Blue",
+      green: "Green",
+      pink: "Pink",
     },
     colorPartLabels: {
       // Smartphone / Smartphone 2
@@ -750,10 +769,12 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       lowerHingeBar: "Hinge bar",
       hingeRubberSeal: "Hinge rubber seal",
       // Tablet
-      bezel: "Screen bezel",
+      bezel: "Bezel",
       // Duo
-      frameHighlight: "Frame highlights",
+      frameHighlight: "Highlights",
+      grooves: "Grooves",
       logo: "Logo",
+      lens: "Lenses",
     },
   },
 };

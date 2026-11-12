@@ -14,6 +14,7 @@ import {
 } from "../lib/scene-objects";
 import { DEFAULT_FOLD_ANGLE } from "../lib/scene-presets";
 import { getDuoFoldPose } from "../lib/duo-fold";
+import { getRoundedShape } from "../lib/duo-shapes";
 import {
   DUO_DEFAULT_THEME,
   DUO_THEMES,
@@ -50,14 +51,20 @@ const MATERIAL_PARTS: Record<string, keyof DuoColors> = {
   "apple-material": "body",
   "apple-material-sides": "frame",
   "apple-material-sides-lighter": "frameHighlight",
+  "less-black": "grooves",
   "apple-material-sides-darker": "logo",
+  "black": "bezel",
+  "screen": "lens",
 };
 
 export const DUO_PARTS = {
   body: "body",
   frame: "frame",
   frameHighlight: "frameHighlight",
+  grooves: "grooves",
   logo: "logo",
+  bezel: "bezel",
+  lens: "lens",
 } as const;
 
 export type DuoDebugPartKey = keyof typeof DUO_PARTS;
@@ -77,10 +84,8 @@ const INNER = {
   // Metade da tela de dentro, a partir da dobradiça, e a moldura preta dela.
   width: 0.373,
   height: 0.524,
-  radius: 0.04,
   bezelWidth: 0.385,
   bezelHeight: 0.546,
-  bezelRadius: 0.05,
   /** As metades giram a 0,002 da dobradiça; o centro em Y conta com isso. */
   hingeOffset: 0.002,
   /**
@@ -97,10 +102,18 @@ const OUTER = {
   radius: 0.044,
   hingeRadius: 0.006,
   centerY: -0.192,
-  // Câmera frontal: o furo no canto de cima, do lado de fora.
-  holeRadius: 0.013,
-  holeInset: 0.042,
+  // Câmera frontal: uma pílula em pé no canto de cima, do lado de fora. No
+  // arquivo ela não é geometria — vem pintada na imagem de exemplo da tela —,
+  // então o tamanho e o lugar foram medidos nele, e depois afinados à vista:
+  // ~0,026 × 0,048, com o centro a 0,036 da lateral e a 0,038 do topo.
+  holeWidth: 0.026,
+  holeHeight: 0.048,
+  holeInsetX: 0.036,
+  holeInsetY: 0.038,
 };
+
+/** O brilho próprio das lentes no arquivo, por canal, com a cor original. */
+const LENS_GLOW = 0.3;
 
 const FOLD_NODE = "duo-fold";
 const BASE_NODE = "duo-base";
@@ -123,29 +136,81 @@ export function applyDuoFoldAngle(root: THREE.Object3D, foldAngle: number) {
   root.getObjectByName(CENTER_GROUP)?.position.set(pose.shiftX, 0, pose.shiftZ);
 }
 
-type CornerRadii = [
-  topLeft: number,
-  topRight: number,
-  bottomRight: number,
-  bottomLeft: number,
+/**
+ * O perfil de um canto, medido nas malhas do arquivo: pontos `[a, b]` em que
+ * `a` é a distância da borda vertical e `b` a da borda horizontal, do ponto
+ * em que a curva sai da lateral ao ponto em que chega ao topo. O canto da
+ * Apple não é um arco de círculo — é achatado e de raios diferentes na
+ * largura e na altura —, e aproximá-lo com um raio só deixava a moldura
+ * preta e a tela fora do contorno do frame.
+ */
+type CornerProfile = readonly (readonly [number, number])[];
+
+/** O canto externo da tela de dentro (a malha "screen" do arquivo). */
+const INNER_SCREEN_CORNER: CornerProfile = [
+  [0, 0.0505], [0.0002, 0.0442], [0.0008, 0.0385], [0.0017, 0.0332],
+  [0.003, 0.0283], [0.0045, 0.0238], [0.0064, 0.0198], [0.0086, 0.0162],
+  [0.011, 0.0129], [0.0138, 0.0101], [0.0168, 0.0076], [0.0202, 0.0054],
+  [0.0239, 0.0036], [0.0281, 0.0021], [0.0328, 0.001], [0.038, 0.0003],
+  [0.044, 0],
 ];
 
-/** Retângulo centrado na origem, com um raio por canto (0 = canto vivo). */
-function getRoundedShape(width: number, height: number, radii: CornerRadii) {
-  const [tl, tr, br, bl] = radii;
+/** O canto externo da moldura preta da tela de dentro (a malha "black"). */
+const INNER_BEZEL_CORNER: CornerProfile = [
+  [0, 0.0618], [0.0002, 0.055], [0.0009, 0.0485], [0.0019, 0.0423],
+  [0.0034, 0.0364], [0.0054, 0.031], [0.0077, 0.0259], [0.0105, 0.0212],
+  [0.0138, 0.017], [0.0174, 0.0131], [0.0215, 0.0098], [0.026, 0.0069],
+  [0.031, 0.0044], [0.0364, 0.0025], [0.0422, 0.0011], [0.0485, 0.0003],
+  [0.0553, 0],
+];
+
+type ShapeCorners = [
+  topLeft: CornerProfile | null,
+  topRight: CornerProfile | null,
+  bottomRight: CornerProfile | null,
+  bottomLeft: CornerProfile | null,
+];
+
+/**
+ * Retângulo centrado na origem com o perfil medido em cada canto, ou `null`
+ * para canto vivo — o lado da dobradiça, onde a tela é uma só.
+ */
+function getProfiledShape(width: number, height: number, corners: ShapeCorners) {
   const x = width / 2;
   const y = height / 2;
+  const [tl, tr, br, bl] = corners;
+  const points: [number, number][] = [];
+  // Anti-horário a partir do canto de cima à direita; a tabela vai da lateral
+  // ao topo, então nos cantos que o percurso atravessa do topo à lateral
+  // (cima à esquerda, baixo à direita) ela é lida de trás para frente.
+  const corner = (
+    profile: CornerProfile | null,
+    sx: number,
+    sy: number,
+    reverse: boolean,
+  ) => {
+    if (!profile) {
+      points.push([sx * x, sy * y]);
+      return;
+    }
+
+    const ordered = reverse ? [...profile].reverse() : profile;
+
+    for (const [a, b] of ordered) {
+      points.push([sx * (x - a), sy * (y - b)]);
+    }
+  };
+
+  corner(tr, 1, 1, false);
+  corner(tl, -1, 1, true);
+  corner(bl, -1, -1, false);
+  corner(br, 1, -1, true);
+
   const shape = new THREE.Shape();
 
-  shape.moveTo(-x, y - tl);
-  shape.lineTo(-x, bl - y);
-  shape.quadraticCurveTo(-x, -y, bl - x, -y);
-  shape.lineTo(x - br, -y);
-  shape.quadraticCurveTo(x, -y, x, br - y);
-  shape.lineTo(x, y - tr);
-  shape.quadraticCurveTo(x, y, x - tr, y);
-  shape.lineTo(tl - x, y);
-  shape.quadraticCurveTo(-x, y, -x, y - tl);
+  shape.moveTo(...points[0]);
+  points.slice(1).forEach((point) => shape.lineTo(...point));
+  shape.closePath();
 
   return shape;
 }
@@ -157,14 +222,11 @@ function getRoundedShape(width: number, height: number, radii: CornerRadii) {
 function createScreenGeometry(
   width: number,
   height: number,
-  radii: CornerRadii,
+  shape: THREE.Shape,
   u0 = 0,
   u1 = 1,
 ) {
-  const geometry = new THREE.ShapeGeometry(
-    getRoundedShape(width, height, radii),
-    32,
-  );
+  const geometry = new THREE.ShapeGeometry(shape, 32);
   const position = geometry.getAttribute("position");
   const uv = new Float32Array(position.count * 2);
 
@@ -187,8 +249,18 @@ function createScreenGeometry(
 function createGeometries() {
   // Cantos arredondados só do lado de fora; na dobradiça, canto vivo. A capa
   // fica à esquerda de quem olha a tela de dentro, a base à direita.
-  const coverSide = (radius: number): CornerRadii => [radius, 0, 0, radius];
-  const baseSide = (radius: number): CornerRadii => [0, radius, radius, 0];
+  const coverSide = (profile: CornerProfile): ShapeCorners => [
+    profile,
+    null,
+    null,
+    profile,
+  ];
+  const baseSide = (profile: CornerProfile): ShapeCorners => [
+    null,
+    profile,
+    profile,
+    null,
+  ];
 
   const bezelWidth = INNER.bezelWidth + INNER.overlap;
   const screenWidth = INNER.width + INNER.overlap;
@@ -197,36 +269,49 @@ function createGeometries() {
 
   return {
     coverBezel: new THREE.ShapeGeometry(
-      getRoundedShape(bezelWidth, INNER.bezelHeight, coverSide(INNER.bezelRadius)),
+      getProfiledShape(bezelWidth, INNER.bezelHeight, coverSide(INNER_BEZEL_CORNER)),
       32,
     ),
     baseBezel: new THREE.ShapeGeometry(
-      getRoundedShape(bezelWidth, INNER.bezelHeight, baseSide(INNER.bezelRadius)),
+      getProfiledShape(bezelWidth, INNER.bezelHeight, baseSide(INNER_BEZEL_CORNER)),
       32,
     ),
     // Metade esquerda da imagem na capa, direita na base.
     coverScreen: createScreenGeometry(
       screenWidth,
       INNER.height,
-      coverSide(INNER.radius),
+      getProfiledShape(screenWidth, INNER.height, coverSide(INNER_SCREEN_CORNER)),
       0,
       0.5 + overlapU,
     ),
     baseScreen: createScreenGeometry(
       screenWidth,
       INNER.height,
-      baseSide(INNER.radius),
+      getProfiledShape(screenWidth, INNER.height, baseSide(INNER_SCREEN_CORNER)),
       0.5 - overlapU,
       1,
     ),
-    // Vista por trás, o lado de fora da capa fica à direita.
-    outerScreen: createScreenGeometry(OUTER.width, OUTER.height, [
-      OUTER.hingeRadius,
-      OUTER.radius,
-      OUTER.radius,
-      OUTER.hingeRadius,
-    ]),
-    hole: new THREE.CircleGeometry(OUTER.holeRadius, 32),
+    // Vista por trás, o lado de fora da capa fica à direita. O canto dela é
+    // um arco de círculo de verdade (raio 0,044, conferido nas malhas).
+    outerScreen: createScreenGeometry(
+      OUTER.width,
+      OUTER.height,
+      getRoundedShape(OUTER.width, OUTER.height, [
+        OUTER.hingeRadius,
+        OUTER.radius,
+        OUTER.radius,
+        OUTER.hingeRadius,
+      ]),
+    ),
+    hole: new THREE.ShapeGeometry(
+      getRoundedShape(OUTER.holeWidth, OUTER.holeHeight, [
+        OUTER.holeWidth / 2,
+        OUTER.holeWidth / 2,
+        OUTER.holeWidth / 2,
+        OUTER.holeWidth / 2,
+      ]),
+      32,
+    ),
   };
 }
 
@@ -308,8 +393,8 @@ function createOverlay() {
     AXIS_UP,
     new THREE.Vector3(
       outerX + LAYER,
-      OUTER.centerY - (OUTER.width / 2 - OUTER.holeInset),
-      CENTER_Z - (OUTER.height / 2 - OUTER.holeInset),
+      OUTER.centerY - (OUTER.width / 2 - OUTER.holeInsetX),
+      CENTER_Z - (OUTER.height / 2 - OUTER.holeInsetY),
     ),
   );
 
@@ -367,6 +452,9 @@ type DuoProps = JSX.IntrinsicElements["group"] & {
   /** A tela de fora; `null` = placeholder. */
   outerImageUrl?: string | null;
   outerScreenFit?: ScreenFit;
+  /** Gravação na tela de fora; quando presente, substitui a imagem dela. */
+  outerVideoUrl?: string | null;
+  outerVideoKey?: string;
   /** Abertura em graus: 180 aberto, 0 fechado. */
   foldAngle?: number;
   /** Fosco no lugar do polido do arquivo. */
@@ -388,6 +476,8 @@ function DuoImpl({
   screenFit,
   outerImageUrl,
   outerScreenFit,
+  outerVideoUrl,
+  outerVideoKey,
   foldAngle = DEFAULT_FOLD_ANGLE,
   matteFinish = true,
   colors,
@@ -411,8 +501,12 @@ function DuoImpl({
 
   useGraph(clone);
 
-  const resolvedColors: DuoColors =
-    (colors as DuoColors) ?? DUO_THEMES[DUO_DEFAULT_THEME];
+  // O tema por baixo: um objeto com menos partes que as de hoje (de antes de
+  // elas existirem) ainda abre, com o padrão nas que faltam.
+  const resolvedColors: DuoColors = {
+    ...DUO_THEMES[DUO_DEFAULT_THEME],
+    ...colors,
+  };
   const effectiveImageUrl = imageUrl ?? getPlaceholderImageUrl("duo");
   const effectiveOuterImageUrl =
     outerImageUrl ?? getDuoOuterPlaceholderImageUrl();
@@ -425,7 +519,14 @@ function DuoImpl({
     { cropWidth: 2670, cropHeight: 1878, flipY: true },
   );
   const outerTexture = useScreenTexture(
-    { fit: outerScreenFit, kind: "image", url: effectiveOuterImageUrl },
+    outerVideoUrl
+      ? {
+          fit: outerScreenFit,
+          kind: "video",
+          key: outerVideoKey ?? outerVideoUrl,
+          url: outerVideoUrl,
+        }
+      : { fit: outerScreenFit, kind: "image", url: effectiveOuterImageUrl },
     {
       cropWidth: DUO_OUTER_SCREEN_SIZE[0],
       cropHeight: DUO_OUTER_SCREEN_SIZE[1],
@@ -439,6 +540,11 @@ function DuoImpl({
   const overlay = useMemo(() => createOverlay(), []);
 
   useEffect(() => () => overlay.black.dispose(), [overlay]);
+
+  // As molduras e o furo que desenhamos são da mesma cor da moldura do arquivo.
+  useLayoutEffect(() => {
+    overlay.black.color.set(resolvedColors.bezel);
+  }, [overlay, resolvedColors.bezel]);
 
   useLayoutEffect(() => {
     const cover = clone.getObjectByName(COVER_NODE);
@@ -496,6 +602,14 @@ function DuoImpl({
         material.color.set(resolvedColors[part]);
       }
 
+      if (part === "lens" && "emissive" in material) {
+        // A lente brilha por conta própria (emissivo do arquivo): com a cor
+        // trocada o brilho a acompanha, ou um preto ficaria cinza.
+        (material.emissive as THREE.Color)
+          .set(resolvedColors.lens)
+          .multiplyScalar(LENS_GLOW);
+      }
+
       if (matteFinish) {
         applyMatteFinish(material);
       }
@@ -512,7 +626,10 @@ function DuoImpl({
     resolvedColors.body,
     resolvedColors.frame,
     resolvedColors.frameHighlight,
+    resolvedColors.grooves,
     resolvedColors.logo,
+    resolvedColors.bezel,
+    resolvedColors.lens,
   ]);
 
   useEffect(

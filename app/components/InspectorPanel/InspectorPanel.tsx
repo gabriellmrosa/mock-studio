@@ -1,6 +1,7 @@
 "use client";
 
 import { DEFAULT_FOLD_ANGLE } from "../../lib/scene-presets";
+import { FoldableIcon } from "../FoldableIcon/FoldableIcon";
 import "./InspectorPanel.css";
 import { useRef, useState, type ReactNode } from "react";
 import ColorRow from "../ColorRow/ColorRow";
@@ -15,13 +16,20 @@ import {
   MAX_SCREEN_PAN,
   MAX_SCREEN_ZOOM,
   MIN_SCREEN_ZOOM,
+  getActiveOuterScreenFit,
   getActiveScreenFit,
   isDefaultObjectTransform,
   isPlaceholderImageUrl,
   type SceneObject,
   type ScreenFit,
+  type ScreenVideo,
 } from "../../lib/scene-objects";
-import { DEVICE_MODEL_LIST } from "../../models/device-models";
+import { isCustomDeviceTheme } from "../../lib/device-colors";
+import {
+  DEVICE_MODEL_LIST,
+  MODELS_WITH_FINISH,
+  type DeviceThemeOption,
+} from "../../models/device-models";
 import {
   IconButton,
   InspectorPanelHeader,
@@ -102,9 +110,13 @@ type InspectorPanelProps = {
   onUpdateOpacity: (opacity: number) => void;
   /** Abertura do dobrável em graus: 180 aberto, 0 fechado. */
   onUpdateFoldAngle: (foldAngle: number) => void;
-  /** A tela de fora do dobrável: só imagem, com o enquadramento dela. */
+  /** A tela de fora do dobrável: imagem ou vídeo, cada um com o seu arquivo. */
   onOuterImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onOuterVideoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveOuterImage: () => void;
+  onRemoveOuterVideo: () => void;
+  onOuterScreenSourceChange: (source: SceneObject["screenSource"]) => void;
+  /** Enquadramento da fonte ativa da tela de fora (imagem ou vídeo). */
   onUpdateOuterScreenFit: (patch: Partial<ScreenFit>) => void;
   motionTab: "static" | "motion";
   selectedKeyframeId: string;
@@ -136,20 +148,16 @@ export default function InspectorPanel({
   onUpdateOpacity,
   onUpdateFoldAngle,
   onOuterImageUpload,
+  onOuterVideoUpload,
   onRemoveOuterImage,
+  onRemoveOuterVideo,
+  onOuterScreenSourceChange,
   onUpdateOuterScreenFit,
   motionTab,
   selectedKeyframeId,
   uiTheme,
   uploadError,
 }: InspectorPanelProps) {
-  // Sub-aba aberta em cada seção; `null` = todas fechadas, o estado inicial.
-  // É estado de interface, não do objeto: vale para qualquer objeto
-  // selecionado, como a posição de um painel.
-  const [appearanceTab, setAppearanceTab] = useState<AppearanceTab | null>(
-    null,
-  );
-
   if (!object) {
     return (
       <aside className="editor-sidebar editor-sidebar-shell inspector-sidebar" />
@@ -174,6 +182,19 @@ export default function InspectorPanel({
   );
   const customizableColorLabels = copy.colorPartLabels;
   const positionXRange = Math.max(5, Math.ceil(Math.abs(object.positionX)) + 1);
+  // A faixa de aparência: nome e cor do tema, ou "Personalizada" quando alguma
+  // parte foi editada à mão — com a cor do corpo, que é a que se reconhece.
+  const isCustomTheme = model
+    ? isCustomDeviceTheme(model, object.deviceTheme, object.colors)
+    : false;
+  const currentThemeName = isCustomTheme
+    ? copy.themeCustomName
+    : (copy.themeNames[object.deviceTheme] ?? object.deviceTheme);
+  const currentThemeSwatch =
+    (isCustomTheme && model?.primaryColorKey
+      ? object.colors[model.primaryColorKey]
+      : model?.themeOptions.find((theme) => theme.id === object.deviceTheme)
+          ?.preview) ?? "transparent";
   const modelOptions: CustomSelectOption[] = [
     ...DEVICE_MODEL_LIST.map((device) => ({
       value: device.id,
@@ -187,31 +208,12 @@ export default function InspectorPanel({
           <Watch size={14} />
         ) : device.id === "tablet" ? (
           <Tablet size={14} />
+        ) : device.id === "duo" ? (
+          <FoldableIcon size={14} />
         ) : (
           <Laptop size={14} />
         ),
     })),
-  ];
-
-  // Vídeo só existe no Movimento: o Estático é uma imagem parada, então lá a
-  // tela é sempre a imagem e não há escolha de fonte.
-  const screenSource = motionTab === "motion" ? object.screenSource : "image";
-  // As opções da tela só existem depois de um upload: com o placeholder (ou
-  // sem vídeo) não há o que ajustar.
-  const hasUploadedContent =
-    screenSource === "image"
-      ? !isPlaceholderImageUrl(object.imageUrl)
-      : object.screenVideo !== null;
-  const screenSourceTabs: SubTabItem<SceneObject["screenSource"]>[] = [
-    { icon: <ImageIcon size={13} />, id: "image", label: copy.screenSourceImage },
-    { icon: <Video size={13} />, id: "video", label: copy.screenSourceVideo },
-  ];
-  const appearanceTabs: SubTabItem<AppearanceTab>[] = [
-    {
-      icon: <Pipette size={13} />,
-      id: "custom",
-      label: copy.appearanceTabCustom,
-    },
   ];
 
   return (
@@ -253,135 +255,71 @@ export default function InspectorPanel({
               onChange={onToggleTabletBezel}
             />
           ) : null}
-          {object.modelId === "duo" ? (
-            <Switch
-              checked={object.matteFinish}
-              label={copy.matteFinishToggleLabel}
-              onChange={onToggleMatteFinish}
-            />
-          ) : null}
         </PanelSection>
 
         <PanelSection
           title={copy.screenSectionTitle}
           className="--without-border-bottom"
         >
-          {/* O dobrável tem duas telas: cada uma ganha o nome dela. */}
+          {/* O dobrável tem duas telas, cada uma com o seu título, a sua
+              escolha Imagem | Vídeo e o seu arquivo. Nos outros aparelhos há
+              uma só, sem título. */}
+          <ScreenControls
+            copy={copy}
+            image={{
+              fileName: object.imageName,
+              fit: getActiveScreenFit(object),
+              hasFile: !isPlaceholderImageUrl(object.imageUrl),
+              onFitChange: onUpdateScreenFit,
+              onRemove: onRemoveImage,
+              onUpload: onImageUpload,
+              recommendation: uploadRecommendation,
+            }}
+            onSourceChange={onScreenSourceChange}
+            rowKey={object.id}
+            source={motionTab === "motion" ? object.screenSource : "image"}
+            suffix=""
+            title={object.modelId === "duo" ? copy.innerScreenLabel : null}
+            uiTheme={uiTheme}
+            video={{
+              data: object.screenVideo,
+              fit: getActiveScreenFit(object),
+              onFitChange: onUpdateScreenFit,
+              onRemove: onRemoveVideo,
+              onUpload: onVideoUpload,
+            }}
+            withSourceTabs={motionTab === "motion"}
+          />
           {object.modelId === "duo" ? (
-            <span className="transform-reset-label">
-              {copy.innerScreenLabel}
-            </span>
-          ) : null}
-          {motionTab === "motion" ? (
-            <SegmentedTabs
-              ariaLabel={copy.screenSectionTitle}
-              items={screenSourceTabs}
-              value={screenSource}
-              onChange={onScreenSourceChange}
+            <ScreenControls
+              copy={copy}
+              image={{
+                fileName: object.outerImageName,
+                fit: getActiveOuterScreenFit(object),
+                hasFile: object.outerImageUrl !== null,
+                onFitChange: onUpdateOuterScreenFit,
+                onRemove: onRemoveOuterImage,
+                onUpload: onOuterImageUpload,
+                recommendation: DUO_OUTER_SCREEN_SIZE.join("x"),
+              }}
+              onSourceChange={onOuterScreenSourceChange}
+              rowKey={`${object.id}-outer`}
+              source={
+                motionTab === "motion" ? object.outerScreenSource : "image"
+              }
+              isFollowing
+              suffix={` (${copy.outerScreenLabel})`}
+              title={copy.outerScreenLabel}
+              uiTheme={uiTheme}
+              video={{
+                data: object.outerScreenVideo,
+                fit: getActiveOuterScreenFit(object),
+                onFitChange: onUpdateOuterScreenFit,
+                onRemove: onRemoveOuterVideo,
+                onUpload: onOuterVideoUpload,
+              }}
+              withSourceTabs={motionTab === "motion"}
             />
-          ) : null}
-
-          {/* Antes do upload, o card convida a enviar; depois, vira uma linha
-              compacta com o arquivo. As opções (substituir, momento, ajuste,
-              corte, remover) ficam num painel flutuante aberto pelo "⋮" — o
-              painel lateral fica enxuto e o efeito aparece na cena ao lado. */}
-          {screenSource === "image" ? (
-            hasUploadedContent ? (
-              <ScreenFileRow
-                key={object.id}
-                closeLabel={copy.closeLabel}
-                icon={<ImageIcon size={16} />}
-                menuLabel={copy.imageOptions}
-                name={object.imageName ?? copy.screenSourceImage}
-              >
-                <ScreenSettings
-                  accept={IMAGE_ACCEPT}
-                  copy={copy}
-                  fit={getActiveScreenFit(object)}
-                  onFitChange={onUpdateScreenFit}
-                  onRemove={onRemoveImage}
-                  onReplace={onImageUpload}
-                  removeLabel={copy.removeImage}
-                  replaceLabel={copy.uploadImage}
-                  replaceMeta={uploadRecommendation}
-                  uiTheme={uiTheme}
-                />
-              </ScreenFileRow>
-            ) : (
-              <UploadCard
-                accept={IMAGE_ACCEPT}
-                label={copy.screenUploadImage}
-                meta={uploadRecommendation}
-                metaTitle={`${copy.screenSectionHintPrefix} ${uploadRecommendation}`}
-                onUpload={onImageUpload}
-              />
-            )
-          ) : object.screenVideo ? (
-            <ScreenFileRow
-              key={object.id}
-              closeLabel={copy.closeLabel}
-              icon={<Video size={16} />}
-              menuLabel={copy.videoOptions}
-              meta={`${(object.screenVideo.durationMs / 1000).toFixed(1)}s`}
-              name={object.screenVideo.name}
-            >
-              <ScreenSettings
-                accept={VIDEO_ACCEPT}
-                copy={copy}
-                fit={getActiveScreenFit(object)}
-                onFitChange={onUpdateScreenFit}
-                onRemove={onRemoveVideo}
-                onReplace={onVideoUpload}
-                removeLabel={copy.removeVideo}
-                replaceLabel={copy.replaceVideo}
-                replaceMeta={copy.screenVideoHint}
-                uiTheme={uiTheme}
-              />
-            </ScreenFileRow>
-          ) : (
-            <UploadCard
-              accept={VIDEO_ACCEPT}
-              label={copy.uploadVideo}
-              meta={copy.screenVideoHint}
-              onUpload={onVideoUpload}
-            />
-          )}
-          {object.modelId === "duo" ? (
-            <>
-              <span className="transform-reset-label">
-                {copy.outerScreenLabel}
-              </span>
-              {object.outerImageUrl ? (
-                <ScreenFileRow
-                  key={`${object.id}-outer`}
-                  closeLabel={copy.closeLabel}
-                  icon={<ImageIcon size={16} />}
-                  menuLabel={`${copy.imageOptions} (${copy.outerScreenLabel})`}
-                  name={object.outerImageName ?? copy.screenSourceImage}
-                >
-                  <ScreenSettings
-                    accept={IMAGE_ACCEPT}
-                    copy={copy}
-                    fit={{ ...DEFAULT_SCREEN_FIT, ...object.outerImageFit }}
-                    onFitChange={onUpdateOuterScreenFit}
-                    onRemove={onRemoveOuterImage}
-                    onReplace={onOuterImageUpload}
-                    removeLabel={copy.removeImage}
-                    replaceLabel={copy.uploadImage}
-                    replaceMeta={DUO_OUTER_SCREEN_SIZE.join("x")}
-                    uiTheme={uiTheme}
-                  />
-                </ScreenFileRow>
-              ) : (
-                <UploadCard
-                  accept={IMAGE_ACCEPT}
-                  label={`${copy.screenUploadImage} (${copy.outerScreenLabel})`}
-                  meta={DUO_OUTER_SCREEN_SIZE.join("x")}
-                  metaTitle={`${copy.screenSectionHintPrefix} ${DUO_OUTER_SCREEN_SIZE.join("x")}`}
-                  onUpload={onOuterImageUpload}
-                />
-              )}
-            </>
           ) : null}
           {uploadError ? (
             <p className="inspector-error-note">{uploadError}</p>
@@ -392,56 +330,36 @@ export default function InspectorPanel({
           title={copy.themesSectionTitle}
           className="--without-border-bottom"
         >
-          <div className="theme-grid">
-            {model?.themeOptions.map((theme) => (
-              <button
-                key={theme.id}
-                onClick={() => onThemeChange(theme.id)}
-                title={copy.themeNames[theme.id]}
-                className={`theme-card ${object.deviceTheme === theme.id ? "theme-card-active" : "theme-card-inactive"}`}
-              >
-                <div
-                  className="theme-preview"
-                  style={{ backgroundColor: theme.preview }}
-                />
-                <span className="theme-card-label">
-                  {copy.themeNames[theme.id]}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Os temas são o conteúdo principal e ficam sempre à vista; cores
-              peça a peça são sub-opção, fechada até o usuário pedir. */}
-          {customizableColorKeys.length > 0 ? (
-            <>
-              <SubTabs
-                ariaLabel={copy.appearanceTabsLabel}
-                idPrefix="appearance-options"
-                items={appearanceTabs}
-                value={appearanceTab}
-                onChange={setAppearanceTab}
+          {/* Como o arquivo da tela: a cor escolhida numa faixa, e o "⋮" abre
+              o painel flutuante com as outras cores e a edição peça a peça.
+              Nasce com a cor padrão já marcada, em vez de uma grade de cartões
+              sempre aberta. */}
+          <ScreenFileRow
+            key={object.id}
+            closeLabel={copy.closeLabel}
+            icon={
+              <span
+                aria-hidden
+                className="theme-preview screen-file-swatch"
+                style={{ backgroundColor: currentThemeSwatch }}
               />
-              {appearanceTab === "custom" ? (
-                <SubTabPanel activeId="custom" idPrefix="appearance-options">
-                  <div className="panel-card custom-theme-panel">
-                    {customizableColorKeys.map((part) => (
-                      <ColorRow
-                        key={part}
-                        label={
-                          customizableColorLabels[part] ??
-                          formatColorPartLabel(part)
-                        }
-                        uiTheme={uiTheme}
-                        value={object.colors[part] ?? "#000000"}
-                        onChange={(hex) => onThemeColorChange(part, hex)}
-                      />
-                    ))}
-                  </div>
-                </SubTabPanel>
-              ) : null}
-            </>
-          ) : null}
+            }
+            menuLabel={copy.appearanceTabsLabel}
+            name={currentThemeName}
+          >
+            <AppearanceSettings
+              colorLabels={customizableColorLabels}
+              colorKeys={customizableColorKeys}
+              copy={copy}
+              hasFinish={MODELS_WITH_FINISH.includes(object.modelId)}
+              object={object}
+              onThemeChange={onThemeChange}
+              onThemeColorChange={onThemeColorChange}
+              onToggleMatteFinish={onToggleMatteFinish}
+              themeOptions={model?.themeOptions ?? []}
+              uiTheme={uiTheme}
+            />
+          </ScreenFileRow>
         </PanelSection>
 
         <PanelSection
@@ -674,6 +592,268 @@ function AlignmentControl({
   );
 }
 
+type ScreenControlsProps = {
+  copy: AppCopy;
+  image: {
+    fileName: string | null;
+    fit: ScreenFit;
+    /** Já tem arquivo, e não o placeholder. */
+    hasFile: boolean;
+    onFitChange: (patch: Partial<ScreenFit>) => void;
+    onRemove: () => void;
+    onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+    /** Tamanho ideal da imagem, mostrado no painel de envio. */
+    recommendation: string;
+  };
+  onSourceChange: (source: SceneObject["screenSource"]) => void;
+  /** Muda com o objeto (ou a tela): remonta a faixa e fecha o painel dela. */
+  rowKey: string;
+  /** O que a tela mostra: imagem ou vídeo. Vídeo só existe no Movimento. */
+  source: SceneObject["screenSource"];
+  /** Texto acrescentado aos nomes acessíveis, para dizer de que tela é. */
+  suffix: string;
+  /** O nome da tela, quando o aparelho tem mais de uma. */
+  title: string | null;
+  /**
+   * Vem depois de outra tela: abre um espaço maior antes do título, para os
+   * controles de cada tela formarem um grupo à parte (proximidade: o que está
+   * junto pertence junto, e o espaço entre os grupos tem que passar do espaço
+   * dentro deles).
+   */
+  isFollowing?: boolean;
+  uiTheme: UiTheme;
+  video: {
+    data: ScreenVideo | null;
+    fit: ScreenFit;
+    onFitChange: (patch: Partial<ScreenFit>) => void;
+    onRemove: () => void;
+    onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  };
+  withSourceTabs: boolean;
+};
+
+/**
+ * Uma tela do aparelho no Inspector: o título (se há mais de uma), a escolha
+ * Imagem | Vídeo (só no Movimento, o Estático é uma imagem parada) e a faixa do
+ * arquivo. Antes do upload a faixa convida a enviar; depois vira uma linha
+ * compacta com o arquivo. As opções (substituir, momento, ajuste, corte,
+ * remover) ficam num painel flutuante aberto pelo "⋮" — o painel lateral fica
+ * enxuto e o efeito aparece na cena ao lado.
+ *
+ * É um componente para a tela principal e a de fora do dobrável serem iguais:
+ * cada uma com o seu controle, sem uma escolha que valha para as duas.
+ */
+function ScreenControls({
+  copy,
+  image,
+  onSourceChange,
+  rowKey,
+  source,
+  suffix,
+  title,
+  isFollowing = false,
+  uiTheme,
+  video,
+  withSourceTabs,
+}: ScreenControlsProps) {
+  const sourceTabs: SubTabItem<SceneObject["screenSource"]>[] = [
+    { icon: <ImageIcon size={13} />, id: "image", label: copy.screenSourceImage },
+    { icon: <Video size={13} />, id: "video", label: copy.screenSourceVideo },
+  ];
+
+  return (
+    <>
+      {title ? (
+        <span
+          className={`transform-reset-label${
+            isFollowing ? " screen-group-title-following" : ""
+          }`}
+        >
+          {title}
+        </span>
+      ) : null}
+      {withSourceTabs ? (
+        <SegmentedTabs
+          ariaLabel={`${copy.screenSectionTitle}${suffix}`}
+          items={sourceTabs}
+          value={source}
+          onChange={onSourceChange}
+        />
+      ) : null}
+
+      {source === "image" ? (
+        <ScreenFileRow
+          key={rowKey}
+          closeLabel={copy.closeLabel}
+          icon={<ImageIcon size={16} />}
+          menuLabel={`${copy.imageOptions}${suffix}`}
+          name={
+            image.hasFile
+              ? (image.fileName ?? copy.screenSourceImage)
+              : copy.screenAddImage
+          }
+        >
+          {image.hasFile ? (
+            <ScreenSettings
+              accept={IMAGE_ACCEPT}
+              copy={copy}
+              fit={image.fit}
+              onFitChange={image.onFitChange}
+              onRemove={image.onRemove}
+              onReplace={image.onUpload}
+              removeLabel={copy.removeImage}
+              replaceLabel={copy.uploadImage}
+              replaceMeta={image.recommendation}
+              uiTheme={uiTheme}
+            />
+          ) : (
+            <UploadCard
+              accept={IMAGE_ACCEPT}
+              label={`${copy.screenUploadImage}${suffix}`}
+              meta={image.recommendation}
+              metaTitle={`${copy.screenSectionHintPrefix} ${image.recommendation}`}
+              onUpload={image.onUpload}
+            />
+          )}
+        </ScreenFileRow>
+      ) : (
+        <ScreenFileRow
+          key={rowKey}
+          closeLabel={copy.closeLabel}
+          icon={<Video size={16} />}
+          menuLabel={`${copy.videoOptions}${suffix}`}
+          meta={
+            video.data
+              ? `${(video.data.durationMs / 1000).toFixed(1)}s`
+              : undefined
+          }
+          name={video.data ? video.data.name : copy.screenAddVideo}
+        >
+          {video.data ? (
+            <ScreenSettings
+              accept={VIDEO_ACCEPT}
+              copy={copy}
+              fit={video.fit}
+              onFitChange={video.onFitChange}
+              onRemove={video.onRemove}
+              onReplace={video.onUpload}
+              removeLabel={copy.removeVideo}
+              replaceLabel={copy.replaceVideo}
+              replaceMeta={copy.screenVideoHint}
+              uiTheme={uiTheme}
+            />
+          ) : (
+            <UploadCard
+              accept={VIDEO_ACCEPT}
+              label={`${copy.uploadVideo}${suffix}`}
+              meta={copy.screenVideoHint}
+              onUpload={video.onUpload}
+            />
+          )}
+        </ScreenFileRow>
+      )}
+    </>
+  );
+}
+
+/**
+ * O que o painel de aparência mostra: as cores prontas do aparelho e, numa
+ * sub-aba que nasce fechada, as peças uma a uma. O estado da sub-aba mora
+ * aqui, e não no Inspector: fechar o painel o descarta, e ele abre de novo
+ * enxuto.
+ */
+function AppearanceSettings({
+  colorKeys,
+  colorLabels,
+  copy,
+  hasFinish,
+  object,
+  onThemeChange,
+  onThemeColorChange,
+  onToggleMatteFinish,
+  themeOptions,
+  uiTheme,
+}: {
+  colorKeys: string[];
+  colorLabels: Record<string, string>;
+  copy: AppCopy;
+  /** O acabamento só existe onde muda o que se vê (`MODELS_WITH_FINISH`). */
+  hasFinish: boolean;
+  object: SceneObject;
+  onThemeChange: (themeId: string) => void;
+  onThemeColorChange: (part: string, hex: string) => void;
+  onToggleMatteFinish: () => void;
+  themeOptions: DeviceThemeOption[];
+  uiTheme: UiTheme;
+}) {
+  const [tab, setTab] = useState<AppearanceTab | null>(null);
+  const tabs: SubTabItem<AppearanceTab>[] = [
+    {
+      icon: <Pipette size={13} />,
+      id: "custom",
+      label: copy.appearanceTabCustom,
+    },
+  ];
+
+  return (
+    <>
+      <div className="theme-grid">
+        {themeOptions.map((theme) => (
+          <button
+            key={theme.id}
+            onClick={() => onThemeChange(theme.id)}
+            title={copy.themeNames[theme.id]}
+            className={`theme-card ${object.deviceTheme === theme.id ? "theme-card-active" : "theme-card-inactive"}`}
+          >
+            <div
+              className="theme-preview"
+              style={{ backgroundColor: theme.preview }}
+            />
+            <span className="theme-card-label">
+              {copy.themeNames[theme.id]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {hasFinish ? (
+        <Switch
+          checked={object.matteFinish}
+          label={copy.matteFinishToggleLabel}
+          onChange={onToggleMatteFinish}
+        />
+      ) : null}
+
+      {colorKeys.length > 0 ? (
+        <>
+          <SubTabs
+            ariaLabel={copy.appearanceTabsLabel}
+            idPrefix="appearance-options"
+            items={tabs}
+            value={tab}
+            onChange={setTab}
+          />
+          {tab === "custom" ? (
+            <SubTabPanel activeId="custom" idPrefix="appearance-options">
+              <div className="panel-card custom-theme-panel">
+                {colorKeys.map((part) => (
+                  <ColorRow
+                    key={part}
+                    label={colorLabels[part] ?? formatColorPartLabel(part)}
+                    uiTheme={uiTheme}
+                    value={object.colors[part] ?? "#000000"}
+                    onChange={(hex) => onThemeColorChange(part, hex)}
+                  />
+                ))}
+              </div>
+            </SubTabPanel>
+          ) : null}
+        </>
+      ) : null}
+    </>
+  );
+}
+
 /** Convite ao upload, enquanto a tela ainda mostra o placeholder. */
 function UploadCard({
   accept,
@@ -710,8 +890,14 @@ function UploadCard({
 }
 
 /**
- * O arquivo já enviado, numa linha: ícone do tipo, nome (reticências se não
- * couber), um dado opcional e o "⋮" que abre as opções num painel flutuante.
+ * Uma linha com uma só ação — abrir um painel flutuante: ícone, nome
+ * (reticências se não couber), um dado opcional e o "⋮". Como a única coisa
+ * que a linha faz é abrir o painel, ela inteira é o botão; o "⋮" fica como
+ * indício e como o caminho do teclado, que ativa a linha pelo clique que
+ * sobe dele. (A linha da lista de objetos é diferente: tem o olho e o "⋮",
+ * duas ações, e por isso cada uma tem o seu alvo.)
+ *
+ * Serve ao arquivo da tela (enviado ou ainda por enviar) e à cor do aparelho.
  */
 function ScreenFileRow({
   children,
@@ -732,7 +918,17 @@ function ScreenFileRow({
   const rowRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div ref={rowRef} className="screen-file-row">
+    <div
+      ref={rowRef}
+      className="screen-file-row screen-file-row-action"
+      onClick={(event) => {
+        // O painel está no React dentro da linha (num portal): o clique nele
+        // sobe até aqui, e não pode contar como clique na linha.
+        if (rowRef.current?.contains(event.target as Node)) {
+          setIsOpen((current) => !current);
+        }
+      }}
+    >
       <span className="screen-file-icon" aria-hidden>
         {icon}
       </span>
@@ -749,7 +945,6 @@ function ScreenFileRow({
         aria-expanded={isOpen}
         active={isOpen}
         className="context-menu-trigger-quiet editor-icon-button-no-hover-bg"
-        onClick={() => setIsOpen((current) => !current)}
       >
         <MoreVertical size={14} />
       </IconButton>

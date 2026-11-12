@@ -278,6 +278,9 @@ const copy: AppCopy = {
   uploadVideo: "Upload video",
   replaceVideo: "Replace video",
   screenVideoHint: "MP4, MOV or WebM.",
+  screenAddImage: "Add image",
+  screenAddVideo: "Add video",
+  themeCustomName: "Custom",
   uploadVideoError: "This browser can't play that video.",
   screenTabsLabel: "Screen options",
   screenTabFit: "Fit",
@@ -300,6 +303,11 @@ const copy: AppCopy = {
     blood: "Red",
     gray: "Gray",
     "light-gray": "Light Gray",
+    "star-white": "Star White",
+    "night-sky": "Night Sky",
+    blue: "Blue",
+    green: "Green",
+    pink: "Pink",
   },
   colorPartLabels: {
     keyboardBaseOuter: "Base do teclado",
@@ -310,6 +318,11 @@ const copy: AppCopy = {
     hingeRubberSeal: "Borracha da dobradica",
   },
 };
+
+/** A cor do aparelho fica numa faixa; as opções abrem pelo "⋮" dela. */
+function openAppearance() {
+  fireEvent.click(screen.getByRole("button", { name: "Appearance options" }));
+}
 
 function renderInspector(
   object = createSceneObject({ id: "object-1", modelId: "smartphone", name: "Object 1" }),
@@ -340,6 +353,9 @@ function renderInspector(
     onUpdateOpacity: jest.fn(),
     onUpdateFoldAngle: jest.fn(),
     onOuterImageUpload: jest.fn(),
+    onOuterVideoUpload: jest.fn(),
+    onRemoveOuterVideo: jest.fn(),
+    onOuterScreenSourceChange: jest.fn(),
     onRemoveOuterImage: jest.fn(),
     onUpdateOuterScreenFit: jest.fn(),
   };
@@ -371,14 +387,16 @@ describe("InspectorPanel", () => {
   it("goes straight to the image upload in Static, with no source choice", () => {
     renderInspector();
 
-    expect(screen.getByLabelText("Choose image")).toBeInTheDocument();
+    // Sem arquivo ainda, a faixa já está lá, com o "⋮".
+    expect(screen.getByText("Add image")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Image options" })).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Video" })).toBeNull();
   });
 
   it("switches the screen between image and video in Motion", () => {
     const handlers = renderInspector(undefined, { motionTab: "motion" });
 
-    expect(screen.getByLabelText("Choose image")).toBeInTheDocument();
+    expect(screen.getByText("Add image")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("tab", { name: "Video" }));
 
@@ -406,7 +424,7 @@ describe("InspectorPanel", () => {
     expect(screen.getByRole("button", { name: "Video options" })).toBeInTheDocument();
     expect(screen.getByText("recording.mov")).toBeInTheDocument();
     expect(screen.getByText("12.4s")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Choose image")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Add image")).not.toBeInTheDocument();
   });
 
   describe("screen options panel", () => {
@@ -583,7 +601,7 @@ describe("InspectorPanel", () => {
         imageUrl: "data:image/png;base64,AAAA",
       });
 
-      expect(screen.queryByLabelText("Choose image")).toBeNull();
+      expect(screen.queryByLabelText("Add image")).toBeNull();
       // O nome inteiro fica no title: o visual corta com reticências.
       expect(
         screen.getByTitle("a-very-long-screenshot-name-from-the-app.png"),
@@ -591,11 +609,40 @@ describe("InspectorPanel", () => {
       expect(screen.getByRole("button", { name: "Image options" })).toBeInTheDocument();
     });
 
-    it("keeps the upload card while the screen shows the placeholder", () => {
+    it("shows the empty row, with the ideal size in its panel and not on the row", () => {
       renderInspector();
 
+      const row = screen.getByText("Add image").closest(".screen-file-row")!;
+
+      expect(row).toHaveTextContent("Add image");
+      expect(row).not.toHaveTextContent("1290x2748");
+
+      fireEvent.click(screen.getByText("Add image"));
+
       expect(screen.getByLabelText("Choose image")).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: "Image options" })).toBeNull();
+      expect(screen.getByText("1290x2748")).toBeInTheDocument();
+    });
+
+    it("opens and closes the panel from anywhere on a row, not only from its menu", () => {
+      renderInspector();
+
+      fireEvent.click(screen.getByText("Add image"));
+      expect(screen.getByRole("dialog", { name: "Image options" })).toBeInTheDocument();
+
+      // Um clique dentro do painel não é um clique na linha.
+      fireEvent.click(screen.getByText("1290x2748"));
+      expect(screen.getByRole("dialog", { name: "Image options" })).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText("Add image"));
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    it("opens the panel once from the menu button too, not twice", () => {
+      renderInspector();
+
+      fireEvent.click(screen.getByRole("button", { name: "Image options" }));
+
+      expect(screen.getByRole("dialog", { name: "Image options" })).toBeInTheDocument();
     });
   });
   it("no longer lists video as a device model", () => {
@@ -708,11 +755,16 @@ describe("InspectorPanel", () => {
 
       expect(screen.queryByText("control:Opening (°)")).toBeNull();
       expect(screen.queryByText("Outer screen")).toBeNull();
-      expect(screen.queryByText("Matte finish")).toBeNull();
     });
 
-    it("starts matte and can be switched to the polished finish", () => {
+    it("keeps the finish inside the appearance panel, starting matte", () => {
       const handlers = renderInspector(duo);
+
+      // Fora do painel de aparência não há interruptor de acabamento.
+      expect(screen.queryByRole("switch", { name: "Matte finish" })).toBeNull();
+
+      openAppearance();
+
       const finish = screen.getByRole("switch", { name: "Matte finish" });
 
       expect(finish).toBeChecked();
@@ -728,6 +780,9 @@ describe("InspectorPanel", () => {
       expect(screen.getByText("Inner screen")).toBeInTheDocument();
       expect(screen.getByText("Outer screen")).toBeInTheDocument();
 
+      fireEvent.click(
+        screen.getByRole("button", { name: "Image options (Outer screen)" }),
+      );
       fireEvent.change(screen.getByLabelText("Choose image (Outer screen)"), {
         target: { files: [new File(["x"], "cover.png", { type: "image/png" })] },
       });
@@ -773,6 +828,7 @@ describe("InspectorPanel", () => {
     };
 
     renderInspector(notebook);
+    openAppearance();
     fireEvent.click(screen.getByRole("button", { name: "Custom" }));
 
     expect(screen.getByText("color-row:Tampa traseira")).toBeInTheDocument();
@@ -795,6 +851,7 @@ describe("InspectorPanel", () => {
 
     const handlers = renderInspector(notebook);
 
+    openAppearance();
     fireEvent.click(screen.getByRole("button", { name: "Custom" }));
     fireEvent.click(screen.getByText("color-row:Tampa traseira"));
 
@@ -802,5 +859,124 @@ describe("InspectorPanel", () => {
       "screenBackCover",
       "#123456",
     );
+  });
+
+  describe("Duo screens in Motion", () => {
+    const duo = createSceneObject({ id: "duo-1", modelId: "duo", name: "Duo" });
+
+    it("gives each screen its own Image | Video choice", () => {
+      const handlers = renderInspector(duo, { motionTab: "motion" });
+      const inner = screen.getByRole("tablist", { name: "App Screen" });
+      const outer = screen.getByRole("tablist", { name: "App Screen (Outer screen)" });
+
+      fireEvent.click(within(outer).getByRole("tab", { name: "Video" }));
+
+      expect(handlers.onOuterScreenSourceChange).toHaveBeenCalledWith("video");
+      expect(handlers.onScreenSourceChange).not.toHaveBeenCalled();
+
+      fireEvent.click(within(inner).getByRole("tab", { name: "Video" }));
+
+      expect(handlers.onScreenSourceChange).toHaveBeenCalledWith("video");
+    });
+
+    it("lets the outer screen take a video, from its own upload", () => {
+      const handlers = renderInspector(
+        { ...duo, outerScreenSource: "video" },
+        { motionTab: "motion" },
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Video options (Outer screen)" }),
+      );
+      fireEvent.change(screen.getByLabelText("Upload video (Outer screen)"), {
+        target: { files: [new File(["x"], "cover.mov", { type: "video/quicktime" })] },
+      });
+
+      expect(handlers.onOuterVideoUpload).toHaveBeenCalled();
+      expect(handlers.onVideoUpload).not.toHaveBeenCalled();
+    });
+
+    it("shows the outer video's file, not the inner one's", () => {
+      renderInspector(
+        {
+          ...duo,
+          outerScreenSource: "video",
+          outerScreenVideo: {
+            durationMs: 3000,
+            fit: { ...DEFAULT_SCREEN_FIT },
+            name: "cover.mov",
+            startMs: 0,
+            trimEndMs: 0,
+            trimStartMs: 0,
+            url: "blob:cover",
+          },
+        },
+        { motionTab: "motion" },
+      );
+
+      expect(screen.getByText("cover.mov")).toBeInTheDocument();
+      expect(screen.getByText("3.0s")).toBeInTheDocument();
+    });
+
+    it("has no video choice in Static, where both screens are images", () => {
+      renderInspector(duo);
+
+      expect(screen.queryByRole("tab", { name: "Video" })).toBeNull();
+    });
+  });
+
+  describe("appearance row", () => {
+    it("offers the finish on the watch too, and on no other device", () => {
+      renderInspector(
+        createSceneObject({ id: "w-1", modelId: "smartwatch", name: "Watch" }),
+      );
+      openAppearance();
+
+      expect(screen.getByRole("switch", { name: "Matte finish" })).toBeInTheDocument();
+    });
+
+    it("has no finish option on a device whose materials ignore it", () => {
+      renderInspector(
+        createSceneObject({ id: "s-1", modelId: "smartphone", name: "Phone" }),
+      );
+      openAppearance();
+
+      expect(screen.queryByRole("switch", { name: "Matte finish" })).toBeNull();
+    });
+
+    it("shows the chosen color on a row, with the others behind its menu", () => {
+      renderInspector(
+        createSceneObject({ id: "duo-1", modelId: "duo", name: "Duo" }),
+      );
+
+      // Star White é o padrão; as outras cores só aparecem ao abrir.
+      expect(screen.getByText("Star White")).toBeInTheDocument();
+      expect(screen.queryByTitle("Black")).toBeNull();
+
+      openAppearance();
+
+      expect(screen.getByTitle("Black")).toBeInTheDocument();
+      expect(screen.getByTitle("Pink")).toBeInTheDocument();
+    });
+
+    it("changes the color from the panel", () => {
+      const handlers = renderInspector(
+        createSceneObject({ id: "duo-1", modelId: "duo", name: "Duo" }),
+      );
+
+      openAppearance();
+      fireEvent.click(screen.getByTitle("Black"));
+
+      expect(handlers.onThemeChange).toHaveBeenCalledWith("black");
+    });
+
+    it("calls the row Custom once a part was painted by hand", () => {
+      const duo = createSceneObject({ id: "duo-1", modelId: "duo", name: "Duo" });
+
+      renderInspector({ ...duo, colors: { ...duo.colors, frame: "#123456" } });
+
+      expect(screen.getByText("Custom")).toBeInTheDocument();
+      expect(screen.queryByText("Star White")).toBeNull();
+    });
   });
 });

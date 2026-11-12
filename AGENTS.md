@@ -213,6 +213,14 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - Um shader próprio que lê `VideoTexture` decodifica sRGB ele mesmo.
 - O tempo do vídeo pertence à timeline (o clipe tem trilha própria); fora do
   clipe, a tela mostra só o fundo.
+- O vídeo é por tela, não por objeto: o Duo tem duas telas, cada uma com o seu
+  vídeo e a sua trilha. Quem posiciona vídeo no tempo (controlador do canvas,
+  exportação, timeline) usa `getActiveScreenVideos(object)`, nunca
+  `screenVideo` direto, e a chave do elemento vem de `getScreenVideoKey`.
+- Planos nossos sobre um modelo (telas, molduras) usam arcos de círculo de
+  verdade (`getRoundedShape`) ou o perfil medido no arquivo, nunca curva
+  quadrática: ela é mais quadrada e come o anel de espessura constante do
+  modelo nos cantos.
 
 **Exportação**
 
