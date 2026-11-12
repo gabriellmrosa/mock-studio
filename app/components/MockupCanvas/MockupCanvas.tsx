@@ -85,6 +85,7 @@ import {
 } from "./object-alignment";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
 import { applyDuoFoldAngle, Duo } from "../Duo";
+import { warmUpModels } from "../../lib/model-warmup";
 import TimelineResizeHandle, {
   clampTimelineHeight,
 } from "../MotionTimeline/TimelineResizeHandle";
@@ -647,6 +648,10 @@ const VIDEO_SEEK_EPSILON_S = 0.015;
  *   só quando se desvia — seek a cada quadro travaria a decodificação.
  * Mesmo padrão do MotionDriver: escreve direto no elemento, sem estado React.
  */
+/** Se alguma tela do objeto escolheu vídeo (haja ou não arquivo enviado). */
+const hasVideoSource = (object: SceneObject) =>
+  object.screenSource === "video" || object.outerScreenSource === "video";
+
 function ScreenVideoController({
   isPausedRef,
   motionPlayheadMs,
@@ -661,6 +666,12 @@ function ScreenVideoController({
 }) {
   useFrame(() => {
     if (isPausedRef.current) {
+      return;
+    }
+
+    // Sem nenhum vídeo escolhido — o caso comum — não há o que montar: este
+    // quadro roda a 60 por segundo, e a lista abaixo é uma alocação a cada um.
+    if (!objects.some(hasVideoSource)) {
       return;
     }
 
@@ -1326,6 +1337,12 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const isSceneSettled =
     visibleObjectCount > 0 &&
     activeResolvedObjectIds.length === visibleObjectCount;
+  // Com a cena pronta, baixa em silêncio os outros modelos (ver model-warmup).
+  useEffect(() => {
+    if (isSceneSettled) {
+      warmUpModels();
+    }
+  }, [isSceneSettled]);
   const isApplyingTemplate = props.isApplyingTemplate;
   const isIncrementalObjectLoading =
     activeLoadingObjectIds.length > 0 && activeResolvedObjectIds.length > 0;

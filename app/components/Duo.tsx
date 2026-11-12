@@ -696,4 +696,5 @@ function DuoImpl({
 
 export const Duo = React.memo(DuoImpl);
 
-useGLTF.preload(MODEL_URL);
+// Sem `useGLTF.preload` aqui: só o modelo da abertura é pré-carregado, e os
+// outros são aquecidos depois da cena pronta (app/lib/model-warmup.ts).

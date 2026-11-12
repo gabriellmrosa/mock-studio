@@ -208,6 +208,10 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   aplica enquadramento, fundo, corte e conversão HDR. O modelo nunca recebe a
   fonte direto.
 - Corte de borda é máscara, não reenquadramento.
+- Só o modelo da abertura é pré-carregado (`useGLTF.preload` no componente
+  dele); modelo novo não chama `preload` no próprio módulo, ou a página volta
+  a baixar todos de uma vez e a cena demora o dobro. Os outros entram na lista
+  de `app/lib/model-warmup.ts`, que os aquece com a cena pronta.
 - Vídeos ficam como blob URL, nunca base64. O `<video>` fica no documento,
   invisível: fora dele o Chrome para de entregar quadros.
 - Um shader próprio que lê `VideoTexture` decodifica sRGB ele mesmo.

@@ -457,4 +457,5 @@ function Smartphone3Impl({
 
 export const Smartphone3 = React.memo(Smartphone3Impl);
 
-useGLTF.preload("/models/smartphone.glb");
+// Sem `useGLTF.preload` aqui: só o modelo da abertura é pré-carregado, e os
+// outros são aquecidos depois da cena pronta (app/lib/model-warmup.ts).

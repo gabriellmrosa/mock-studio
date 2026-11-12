@@ -273,4 +273,5 @@ function NotebookImpl({
 
 export const Notebook = React.memo(NotebookImpl);
 
-useGLTF.preload("/models/notebook.glb");
+// Sem `useGLTF.preload` aqui: só o modelo da abertura é pré-carregado, e os
+// outros são aquecidos depois da cena pronta (app/lib/model-warmup.ts).

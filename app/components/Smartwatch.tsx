@@ -294,4 +294,5 @@ function SmartwatchImpl({
 
 export const Smartwatch = React.memo(SmartwatchImpl);
 
-useGLTF.preload("/models/smartwatch.glb");
+// Sem `useGLTF.preload` aqui: só o modelo da abertura é pré-carregado, e os
+// outros são aquecidos depois da cena pronta (app/lib/model-warmup.ts).
