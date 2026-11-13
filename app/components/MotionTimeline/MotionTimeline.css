@@ -421,18 +421,30 @@
   cursor: grabbing;
 }
 
+/* 22% e não 28%: com o texto em --foreground, o fundo mais forte deixava o
+   nome da transição a 4.00:1 no tema escuro, abaixo dos 4.5:1 do WCAG AA
+   para texto de 11px. Aqui ele fica a 4.63:1 (inativa: 5.61:1). */
 .motion-timeline-lane.is-active .motion-timeline-segment {
-  background: color-mix(in srgb, var(--foreground) 28%, transparent);
+  background: color-mix(in srgb, var(--foreground) 22%, transparent);
 }
 
+/* O nome da transição era --sidebar-muted, que dava de 2.3:1 a 3.2:1 sobre
+   o trecho: abaixo do AA. --foreground dá 4.6:1 ou mais nos dois temas. */
 .motion-timeline-segment-label {
-  color: var(--sidebar-muted);
+  color: var(--foreground);
   font-size: var(--font-size-100);
   overflow: hidden;
   padding: 0 var(--space-3);
   pointer-events: none;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* O ⋮ ao lado do nome: nunca encolhe nem some quando o trecho é estreito — o
+   nome é que ganha as reticências. */
+.motion-timeline-segment-more {
+  flex-shrink: 0;
+  margin-right: var(--space-1);
 }
 
 /* Keyframe: losango centrado no instante dele. */

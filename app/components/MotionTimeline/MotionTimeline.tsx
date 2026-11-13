@@ -12,6 +12,7 @@ import {
 import {
   Check,
   Diamond,
+  MoreVertical,
   Play,
   Square,
   Video,
@@ -355,10 +356,13 @@ export default function MotionTimeline({
   function openMenu(
     event: ReactMouseEvent<HTMLElement>,
     state: Omit<MenuState, "x" | "y">,
+    // Sem ponto, vale onde o mouse clicou. O botão ⋮ passa o próprio canto,
+    // porque ativado pelo teclado o clique não traz posição.
+    point: { x: number; y: number } = { x: event.clientX, y: event.clientY },
   ) {
     event.preventDefault();
     event.stopPropagation();
-    setMenu({ ...state, x: event.clientX, y: event.clientY } as MenuState);
+    setMenu({ ...state, ...point } as MenuState);
   }
 
   const menuObject = menu
@@ -663,6 +667,31 @@ export default function MotionTimeline({
                         {copy.motionEasingLabels[keyframe.easing] ??
                           keyframe.easing}
                       </span>
+                      {/* O mesmo menu do botão direito, ao alcance do clique
+                          esquerdo. Não deixa o gesto virar arrasto da trilha. */}
+                      <button
+                        type="button"
+                        aria-haspopup="menu"
+                        aria-label={copy.motionEasing}
+                        title={copy.motionEasing}
+                        className="editor-icon-button context-menu-trigger-quiet editor-icon-button-no-hover-bg motion-timeline-segment-more"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          const rect = event.currentTarget.getBoundingClientRect();
+
+                          openMenu(
+                            event,
+                            {
+                              kind: "easing",
+                              keyframeId: keyframe.id,
+                              objectId: object.id,
+                            },
+                            { x: rect.left, y: rect.bottom + 4 },
+                          );
+                        }}
+                      >
+                        <MoreVertical size={12} aria-hidden="true" />
+                      </button>
                     </div>
                   );
                 })}
