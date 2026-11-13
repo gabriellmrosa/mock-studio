@@ -401,3 +401,12 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - the Inspector's top section is now three rows of one family (device, screen, appearance), which also drops its use of `CustomSelect`
 - checked in the browser: the row, the panel with seven devices, switching to the notebook (the panel stays open, the row reads Notebook, the `Keyboard` switch appears); not checked: keyboard navigation inside the list (it is plain buttons with `radio` roles, without arrow-key movement) and the light UI theme
 
+
+## 47. The editor opens on smaller windows — done
+
+- feedback from a user on a 1366 × 768 Linux desktop: "Desktop only" appeared, with a 1280 × 800 minimum. The limit is measured on the browser's usable area (`innerHeight`), not on the screen: tabs, address bar and the system panel take ~90–120 px, so a 1366 × 768 screen leaves ~650 px and could never reach 800
+- [x] the limit is now 1200 × 520, set where the interface really stops being practical, found by turning the blocker off and looking at the editor at 1280 × 600, 1280 × 500, 1024 × 640, 900 × 640 and, in Motion, 1200 × 520 and 1200 × 600:
+  - width: at 1024 the stage is 416 px wide and the floating toolbar (543 px) is cut off; at 1200 it fits whole, with ~590 px of stage between the panels
+  - height: at 520 Motion still holds the frame (~220 px tall), the toolbar and the timeline together; the side panels scroll
+- the limit lives in two places that have to move together: the media query in `globals.css` and `MIN_DESKTOP_WIDTH/HEIGHT` in `page.tsx` (only the notice's text). Checked in the browser: 1200 × 520 opens the editor, 1199 × 600 and 1300 × 519 show the notice, which now reads "1200 x 520 px"
+- not checked: the Static panel with many objects at 520 px, the Export dialog at 520 px, Firefox and Safari

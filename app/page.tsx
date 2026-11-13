@@ -98,8 +98,8 @@ type PendingAction =
   | { kind: "mode"; mode: TemplateMode }
   | { kind: "template"; templateId: string };
 
-const MIN_DESKTOP_WIDTH = 1280;
-const MIN_DESKTOP_HEIGHT = 800;
+const MIN_DESKTOP_WIDTH = 1200;
+const MIN_DESKTOP_HEIGHT = 520;
 
 function detectBrowserLocale(): Locale {
   const preferredLocales = navigator.languages?.length

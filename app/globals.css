@@ -217,7 +217,13 @@ body {
   margin-top: var(--space-3);
 }
 
-@media (max-width: 1279px), (max-height: 799px) {
+/* Abaixo disto a interface deixa de ser prática: com menos de 1200px de
+   largura o palco fica com menos de ~590px entre os painéis e a barra
+   flutuante (543px) é cortada; com menos de 520px de altura o quadro do
+   Movimento, a barra e a timeline não cabem juntos. Medido na área útil do
+   navegador (innerHeight), que num notebook 1366x768 é ~650px. Manter em
+   sincronia com MIN_DESKTOP_WIDTH/HEIGHT em app/page.tsx. */
+@media (max-width: 1199px), (max-height: 519px) {
   .app-desktop-shell {
     display: none !important;
   }
