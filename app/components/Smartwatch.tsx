@@ -67,7 +67,7 @@ const SCREEN_RADIUS = 1.75;
  * O material da caixa e da pulseira. Fosco (o padrão): pouco brilho, quase sem
  * metal e reflexo. Polido: o material como o arquivo o trouxe. O relógio é um
  * dos dois modelos em que a opção muda o que se vê — o interruptor saiu dos
- * outros aparelhos (POST-V1 #33) e voltou aqui e no Duo.
+ * outros aparelhos (commit `d5c7086`) e voltou aqui e no Duo.
  */
 function cloneShellMaterial(
   template: THREE.Material | THREE.Material[] | undefined,

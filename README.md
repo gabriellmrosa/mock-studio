@@ -128,7 +128,7 @@ Open [localhost:3000](http://localhost:3000).
 
 - **Stack:** Next.js 16 (App Router), React 19, Three.js r183 with React Three Fiber and drei, Tailwind CSS 4, `mediabunny` for video encoding, Jest.
 - **Client only:** the 3D scene, the screen compositing and the export all run in the browser. Templates live in `localStorage`; screen files stay as local blob URLs and are never stored or uploaded.
-- **Under the hood:** how playback writes straight to the 3D scene instead of React state, how mode switches land on the first frame, how video is exported frame by frame in a background tab, and other lessons learned are in [docs/technical-notes.md](docs/technical-notes.md). The story of each decision is in [POST-V1-ISSUES.md](POST-V1-ISSUES.md).
+- **Under the hood:** how playback writes straight to the 3D scene instead of React state, how mode switches land on the first frame, how video is exported frame by frame in a background tab, and other lessons learned are in [docs/technical-notes.md](docs/technical-notes.md). The reasoning behind each decision is in the commit messages (`git log`, `git blame`); what is still open is in [docs/open-work.md](docs/open-work.md).
 
 ## Privacy and analytics
 

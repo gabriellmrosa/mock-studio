@@ -2,8 +2,9 @@
 
 Regras para quem muda o código deste projeto, gente ou agente. Aqui fica o
 que fazer e o que não pode quebrar, com uma linha de porquê; o detalhe
-técnico está em [docs/technical-notes.md](docs/technical-notes.md) e a
-história de cada decisão em [POST-V1-ISSUES.md](POST-V1-ISSUES.md). O
+técnico está em [docs/technical-notes.md](docs/technical-notes.md); a
+história de cada decisão está nas mensagens de commit (`git log`, `git blame`)
+e o que ficou em aberto, em [docs/open-work.md](docs/open-work.md). O
 [README](README.md) é a vitrine do produto.
 
 Mock Studio é um editor de mockups 3D no navegador: aparelhos (celulares, dobrável,
@@ -30,7 +31,7 @@ levar para a `main`, também `npm run build`.
 ## Fluxo de trabalho
 
 - **Idioma:** conversa com o usuário, este arquivo e comentários de código em
-  pt-BR. O README, o POST-V1-ISSUES e as mensagens de commit são em inglês.
+  pt-BR. O README, o `docs/open-work.md` e as mensagens de commit são em inglês.
 - **Branch:** o trabalho é na `motion-timeline`, que é **só local** — não
   apagar, e não enviar ao GitHub (desde 2026-11, o remoto tem só a `main`).
   Conferir `git branch --show-current` antes de cada commit: o usuário faz
@@ -40,9 +41,14 @@ levar para a `main`, também `npm run build`.
   `git checkout main && git merge --ff-only motion-timeline`, e voltar para a
   `motion-timeline`. **O push é sempre do usuário, e só da `main`**
   (`git push --follow-tags origin main`).
-- **Commits:** só quando o usuário pede. "Documente e commite" quer dizer:
-  atualizar o README (o que mudou para quem usa) e o POST-V1-ISSUES (um item
-  novo com as decisões), e então commitar.
+- **Commits:** só quando o usuário pede, e a história das decisões vive neles:
+  o assunto diz o que mudou; o corpo diz **por quê**, o que foi medido e o que
+  **não** foi conferido. Não há mais arquivo de decisões — o commit é o
+  registro. "Documente e commite" quer dizer: atualizar o README (só o que
+  mudou para quem usa) e escrever um commit bem descrito. Se algo que não foi
+  conferido morder mais de uma vez, vira regra aqui, com uma linha de porquê.
+  Trabalho que não entrou (ideia parada, bug conhecido) vai em
+  `docs/open-work.md`.
 - **Arquivos do usuário:** nunca commitar nem apagar o que ele deixou na
   pasta (ex.: `public/teste-video.mov`, vídeos de teste). `promo-studio/` é
   um projeto dele, fora do git — não mexer.

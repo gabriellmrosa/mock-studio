@@ -570,7 +570,7 @@ export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
 /**
  * Os modelos em que o acabamento fosco/polido muda o que se vê: os materiais
  * deles são físicos e reagem ao ambiente da cena. Nos outros a opção não
- * mudava nada (POST-V1 #33) e não existe.
+ * mudava nada (commit `d5c7086`) e não existe.
  */
 export const MODELS_WITH_FINISH: readonly DeviceModelId[] = ["duo", "smartwatch"];
 
