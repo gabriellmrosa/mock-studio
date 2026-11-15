@@ -158,8 +158,8 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 
 **Cena e modos**
 
-- Estático e Movimento são ambientes independentes, cada um com a sua cena,
-  câmera e lista de templates. O transform do objeto é a pose do Estático e só
+- Estático e Movimento (no seletor do canvas, "Foto" e "Vídeo") são ambientes
+  independentes, cada um com a sua cena, câmera e lista de templates. O transform do objeto é a pose do Estático e só
   o Estático escreve nele; cada keyframe tem a sua cópia da pose, e só o
   Movimento escreve nelas. Não criar atalhos que liguem um ao outro: o
   primeiro keyframe já foi um alias da pose estática, e reordenar keyframes

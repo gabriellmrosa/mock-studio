@@ -339,7 +339,7 @@ export default function InspectorPanel({
                   editedKeyframe.timeMs / 1000
                 ).toFixed(2)}s`
               : motionTab === "motion"
-                ? `${copy.transformSectionTitle} · ${copy.transformMotionTab}`
+                ? `${copy.transformSectionTitle} · ${copy.canvasModeVideo}`
                 : copy.transformSectionTitle
           }
           className="transform-section"

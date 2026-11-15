@@ -1607,8 +1607,8 @@ export default function MockupCanvas(props: MockupCanvasProps) {
             ariaLabel={props.copy.canvasModeLabel}
             className="canvas-mode-toggle"
             items={[
-              { icon: null, id: "static", label: props.copy.transformStaticTab },
-              { icon: null, id: "motion", label: props.copy.transformMotionTab },
+              { icon: null, id: "static", label: props.copy.canvasModePhoto },
+              { icon: null, id: "motion", label: props.copy.canvasModeVideo },
             ]}
             value={props.isMotionMode ? "motion" : "static"}
             onChange={(id) => props.onMotionModeChange(id === "motion")}

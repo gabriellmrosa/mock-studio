@@ -95,7 +95,8 @@ export type AppCopy = {
   appearanceTabCustom: string;
   debugSectionTitle: string;
   transformSectionTitle: string;
-  transformStaticTab: string;
+  canvasModePhoto: string;
+  canvasModeVideo: string;
   canvasModeLabel: string;
   motionTimeline: string;
   motionZoomLabel: string;
@@ -140,7 +141,6 @@ export type AppCopy = {
   videoExportError: string;
   motionTimelineEmpty: string;
   motionModeToggle: string;
-  transformMotionTab: string;
   motionEmptyHint: string;
   motionAddKeyframe: string;
   motionKeyframeLabel: string;
@@ -245,7 +245,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     templatesEmptyHint: "Salve a cena atual para reutilizar depois.",
     templatesEmptyHintMotion: "Salve a animação atual para reutilizar depois.",
     modeSwitchTitle: "Sair sem salvar template?",
-    modeSwitchBodyStatic: "A cena do modo Estático tem alterações que não estão salvas em nenhum template.",
+    modeSwitchBodyStatic: "A cena do modo Foto tem alterações que não estão salvas em nenhum template.",
     modeSwitchBodyMotion: "A animação tem alterações que não estão salvas em nenhum template.",
     modeSwitchSave: "Salvar template e sair",
     modeSwitchDiscard: "Sair sem salvar",
@@ -306,7 +306,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     appearanceTabCustom: "Personalizar",
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transformação",
-    transformStaticTab: "Estático",
+    canvasModePhoto: "Foto",
+    canvasModeVideo: "Vídeo",
     canvasModeLabel: "Modo da cena",
     motionTimeline: "Linha do tempo",
     motionZoomLabel: "Zoom da linha do tempo",
@@ -353,7 +354,6 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     videoExportError: "Não foi possível exportar o vídeo.",
     motionTimelineEmpty: "Nenhum objeto visível na cena.",
     motionModeToggle: "Modo movimento",
-    transformMotionTab: "Movimento",
     motionEmptyHint: "Selecione um keyframe na linha do tempo para editar a pose dele, ou crie um no instante do playhead com o ◆+ da trilha.",
     motionAddKeyframe: "Adicionar keyframe",
     motionKeyframeLabel: "Keyframe",
@@ -526,7 +526,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     templatesEmptyHint: "Save the current scene to reuse it later.",
     templatesEmptyHintMotion: "Save the current animation to reuse it later.",
     modeSwitchTitle: "Leave without saving a template?",
-    modeSwitchBodyStatic: "The Static scene has changes that are not saved in any template.",
+    modeSwitchBodyStatic: "The Photo scene has changes that are not saved in any template.",
     modeSwitchBodyMotion: "The animation has changes that are not saved in any template.",
     modeSwitchSave: "Save template and leave",
     modeSwitchDiscard: "Leave without saving",
@@ -587,7 +587,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     appearanceTabCustom: "Custom",
     debugSectionTitle: "Debug",
     transformSectionTitle: "Transform",
-    transformStaticTab: "Static",
+    canvasModePhoto: "Photo",
+    canvasModeVideo: "Video",
     canvasModeLabel: "Scene mode",
     motionTimeline: "Timeline",
     motionZoomLabel: "Timeline zoom",
@@ -634,7 +635,6 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     videoExportError: "Couldn't export the video.",
     motionTimelineEmpty: "No visible objects in the scene.",
     motionModeToggle: "Motion mode",
-    transformMotionTab: "Motion",
     motionEmptyHint: "Select a keyframe in the timeline to edit its pose, or create one at the playhead with the track's ◆+ button.",
     motionAddKeyframe: "Add keyframe",
     motionKeyframeLabel: "Keyframe",
