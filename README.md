@@ -186,6 +186,7 @@ The `duo` is the only model that moves: its GLB keeps the two halves and the hin
 - [app/lib/screen-compositor.ts](app/lib/screen-compositor.ts): the pass that draws the final screen — framing, background and HDR conversion
 - [app/lib/hdr-video.ts](app/lib/hdr-video.ts): HDR detection and the PQ/HLG to SDR conversion
 - [app/components/EditorPrimitives/](app/components/EditorPrimitives/): shared panel, button and collapsible-section primitives
+- [app/components/FolderTabs/](app/components/FolderTabs/): Chrome-style folder tabs and the panel they join, used for the screen's `Image | Video` choice
 - [app/lib/3d-tokens/](app/lib/3d-tokens/): per-model themes and color tokens
 - [app/lib/i18n.ts](app/lib/i18n.ts): copy for `pt-BR` and `en-US`
 

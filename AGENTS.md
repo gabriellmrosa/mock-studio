@@ -117,6 +117,7 @@ primeiro degrau que resolve:
 |---|---|
 | liga/desliga de verdade | `Switch` |
 | escolha exclusiva, sempre uma selecionada | `SegmentedTabs` (trilho `--segmented-track`, indicador que desliza) |
+| escolha exclusiva que abre um conteúdo próprio (Imagem \| Vídeo da tela) | `FolderTabs` + `FolderTabPanel` (abas de pasta, estilo Chrome; é um `SegmentedTabs` com outra roupa) |
 | grupos de sub-opções que nascem fechados | `SubTabs` / `SubTabPanel` |
 | ação extra que acompanha outra ("Salvar como template") | `Checkbox` |
 | escolha numa lista | `CustomSelect` |

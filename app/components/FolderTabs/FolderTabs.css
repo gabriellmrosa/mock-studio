@@ -1,0 +1,115 @@
+/* =========================================
+   FolderTabs — abas "de pasta" (estilo Chrome)
+   A selecionada arredonda os cantos de cima e "sai para fora" nos de baixo,
+   ligando-se ao painel (.folder-tab-panel) abaixo como uma peça só.
+   Origem: .admin-tabs do dashboard do Cartami, mas com outra técnica nas
+   curvas: lá cada canto era um pseudo-elemento com borda arredondada e um
+   box-shadow que pintava o vão com a cor do fundo — o que só funciona com
+   fundo sólido e igual (qualquer diferença aparece como um remendo). Aqui
+   cada curva é um radial-gradient: dentro, a cor da aba; num anel de 1px, a
+   linha; fora, transparente. Funciona sobre qualquer fundo, e o painel não
+   precisa de cor própria.
+
+   A linha de base é a borda de cima do próprio painel — não uma linha da
+   faixa de abas —, então o canto de cima do painel é um canto de verdade, com
+   raio, e a linha entra nele sem emenda.
+   ========================================= */
+
+.folder-tabs,
+.folder-tab-panel {
+  /* A cor da aba selecionada: a do painel lateral, de onde o conjunto sai. */
+  --folder-tab-fill: var(--sidebar-bg);
+  --folder-tab-line: var(--sidebar-border);
+  --folder-tab-curve: var(--space-2);
+}
+
+/* Troca a roupa do SegmentedTabs: sem trilho nem indicador deslizante. A faixa
+   desce 1px sobre o painel, para a aba selecionada cobrir a borda de cima
+   dele. */
+.editor-segmented.folder-tabs {
+  align-items: flex-end;
+  background: transparent;
+  border-radius: 0;
+  gap: var(--space-1);
+  margin-bottom: -1px;
+  padding: 0;
+}
+
+.folder-tabs .editor-segmented-thumb {
+  display: none;
+}
+
+.folder-tabs .editor-segmented-tab {
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  padding: var(--space-2) var(--space-3);
+}
+
+/* Selecionada: marcada por fundo e cor, nunca por negrito. */
+.folder-tabs .editor-segmented-tab.is-active {
+  background: var(--folder-tab-fill);
+  border-color: var(--folder-tab-line);
+}
+
+/* As curvas de fora: um quadrado do tamanho da curva em cada lado da aba, com o
+   centro do círculo no canto de cima (do lado de fora da aba). */
+.folder-tabs .editor-segmented-tab.is-active::before,
+.folder-tabs .editor-segmented-tab.is-active::after {
+  bottom: 0;
+  content: "";
+  height: var(--folder-tab-curve);
+  position: absolute;
+  width: var(--folder-tab-curve);
+}
+
+.folder-tabs .editor-segmented-tab.is-active::before {
+  background: radial-gradient(
+    circle at 0 0,
+    transparent calc(var(--folder-tab-curve) - 0.5px),
+    var(--folder-tab-line) calc(var(--folder-tab-curve) - 0.5px),
+    var(--folder-tab-line) calc(var(--folder-tab-curve) + 0.5px),
+    var(--folder-tab-fill) calc(var(--folder-tab-curve) + 0.5px)
+  );
+  left: calc(var(--folder-tab-curve) * -1);
+}
+
+.folder-tabs .editor-segmented-tab.is-active::after {
+  background: radial-gradient(
+    circle at 100% 0,
+    transparent calc(var(--folder-tab-curve) - 0.5px),
+    var(--folder-tab-line) calc(var(--folder-tab-curve) - 0.5px),
+    var(--folder-tab-line) calc(var(--folder-tab-curve) + 0.5px),
+    var(--folder-tab-fill) calc(var(--folder-tab-curve) + 0.5px)
+  );
+  right: calc(var(--folder-tab-curve) * -1);
+}
+
+/* Nas pontas a aba encosta na borda do painel: sem curva para fora. */
+.folder-tabs .editor-segmented-tab:first-of-type.is-active::before,
+.folder-tabs .editor-segmented-tab:last-of-type.is-active::after {
+  display: none;
+}
+
+.folder-tab-panel {
+  background: none;
+  border: 1px solid var(--folder-tab-line);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
+}
+
+/* Com a primeira (ou a última) aba selecionada, ela é o canto de cima do
+   painel: ali o painel é reto, e não arredondado por baixo dela. */
+.folder-tabs:has(.editor-segmented-tab:first-of-type.is-active)
+  + .folder-tab-panel {
+  border-top-left-radius: 0;
+}
+
+.folder-tabs:has(.editor-segmented-tab:last-of-type.is-active)
+  + .folder-tab-panel {
+  border-top-right-radius: 0;
+}

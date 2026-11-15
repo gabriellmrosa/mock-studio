@@ -2,6 +2,7 @@
 
 import { DEFAULT_FOLD_ANGLE } from "../../lib/scene-presets";
 import { FoldableIcon } from "../FoldableIcon/FoldableIcon";
+import { FolderTabPanel, FolderTabs } from "../FolderTabs/FolderTabs";
 import "./InspectorPanel.css";
 import { useRef, useState, type ReactNode } from "react";
 import ColorRow from "../ColorRow/ColorRow";
@@ -720,6 +721,81 @@ function ScreenControls({
     { icon: <Video size={13} />, id: "video", label: copy.screenSourceVideo },
   ];
 
+  const tabsId = `screen-source-${rowKey}`;
+  const screenRow = (
+    source === "image" ? (
+          <ScreenFileRow
+            key={rowKey}
+            closeLabel={copy.closeLabel}
+            icon={<ImageIcon size={16} />}
+            menuLabel={`${copy.imageOptions}${suffix}`}
+            name={
+              image.hasFile
+                ? (image.fileName ?? copy.screenSourceImage)
+                : copy.screenAddImage
+            }
+          >
+            {image.hasFile ? (
+              <ScreenSettings
+                accept={IMAGE_ACCEPT}
+                copy={copy}
+                fit={image.fit}
+                onFitChange={image.onFitChange}
+                onRemove={image.onRemove}
+                onReplace={image.onUpload}
+                removeLabel={copy.removeImage}
+                replaceLabel={copy.uploadImage}
+                replaceMeta={image.recommendation}
+                uiTheme={uiTheme}
+              />
+            ) : (
+              <UploadCard
+                accept={IMAGE_ACCEPT}
+                label={`${copy.screenUploadImage}${suffix}`}
+                meta={image.recommendation}
+                metaTitle={`${copy.screenSectionHintPrefix} ${image.recommendation}`}
+                onUpload={image.onUpload}
+              />
+            )}
+          </ScreenFileRow>
+        ) : (
+          <ScreenFileRow
+            key={rowKey}
+            closeLabel={copy.closeLabel}
+            icon={<Video size={16} />}
+            menuLabel={`${copy.videoOptions}${suffix}`}
+            meta={
+              video.data
+                ? `${(video.data.durationMs / 1000).toFixed(1)}s`
+                : undefined
+            }
+            name={video.data ? video.data.name : copy.screenAddVideo}
+          >
+            {video.data ? (
+              <ScreenSettings
+                accept={VIDEO_ACCEPT}
+                copy={copy}
+                fit={video.fit}
+                onFitChange={video.onFitChange}
+                onRemove={video.onRemove}
+                onReplace={video.onUpload}
+                removeLabel={copy.removeVideo}
+                replaceLabel={copy.replaceVideo}
+                replaceMeta={copy.screenVideoHint}
+                uiTheme={uiTheme}
+              />
+            ) : (
+              <UploadCard
+                accept={VIDEO_ACCEPT}
+                label={`${copy.uploadVideo}${suffix}`}
+                meta={copy.screenVideoHint}
+                onUpload={video.onUpload}
+              />
+            )}
+          </ScreenFileRow>
+        )
+  );
+
   return (
     <>
       {title ? (
@@ -732,84 +808,21 @@ function ScreenControls({
         </span>
       ) : null}
       {withSourceTabs ? (
-        <SegmentedTabs
+        <FolderTabs
           ariaLabel={`${copy.screenSectionTitle}${suffix}`}
+          idPrefix={tabsId}
           items={sourceTabs}
           value={source}
           onChange={onSourceChange}
         />
       ) : null}
 
-      {source === "image" ? (
-        <ScreenFileRow
-          key={rowKey}
-          closeLabel={copy.closeLabel}
-          icon={<ImageIcon size={16} />}
-          menuLabel={`${copy.imageOptions}${suffix}`}
-          name={
-            image.hasFile
-              ? (image.fileName ?? copy.screenSourceImage)
-              : copy.screenAddImage
-          }
-        >
-          {image.hasFile ? (
-            <ScreenSettings
-              accept={IMAGE_ACCEPT}
-              copy={copy}
-              fit={image.fit}
-              onFitChange={image.onFitChange}
-              onRemove={image.onRemove}
-              onReplace={image.onUpload}
-              removeLabel={copy.removeImage}
-              replaceLabel={copy.uploadImage}
-              replaceMeta={image.recommendation}
-              uiTheme={uiTheme}
-            />
-          ) : (
-            <UploadCard
-              accept={IMAGE_ACCEPT}
-              label={`${copy.screenUploadImage}${suffix}`}
-              meta={image.recommendation}
-              metaTitle={`${copy.screenSectionHintPrefix} ${image.recommendation}`}
-              onUpload={image.onUpload}
-            />
-          )}
-        </ScreenFileRow>
+      {withSourceTabs ? (
+        <FolderTabPanel activeId={source} idPrefix={tabsId}>
+          {screenRow}
+        </FolderTabPanel>
       ) : (
-        <ScreenFileRow
-          key={rowKey}
-          closeLabel={copy.closeLabel}
-          icon={<Video size={16} />}
-          menuLabel={`${copy.videoOptions}${suffix}`}
-          meta={
-            video.data
-              ? `${(video.data.durationMs / 1000).toFixed(1)}s`
-              : undefined
-          }
-          name={video.data ? video.data.name : copy.screenAddVideo}
-        >
-          {video.data ? (
-            <ScreenSettings
-              accept={VIDEO_ACCEPT}
-              copy={copy}
-              fit={video.fit}
-              onFitChange={video.onFitChange}
-              onRemove={video.onRemove}
-              onReplace={video.onUpload}
-              removeLabel={copy.removeVideo}
-              replaceLabel={copy.replaceVideo}
-              replaceMeta={copy.screenVideoHint}
-              uiTheme={uiTheme}
-            />
-          ) : (
-            <UploadCard
-              accept={VIDEO_ACCEPT}
-              label={`${copy.uploadVideo}${suffix}`}
-              meta={copy.screenVideoHint}
-              onUpload={video.onUpload}
-            />
-          )}
-        </ScreenFileRow>
+        screenRow
       )}
     </>
   );
