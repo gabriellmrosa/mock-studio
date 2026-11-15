@@ -9,10 +9,21 @@
   touch-action: none;
 }
 
+/* O palco escuro é o fundo mais escuro do tema (--background): parte de um
+   tom perto do painel no canto de cima e desce até ele, com um brilho no
+   topo. Os painéis e o que flutua sobre a cena ficam mais claros que ele. */
 .mockup-stage-dark {
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 38%),
-    linear-gradient(160deg, #3d3936 0%, #2c2a28 52%, #252422 100%);
+    radial-gradient(
+      circle at top,
+      color-mix(in srgb, var(--foreground) 6%, transparent),
+      transparent 38%
+    ),
+    linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--background) 95%, var(--foreground)) 0%,
+      var(--background) 100%
+    );
 }
 
 .mockup-stage-light {
@@ -150,7 +161,9 @@
    abas iguais. */
 .editor-segmented.canvas-mode-toggle {
   --segmented-padding: 3px;
-  background: color-mix(in srgb, var(--surface-raised) 88%, transparent);
+  /* Sólido e na cor dos painéis: sem transparência, para não misturar com a
+     cena atrás e ficar da mesma família da interface ao redor. */
+  background: var(--sidebar-bg);
   border: 1px solid var(--button-border);
   box-shadow: var(--canvas-shadow);
   display: grid;
@@ -167,16 +180,16 @@
 }
 
 .canvas-mode-toggle .editor-segmented-thumb {
-  background: var(--button-active-bg);
+  background: var(--canvas-toggle-thumb);
 }
 
 .canvas-mode-toggle .editor-segmented-tab {
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-5);
   white-space: nowrap;
 }
 
 .canvas-mode-toggle .editor-segmented-tab.is-active {
-  color: var(--button-active-fg);
+  color: var(--canvas-toggle-active-fg);
 }
 
 /* Com a timeline aberta a barra flutuante sobe, para não ficar por baixo. */

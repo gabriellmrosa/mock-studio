@@ -130,13 +130,22 @@ primeiro degrau que resolve:
 | nome de um botão só de ícone, na barra do canvas | `Tooltip` |
 | voltar ao padrão | `ResetButton` (`normal` ou `small`) |
 
-- **Superfícies flutuantes** (menus, listas, popovers) usam `--sidebar-bg`,
-  a mesma dos painéis.
+- **Hierarquia do escuro (a lógica do Figma):** o fundo é o mais escuro e o
+  que fica por cima dele é mais claro. O palco (`--background`, o
+  `--black-000`) é o fundo mais escuro; os painéis (`--sidebar-bg`) vêm um
+  degrau acima; o que repousa sobre o painel (linhas, campos, trilhos,
+  `--surface-subtle`, `--black-300`) outro; hover e selecionado, mais um.
+  Nada que fica por cima de uma superfície pode ser mais escuro que ela.
+- **Superfícies flutuantes** (menus, listas, popovers, o seletor Foto | Vídeo
+  e os botões redondos sobre o palco) usam `--sidebar-bg`, a mesma dos
+  painéis, **sólida e sem opacidade**: nada da cena 3D pode transparecer
+  numa superfície de interface.
 - **Selecionado** é marcado por fundo e cor, nunca por negrito.
 - **Gatilhos `⋮` e o ✕ de fechar** são discretos, sem fundo no hover
   (`context-menu-trigger-quiet`, `editor-icon-button-no-hover-bg`).
 - **Contraste é medido:** texto secundário (`--sidebar-muted`) com 5,1:1 ou
-  mais sobre `--surface-subtle`, nos dois temas; ação destrutiva em
+  mais sobre `--surface-subtle`; texto de 11px sempre a 4,5:1 ou mais (AA);
+  ação destrutiva em
   `--danger-fg`.
 - **Tooltip só fora dos painéis:** os painéis têm rolagem e cortariam o balão;
   lá dentro, `title`.

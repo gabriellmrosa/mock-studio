@@ -92,7 +92,9 @@
 
 .editor-fab {
   align-items: center;
-  background: color-mix(in srgb, var(--surface-raised) 82%, transparent);
+  /* Sólido na cor dos painéis, como o seletor Estático | Movimento: flutua
+     sobre a cena, mas é interface, então nada dela transparece. */
+  background: var(--sidebar-bg);
   border: 1px solid var(--button-border);
   border-radius: var(--radius-full);
   color: var(--icon-fg);

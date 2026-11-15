@@ -2,15 +2,25 @@
   /* =====================
      COLOR PRIMITIVES
      Warm scale: darkest (000) → lightest (980)
+     Os degraus escuros (000–500) partem do painel, --black-100 (#262422): cada
+     um mantém a diferença de luminosidade (OKLab) que tinha para o painel
+     antigo (#34312e) e o mesmo matiz (68°), com o croma reduzido a 70% — o
+     mesmo croma num tom mais escuro parece mais saturado.
+
+     A regra do tema escuro é a do Figma: o fundo é o mais escuro e o que fica
+     por cima dele é mais claro. 000 é o fundo do palco; 100 o painel; 200 o
+     painel elevado (diálogos); 300 o que repousa sobre o painel (campos,
+     botões, linhas — o mesmo tom que o --surface-subtle dá sobre ele); 400 o
+     hover; 500 o selecionado.
      ===================== */
   --black-true: #000;
   --white-true: #fff;
-  --black-000: #2a2927;
-  --black-100: #34312e;
-  --black-200: #3b3834;
-  --black-300: #403b36;
-  --black-400: #514b45;
-  --black-500: #635c55;
+  --black-000: #1b1a19;
+  --black-100: #262422;
+  --black-200: #2b2926;
+  --black-300: #32302d;
+  --black-400: #403c38;
+  --black-500: #5c5651;
   --black-600: #7f7972;
   --black-700: #b8b0a6;
   --black-800: #d7cec3;
