@@ -258,9 +258,7 @@ describe("LayersPanel", () => {
         onRemoveObject={jest.fn()}
         onSelectObject={jest.fn()}
         onToggleObjectVisibility={jest.fn()}
-        onUiThemeChange={jest.fn()}
         selectedObjectId={object.id}
-        uiTheme="dark"
       />,
     );
 
@@ -290,9 +288,7 @@ describe("LayersPanel", () => {
         onRemoveObject={jest.fn()}
         onSelectObject={jest.fn()}
         onToggleObjectVisibility={onToggleObjectVisibility}
-        onUiThemeChange={jest.fn()}
         selectedObjectId={object.id}
-        uiTheme="dark"
       />,
     );
 
@@ -321,9 +317,7 @@ describe("LayersPanel", () => {
         onRemoveObject={jest.fn()}
         onSelectObject={jest.fn()}
         onToggleObjectVisibility={jest.fn()}
-        onUiThemeChange={jest.fn()}
         selectedObjectId={object.id}
-        uiTheme="dark"
       />,
     );
 

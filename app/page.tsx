@@ -121,15 +121,17 @@ function detectBrowserLocale(): Locale {
   return "en-US";
 }
 
-function detectBrowserTheme(): UiTheme {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
+/**
+ * O tema claro está desligado por enquanto: o app tem só o escuro, para todos,
+ * qualquer que seja a preferência do navegador ou o que ficou guardado. Os
+ * tokens do claro continuam em `globals.css` (`[data-theme="light"]`) para
+ * quando ele voltar; o `<html>` já nasce com `data-theme="dark"`.
+ */
+const UI_THEME: UiTheme = "dark";
 
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("pt-BR");
-  const [uiTheme, setUiTheme] = useState<UiTheme>("dark");
+  const uiTheme = UI_THEME;
   const [notification, setNotification] = useState<SnackbarNotification | null>(
     null,
   );
@@ -192,18 +194,11 @@ export default function Home() {
 
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("mock-photo-locale");
-    const storedUiTheme = window.localStorage.getItem("mock-photo-ui-theme");
 
     setLocale(
       storedLocale === "pt-BR" || storedLocale === "en-US"
         ? storedLocale
         : detectBrowserLocale(),
-    );
-
-    setUiTheme(
-      storedUiTheme === "dark" || storedUiTheme === "light"
-        ? storedUiTheme
-        : detectBrowserTheme(),
     );
 
     setTemplates(loadTemplates());
@@ -216,12 +211,6 @@ export default function Home() {
     window.localStorage.setItem("mock-photo-locale", locale);
     document.documentElement.lang = locale;
   }, [locale]);
-
-  useEffect(() => {
-    if (!isInitialized.current) return;
-    window.localStorage.setItem("mock-photo-ui-theme", uiTheme);
-    document.documentElement.dataset.theme = uiTheme;
-  }, [uiTheme]);
 
   useEffect(() => {
     if (!selectedObjectId && sceneObjects[0]) {
@@ -996,7 +985,6 @@ export default function Home() {
           onRemoveObject={handleRemoveObject}
           onSelectObject={setSelectedObjectId}
           onToggleObjectVisibility={handleToggleObjectVisibility}
-          onUiThemeChange={setUiTheme}
           onApplyTemplate={handleApplyTemplate}
           onFitObject={handleFitObject}
           onRestoreTemplateView={handleRestoreTemplateView}
@@ -1010,7 +998,6 @@ export default function Home() {
               ? copy.templatesEmptyHintMotion
               : copy.templatesEmptyHint
           }
-          uiTheme={uiTheme}
         />
       )}
 

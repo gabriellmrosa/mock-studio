@@ -101,7 +101,10 @@ primeiro degrau que resolve:
 
 - **Tokens sempre.** Cor, espaço, raio e tipografia vêm de
   [app/styles/tokens.css](app/styles/tokens.css) e
-  [app/globals.css](app/globals.css), definidos para os temas escuro e claro.
+  [app/globals.css](app/globals.css), definidos para os temas escuro e claro. **O tema claro está desligado por
+  enquanto:** o app só tem o escuro, para todos (`UI_THEME` em `page.tsx`), e
+  o menu não oferece o tema. Os tokens do claro ficam mantidos, mas não
+  recebem ajuste até ele voltar; não escrever `[data-theme="light"]` novo.
   Token novo só se não houver outro jeito — e avisar o usuário. O mesmo vale
   para ícone novo. Nada de valor solto "porque funciona".
 - **Ícones:** `lucide-react`.

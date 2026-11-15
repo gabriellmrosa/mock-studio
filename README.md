@@ -57,7 +57,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 
 - **Templates** saved in your browser: composition, camera and keyframes, rebuilt in one click.
 - **Project links**: the whole scene compressed into the URL hash, to open in another browser. It is never sent to a server.
-- `pt-BR` and `en-US`, dark and light themes, and a `Hide UI` mode for clean captures.
+- `pt-BR` and `en-US`, a dark interface (the light theme is switched off for now and will come back) and a `Hide UI` mode for clean captures.
 
 <details>
 <summary><strong>Every feature, in detail</strong></summary>
@@ -99,7 +99,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 - distraction-free `Hide UI` mode with a toggle you can drag to any canvas corner, animating between the toolbar and the corner it snaps to
 - layered selection flow via list and direct interaction in the 3D scene
 - `pt-BR` and `en-US` UI support
-- dark and light themes
+- dark interface (the light theme is switched off for now)
 
 </details>
 

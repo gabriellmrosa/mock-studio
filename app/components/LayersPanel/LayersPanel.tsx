@@ -2,7 +2,7 @@
 
 import "./LayersPanel.css";
 import { KeyboardEvent, useEffect, useState } from "react";
-import type { AppCopy, Locale, UiTheme } from "../../lib/i18n";
+import type { AppCopy, Locale } from "../../lib/i18n";
 import type { SceneObject } from "../../lib/scene-objects";
 import type { SceneTemplate } from "../../lib/scene-templates";
 import {
@@ -34,12 +34,10 @@ type LayersPanelProps = {
   onSaveTemplate?: () => void;
   onSelectObject: (id: string) => void;
   onToggleObjectVisibility: (id: string) => void;
-  onUiThemeChange: (theme: UiTheme) => void;
   selectedObjectId: string;
   templates?: SceneTemplate[];
   /** Texto do estado vazio; muda com o modo, já que cada um tem sua lista. */
   templatesEmptyHint?: string;
-  uiTheme: UiTheme;
 };
 
 const TEMPLATES_OPEN_KEY = "mock-photo-templates-open";
@@ -62,11 +60,9 @@ export default function LayersPanel({
   onSaveTemplate,
   onSelectObject,
   onToggleObjectVisibility,
-  onUiThemeChange,
   selectedObjectId,
   templates = [],
   templatesEmptyHint,
-  uiTheme,
 }: LayersPanelProps) {
   const [editingObjectId, setEditingObjectId] = useState<string | null>(null);
 
@@ -157,24 +153,6 @@ export default function LayersPanel({
             action={
               <ContextMenu
                 items={[
-                  {
-                    type: "submenu",
-                    label: copy.themeLabel,
-                    options: [
-                      {
-                        label: copy.darkMode,
-                        value: "dark",
-                        checked: uiTheme === "dark",
-                        onClick: () => onUiThemeChange("dark"),
-                      },
-                      {
-                        label: copy.lightMode,
-                        value: "light",
-                        checked: uiTheme === "light",
-                        onClick: () => onUiThemeChange("light"),
-                      },
-                    ],
-                  },
                   {
                     type: "submenu",
                     label: copy.languageLabel,
