@@ -10,6 +10,7 @@ import {
 } from "./scene-presets";
 import { createPlaceholderDataUrl } from "./placeholder-image";
 import { cloneKeyframes, type Keyframe } from "./scene-motion";
+import type { SceneText } from "./text-objects";
 
 /**
  * Enquadramento do conteúdo na tela, sobre o recorte "cover" automático.
@@ -147,7 +148,7 @@ export function getScreenVideoTime(
 }
 
 /** Vídeo que a tela mostra de fato: o enviado, e só se for a fonte escolhida. */
-export function getActiveScreenVideo(object: SceneObject) {
+export function getActiveScreenVideo(object: DeviceObject) {
   return object.screenSource === "video" ? object.screenVideo : null;
 }
 
@@ -165,12 +166,12 @@ export function getScreenVideoKey(objectId: string, screen: ScreenId = "main") {
 }
 
 /** O vídeo da tela de fora do dobrável, se for a fonte escolhida nela. */
-export function getActiveOuterScreenVideo(object: SceneObject) {
+export function getActiveOuterScreenVideo(object: DeviceObject) {
   return object.outerScreenSource === "video" ? object.outerScreenVideo : null;
 }
 
 /** Enquadramento do que a tela de fora mostra agora: o do vídeo ou o da imagem. */
-export function getActiveOuterScreenFit(object: SceneObject): ScreenFit {
+export function getActiveOuterScreenFit(object: DeviceObject): ScreenFit {
   return {
     ...DEFAULT_SCREEN_FIT,
     ...(getActiveOuterScreenVideo(object)?.fit ?? object.outerImageFit),
@@ -190,6 +191,12 @@ export type ActiveScreenVideo = {
  * assim vale igual para uma tela ou duas.
  */
 export function getActiveScreenVideos(object: SceneObject): ActiveScreenVideo[] {
+  // Um texto não tem tela, logo nenhum vídeo: quem percorre os objetos da cena
+  // (timeline, exportação, controlador) não precisa separar os aparelhos antes.
+  if (!isDeviceObject(object)) {
+    return [];
+  }
+
   const main = getActiveScreenVideo(object);
   const outer = getActiveOuterScreenVideo(object);
 
@@ -214,14 +221,15 @@ export function getActiveScreenVideos(object: SceneObject): ActiveScreenVideo[] 
  * Completa com os padrões para aceitar enquadramentos de antes dos campos
  * novos (cena ainda na memória durante um hot reload).
  */
-export function getActiveScreenFit(object: SceneObject): ScreenFit {
+export function getActiveScreenFit(object: DeviceObject): ScreenFit {
   return {
     ...DEFAULT_SCREEN_FIT,
     ...(getActiveScreenVideo(object)?.fit ?? object.imageFit),
   };
 }
 
-export type SceneObject = {
+export type DeviceObject = {
+  kind: "device";
   colors: Record<string, string>;
   debugMode: boolean;
   debugPartColors: Record<string, string>;
@@ -279,6 +287,51 @@ export type SceneObject = {
    */
   matteFinish: boolean;
 };
+
+/** O texto de uma cena: o que ele diz e como se vê. Ver `text-objects.ts`. */
+export type TextObject = {
+  kind: "text";
+  deletable: boolean;
+  id: string;
+  isVisible: boolean;
+  keyframes: Keyframe[];
+  name: string;
+  opacity: number;
+  positionX: number;
+  positionY: number;
+  positionZ: number;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  scale: number;
+  text: SceneText;
+};
+
+export type SceneObject = DeviceObject | TextObject;
+
+/** A pose editável de um objeto: a do texto é a mesma, menos a abertura. */
+export type PosePatch = Partial<
+  Pick<
+    DeviceObject,
+    | "foldAngle"
+    | "opacity"
+    | "positionX"
+    | "positionY"
+    | "positionZ"
+    | "rotationX"
+    | "rotationY"
+    | "rotationZ"
+    | "scale"
+  >
+>;
+
+export function isDeviceObject(object: SceneObject): object is DeviceObject {
+  return object.kind === "device";
+}
+
+export function isTextObject(object: SceneObject): object is TextObject {
+  return object.kind === "text";
+}
 
 // Placeholders são gerados em runtime (canvas) no tamanho de upload
 // recomendado de cada modelo — não há mais PNGs estáticos em public/.
@@ -358,6 +411,7 @@ function hasSameModelAtTransform(
   positionZ: number,
 ) {
   return (
+    isDeviceObject(object) &&
     object.modelId === modelId &&
     object.positionY === positionY &&
     object.positionZ === positionZ
@@ -383,8 +437,10 @@ function getOffsetSpawnTransformForPlane(
   positionZ: number,
   scale = 1,
 ) {
-  const objectsOnPlane = objects.filter((object) =>
-    hasSameModelAtTransform(object, modelId, positionY, positionZ),
+  const objectsOnPlane = objects.filter(
+    (object): object is DeviceObject =>
+      isDeviceObject(object) &&
+      hasSameModelAtTransform(object, modelId, positionY, positionZ),
   );
 
   if (objectsOnPlane.length === 0) {
@@ -417,8 +473,10 @@ export function getSequentialSpawnTransform(
   scale = 1,
 ) {
   const { positionY, positionZ } = DEFAULT_OBJECT_TRANSFORM;
-  const objectsOnPlane = objects.filter((object) =>
-    isOnTransformPlane(object, positionY, positionZ),
+  // Só os aparelhos entram na conta: o texto não tem a largura de um modelo.
+  const objectsOnPlane = objects.filter(
+    (object): object is DeviceObject =>
+      isDeviceObject(object) && isOnTransformPlane(object, positionY, positionZ),
   );
 
   if (objectsOnPlane.length === 0) {
@@ -463,10 +521,11 @@ export function createSceneObject({
   id?: string;
   modelId?: DeviceModelId;
   name: string;
-}): SceneObject {
+}): DeviceObject {
   const model = DEVICE_MODELS[modelId];
 
   return {
+    kind: "device",
     colors: { ...(model.themes[model.defaultTheme] ?? {}) },
     debugMode: false,
     debugPartColors: { ...model.initialDebugColors },
@@ -504,8 +563,8 @@ export function duplicateSceneObject({
   id?: string;
   name: string;
   objects: SceneObject[];
-  source: SceneObject;
-}): SceneObject {
+  source: DeviceObject;
+}): DeviceObject {
   const spawnTransform = getOffsetSpawnTransformForPlane(
     objects,
     source.modelId,
@@ -527,13 +586,13 @@ export function duplicateSceneObject({
 }
 
 /** Se o objeto já está na pose padrão — aí o reset não teria o que fazer. */
-export function isDefaultObjectTransform(object: SceneObject) {
+export function isDefaultObjectTransform(object: DeviceObject) {
   return (
     Object.keys(DEFAULT_OBJECT_TRANSFORM) as (keyof typeof DEFAULT_OBJECT_TRANSFORM)[]
   ).every((key) => object[key] === DEFAULT_OBJECT_TRANSFORM[key]);
 }
 
-export function resetSceneObject(object: SceneObject): SceneObject {
+export function resetSceneObject(object: DeviceObject): DeviceObject {
   return {
     ...object,
     ...DEFAULT_OBJECT_TRANSFORM,
@@ -541,9 +600,9 @@ export function resetSceneObject(object: SceneObject): SceneObject {
 }
 
 export function changeSceneObjectModel(
-  object: SceneObject,
+  object: DeviceObject,
   modelId: DeviceModelId,
-): SceneObject {
+): DeviceObject {
   const model = DEVICE_MODELS[modelId];
 
   return {

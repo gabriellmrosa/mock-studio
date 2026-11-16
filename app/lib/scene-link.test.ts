@@ -5,6 +5,7 @@ import { createSceneLink, decodeSceneLink, readSceneLinkHash } from "./scene-lin
 import { createSceneObject } from "./scene-objects";
 import { insertKeyframe } from "./scene-motion";
 import { createSceneTemplate } from "./scene-templates";
+import { createTextObject } from "./text-objects";
 
 function createMotionTemplate() {
   const base = createSceneObject({ id: "object-1", name: "Phone" });
@@ -41,6 +42,24 @@ describe("scene link", () => {
     });
     // Quem abre ganha um template novo, não o id de quem mandou.
     expect(decoded!.id).not.toBe(template.id);
+  });
+
+  it("carries a text with its style, accents and line breaks", async () => {
+    const template = createSceneTemplate({
+      name: "Com texto",
+      objects: [
+        createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+        createTextObject({
+          content: "Lançamento\nçãõ — 2026",
+          name: "Título",
+          text: { fontId: "playfair-display", weight: "bold", maxWidth: 600 },
+        }),
+      ],
+    });
+    const url = await createSceneLink(template, "https://mock.studio/");
+    const decoded = await decodeSceneLink(readSceneLinkHash(new URL(url).hash)!);
+
+    expect(decoded!.objects[1]).toEqual(template.objects[1]);
   });
 
   it("stays short enough to paste anywhere", async () => {

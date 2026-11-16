@@ -20,7 +20,7 @@ import {
   getActiveScreenFit,
   isDefaultObjectTransform,
   isPlaceholderImageUrl,
-  type SceneObject,
+  type DeviceObject,
   type ScreenFit,
   type ScreenVideo,
 } from "../../lib/scene-objects";
@@ -80,16 +80,16 @@ const NOTEBOOK_SCREEN_ONLY_COLOR_KEYS = new Set([
 
 type InspectorPanelProps = {
   copy: AppCopy;
-  object: SceneObject | null;
+  object: DeviceObject | null;
   onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onVideoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   /** Volta a tela ao placeholder. */
   onRemoveImage: () => void;
   onRemoveVideo: () => void;
-  onScreenSourceChange: (source: SceneObject["screenSource"]) => void;
+  onScreenSourceChange: (source: DeviceObject["screenSource"]) => void;
   /** Enquadramento da fonte ativa (imagem ou vídeo). */
   onUpdateScreenFit: (patch: Partial<ScreenFit>) => void;
-  onModelChange: (modelId: SceneObject["modelId"]) => void;
+  onModelChange: (modelId: DeviceObject["modelId"]) => void;
   onResetObject: () => void;
   /** Alinha o objeto ao quadro do canvas, na pose em edição. */
   onAlignObject: (alignment: ObjectAlignment) => void;
@@ -100,10 +100,10 @@ type InspectorPanelProps = {
   onToggleTabletBezel: () => void;
   onToggleMatteFinish: () => void;
   onUpdateRotation: (
-    patch: Pick<SceneObject, "rotationX" | "rotationY" | "rotationZ">,
+    patch: Pick<DeviceObject, "rotationX" | "rotationY" | "rotationZ">,
   ) => void;
   onUpdatePosition: (
-    patch: Pick<SceneObject, "positionX" | "positionY" | "positionZ">,
+    patch: Pick<DeviceObject, "positionX" | "positionY" | "positionZ">,
   ) => void;
   onUpdateScale: (scale: number) => void;
   /** 0 a 1; o controle mostra em %. */
@@ -115,7 +115,7 @@ type InspectorPanelProps = {
   onOuterVideoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveOuterImage: () => void;
   onRemoveOuterVideo: () => void;
-  onOuterScreenSourceChange: (source: SceneObject["screenSource"]) => void;
+  onOuterScreenSourceChange: (source: DeviceObject["screenSource"]) => void;
   /** Enquadramento da fonte ativa da tela de fora (imagem ou vídeo). */
   onUpdateOuterScreenFit: (patch: Partial<ScreenFit>) => void;
   motionTab: "static" | "motion";
@@ -564,7 +564,7 @@ function AlignmentControl({
 }
 
 /** O ícone de cada aparelho: o da lista e o da faixa. */
-function getDeviceIcon(modelId: SceneObject["modelId"], size: number) {
+function getDeviceIcon(modelId: DeviceObject["modelId"], size: number) {
   switch (modelId) {
     case "smartphone":
     case "smartphone2":
@@ -599,8 +599,8 @@ function DeviceSettings({
   onToggleTabletBezel,
 }: {
   copy: AppCopy;
-  object: SceneObject;
-  onModelChange: (modelId: SceneObject["modelId"]) => void;
+  object: DeviceObject;
+  onModelChange: (modelId: DeviceObject["modelId"]) => void;
   onToggleDeviceShell: () => void;
   onToggleNotebookKeyboard: () => void;
   onToggleTabletBezel: () => void;
@@ -665,11 +665,11 @@ type ScreenControlsProps = {
     /** Tamanho ideal da imagem, mostrado no painel de envio. */
     recommendation: string;
   };
-  onSourceChange: (source: SceneObject["screenSource"]) => void;
+  onSourceChange: (source: DeviceObject["screenSource"]) => void;
   /** Muda com o objeto (ou a tela): remonta a faixa e fecha o painel dela. */
   rowKey: string;
   /** O que a tela mostra: imagem ou vídeo. Vídeo só existe no Movimento. */
-  source: SceneObject["screenSource"];
+  source: DeviceObject["screenSource"];
   /** Texto acrescentado aos nomes acessíveis, para dizer de que tela é. */
   suffix: string;
   /** O nome da tela, quando o aparelho tem mais de uma. */
@@ -716,7 +716,7 @@ function ScreenControls({
   video,
   withSourceTabs,
 }: ScreenControlsProps) {
-  const sourceTabs: SubTabItem<SceneObject["screenSource"]>[] = [
+  const sourceTabs: SubTabItem<DeviceObject["screenSource"]>[] = [
     { icon: <ImageIcon size={13} />, id: "image", label: copy.screenSourceImage },
     { icon: <Video size={13} />, id: "video", label: copy.screenSourceVideo },
   ];
@@ -851,7 +851,7 @@ function AppearanceSettings({
   copy: AppCopy;
   /** O acabamento só existe onde muda o que se vê (`MODELS_WITH_FINISH`). */
   hasFinish: boolean;
-  object: SceneObject;
+  object: DeviceObject;
   onThemeChange: (themeId: string) => void;
   onThemeColorChange: (part: string, hex: string) => void;
   onToggleMatteFinish: () => void;

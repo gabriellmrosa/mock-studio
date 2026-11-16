@@ -50,7 +50,10 @@ import {
   getPlaceholderImageUrl,
   duplicateSceneObject,
   getSequentialSpawnTransform,
+  isDeviceObject,
   resetSceneObject,
+  type DeviceObject,
+  type PosePatch,
   type SceneObject,
   type ScreenId,
 } from "./lib/scene-objects";
@@ -191,6 +194,10 @@ export default function Home() {
     sceneObjects.find((object) => object.id === selectedObjectId) ??
     sceneObjects[0] ??
     null;
+  // O que o Inspector e os handlers de aparelho enxergam: um texto selecionado
+  // não tem tela, modelo nem cores de aparelho.
+  const selectedDevice =
+    selectedObject && isDeviceObject(selectedObject) ? selectedObject : null;
 
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("mock-photo-locale");
@@ -234,11 +241,13 @@ export default function Home() {
    */
   function updateSceneObject(
     id: string,
-    patch: Partial<SceneObject> | ((object: SceneObject) => Partial<SceneObject>),
+    patch:
+      | Partial<DeviceObject>
+      | ((object: DeviceObject) => Partial<DeviceObject>),
   ) {
     setSceneObjects((current) =>
       current.map((object) =>
-        object.id === id
+        object.id === id && isDeviceObject(object)
           ? {
               ...object,
               ...(typeof patch === "function" ? patch(object) : patch),
@@ -254,7 +263,7 @@ export default function Home() {
     screen: "main" | "outer" = "main",
   ) {
     const file = event.target.files?.[0];
-    if (!file || !selectedObject) {
+    if (!file || !selectedDevice) {
       return;
     }
 
@@ -263,7 +272,7 @@ export default function Home() {
       const nextImage = await readFileAsDataUrl(file);
       // Imagem nova, enquadramento novo: o anterior foi feito para outra.
       updateSceneObject(
-        selectedObject.id,
+        selectedDevice.id,
         screen === "outer"
           ? {
               outerImageFit: { ...DEFAULT_SCREEN_FIT },
@@ -291,7 +300,7 @@ export default function Home() {
     screen: ScreenId = "main",
   ) {
     const file = event.target.files?.[0];
-    const target = selectedObject;
+    const target = selectedDevice;
 
     event.target.value = "";
 
@@ -359,7 +368,8 @@ export default function Home() {
     setSceneObjects((current) => {
       const source = current.find((object) => object.id === id);
 
-      if (!source) {
+      // Duplicar texto chega com o Inspector do texto; por ora só aparelhos.
+      if (!source || !isDeviceObject(source)) {
         return current;
       }
 
@@ -385,29 +395,29 @@ export default function Home() {
   }
 
   function handleThemeChange(themeId: string) {
-    if (!selectedObject) {
+    if (!selectedDevice) {
       return;
     }
 
-    const model = DEVICE_MODELS[selectedObject.modelId];
-    updateSceneObject(selectedObject.id, {
+    const model = DEVICE_MODELS[selectedDevice.modelId];
+    updateSceneObject(selectedDevice.id, {
       colors: model.themes[themeId],
       deviceTheme: themeId,
     });
   }
 
   function handleThemeColorChange(part: string, hex: string) {
-    if (!selectedObject) {
+    if (!selectedDevice) {
       return;
     }
 
-    const selectedId = selectedObject.id;
-    const model = DEVICE_MODELS[selectedObject.modelId];
+    const selectedId = selectedDevice.id;
+    const model = DEVICE_MODELS[selectedDevice.modelId];
 
     startTransition(() => {
       setSceneObjects((current) =>
         current.map((object) => {
-          if (object.id !== selectedId) {
+          if (object.id !== selectedId || !isDeviceObject(object)) {
             return object;
           }
 
@@ -432,14 +442,14 @@ export default function Home() {
     });
   }
 
-  function handleModelChange(modelId: SceneObject["modelId"]) {
-    if (!selectedObject) {
+  function handleModelChange(modelId: DeviceObject["modelId"]) {
+    if (!selectedDevice) {
       return;
     }
 
     setSceneObjects((current) =>
       current.map((object) =>
-        object.id === selectedObject.id
+        object.id === selectedDevice.id && isDeviceObject(object)
           ? changeSceneObjectModel(object, modelId)
           : object,
       ),
@@ -448,13 +458,15 @@ export default function Home() {
   }
 
   function handleResetObject() {
-    if (!selectedObject) {
+    if (!selectedDevice) {
       return;
     }
 
     setSceneObjects((current) =>
       current.map((object) =>
-        object.id === selectedObject.id ? resetSceneObject(object) : object,
+        object.id === selectedDevice.id && isDeviceObject(object)
+          ? resetSceneObject(object)
+          : object,
       ),
     );
   }
@@ -910,7 +922,7 @@ export default function Home() {
     });
   }
 
-  function updateTransform(patch: Partial<SceneObject>) {
+  function updateTransform(patch: PosePatch) {
     if (!selectedObject) return;
 
     if (motionTab === "static") {
@@ -1075,28 +1087,28 @@ export default function Home() {
       {!isUiHidden && (
       <InspectorPanel
         copy={copy}
-        object={selectedObject}
+        object={selectedDevice}
         onImageUpload={handleImageUpload}
         onVideoUpload={handleVideoUpload}
         onRemoveImage={() =>
-          selectedObject &&
+          selectedDevice &&
           // De volta ao placeholder do modelo — e as sub-opções da tela somem
           // com ele, já que não há mais o que ajustar.
-          updateSceneObject(selectedObject.id, (object) => ({
+          updateSceneObject(selectedDevice.id, (object) => ({
             imageFit: { ...DEFAULT_SCREEN_FIT },
             imageName: null,
             imageUrl: getPlaceholderImageUrl(object.modelId),
           }))
         }
         onRemoveVideo={() =>
-          selectedObject &&
-          updateSceneObject(selectedObject.id, { screenVideo: null })
+          selectedDevice &&
+          updateSceneObject(selectedDevice.id, { screenVideo: null })
         }
         onUpdateScreenFit={(patch) => {
-          if (!selectedObject) return;
+          if (!selectedDevice) return;
 
           // Grava no enquadramento da fonte que está na tela.
-          updateSceneObject(selectedObject.id, (object) => {
+          updateSceneObject(selectedDevice.id, (object) => {
             const video = getActiveScreenVideo(object);
 
             return video
@@ -1105,10 +1117,10 @@ export default function Home() {
           });
         }}
         onScreenSourceChange={(screenSource) => {
-          if (!selectedObject) return;
+          if (!selectedDevice) return;
 
           setUploadError("");
-          updateSceneObject(selectedObject.id, { screenSource });
+          updateSceneObject(selectedDevice.id, { screenSource });
         }}
         onModelChange={handleModelChange}
         onResetObject={handleResetObject}
@@ -1116,23 +1128,23 @@ export default function Home() {
         onThemeColorChange={handleThemeColorChange}
         onThemeChange={handleThemeChange}
         onToggleDeviceShell={() =>
-          selectedObject && updateSceneObject(selectedObject.id, {
-            showDeviceShell: !selectedObject?.showDeviceShell,
+          selectedDevice && updateSceneObject(selectedDevice.id, {
+            showDeviceShell: !selectedDevice?.showDeviceShell,
           })
         }
         onToggleNotebookKeyboard={() =>
-          selectedObject && updateSceneObject(selectedObject.id, {
-            showNotebookKeyboard: !selectedObject?.showNotebookKeyboard,
+          selectedDevice && updateSceneObject(selectedDevice.id, {
+            showNotebookKeyboard: !selectedDevice?.showNotebookKeyboard,
           })
         }
         onToggleMatteFinish={() =>
-          selectedObject && updateSceneObject(selectedObject.id, {
-            matteFinish: !selectedObject?.matteFinish,
+          selectedDevice && updateSceneObject(selectedDevice.id, {
+            matteFinish: !selectedDevice?.matteFinish,
           })
         }
         onToggleTabletBezel={() =>
-          selectedObject && updateSceneObject(selectedObject.id, {
-            showTabletBezel: !selectedObject?.showTabletBezel,
+          selectedDevice && updateSceneObject(selectedDevice.id, {
+            showTabletBezel: !selectedDevice?.showTabletBezel,
           })
         }
         onUpdatePosition={(positionPatch) => updateTransform(positionPatch)}
@@ -1143,27 +1155,27 @@ export default function Home() {
         onOuterImageUpload={(event) => handleImageUpload(event, "outer")}
         onOuterVideoUpload={(event) => handleVideoUpload(event, "outer")}
         onRemoveOuterVideo={() =>
-          selectedObject &&
-          updateSceneObject(selectedObject.id, { outerScreenVideo: null })
+          selectedDevice &&
+          updateSceneObject(selectedDevice.id, { outerScreenVideo: null })
         }
         onOuterScreenSourceChange={(outerScreenSource) => {
-          if (!selectedObject) return;
+          if (!selectedDevice) return;
 
           setUploadError("");
-          updateSceneObject(selectedObject.id, { outerScreenSource });
+          updateSceneObject(selectedDevice.id, { outerScreenSource });
         }}
         onRemoveOuterImage={() =>
-          selectedObject &&
-          updateSceneObject(selectedObject.id, {
+          selectedDevice &&
+          updateSceneObject(selectedDevice.id, {
             outerImageFit: { ...DEFAULT_SCREEN_FIT },
             outerImageName: null,
             outerImageUrl: null,
           })
         }
         onUpdateOuterScreenFit={(patch) =>
-          selectedObject &&
+          selectedDevice &&
           // Grava no enquadramento da fonte que está na tela de fora.
-          updateSceneObject(selectedObject.id, (object) => {
+          updateSceneObject(selectedDevice.id, (object) => {
             const video = getActiveOuterScreenVideo(object);
 
             return video

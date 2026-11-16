@@ -37,6 +37,8 @@ import {
   getActiveScreenVideos,
   getScreenVideoKey,
   getScreenVideoTime,
+  isDeviceObject,
+  type DeviceObject,
   type SceneObject,
 } from "../../lib/scene-objects";
 import {
@@ -270,7 +272,7 @@ function getResolvedObjectPosition(
  */
 function applyMotionPose(
   group: THREE.Group,
-  object: SceneObject,
+  object: DeviceObject,
   index: number,
   timeMs: number,
   spawnOverrides: SpawnOverrides,
@@ -404,7 +406,7 @@ function SceneBridge({
         .forEach((object, index) => {
           const group = objectGroupsRef.current.get(object.id);
 
-          if (group) {
+          if (group && isDeviceObject(object)) {
             applyMotionPose(group, object, index, timeMs, overrides);
           }
         });
@@ -474,6 +476,12 @@ function SceneBridge({
       <Bounds margin={1.18}>
         <group ref={sceneRef}>
           {objects.filter((object) => object.isVisible).map((object, index) => {
+            // O texto entra na cena junto com o render dele; por ora só se
+            // desenham aparelhos.
+            if (!isDeviceObject(object)) {
+              return null;
+            }
+
             const model = DEVICE_MODELS[object.modelId];
             // Em modo movimento a cena inteira mostra o instante do playhead.
             // É só exibição: o transform estático do objeto não é tocado.
@@ -651,7 +659,8 @@ const VIDEO_SEEK_EPSILON_S = 0.015;
  */
 /** Se alguma tela do objeto escolheu vídeo (haja ou não arquivo enviado). */
 const hasVideoSource = (object: SceneObject) =>
-  object.screenSource === "video" || object.outerScreenSource === "video";
+  isDeviceObject(object) &&
+  (object.screenSource === "video" || object.outerScreenSource === "video");
 
 function ScreenVideoController({
   isPausedRef,
@@ -745,7 +754,7 @@ function MotionDriver({
 }: {
   groupsRef: { current: Map<string, THREE.Group> };
   index: number;
-  object: SceneObject;
+  object: DeviceObject;
   spawnOverrides: SpawnOverrides;
   startedAt: number;
 }) {
@@ -790,7 +799,7 @@ function SceneObjectResolvedReporter({
   onObjectResolved,
 }: {
   id: string;
-  modelId: SceneObject["modelId"];
+  modelId: DeviceObject["modelId"];
   onObjectResolved: (id: string) => void;
 }) {
   useEffect(() => {

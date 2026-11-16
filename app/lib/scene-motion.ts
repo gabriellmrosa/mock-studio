@@ -1,6 +1,7 @@
 import {
   getActiveScreenVideos,
   getScreenVideoClipDuration,
+  isDeviceObject,
   type SceneObject,
 } from "./scene-objects";
 import { DEFAULT_FOLD_ANGLE } from "./scene-presets";
@@ -194,7 +195,8 @@ export function captureTransform(object: SceneObject): MotionTransform {
     rotationZ: object.rotationZ,
     scale: object.scale,
     opacity: object.opacity,
-    foldAngle: object.foldAngle,
+    // A abertura é só do dobrável; o texto não tem.
+    ...(isDeviceObject(object) ? { foldAngle: object.foldAngle } : {}),
   };
 }
 
@@ -328,7 +330,7 @@ export function getObjectMotionEnd(object: SceneObject): number {
 
   return Math.max(
     lastKeyframe,
-    ...getActiveScreenVideos(object).map(
+    ...(isDeviceObject(object) ? getActiveScreenVideos(object) : []).map(
       ({ video }) => video.startMs + getScreenVideoClipDuration(video),
     ),
   );

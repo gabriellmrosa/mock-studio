@@ -4,6 +4,7 @@ import {
   getNextTemplateName,
   getTemplateSnapshot,
   getTemplatesForMode,
+  isValidTemplate,
   loadTemplates,
   persistTemplates,
   removeTemplate,
@@ -11,8 +12,14 @@ import {
   upsertTemplate,
   type SceneTemplate,
 } from "./scene-templates";
-import { createSceneObject, getPlaceholderImageUrl } from "./scene-objects";
+import {
+  createSceneObject,
+  getPlaceholderImageUrl,
+  isDeviceObject,
+  isTextObject,
+} from "./scene-objects";
 import { captureTransform, createKeyframe, insertKeyframe } from "./scene-motion";
+import { createTextObject } from "./text-objects";
 
 const STORAGE_KEY = "mock-photo-templates";
 
@@ -72,6 +79,10 @@ function storeRaw(templates: unknown[]) {
   );
 }
 
+function applyDevices(template: SceneTemplate) {
+  return applySceneTemplate(template).filter(isDeviceObject);
+}
+
 describe("scene-templates", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -110,7 +121,7 @@ describe("scene-templates", () => {
       objects: buildScene(),
     });
 
-    const objects = applySceneTemplate(template);
+    const objects = applyDevices(template);
 
     expect(objects).toHaveLength(2);
     expect(objects[0].imageUrl).toBe(getPlaceholderImageUrl("smartphone"));
@@ -400,7 +411,7 @@ describe("scene-templates", () => {
         name: "Template 1",
         objects: [{ ...first, opacity: 0.4 }, second],
       });
-      const [rebuilt] = applySceneTemplate(template);
+      const [rebuilt] = applyDevices(template);
 
       expect(rebuilt.opacity).toBe(0.4);
       expect(rebuilt.keyframes[0].transform.opacity).toBe(1);
@@ -441,7 +452,7 @@ describe("scene-templates", () => {
         name: "Template 1",
         objects: [{ ...duo, keyframes: [closed] }],
       });
-      const [rebuilt] = applySceneTemplate(template);
+      const [rebuilt] = applyDevices(template);
 
       expect(rebuilt.foldAngle).toBe(90);
       expect(rebuilt.keyframes[0].transform.foldAngle).toBe(0);
@@ -456,8 +467,8 @@ describe("scene-templates", () => {
       expect(template.objects[0]).not.toHaveProperty("foldAngle");
       expect(template.objects[0]).not.toHaveProperty("matteFinish");
       // Ao abrir, o objeto volta com os padrões: aberto e fosco.
-      expect(applySceneTemplate(template)[0].foldAngle).toBe(180);
-      expect(applySceneTemplate(template)[0].matteFinish).toBe(true);
+      expect(applyDevices(template)[0].foldAngle).toBe(180);
+      expect(applyDevices(template)[0].matteFinish).toBe(true);
     });
 
     it("keeps the watch's finish too, the other model that has one", () => {
@@ -472,7 +483,7 @@ describe("scene-templates", () => {
       });
 
       expect(template.objects[0]).not.toHaveProperty("foldAngle");
-      expect(applySceneTemplate(template)[0].matteFinish).toBe(false);
+      expect(applyDevices(template)[0].matteFinish).toBe(false);
     });
 
     it("keeps the Duo's polished finish", () => {
@@ -486,7 +497,7 @@ describe("scene-templates", () => {
         ],
       });
 
-      expect(applySceneTemplate(template)[0].matteFinish).toBe(false);
+      expect(applyDevices(template)[0].matteFinish).toBe(false);
     });
   });
 
@@ -562,5 +573,104 @@ describe("scene-templates", () => {
         getTemplateSnapshot(scene, "static", null),
       );
     });
+  });
+});
+
+describe("text objects in templates", () => {
+  function sceneWithText() {
+    return [
+      createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+      createTextObject({
+        content: "Novo\nlançamento",
+        id: "headline",
+        name: "Título",
+        text: { color: "#ff8800", fontId: "oswald", weight: "bold" },
+      }),
+    ];
+  }
+
+  it("saves the text with its style and brings it back", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: sceneWithText(),
+    });
+    const [phone, text] = applySceneTemplate(template);
+
+    expect(template.objects[1]).toMatchObject({
+      kind: "text",
+      text: { content: "Novo\nlançamento", color: "#ff8800", fontId: "oswald" },
+    });
+    // O aparelho não ganha `kind` no template: o formato de antes continua o mesmo.
+    expect(template.objects[0]).not.toHaveProperty("kind");
+    expect(isDeviceObject(phone)).toBe(true);
+    expect(text).toMatchObject({ kind: "text", name: "Título", rotationY: 0 });
+    expect(text.id).not.toBe("headline");
+    expect(text.deletable).toBe(true);
+  });
+
+  it("carries the keyframes of a text in a motion template", () => {
+    const [phone, text] = sceneWithText();
+    const { keyframes } = insertKeyframe(text, 1000);
+    const template = createSceneTemplate({
+      mode: "motion",
+      name: "Template 1",
+      objects: [phone, { ...text, keyframes }],
+    });
+    const rebuilt = applySceneTemplate(template)[1];
+
+    expect(rebuilt.keyframes).toHaveLength(1);
+    expect(rebuilt.keyframes[0].timeMs).toBe(1000);
+    expect(rebuilt.keyframes[0].id).not.toBe(keyframes[0].id);
+  });
+
+  it("puts the text back inside the limits when it comes from outside", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: sceneWithText(),
+    });
+    const text = template.objects[1];
+
+    if (!("text" in text)) throw new Error("expected a text object");
+
+    text.text = { ...text.text, fontSize: 1e9, fontId: "nope" as never };
+
+    const rebuilt = applySceneTemplate(template)[1];
+
+    expect(rebuilt).toMatchObject({ kind: "text" });
+    expect((rebuilt as { text: { fontSize: number; fontId: string } }).text)
+      .toMatchObject({ fontSize: 600, fontId: "inter" });
+  });
+
+  it("opens templates saved before the text existed", () => {
+    const old = createSceneTemplate({
+      name: "Template 1",
+      objects: [createSceneObject({ name: "Phone" })],
+    });
+
+    expect(isValidTemplate(JSON.parse(JSON.stringify(old)))).toBe(true);
+  });
+
+  it("rejects a text object without its text", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: sceneWithText(),
+    });
+    const broken = JSON.parse(JSON.stringify(template));
+
+    delete broken.objects[1].text;
+
+    expect(isValidTemplate(broken)).toBe(false);
+  });
+
+  it("changes the snapshot when the text changes", () => {
+    const [phone, text] = sceneWithText();
+
+    if (!isTextObject(text)) throw new Error("expected a text object");
+
+    const edited = { ...text, text: { ...text.text, content: "Outro" } };
+
+    expect(getTemplateSnapshot([phone, text], "static", null)).not.toBe(
+      getTemplateSnapshot([phone, edited], "static", null),
+    );
   });
 });

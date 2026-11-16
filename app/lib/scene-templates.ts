@@ -8,8 +8,10 @@ import {
 import {
   DEFAULT_SCREEN_FIT,
   getPlaceholderImageUrl,
+  isTextObject,
   type SceneObject,
 } from "./scene-objects";
+import { normalizeSceneText, type SceneText } from "./text-objects";
 import {
   EASING_IDS,
   type CubicBezier,
@@ -60,10 +62,13 @@ export type TemplateKeyframe = {
   transform: MotionTransform;
 };
 
-// Campos do SceneObject preservados no template. Ficam de fora `id` (recriado
+// Campos do aparelho preservados no template. Ficam de fora `id` (recriado
 // a cada aplicação), `imageUrl` (volta ao placeholder), `deletable` (derivado
 // da posição na lista) e o estado de debug (ferramenta de desenvolvimento).
-export type TemplateObject = {
+// Sem `kind`, o objeto é um aparelho — assim os templates de antes do texto
+// continuam abrindo, e uma cópia antiga do app só não conhece o que é novo.
+export type TemplateDeviceObject = {
+  kind?: "device";
   colors: Record<string, string>;
   deviceTheme: string;
   isVisible: boolean;
@@ -89,6 +94,32 @@ export type TemplateObject = {
   showTabletBezel: boolean;
 };
 
+/** Um texto da cena: leve (bytes), então entra no template, ao contrário das imagens. */
+export type TemplateTextObject = {
+  kind: "text";
+  isVisible: boolean;
+  /** Só em templates de Movimento. */
+  keyframes?: TemplateKeyframe[];
+  name: string;
+  opacity?: number;
+  positionX: number;
+  positionY: number;
+  positionZ: number;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  scale: number;
+  text: SceneText;
+};
+
+export type TemplateObject = TemplateDeviceObject | TemplateTextObject;
+
+export function isTemplateText(
+  object: TemplateObject,
+): object is TemplateTextObject {
+  return object.kind === "text";
+}
+
 export type SceneTemplate = {
   backgroundColor: string | null;
   camera: CameraPose | null;
@@ -106,23 +137,48 @@ type StoredTemplates = {
   version: number;
 };
 
+function toTemplateKeyframes(
+  object: SceneObject,
+  mode: TemplateMode,
+): { keyframes?: TemplateKeyframe[] } {
+  return mode === "motion"
+    ? {
+        keyframes: object.keyframes.map(
+          ({ bezier, easing, timeMs, transform }) => ({
+            ...(bezier ? { bezier: [...bezier] as CubicBezier } : {}),
+            easing,
+            timeMs,
+            transform: { ...transform },
+          }),
+        ),
+      }
+    : {};
+}
+
 function toTemplateObject(
   object: SceneObject,
   mode: TemplateMode,
 ): TemplateObject {
+  if (isTextObject(object)) {
+    return {
+      ...toTemplateKeyframes(object, mode),
+      kind: "text",
+      isVisible: object.isVisible,
+      name: object.name,
+      opacity: object.opacity,
+      positionX: object.positionX,
+      positionY: object.positionY,
+      positionZ: object.positionZ,
+      rotationX: object.rotationX,
+      rotationY: object.rotationY,
+      rotationZ: object.rotationZ,
+      scale: object.scale,
+      text: { ...object.text },
+    };
+  }
+
   return {
-    ...(mode === "motion"
-      ? {
-          keyframes: object.keyframes.map(
-            ({ bezier, easing, timeMs, transform }) => ({
-              ...(bezier ? { bezier: [...bezier] as CubicBezier } : {}),
-              easing,
-              timeMs,
-              transform: { ...transform },
-            }),
-          ),
-        }
-      : {}),
+    ...toTemplateKeyframes(object, mode),
     colors: { ...object.colors },
     deviceTheme: object.deviceTheme,
     isVisible: object.isVisible,
@@ -180,27 +236,51 @@ export function createSceneTemplate({
 // Reconstrói os objetos da cena a partir do template. O primeiro objeto herda
 // `deletable: false` para preservar o invariante de sempre haver uma camada.
 // Templates estáticos reconstroem os objetos sem keyframes.
+function fromTemplateKeyframes(keyframes: TemplateKeyframe[] | undefined) {
+  return (keyframes ?? []).map((keyframe) => ({
+    ...keyframe,
+    ...(keyframe.bezier ? { bezier: [...keyframe.bezier] as CubicBezier } : {}),
+    id: crypto.randomUUID(),
+    transform: {
+      ...keyframe.transform,
+      // Keyframes salvos antes da opacidade não a têm: 100%.
+      opacity: keyframe.transform.opacity ?? 1,
+    },
+  }));
+}
+
 export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
-  return template.objects.map((object, index) => {
+  return template.objects.map((object, index): SceneObject => {
+    if (isTemplateText(object)) {
+      return {
+        kind: "text",
+        deletable: index > 0,
+        id: crypto.randomUUID(),
+        isVisible: object.isVisible,
+        keyframes: fromTemplateKeyframes(object.keyframes),
+        name: object.name,
+        opacity: object.opacity ?? 1,
+        positionX: object.positionX,
+        positionY: object.positionY,
+        positionZ: object.positionZ,
+        rotationX: object.rotationX,
+        rotationY: object.rotationY,
+        rotationZ: object.rotationZ,
+        scale: object.scale,
+        // O texto vem de fora (template, link): passa pelos limites de novo.
+        text: normalizeSceneText(object.text),
+      };
+    }
+
     const model = DEVICE_MODELS[object.modelId];
 
     return {
+      kind: "device",
       colors: { ...object.colors },
       debugMode: false,
       debugPartColors: { ...model.initialDebugColors },
       deletable: index > 0,
-      keyframes: (object.keyframes ?? []).map((keyframe) => ({
-        ...keyframe,
-        ...(keyframe.bezier
-          ? { bezier: [...keyframe.bezier] as CubicBezier }
-          : {}),
-        id: crypto.randomUUID(),
-        transform: {
-          ...keyframe.transform,
-          // Keyframes salvos antes da opacidade não a têm: 100%.
-          opacity: keyframe.transform.opacity ?? 1,
-        },
-      })),
+      keyframes: fromTemplateKeyframes(object.keyframes),
       deviceTheme: object.deviceTheme,
       id: crypto.randomUUID(),
       imageFit: { ...DEFAULT_SCREEN_FIT },
@@ -272,11 +352,17 @@ function isValidTemplateObject(value: unknown): value is TemplateObject {
     return false;
   }
 
-  const object = value as Partial<TemplateObject>;
+  const object = value as Record<string, unknown>;
+
+  // Um texto não tem modelo: o que vale é o `text` ser um objeto. O conteúdo
+  // em si é completado e limitado depois, por `normalizeSceneText`.
+  const hasKind =
+    object.kind === "text"
+      ? typeof object.text === "object" && object.text !== null
+      : typeof object.modelId === "string" && object.modelId in DEVICE_MODELS;
 
   return (
-    typeof object.modelId === "string" &&
-    object.modelId in DEVICE_MODELS &&
+    hasKind &&
     typeof object.name === "string" &&
     typeof object.positionX === "number" &&
     typeof object.positionY === "number" &&

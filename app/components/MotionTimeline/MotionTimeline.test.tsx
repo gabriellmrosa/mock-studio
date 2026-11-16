@@ -5,6 +5,7 @@ import { DEFAULT_MOTION_FRAME, type MotionFrame } from "../../lib/motion-frame";
 import {
   DEFAULT_SCREEN_FIT,
   createSceneObject,
+  type DeviceObject,
   type SceneObject,
 } from "../../lib/scene-objects";
 
@@ -18,7 +19,7 @@ beforeAll(() => {
   }
 });
 
-function withVideo(object: SceneObject): SceneObject {
+function withVideo(object: DeviceObject): DeviceObject {
   return {
     ...object,
     screenSource: "video",

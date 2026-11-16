@@ -35,6 +35,7 @@ import type { MotionFrame } from "../../lib/motion-frame";
 import {
   getActiveScreenVideos,
   getScreenVideoClipDuration,
+  isDeviceObject,
   trimVideoClip,
   type ActiveScreenVideo,
   type SceneObject,
@@ -585,7 +586,7 @@ export default function MotionTimeline({
                       {/* O dobrável tem duas trilhas de vídeo: o rótulo diz a
                           tela. Nos outros aparelhos, só "Vídeo". */}
                       <span>
-                        {object.modelId !== "duo"
+                        {!isDeviceObject(object) || object.modelId !== "duo"
                           ? copy.screenSourceVideo
                           : screen === "outer"
                             ? copy.outerScreenLabel
