@@ -182,6 +182,30 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   React. Um campo de pose novo é opcional nos keyframes e templates salvos.
   As telas dele são planos nossos presos às metades, não as do arquivo.
 
+**Texto da cena**
+
+- O objeto da cena é `DeviceObject | TextObject` (`kind`). Código que lê
+  campo de aparelho (modelo, cores, telas) recebe `DeviceObject` ou testa
+  `isDeviceObject`; o que vale para os dois (pose, opacidade, keyframes) usa
+  a união. `getActiveScreenVideos` aceita qualquer objeto e devolve `[]` para
+  texto, então quem percorre a cena não precisa separá-los antes.
+- O texto é desenhado pelo troika (`SceneTextMesh`, via drei), plano e em
+  SDF. A posição dele é só a que o usuário escreveu: nada de posição de
+  partida por índice nem deslocamento de modelo. O índice dos aparelhos conta
+  só os aparelhos.
+- Fontes: as cinco de `public/fonts/`, auto-hospedadas, `.woff` (o troika não
+  lê `.woff2`). **Nenhuma requisição de fonte a CDN**: o troika buscaria uma
+  fonte de reserva no jsDelivr para a letra que falta, então o texto passa por
+  `toRenderableText` (o que as fontes não têm vira `?`) e o `unicodeFontsURL`
+  aponta para um caminho que não existe. Sem isso, uma letra faltando
+  derruba o texto inteiro. Fonte nova: arquivo em `public/fonts/`, entrada em
+  `text-fonts.ts` e linha em `public/fonts/LICENSES.md`.
+- Opacidade de texto é o `fillOpacity` do troika, não o caminho dos aparelhos
+  (`object-opacity.ts`): ali as duas passadas de profundidade tampariam o que
+  está atrás da caixa do texto. O grupo do texto leva `userData-isText`.
+- A caixa de um texto (alinhamento, enquadramento) só existe depois da
+  primeira composição: o texto conta como carregado no `onSync`, não ao montar.
+
 **Templates**
 
 - Guardam composição, fundo, câmera e, no Movimento, os keyframes — **nunca**

@@ -22,6 +22,7 @@ type LayersPanelProps = {
   locale: Locale;
   objects: SceneObject[];
   onAddObject: () => void;
+  onAddText: () => void;
   onApplyTemplate?: (id: string) => void;
   onFitObject?: (id: string) => void;
   onRestoreTemplateView?: (id: string) => void;
@@ -48,6 +49,7 @@ export default function LayersPanel({
   locale,
   objects,
   onAddObject,
+  onAddText,
   onApplyTemplate,
   onFitObject,
   onRestoreTemplateView,
@@ -187,14 +189,25 @@ export default function LayersPanel({
             title={copy.layersSectionTitle}
             className="section-objects"
             action={
-              <button
-                className="editor-section-action"
-                onClick={onAddObject}
-                aria-label={copy.addObject}
-                title={copy.addObject}
-              >
-                <Plus size={16} />
-              </button>
+              // O que entra na cena: um aparelho ou um texto.
+              <ContextMenu
+                items={[
+                  {
+                    type: "action",
+                    label: copy.addDeviceObject,
+                    onClick: onAddObject,
+                  },
+                  {
+                    type: "action",
+                    label: copy.addTextObject,
+                    onClick: onAddText,
+                  },
+                ]}
+                triggerAriaLabel={copy.addObject}
+                triggerClassName="editor-section-action"
+                triggerIcon={<Plus size={16} />}
+                triggerTitle={copy.addObject}
+              />
             }
           >
             <div className="layers-stack">

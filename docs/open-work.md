@@ -26,3 +26,19 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - **Tests:** five per mode, unique ids, theme colors match the models, keyframes only in `Motion`, sorted and within the Inspector ranges, and every template applies like a saved one.
 - **Verify in the browser** after composing: numbers alone got the proportions and gaps wrong three times.
 - Found along the way: in `Motion`, auto-fit ignored the timeline's height, so a single device ended up partly behind it — fixed by the video size (item 13), which fits the canvas above the timeline.
+
+## Text in the scene: what is left
+
+Text objects work (create, edit, move, animate, templates, links, PNG and video
+export). Known gaps:
+
+- Latin alphabet only. Other letters (Cyrillic, Greek, Latin Extended, CJK,
+  emoji) show as "?" because the fonts shipped are the latin subset and the app
+  never asks a CDN for a fallback. More coverage means more font files in
+  `public/fonts/` (and their entries in `text-fonts.ts`).
+- No inline editing on the canvas: the text is edited in the Inspector.
+- No outline, shadow or curve (troika supports all three), no letter-by-letter
+  animation, and no attaching a text to a device so it follows it.
+- The exported video with a text was checked only for completing and producing a
+  file (MP4, 1.5 s, 1920 x 1080); its frames were not inspected with ffprobe.
+- Browsers: checked in Chrome only.

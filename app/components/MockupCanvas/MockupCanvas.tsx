@@ -38,7 +38,7 @@ import {
   getScreenVideoKey,
   getScreenVideoTime,
   isDeviceObject,
-  type DeviceObject,
+  isTextObject,
   type SceneObject,
 } from "../../lib/scene-objects";
 import {
@@ -86,6 +86,7 @@ import {
   type ObjectAlignment,
 } from "./object-alignment";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
+import { SceneTextMesh } from "./SceneTextMesh";
 import { applyDuoFoldAngle, Duo } from "../Duo";
 import { warmUpModels } from "../../lib/model-warmup";
 import TimelineResizeHandle, {
@@ -249,6 +250,24 @@ function getObjectPosition(
   return [side * (0.7 + ring * 0.28), 0, side * 0.12];
 }
 
+/**
+ * A posição de um texto: só o que o usuário escreveu nos campos. Os aparelhos
+ * ganham uma posição de partida por índice (lado a lado) e um deslocamento do
+ * modelo; o texto não — nasce onde o usuário o põe, sem empurrar nem ser
+ * empurrado pelos aparelhos.
+ */
+function getResolvedTextPosition(object: {
+  positionX: number;
+  positionY: number;
+  positionZ: number;
+}): [number, number, number] {
+  return [
+    object.positionX * OBJECT_POSITION_MULTIPLIER,
+    object.positionY * OBJECT_POSITION_MULTIPLIER,
+    object.positionZ * OBJECT_POSITION_MULTIPLIER_Z,
+  ];
+}
+
 function getResolvedObjectPosition(
   object: SceneObject,
   index: number,
@@ -272,7 +291,7 @@ function getResolvedObjectPosition(
  */
 function applyMotionPose(
   group: THREE.Group,
-  object: DeviceObject,
+  object: SceneObject,
   index: number,
   timeMs: number,
   spawnOverrides: SpawnOverrides,
@@ -285,12 +304,14 @@ function applyMotionPose(
 
   // Reusa a mesma resolução de posição do render estático para o preview não
   // divergir do que o objeto mostra parado.
-  const [x, y, z] = getResolvedObjectPosition(
-    { ...object, ...sampled },
-    index,
-    spawnOverrides,
-    DEVICE_MODELS[object.modelId].modelSpawnOffset,
-  );
+  const [x, y, z] = isDeviceObject(object)
+    ? getResolvedObjectPosition(
+        { ...object, ...sampled },
+        index,
+        spawnOverrides,
+        DEVICE_MODELS[object.modelId].modelSpawnOffset,
+      )
+    : getResolvedTextPosition(sampled);
 
   group.position.set(x, y, z);
   group.rotation.set(
@@ -307,7 +328,7 @@ function applyMotionPose(
   applyObjectOpacity(group, sampled.opacity);
 
   // A abertura do dobrável é pose também, e vai pelo mesmo caminho.
-  if (object.modelId === "duo") {
+  if (isDeviceObject(object) && object.modelId === "duo") {
     applyDuoFoldAngle(group, sampled.foldAngle ?? object.foldAngle);
   }
 }
@@ -400,13 +421,16 @@ function SceneBridge({
       { objects: current, spawnOverrides: overrides } = latestSceneRef.current,
     ) {
       // Mesma contagem do render: a posição de spawn depende do índice entre
-      // os visíveis.
+      // os aparelhos visíveis (o texto não entra na conta).
+      let deviceIndex = 0;
+
       current
         .filter((object) => object.isVisible)
-        .forEach((object, index) => {
+        .forEach((object) => {
           const group = objectGroupsRef.current.get(object.id);
+          const index = isDeviceObject(object) ? deviceIndex++ : 0;
 
-          if (group && isDeviceObject(object)) {
+          if (group) {
             applyMotionPose(group, object, index, timeMs, overrides);
           }
         });
@@ -456,6 +480,13 @@ function SceneBridge({
   }, [advance, camera, gl, onVideoExportReady, scene]);
 
   const gridColors = getGridColors(canvasBgColor, uiTheme);
+  const visibleObjects = objects.filter((object) => object.isVisible);
+  // A posição de partida de um aparelho depende do índice entre os aparelhos
+  // visíveis; o texto não entra na conta, ou criar um texto empurraria os
+  // aparelhos para outro lugar.
+  const deviceIndexById = new Map(
+    visibleObjects.filter(isDeviceObject).map((object, index) => [object.id, index]),
+  );
 
   return (
     <>
@@ -475,13 +506,71 @@ function SceneBridge({
       />
       <Bounds margin={1.18}>
         <group ref={sceneRef}>
-          {objects.filter((object) => object.isVisible).map((object, index) => {
-            // O texto entra na cena junto com o render dele; por ora só se
-            // desenham aparelhos.
-            if (!isDeviceObject(object)) {
-              return null;
+          {visibleObjects.map((object) => {
+            if (isTextObject(object)) {
+              const sampledText =
+                motionPlayheadMs !== null
+                  ? sampleDisplayedMotion(object, motionPlayheadMs)
+                  : null;
+              const shownText = sampledText
+                ? { ...object, ...sampledText }
+                : object;
+
+              return (
+                <Suspense
+                  key={object.id}
+                  fallback={
+                    <SceneObjectLoadingFallback
+                      id={object.id}
+                      onObjectLoadStateChange={onObjectLoadStateChange}
+                    />
+                  }
+                >
+                  {motionStartedAt !== null && hasMotion(object) ? (
+                    <MotionDriver
+                      groupsRef={objectGroupsRef}
+                      index={0}
+                      object={object}
+                      spawnOverrides={spawnOverrides}
+                      startedAt={motionStartedAt}
+                    />
+                  ) : null}
+                  <group
+                    name={object.id}
+                    ref={(node) => {
+                      if (node) {
+                        objectGroupsRef.current.set(object.id, node);
+                      } else {
+                        objectGroupsRef.current.delete(object.id);
+                      }
+                    }}
+                    onDoubleClick={(event) =>
+                      handleObjectDoubleClick(event, object.id)
+                    }
+                    position={getResolvedTextPosition(shownText)}
+                    rotation={[
+                      (shownText.rotationX * Math.PI) / 180,
+                      (shownText.rotationY * Math.PI) / 180,
+                      (shownText.rotationZ * Math.PI) / 180,
+                    ]}
+                    scale={shownText.scale}
+                    userData-isText
+                    userData-opacity={shownText.opacity}
+                  >
+                    {/* O texto só está pronto depois da composição (a caixa
+                        dele ainda não existe antes): é então que a cena o
+                        conta como carregado e se enquadra de novo. */}
+                    <SceneTextMesh
+                      onSync={() => onObjectResolved(object.id)}
+                      opacity={shownText.opacity}
+                      text={object.text}
+                    />
+                  </group>
+                </Suspense>
+              );
             }
 
+            const index = deviceIndexById.get(object.id) ?? 0;
             const model = DEVICE_MODELS[object.modelId];
             // Em modo movimento a cena inteira mostra o instante do playhead.
             // É só exibição: o transform estático do objeto não é tocado.
@@ -754,7 +843,7 @@ function MotionDriver({
 }: {
   groupsRef: { current: Map<string, THREE.Group> };
   index: number;
-  object: DeviceObject;
+  object: SceneObject;
   spawnOverrides: SpawnOverrides;
   startedAt: number;
 }) {
@@ -799,7 +888,7 @@ function SceneObjectResolvedReporter({
   onObjectResolved,
 }: {
   id: string;
-  modelId: DeviceObject["modelId"];
+  modelId: string;
   onObjectResolved: (id: string) => void;
 }) {
   useEffect(() => {

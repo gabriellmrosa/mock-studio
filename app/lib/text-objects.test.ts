@@ -4,7 +4,11 @@ import {
   MAX_TEXT_LENGTH,
   MIN_TEXT_FONT_SIZE,
   createTextObject,
+  duplicateTextObject,
+  isDefaultTextPose,
   normalizeSceneText,
+  resetTextObject,
+  toRenderableText,
 } from "./text-objects";
 import {
   createSceneObject,
@@ -65,6 +69,8 @@ describe("normalizeSceneText", () => {
     expect(text.align).toBe(DEFAULT_TEXT.align);
     expect(text.color).toBe(DEFAULT_TEXT.color);
     expect(normalizeSceneText({ color: "#ABCDEF" }).color).toBe("#abcdef");
+    // O campo de cor aceita #rgb: vira #rrggbb, não cai no padrão.
+    expect(normalizeSceneText({ color: "#F80" }).color).toBe("#ff8800");
   });
 
   it("treats a missing or invalid width as fit (no wrapping)", () => {
@@ -132,3 +138,55 @@ describe("text fonts", () => {
     expect(isTextFontId(undefined)).toBe(false);
   });
 });
+
+describe("toRenderableText", () => {
+  it("keeps Portuguese and English, with accents and common punctuation", () => {
+    const text = "Lançamento — “ação” é 5€… ÀÉÎÕÜ\nsegunda linha";
+
+    expect(toRenderableText(text)).toBe(text);
+  });
+
+  it("turns what the fonts do not have into a question mark, one per character", () => {
+    expect(toRenderableText("Olá 日本 😀")).toBe("Olá ?? ?");
+  });
+
+  it("normalizes line breaks", () => {
+    expect(toRenderableText("a\r\nb\rc")).toBe("a\nb\nc");
+  });
+});
+
+describe("duplicating and resetting a text", () => {
+  it("duplicates it offset, with its own id, keyframes and text", () => {
+    const source = {
+      ...createTextObject({ content: "Olá", name: "Título", id: "a" }),
+      keyframes: insertKeyframe(
+        createTextObject({ content: "x", name: "T" }),
+        500,
+      ).keyframes,
+      positionX: 1,
+    };
+    const copy = duplicateTextObject({ name: "Título copy", source });
+
+    expect(copy.id).not.toBe("a");
+    expect(copy.positionX).toBeGreaterThan(1);
+    expect(copy.positionY).toBeLessThan(source.positionY);
+    expect(copy.text).toEqual(source.text);
+    expect(copy.text).not.toBe(source.text);
+    expect(copy.keyframes[0].id).not.toBe(source.keyframes[0].id);
+  });
+
+  it("knows when the pose is the default and resets it", () => {
+    const text = createTextObject({ content: "x", name: "T" });
+    const moved = { ...text, positionX: 2, rotationZ: 30, opacity: 0.4 };
+
+    expect(isDefaultTextPose(text)).toBe(true);
+    expect(isDefaultTextPose(moved)).toBe(false);
+
+    const reset = resetTextObject(moved);
+
+    expect(isDefaultTextPose(reset)).toBe(true);
+    // O que ele diz e como se vê não é pose: o reset não toca.
+    expect(reset.text).toEqual(moved.text);
+  });
+});
+

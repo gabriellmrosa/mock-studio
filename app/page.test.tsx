@@ -82,20 +82,51 @@ jest.mock("./components/InspectorPanel/InspectorPanel", () => ({
   default: ({
     object,
     onModelChange,
+    onResetObject,
+    onUpdateText,
   }: {
-    object: { name: string; modelId: string; positionX: number } | null;
+    object: {
+      name: string;
+      modelId?: string;
+      positionX: number;
+      positionZ: number;
+      text?: { content: string; fontSize: number };
+    } | null;
     onModelChange: (modelId: string) => void;
+    onResetObject: () => void;
+    onUpdateText: (patch: { content?: string; fontSize?: number }) => void;
   }) => (
     <aside data-testid="inspector-panel">
       <button type="button" onClick={() => onModelChange("smartwatch")}>
         change-model-smartwatch
       </button>
+      <button type="button" onClick={() => onUpdateText({ content: "Novo" })}>
+        set-text
+      </button>
+      <button type="button" onClick={() => onUpdateText({ fontSize: 99999 })}>
+        set-huge-size
+      </button>
+      <button type="button" onClick={onResetObject}>
+        reset-object
+      </button>
       {object
-        ? `${object.name} :: ${object.modelId} :: x=${object.positionX.toFixed(2)}`
+        ? object.text
+          ? `${object.name} :: text "${object.text.content}" :: size=${object.text.fontSize} :: z=${object.positionZ.toFixed(2)}`
+          : `${object.name} :: ${object.modelId} :: x=${object.positionX.toFixed(2)}`
         : "no-selection"}
     </aside>
   ),
 }));
+
+/** O "+" abre um menu: um aparelho ou um texto. */
+function addFromMenu(kind: "Device" | "Text") {
+  // O menu de mentira não fecha sozinho ao escolher; o de verdade fecha.
+  if (!screen.queryByRole("button", { name: kind })) {
+    fireEvent.click(screen.getByLabelText("Add object"));
+  }
+
+  fireEvent.click(screen.getByRole("button", { name: kind }));
+}
 
 describe("Home page layers and selection flow", () => {
   beforeAll(() => {
@@ -121,7 +152,7 @@ describe("Home page layers and selection flow", () => {
       "Object 1 :: smartphone :: x=0.00",
     );
 
-    fireEvent.click(screen.getByLabelText("Add object"));
+    addFromMenu("Device");
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
       "Object 2 :: smartphone :: x=1.95",
@@ -132,7 +163,7 @@ describe("Home page layers and selection flow", () => {
   it("selects an object from the mocked canvas", () => {
     render(<Home />);
 
-    fireEvent.click(screen.getByLabelText("Add object"));
+    addFromMenu("Device");
     fireEvent.click(screen.getByRole("button", { name: "select-Object 1" }));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
@@ -143,7 +174,7 @@ describe("Home page layers and selection flow", () => {
   it("toggles visibility from the layer eye button", () => {
     render(<Home />);
 
-    fireEvent.click(screen.getByLabelText("Add object"));
+    addFromMenu("Device");
 
     const secondLayer = screen.getByText("Object 2").closest('[role="button"]');
 
@@ -158,7 +189,7 @@ describe("Home page layers and selection flow", () => {
   it("falls back to the base object when the selected object is removed", () => {
     render(<Home />);
 
-    fireEvent.click(screen.getByLabelText("Add object"));
+    addFromMenu("Device");
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Object 2");
 
     const objectOptionsButtons = screen.getAllByLabelText("Object options");
@@ -193,10 +224,80 @@ describe("Home page layers and selection flow", () => {
       "Object 1 :: smartwatch :: x=0.00",
     );
 
-    fireEvent.click(screen.getByLabelText("Add object"));
+    addFromMenu("Device");
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
       "Object 2 :: smartphone :: x=1.65",
+    );
+  });
+
+  it("adds a text in front of the devices and selects it", () => {
+    render(<Home />);
+
+    addFromMenu("Text");
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
+      'Text 1 :: text "Your text"',
+    );
+    // À frente dos aparelhos, para não nascer dentro de um.
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent("z=0.25");
+    expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
+  });
+
+  it("numbers the texts apart from the devices", () => {
+    render(<Home />);
+
+    addFromMenu("Text");
+    addFromMenu("Device");
+    addFromMenu("Text");
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Text 2");
+  });
+
+  it("edits the selected text and keeps the numbers inside their limits", () => {
+    render(<Home />);
+
+    addFromMenu("Text");
+    fireEvent.click(screen.getByText("set-text"));
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
+      'text "Novo"',
+    );
+
+    fireEvent.click(screen.getByText("set-huge-size"));
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
+      "size=600",
+    );
+  });
+
+  it("duplicates a text, offset from the original, and selects the copy", () => {
+    render(<Home />);
+
+    addFromMenu("Text");
+
+    const optionButtons = screen.getAllByLabelText("Object options");
+
+    fireEvent.click(optionButtons[1]);
+    fireEvent.click(screen.getByText("Duplicate"));
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
+      'Text 1 copy :: text "Your text"',
+    );
+    expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:3");
+  });
+
+  it("resets the pose of a text without touching what it says", () => {
+    render(<Home />);
+
+    addFromMenu("Text");
+    fireEvent.click(screen.getByText("set-text"));
+    fireEvent.click(screen.getByText("reset-object"));
+
+    // A pose volta ao padrão (z=0); o texto fica como estava.
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent("z=0.00");
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
+      'text "Novo"',
     );
   });
 });

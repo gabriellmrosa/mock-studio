@@ -26,6 +26,27 @@ jest.mock("../ContextMenu/ContextMenu", () => ({
 
 const copy: AppCopy = {
   addObject: "Add object",
+  addDeviceObject: "Device",
+  addTextObject: "Text",
+  textObjectName: "Text",
+  textDefaultContent: "Your text",
+  textSectionTitle: "Text",
+  textContentLabel: "Content",
+  textFontLabel: "Font",
+  textWeightLabel: "Weight",
+  textWeightRegular: "Regular",
+  textWeightBold: "Bold",
+  textSizeLabel: "Size",
+  textColorLabel: "Color",
+  textAlignLabel: "Text alignment",
+  textAlignLeft: "Left",
+  textAlignCenter: "Center",
+  textAlignRight: "Right",
+  textLineHeightLabel: "Line height",
+  textLetterSpacingLabel: "Letter spacing",
+  textWrapLabel: "Wrap lines",
+  textMaxWidthLabel: "Width",
+  textUnsupportedHint: "Letters outside the Latin alphabet show as ?",
   appTitle: "Mock Studio",
   appSubtitle: "Visual mockup editor",
   baseObject: "Base object",
@@ -252,6 +273,7 @@ describe("LayersPanel", () => {
         locale="en-US"
         objects={[object]}
         onAddObject={jest.fn()}
+        onAddText={jest.fn()}
         onDuplicateObject={jest.fn()}
         onLocaleChange={jest.fn()}
         onRenameObject={jest.fn()}
@@ -282,6 +304,7 @@ describe("LayersPanel", () => {
         locale="en-US"
         objects={[object]}
         onAddObject={jest.fn()}
+        onAddText={jest.fn()}
         onDuplicateObject={jest.fn()}
         onLocaleChange={jest.fn()}
         onRenameObject={jest.fn()}
@@ -311,6 +334,7 @@ describe("LayersPanel", () => {
         locale="en-US"
         objects={[object]}
         onAddObject={jest.fn()}
+        onAddText={jest.fn()}
         onDuplicateObject={jest.fn()}
         onLocaleChange={jest.fn()}
         onRenameObject={onRenameObject}

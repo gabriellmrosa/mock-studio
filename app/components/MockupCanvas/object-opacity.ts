@@ -139,8 +139,31 @@ function ownedFor(state: GroupState, mesh: THREE.Mesh): OwnedMesh {
   return owned;
 }
 
+/**
+ * A opacidade de um texto: só o preenchimento das letras (`fillOpacity` do
+ * troika, um uniform — não refaz a composição). Os aparelhos precisam das duas
+ * passadas e de cópias de material; um texto não: ele é um plano de letras, sem
+ * partes por trás de outras, e a passada de profundidade tamparia o que está
+ * atrás da caixa inteira.
+ */
+function applyTextOpacity(group: THREE.Object3D, target: number) {
+  group.visible = target > 0;
+  group.traverse((child) => {
+    if ("fillOpacity" in child) {
+      (child as THREE.Object3D & { fillOpacity: number }).fillOpacity = target;
+    }
+  });
+}
+
 export function applyObjectOpacity(group: THREE.Object3D, opacity: number) {
   const target = Math.min(1, Math.max(0, opacity));
+
+  if (group.userData.isText) {
+    applyTextOpacity(group, target);
+
+    return;
+  }
+
   const state = groups.get(group);
 
   // Totalmente transparente é ausência: escondido, sem escrever

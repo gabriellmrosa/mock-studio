@@ -1,3 +1,4 @@
+import { cloneKeyframes } from "./scene-motion";
 import type { TextObject } from "./scene-objects";
 import {
   DEFAULT_TEXT_FONT_ID,
@@ -15,7 +16,7 @@ import {
  *
  * Os tamanhos estão em unidades da cena, as mesmas dos aparelhos. Os limites
  * abaixo protegem o app (um texto de 500 mil letras travaria o worker do
- * troika) e serão calibrados com o render.
+ * troika). O padrão (64) é cerca de 15% da altura de um celular na cena.
  */
 
 export type TextAlign = "left" | "center" | "right";
@@ -58,7 +59,7 @@ export const DEFAULT_TEXT: SceneText = {
   color: "#ffffff",
   content: "",
   fontId: DEFAULT_TEXT_FONT_ID,
-  fontSize: 96,
+  fontSize: 64,
   letterSpacing: 0,
   // 1.2 é o padrão dos editores para títulos; para corpo de texto, 1.4 a 1.6.
   lineHeight: 1.2,
@@ -67,6 +68,20 @@ export const DEFAULT_TEXT: SceneText = {
 };
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+const SHORT_HEX_COLOR = /^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/;
+
+/** `#rgb` vira `#rrggbb` (é o que o campo de cor aceita), em minúsculas; senão `null`. */
+function normalizeHexColor(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+
+  if (HEX_COLOR.test(value)) return value.toLowerCase();
+
+  const short = SHORT_HEX_COLOR.exec(value);
+
+  return short
+    ? `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`.toLowerCase()
+    : null;
+}
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
@@ -88,10 +103,7 @@ export function normalizeSceneText(value: Partial<SceneText> | undefined): Scene
     align: TEXT_ALIGNS.includes(input.align as TextAlign)
       ? (input.align as TextAlign)
       : DEFAULT_TEXT.align,
-    color:
-      typeof input.color === "string" && HEX_COLOR.test(input.color)
-        ? input.color.toLowerCase()
-        : DEFAULT_TEXT.color,
+    color: normalizeHexColor(input.color) ?? DEFAULT_TEXT.color,
     content:
       typeof input.content === "string"
         ? input.content.slice(0, MAX_TEXT_LENGTH)
@@ -165,7 +177,74 @@ export function createTextObject({
   };
 }
 
+/**
+ * O que as cinco fontes desenham: o latim (ASCII e Latin-1, com acentos) e a
+ * pontuação comum — travessões, aspas curvas, reticências — e o euro. Qualquer
+ * outra letra (emoji, japonês, cirílico) faltaria na fonte e o troika iria
+ * buscar uma de reserva numa CDN; como o app não faz essa busca, o texto
+ * inteiro deixaria de aparecer. Então, no desenho, o que está fora vira "?".
+ * O conteúdo guardado não muda: só o que vai para o render.
+ */
+const UNSUPPORTED_CHARACTERS =
+  /[^\n\u0020-\u007E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2026\u20AC]/gu;
+
+export function toRenderableText(content: string) {
+  return content.replace(/\r\n?/g, "\n").replace(UNSUPPORTED_CHARACTERS, "?");
+}
+
 /** Uma cópia do texto, com os mesmos campos e sem compartilhar nada. */
 export function cloneSceneText(text: SceneText): SceneText {
   return { ...text };
+}
+
+/** Quanto a cópia fica deslocada do original, em unidades de posição. */
+const DUPLICATE_OFFSET = 0.15;
+
+/**
+ * Duplica um texto um pouco abaixo e à direita do original: no mesmo lugar, a
+ * cópia pareceria não ter sido feita. Os keyframes ganham ids novos — a
+ * seleção da timeline os procura na cena toda.
+ */
+export function duplicateTextObject({
+  id,
+  name,
+  source,
+}: {
+  id?: string;
+  name: string;
+  source: TextObject;
+}): TextObject {
+  return {
+    ...source,
+    deletable: true,
+    id: id ?? crypto.randomUUID(),
+    keyframes: cloneKeyframes(source.keyframes),
+    name,
+    positionX: source.positionX + DUPLICATE_OFFSET,
+    positionY: source.positionY - DUPLICATE_OFFSET,
+    text: cloneSceneText(source.text),
+  };
+}
+
+type PoseFields = Pick<
+  TextObject,
+  | "opacity"
+  | "positionX"
+  | "positionY"
+  | "positionZ"
+  | "rotationX"
+  | "rotationY"
+  | "rotationZ"
+  | "scale"
+>;
+
+/** Se o texto já está na pose de partida — aí o reset não teria o que fazer. */
+export function isDefaultTextPose(object: PoseFields) {
+  return (Object.keys(DEFAULT_TEXT_POSE) as (keyof PoseFields)[]).every(
+    (key) => object[key] === DEFAULT_TEXT_POSE[key],
+  );
+}
+
+export function resetTextObject(object: TextObject): TextObject {
+  return { ...object, ...DEFAULT_TEXT_POSE };
 }

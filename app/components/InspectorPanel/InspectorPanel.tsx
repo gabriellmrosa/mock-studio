@@ -6,6 +6,11 @@ import { FolderTabPanel, FolderTabs } from "../FolderTabs/FolderTabs";
 import "./InspectorPanel.css";
 import { useRef, useState, type ReactNode } from "react";
 import ColorRow from "../ColorRow/ColorRow";
+import TextControls from "../TextControls/TextControls";
+import {
+  isDefaultTextPose,
+  type SceneText,
+} from "../../lib/text-objects";
 import Control from "../Control/Control";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
 import type { ObjectAlignment } from "../MockupCanvas/object-alignment";
@@ -19,8 +24,11 @@ import {
   getActiveOuterScreenFit,
   getActiveScreenFit,
   isDefaultObjectTransform,
+  isDeviceObject,
+  isTextObject,
   isPlaceholderImageUrl,
   type DeviceObject,
+  type SceneObject,
   type ScreenFit,
   type ScreenVideo,
 } from "../../lib/scene-objects";
@@ -80,7 +88,7 @@ const NOTEBOOK_SCREEN_ONLY_COLOR_KEYS = new Set([
 
 type InspectorPanelProps = {
   copy: AppCopy;
-  object: DeviceObject | null;
+  object: SceneObject | null;
   onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onVideoUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   /** Volta a tela ao placeholder. */
@@ -91,6 +99,8 @@ type InspectorPanelProps = {
   onUpdateScreenFit: (patch: Partial<ScreenFit>) => void;
   onModelChange: (modelId: DeviceObject["modelId"]) => void;
   onResetObject: () => void;
+  /** Muda o que o texto selecionado diz ou como se vê. */
+  onUpdateText: (patch: Partial<SceneText>) => void;
   /** Alinha o objeto ao quadro do canvas, na pose em edição. */
   onAlignObject: (alignment: ObjectAlignment) => void;
   onThemeColorChange: (part: string, hex: string) => void;
@@ -135,6 +145,7 @@ export default function InspectorPanel({
   onUpdateScreenFit,
   onModelChange,
   onResetObject,
+  onUpdateText,
   onAlignObject,
   onThemeColorChange,
   onThemeChange,
@@ -173,10 +184,20 @@ export default function InspectorPanel({
       : undefined;
   const editedTransform = editedKeyframe?.transform ?? object;
 
-  const model = DEVICE_MODEL_LIST.find((item) => item.id === object.modelId);
+  // Um texto não tem modelo, tela nem cores de aparelho: essas seções só
+  // existem para aparelhos, e o texto ganha a dele. Pose, opacidade e
+  // alinhamento são de todo objeto.
+  const device = isDeviceObject(object) ? object : null;
+  const textObject = isTextObject(object) ? object : null;
+  // O aparelho gira 180° em Y (o modelo olha para trás no arquivo) e o campo
+  // mostra o desvio disso; o texto já nasce de frente.
+  const baseRotationY = textObject ? 0 : 180;
+  const model = device
+    ? DEVICE_MODEL_LIST.find((item) => item.id === device.modelId)
+    : undefined;
   const uploadRecommendation = model?.recommendedUploadSize ?? "";
   const customizableColorKeys = (model?.customizableColorKeys ?? []).filter((part) =>
-    object.modelId === "notebook" && !object.showNotebookKeyboard
+    device?.modelId === "notebook" && !device.showNotebookKeyboard
       ? NOTEBOOK_SCREEN_ONLY_COLOR_KEYS.has(part)
       : true,
   );
@@ -184,26 +205,22 @@ export default function InspectorPanel({
   const positionXRange = Math.max(5, Math.ceil(Math.abs(object.positionX)) + 1);
   // A faixa de aparência: nome e cor do tema, ou "Personalizada" quando alguma
   // parte foi editada à mão — com a cor do corpo, que é a que se reconhece.
-  const isCustomTheme = model
-    ? isCustomDeviceTheme(model, object.deviceTheme, object.colors)
-    : false;
+  const isCustomTheme =
+    model && device
+      ? isCustomDeviceTheme(model, device.deviceTheme, device.colors)
+      : false;
   const currentThemeName = isCustomTheme
     ? copy.themeCustomName
-    : (copy.themeNames[object.deviceTheme] ?? object.deviceTheme);
+    : (copy.themeNames[device?.deviceTheme ?? ""] ?? device?.deviceTheme ?? "");
   const currentThemeSwatch =
-    (isCustomTheme && model?.primaryColorKey
-      ? object.colors[model.primaryColorKey]
-      : model?.themeOptions.find((theme) => theme.id === object.deviceTheme)
+    (isCustomTheme && model?.primaryColorKey && device
+      ? device.colors[model.primaryColorKey]
+      : model?.themeOptions.find((theme) => theme.id === device?.deviceTheme)
           ?.preview) ?? "transparent";
-  return (
-    <aside className="editor-sidebar editor-sidebar-shell inspector-sidebar inspector-sidebar-scroll">
-      <InspectorPanelHeader
-        eyebrow={copy.propertiesEyebrow}
-        title={object.name}
-        titleClassName="panel-title-object"
-      />
-
-      <div className="inspector-stack">
+  // As seções que só um aparelho tem: modelo, tela e cor. O parâmetro leva o
+  // nome `object` de propósito — o corpo é o de sempre, agora com o tipo certo.
+  const renderDeviceSections = (object: DeviceObject) => (
+    <>
         <PanelSection
           title={copy.modelLabel}
           className="--without-border-bottom"
@@ -332,6 +349,28 @@ export default function InspectorPanel({
             />
           </ScreenFileRow>
         </PanelSection>
+    </>
+  );
+
+  return (
+    <aside className="editor-sidebar editor-sidebar-shell inspector-sidebar inspector-sidebar-scroll">
+      <InspectorPanelHeader
+        eyebrow={copy.propertiesEyebrow}
+        title={object.name}
+        titleClassName="panel-title-object"
+      />
+
+      <div className="inspector-stack">
+        {device ? renderDeviceSections(device) : null}
+
+        {textObject ? (
+          <TextControls
+            copy={copy}
+            text={textObject.text}
+            uiTheme={uiTheme}
+            onChange={onUpdateText}
+          />
+        ) : null}
 
         <PanelSection
           title={
@@ -349,7 +388,11 @@ export default function InspectorPanel({
             // de cada keyframe, e ele não se aplica.
             motionTab === "static" ? (
               <ResetButton
-                disabled={isDefaultObjectTransform(object)}
+                disabled={
+                  device
+                    ? isDefaultObjectTransform(device)
+                    : isDefaultTextPose(object)
+                }
                 label={copy.resetObjectButton}
                 onReset={onResetObject}
               />
@@ -366,12 +409,13 @@ export default function InspectorPanel({
 
             {/* A abertura é pose: no Movimento, cada keyframe tem a sua, e o
                 aparelho abre ou fecha entre eles. */}
-            {object.modelId === "duo" ? (
+            {device?.modelId === "duo" ? (
               <div className="transform-group transform-group-offset">
                 <Control
                   label={copy.foldAngle}
                   value={Math.round(
-                    editedTransform.foldAngle ?? DEFAULT_FOLD_ANGLE,
+                    (editedTransform as { foldAngle?: number }).foldAngle ??
+                      DEFAULT_FOLD_ANGLE,
                   )}
                   setValue={onUpdateFoldAngle}
                   min={0}
@@ -443,11 +487,11 @@ export default function InspectorPanel({
               <Control
                 label={copy.rotationY}
                 value={editedTransform.rotationY}
-                displayValue={editedTransform.rotationY - 180}
+                displayValue={editedTransform.rotationY - baseRotationY}
                 setValue={(value) =>
                   onUpdateRotation({
                     rotationX: editedTransform.rotationX,
-                    rotationY: value + 180,
+                    rotationY: value + baseRotationY,
                     rotationZ: editedTransform.rotationZ,
                   })
                 }

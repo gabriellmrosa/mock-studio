@@ -159,3 +159,38 @@ describe("getAlignmentOffset", () => {
     ).toBeNull();
   });
 });
+
+describe("collectWorldVertices with text", () => {
+  it("uses the corners of the text block, not the glyph quad", () => {
+    const group = new THREE.Group();
+    const text = new THREE.Mesh(new THREE.PlaneGeometry(1, 1));
+
+    // O que o troika expõe depois da composição: [minX, minY, maxX, maxY].
+    (text as unknown as { textRenderInfo: object }).textRenderInfo = {
+      blockBounds: [-100, -20, 100, 20],
+    };
+    group.position.set(10, 5, 0);
+    group.scale.setScalar(2);
+    group.add(text);
+
+    const vertices = collectWorldVertices(group);
+
+    expect(vertices).toHaveLength(12);
+    const xs = [0, 3, 6, 9].map((i) => vertices[i]);
+    const ys = [1, 4, 7, 10].map((i) => vertices[i]);
+
+    expect(Math.min(...xs)).toBeCloseTo(-190);
+    expect(Math.max(...xs)).toBeCloseTo(210);
+    expect(Math.min(...ys)).toBeCloseTo(-35);
+    expect(Math.max(...ys)).toBeCloseTo(45);
+  });
+
+  it("is empty before the text is laid out (no block yet)", () => {
+    const group = new THREE.Group();
+
+    group.add(new THREE.Mesh(new THREE.BufferGeometry()));
+
+    expect(collectWorldVertices(group)).toHaveLength(0);
+  });
+});
+

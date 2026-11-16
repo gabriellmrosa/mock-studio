@@ -5,6 +5,27 @@ export type AppCopy = {
   appTitle: string;
   appSubtitle: string;
   addObject: string;
+  addDeviceObject: string;
+  addTextObject: string;
+  textObjectName: string;
+  textDefaultContent: string;
+  textSectionTitle: string;
+  textContentLabel: string;
+  textFontLabel: string;
+  textWeightLabel: string;
+  textWeightRegular: string;
+  textWeightBold: string;
+  textSizeLabel: string;
+  textColorLabel: string;
+  textAlignLabel: string;
+  textAlignLeft: string;
+  textAlignCenter: string;
+  textAlignRight: string;
+  textLineHeightLabel: string;
+  textLetterSpacingLabel: string;
+  textWrapLabel: string;
+  textMaxWidthLabel: string;
+  textUnsupportedHint: string;
   baseObject: string;
   hideObject: string;
   showObject: string;
@@ -219,6 +240,27 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     appTitle: "Mock Studio",
     appSubtitle: "Composição visual de mockups",
     addObject: "Adicionar objeto",
+    addDeviceObject: "Aparelho",
+    addTextObject: "Texto",
+    textObjectName: "Texto",
+    textDefaultContent: "Seu texto",
+    textSectionTitle: "Texto",
+    textContentLabel: "Conteúdo",
+    textFontLabel: "Fonte",
+    textWeightLabel: "Peso",
+    textWeightRegular: "Normal",
+    textWeightBold: "Negrito",
+    textSizeLabel: "Tamanho",
+    textColorLabel: "Cor",
+    textAlignLabel: "Alinhamento do texto",
+    textAlignLeft: "Esquerda",
+    textAlignCenter: "Centro",
+    textAlignRight: "Direita",
+    textLineHeightLabel: "Entrelinha",
+    textLetterSpacingLabel: "Espaço entre letras",
+    textWrapLabel: "Quebrar linhas",
+    textMaxWidthLabel: "Largura",
+    textUnsupportedHint: "Letras fora do alfabeto latino aparecem como ?",
     baseObject: "Objeto base",
     hideObject: "Ocultar",
     showObject: "Mostrar",
@@ -500,6 +542,27 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     appTitle: "Mock Studio",
     appSubtitle: "Visual mockup composition",
     addObject: "Add object",
+    addDeviceObject: "Device",
+    addTextObject: "Text",
+    textObjectName: "Text",
+    textDefaultContent: "Your text",
+    textSectionTitle: "Text",
+    textContentLabel: "Content",
+    textFontLabel: "Font",
+    textWeightLabel: "Weight",
+    textWeightRegular: "Regular",
+    textWeightBold: "Bold",
+    textSizeLabel: "Size",
+    textColorLabel: "Color",
+    textAlignLabel: "Text alignment",
+    textAlignLeft: "Left",
+    textAlignCenter: "Center",
+    textAlignRight: "Right",
+    textLineHeightLabel: "Line height",
+    textLetterSpacingLabel: "Letter spacing",
+    textWrapLabel: "Wrap lines",
+    textMaxWidthLabel: "Width",
+    textUnsupportedHint: "Letters outside the Latin alphabet show as ?",
     baseObject: "Base object",
     hideObject: "Hide",
     showObject: "Show",

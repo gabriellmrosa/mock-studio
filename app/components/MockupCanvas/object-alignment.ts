@@ -61,6 +61,32 @@ export function collectWorldVertices(object: THREE.Object3D) {
   object.updateWorldMatrix(true, true);
   object.traverse((child) => {
     const mesh = child as THREE.Mesh;
+    const blockBounds = (
+      mesh as THREE.Mesh & {
+        textRenderInfo?: { blockBounds?: [number, number, number, number] };
+      }
+    ).textRenderInfo?.blockBounds;
+
+    // Um texto (troika) é uma geometria instanciada: os vértices dela são o
+    // quadrado de uma letra, não o texto. O que ocupa a tela é a caixa do bloco
+    // — [minX, minY, maxX, maxY], no plano do texto —, que só existe depois
+    // da primeira composição.
+    if (blockBounds && mesh.visible) {
+      const [minX, minY, maxX, maxY] = blockBounds;
+
+      for (const [x, y] of [
+        [minX, minY],
+        [maxX, minY],
+        [maxX, maxY],
+        [minX, maxY],
+      ]) {
+        vertex.set(x, y, 0).applyMatrix4(mesh.matrixWorld);
+        vertices.push(vertex.x, vertex.y, vertex.z);
+      }
+
+      return;
+    }
+
     const position = mesh.isMesh
       ? mesh.geometry?.getAttribute("position")
       : undefined;

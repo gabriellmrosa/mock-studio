@@ -38,6 +38,11 @@ export const TEXT_FONTS: Record<TextFontId, TextFontInfo> = {
   "jetbrains-mono": { label: "JetBrains Mono", role: "mono" },
 };
 
+/** Onde o arquivo da fonte está (`public/fonts/`): `inter-400.woff`, `inter-700.woff`. */
+export function getTextFontUrl(fontId: TextFontId, weight: TextWeight) {
+  return `/fonts/${fontId}-${weight === "bold" ? 700 : 400}.woff`;
+}
+
 export function isTextFontId(value: unknown): value is TextFontId {
   return (
     typeof value === "string" &&

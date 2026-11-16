@@ -26,6 +26,13 @@ import Snackbar, {
 } from "./components/Snackbar/Snackbar";
 import { APP_VERSION } from "./lib/app-version";
 import { buildNextDeviceColors } from "./lib/device-colors";
+import {
+  createTextObject,
+  duplicateTextObject,
+  normalizeSceneText,
+  resetTextObject,
+  type SceneText,
+} from "./lib/text-objects";
 import { APP_COPY, type Locale, type UiTheme } from "./lib/i18n";
 import {
   probeImageFile,
@@ -51,6 +58,7 @@ import {
   duplicateSceneObject,
   getSequentialSpawnTransform,
   isDeviceObject,
+  isTextObject,
   resetSceneObject,
   type DeviceObject,
   type PosePatch,
@@ -131,6 +139,9 @@ function detectBrowserLocale(): Locale {
  * quando ele voltar; o `<html>` já nasce com `data-theme="dark"`.
  */
 const UI_THEME: UiTheme = "dark";
+
+/** Um texto novo nasce à frente dos aparelhos (em unidades de posição). */
+const NEW_TEXT_POSITION_Z = 0.25;
 
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("pt-BR");
@@ -232,6 +243,24 @@ export default function Home() {
       setSelectedObjectId(sceneObjects[0]?.id ?? "");
     }
   }, [sceneObjects, selectedObjectId]);
+
+  /**
+   * O que todo objeto tem, aparelho ou texto: pose, keyframes e nome. O resto —
+   * tela, cores, modelo — é de aparelho e passa por `updateSceneObject`.
+   */
+  function updateShared(
+    id: string,
+    patch: PosePatch & {
+      keyframes?: SceneObject["keyframes"];
+      name?: string;
+    },
+  ) {
+    setSceneObjects((current) =>
+      current.map((object) =>
+        object.id === id ? { ...object, ...patch } : object,
+      ),
+    );
+  }
 
   /**
    * `patch` pode ser uma função do objeto atual. Use-a para mexer em campos
@@ -356,6 +385,38 @@ export default function Home() {
     setSelectedObjectId(nextObject.id);
   }
 
+  /** Um texto novo, na frente dos aparelhos para não nascer dentro de um. */
+  function handleAddText() {
+    const texts = sceneObjects.filter(isTextObject).length;
+    const nextText = createTextObject({
+      content: copy.textDefaultContent,
+      name: `${copy.textObjectName} ${texts + 1}`,
+    });
+
+    setSceneObjects((current) => [
+      ...current,
+      { ...nextText, positionZ: NEW_TEXT_POSITION_Z },
+    ]);
+    setSelectedObjectId(nextText.id);
+  }
+
+  /** O que o texto diz ou como se vê; dentro dos limites, sempre. */
+  function handleUpdateText(patch: Partial<SceneText>) {
+    const id = selectedObject?.id;
+
+    if (!id) {
+      return;
+    }
+
+    setSceneObjects((current) =>
+      current.map((object) =>
+        object.id === id && isTextObject(object)
+          ? { ...object, text: normalizeSceneText({ ...object.text, ...patch }) }
+          : object,
+      ),
+    );
+  }
+
   function handleRemoveObject(id: string) {
     setSceneObjects((current) => current.filter((object) => object.id !== id));
   }
@@ -368,9 +429,18 @@ export default function Home() {
     setSceneObjects((current) => {
       const source = current.find((object) => object.id === id);
 
-      // Duplicar texto chega com o Inspector do texto; por ora só aparelhos.
-      if (!source || !isDeviceObject(source)) {
+      if (!source) {
         return current;
+      }
+
+      if (isTextObject(source)) {
+        const copied = duplicateTextObject({
+          name: getDuplicateName(source.name),
+          source,
+        });
+
+        setSelectedObjectId(copied.id);
+        return [...current, copied];
       }
 
       const duplicated = duplicateSceneObject({
@@ -458,16 +528,22 @@ export default function Home() {
   }
 
   function handleResetObject() {
-    if (!selectedDevice) {
+    if (!selectedObject) {
       return;
     }
 
+    const id = selectedObject.id;
+
     setSceneObjects((current) =>
-      current.map((object) =>
-        object.id === selectedDevice.id && isDeviceObject(object)
+      current.map((object) => {
+        if (object.id !== id) {
+          return object;
+        }
+
+        return isDeviceObject(object)
           ? resetSceneObject(object)
-          : object,
-      ),
+          : resetTextObject(object);
+      }),
     );
   }
 
@@ -769,7 +845,7 @@ export default function Home() {
     const { id, keyframes } = insertKeyframe(target, playheadMs);
     const created = keyframes.find((keyframe) => keyframe.id === id);
 
-    updateSceneObject(objectId, { keyframes });
+    updateShared(objectId, { keyframes });
 
     if (created) {
       selectKeyframe(objectId, created);
@@ -781,7 +857,7 @@ export default function Home() {
 
     if (!target) return;
 
-    updateSceneObject(objectId, {
+    updateShared(objectId, {
       keyframes: removeKeyframe(target.keyframes, keyframeId),
     });
 
@@ -793,7 +869,7 @@ export default function Home() {
   // Arrastos da timeline e troca de transição. Se o keyframe selecionado se
   // moveu, o playhead vai junto para a cena seguir mostrando a pose dele.
   function handleChangeKeyframes(objectId: string, keyframes: Keyframe[]) {
-    updateSceneObject(objectId, { keyframes });
+    updateShared(objectId, { keyframes });
 
     const moved = keyframes.find(
       (keyframe) => keyframe.id === selectedKeyframeId,
@@ -926,13 +1002,13 @@ export default function Home() {
     if (!selectedObject) return;
 
     if (motionTab === "static") {
-      updateSceneObject(selectedObject.id, patch);
+      updateShared(selectedObject.id, patch);
       return;
     }
 
     if (!selectedKeyframe) return;
 
-    updateSceneObject(selectedObject.id, {
+    updateShared(selectedObject.id, {
       keyframes: updateKeyframe(selectedObject.keyframes, selectedKeyframe.id, {
         transform: { ...selectedKeyframe.transform, ...patch },
       }),
@@ -991,9 +1067,10 @@ export default function Home() {
           locale={locale}
           objects={sceneObjects}
           onAddObject={handleAddObject}
+          onAddText={handleAddText}
           onDuplicateObject={handleDuplicateObject}
           onLocaleChange={setLocale}
-          onRenameObject={(id, name) => updateSceneObject(id, { name })}
+          onRenameObject={(id, name) => updateShared(id, { name })}
           onRemoveObject={handleRemoveObject}
           onSelectObject={setSelectedObjectId}
           onToggleObjectVisibility={handleToggleObjectVisibility}
@@ -1087,7 +1164,7 @@ export default function Home() {
       {!isUiHidden && (
       <InspectorPanel
         copy={copy}
-        object={selectedDevice}
+        object={selectedObject}
         onImageUpload={handleImageUpload}
         onVideoUpload={handleVideoUpload}
         onRemoveImage={() =>
@@ -1124,6 +1201,7 @@ export default function Home() {
         }}
         onModelChange={handleModelChange}
         onResetObject={handleResetObject}
+        onUpdateText={handleUpdateText}
         onAlignObject={handleAlignObject}
         onThemeColorChange={handleThemeColorChange}
         onThemeChange={handleThemeChange}
