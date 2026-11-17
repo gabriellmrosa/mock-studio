@@ -874,3 +874,68 @@ describe("stickers in templates", () => {
     ).toMatchObject({ outline: false, stickerId: null, url: null });
   });
 });
+
+describe("animated images in templates", () => {
+  it("brings an animated sticker back animated, at the speed the user set", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: [
+        createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+        createImageObject({
+          image: { ...getStickerImage("animated-fire"), speed: 2 },
+          name: "Sticker 1",
+        }),
+      ],
+    });
+    const rebuilt = applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>;
+
+    expect(template.objects[1]).toMatchObject({ sticker: "animated-fire", speed: 2 });
+    expect(rebuilt.image).toMatchObject({
+      animation: "lottie",
+      speed: 2,
+      url: "/stickers/animated/fire.json",
+    });
+  });
+
+  it("does not write the default speed, and reads a saved one inside the limits", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: [
+        createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+        createImageObject({ image: getStickerImage("animated-fire"), name: "Sticker 1" }),
+      ],
+    });
+    const saved = template.objects[1];
+
+    expect(saved).not.toHaveProperty("speed");
+
+    if (!("sticker" in saved)) throw new Error("expected an image object");
+
+    saved.speed = 1e9;
+
+    expect(
+      (applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>).image.speed,
+    ).toBe(4);
+  });
+
+  it("brings an uploaded GIF back as the still empty space, keeping its speed", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: [
+        createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+        createImageObject({
+          image: { animation: "gif", name: "a.gif", speed: 0.5, url: "blob:a" },
+          name: "Imagem 1",
+        }),
+      ],
+    });
+    const rebuilt = applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>;
+
+    expect(rebuilt.image).toMatchObject({
+      animation: null,
+      speed: 0.5,
+      stickerId: null,
+      url: null,
+    });
+  });
+});

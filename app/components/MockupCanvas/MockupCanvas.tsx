@@ -88,6 +88,7 @@ import {
   type ObjectAlignment,
 } from "./object-alignment";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
+import { applyImageAnimationTime } from "./image-animation";
 import { applyTextStyle } from "./text-style";
 import { SceneImageMesh } from "./SceneImageMesh";
 import { SceneTextMesh } from "./SceneTextMesh";
@@ -300,6 +301,15 @@ function applyMotionPose(
   timeMs: number,
   spawnOverrides: SpawnOverrides,
 ): Promise<void> | undefined {
+  // Uma imagem animada toca no Vídeo mesmo sem keyframes (então não há pose a
+  // escrever, só o instante): o do objeto é o da cena menos o seu início.
+  if (isImageObject(object) && object.image.animation) {
+    applyImageAnimationTime(
+      group,
+      Math.max(0, timeMs - (object.keyframes[0]?.timeMs ?? 0)),
+    );
+  }
+
   const sampled = sampleDisplayedMotion(object, timeMs);
 
   if (!sampled) {
@@ -611,10 +621,20 @@ function SceneBridge({
               const shownImage = sampledImage
                 ? { ...object, ...sampledImage }
                 : object;
+              // O instante da animação com a cena parada: o playhead menos o
+              // início do objeto. No Estático, `null`: o quadro-cartaz.
+              const animationTimeMs =
+                motionPlayheadMs !== null
+                  ? Math.max(
+                      0,
+                      motionPlayheadMs - (object.keyframes[0]?.timeMs ?? 0),
+                    )
+                  : null;
 
               return (
                 <Fragment key={object.id}>
-                  {motionStartedAt !== null && hasMotion(object) ? (
+                  {motionStartedAt !== null &&
+                  (hasMotion(object) || object.image.animation) ? (
                     <MotionDriver
                       groupsRef={objectGroupsRef}
                       index={0}
@@ -654,8 +674,10 @@ function SceneBridge({
                     userData-opacity={shownImage.opacity}
                   >
                     <SceneImageMesh
+                      animationTimeMs={animationTimeMs}
                       emptyLabel={copy.imageEmptyLabel}
                       image={object.image}
+                      isPlaying={motionStartedAt !== null}
                       opacity={shownImage.opacity}
                     />
                   </group>

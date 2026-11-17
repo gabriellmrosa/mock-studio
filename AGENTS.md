@@ -268,6 +268,35 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   a margem `IMAGE_OUTLINE_MARGIN` por lado; a arte não muda de tamanho. Nasce
   ligado no sticker e desligado numa imagem enviada.
 
+**Imagem animada** (sticker animado e GIF)
+
+- `image.animation` é `"lottie"` (sticker animado: Noto Animated do Google, CC
+  BY 4.0, em `public/stickers/animated/<nome>.json`, id `animated-<nome>`) ou
+  `"gif"` (arquivo enviado); `image.speed` é a velocidade (0,25 a 4). Os dois
+  formatos viram um `AnimatedSource` (`animated-image.ts`): um canvas onde se
+  desenha o quadro de um instante, **sempre o mesmo para o mesmo instante, em
+  qualquer ordem** — é isso que faz a exportação (que pede quadro a quadro) sair
+  igual ao preview e a timeline poder arrastar para trás. Por isso: o Lottie vai
+  a um quadro exato (`goToAndStop`) e os quadros do GIF são decodificados antes
+  (`ImageDecoder`, até 300 quadros, no máximo de 512 px) e consultados por
+  índice. Nunca tocar uma animação por relógio próprio (`play()`).
+- O `lottie-web` é o build leve de canvas (`lottie_light_canvas`, sem expressões,
+  ~200 KB), carregado por `import()` só quando o primeiro animado aparece. Um
+  Lottie com efeitos ou expressões não é suportado (o `laptop` e o `robot` do
+  Noto ficaram de fora por isso).
+- O instante da animação é o da cena menos o início do objeto (o primeiro
+  keyframe), vezes a velocidade, em loop. Tocando e exportando, o movimento o
+  escreve direto (`userData.setAnimationTime`, `applyImageAnimationTime`), como a
+  pose; parada no Vídeo, vale o do playhead; no Estático, o quadro-cartaz — o mais
+  cheio do Lottie (o primeiro quadro de um confete pode estar vazio) e o primeiro
+  do GIF. O `isPlaying` do plano reaplica o instante parado quando o play acaba.
+- Com contorno, ele é refeito **a cada quadro** (24 cópias da silhueta, e não as
+  64 do estático) sobre o canvas da animação.
+- Uma imagem animada sem keyframes toca no Vídeo, mas não dá duração à cena:
+  quem dá é um keyframe.
+- A grade mostra o emoji parado (`getStickerThumbUrl`), não a animação: tocar 46
+  ao mesmo tempo não é o que ela faz.
+
 **Templates**
 
 - Guardam composição, fundo, câmera e, no Movimento, os keyframes — **nunca**

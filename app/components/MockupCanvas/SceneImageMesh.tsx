@@ -1,12 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import {
   IMAGE_OUTLINE_MARGIN,
   getImageSize,
   type SceneImage,
 } from "../../lib/image-objects";
+import {
+  loadGifSource,
+  loadLottieSource,
+  type AnimatedSource,
+} from "../../lib/animated-image";
 import { MAX_TEXTURE_SIZE } from "../../lib/mockup-image";
 
 /**
@@ -30,6 +36,8 @@ const EMPTY_LONG_SIDE = 512;
 /** O contorno de um sticker vai em 1280 px: são 64 cópias da silhueta. */
 const OUTLINE_LONG_SIDE = 1280;
 const OUTLINE_STEPS = 64;
+/** Uma animação refaz o contorno a cada quadro: menos cópias da silhueta. */
+const ANIMATED_OUTLINE_STEPS = 24;
 /** Espessura do contorno, em fração do lado maior da arte. */
 const OUTLINE_THICKNESS = 0.03;
 
@@ -184,55 +192,62 @@ function drawEmptyState(aspect: number, label: string): HTMLCanvasElement {
 /**
  * Contorno branco e sombra de adesivo em volta da arte: a silhueta da arte
  * (alfa, pintada de branco) é espalhada em círculo para engrossar, e é essa
- * forma que recebe a sombra; a arte vai por cima.
+ * forma que recebe a sombra; a arte vai por cima. Devolve o canvas e a função
+ * que o refaz a partir da arte — uma animação a chama a cada quadro, e por isso
+ * os canvases de trabalho são criados uma vez só.
  */
-function drawOutlined(art: HTMLCanvasElement, margin: number) {
+function createOutliner(art: HTMLCanvasElement, margin: number, steps: number) {
   const canvas = makeCanvas(art.width + margin * 2, art.height + margin * 2);
-  const context = canvas.getContext("2d");
-
-  if (!context) {
-    return canvas;
-  }
-
   const silhouette = makeCanvas(art.width, art.height);
-  const silhouetteContext = silhouette.getContext("2d");
-
-  if (!silhouetteContext) {
-    return canvas;
-  }
-
-  silhouetteContext.drawImage(art, 0, 0);
-  silhouetteContext.globalCompositeOperation = "source-in";
-  silhouetteContext.fillStyle = "#ffffff";
-  silhouetteContext.fillRect(0, 0, art.width, art.height);
-
   const thick = makeCanvas(canvas.width, canvas.height);
+  const context = canvas.getContext("2d");
+  const silhouetteContext = silhouette.getContext("2d");
   const thickContext = thick.getContext("2d");
   const reach = Math.max(art.width, art.height) * OUTLINE_THICKNESS;
 
-  if (!thickContext) {
-    return canvas;
+  function redraw() {
+    if (!context || !silhouetteContext || !thickContext) {
+      return;
+    }
+
+    silhouetteContext.globalCompositeOperation = "source-over";
+    silhouetteContext.clearRect(0, 0, art.width, art.height);
+    silhouetteContext.drawImage(art, 0, 0);
+    silhouetteContext.globalCompositeOperation = "source-in";
+    silhouetteContext.fillStyle = "#ffffff";
+    silhouetteContext.fillRect(0, 0, art.width, art.height);
+
+    thickContext.clearRect(0, 0, thick.width, thick.height);
+
+    for (let step = 0; step < steps; step += 1) {
+      const angle = (step / steps) * Math.PI * 2;
+
+      thickContext.drawImage(
+        silhouette,
+        margin + Math.cos(angle) * reach,
+        margin + Math.sin(angle) * reach,
+      );
+    }
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    // Uma só passada com sombra: por cópia, ela se somaria e escureceria.
+    context.shadowColor = "rgb(0 0 0 / 0.3)";
+    context.shadowBlur = margin * 0.55;
+    context.shadowOffsetY = margin * 0.18;
+    context.drawImage(thick, 0, 0);
+    context.shadowColor = "transparent";
+    context.drawImage(art, margin, margin);
   }
 
-  for (let step = 0; step < OUTLINE_STEPS; step += 1) {
-    const angle = (step / OUTLINE_STEPS) * Math.PI * 2;
+  return { canvas, redraw };
+}
 
-    thickContext.drawImage(
-      silhouette,
-      margin + Math.cos(angle) * reach,
-      margin + Math.sin(angle) * reach,
-    );
-  }
+function drawOutlined(art: HTMLCanvasElement, margin: number) {
+  const outliner = createOutliner(art, margin, OUTLINE_STEPS);
 
-  // Uma só passada com sombra: por cópia, ela se somaria e escureceria.
-  context.shadowColor = "rgb(0 0 0 / 0.3)";
-  context.shadowBlur = margin * 0.55;
-  context.shadowOffsetY = margin * 0.18;
-  context.drawImage(thick, 0, 0);
-  context.shadowColor = "transparent";
-  context.drawImage(art, margin, margin);
+  outliner.redraw();
 
-  return canvas;
+  return outliner.canvas;
 }
 
 /**
@@ -278,21 +293,46 @@ type Loaded =
   | { status: "ready"; texture: THREE.Texture; url: string }
   | { status: "error"; url: string };
 
+/** Uma animação pronta: a fonte, a textura e como pôr um instante nela. */
+type AnimatedLoaded =
+  | {
+      source: AnimatedSource;
+      status: "ready";
+      texture: THREE.CanvasTexture;
+      /** Desenha o instante (com a velocidade) e marca a textura para subir. */
+      show: (timeMs: number) => void;
+      url: string;
+    }
+  | { status: "error"; url: string };
+
 export function SceneImageMesh({
+  animationTimeMs,
   emptyLabel,
   image,
+  isPlaying,
   opacity,
 }: {
+  /**
+   * O instante da animação quando a cena está parada: o do playhead no Vídeo, e
+   * `null` no Estático, que mostra o quadro-cartaz. Tocando, o movimento escreve
+   * o instante direto (`userData.setAnimationTime`), sem passar pelo React.
+   */
+  animationTimeMs: number | null;
   /** O convite escrito no espaço vazio, no idioma da interface. */
   emptyLabel: string;
   image: SceneImage;
+  isPlaying: boolean;
   opacity: number;
 }) {
-  const { aspect, isVector, outline, url } = image;
+  const { animation, aspect, isVector, outline, speed, url } = image;
+  const isAnimated = animation !== null && Boolean(url);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [animated, setAnimated] = useState<AnimatedLoaded | null>(null);
+  const meshRef = useRef<THREE.Mesh>(null);
+  const invalidate = useThree((state) => state.invalidate);
 
   useEffect(() => {
-    if (!url) {
+    if (!url || isAnimated) {
       return undefined;
     }
 
@@ -322,7 +362,105 @@ export function SceneImageMesh({
     };
     // `image` só entra pelos campos que mudam a textura, listados abaixo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aspect, isVector, outline, url]);
+  }, [aspect, isAnimated, isVector, outline, url]);
+
+  // A animação: a fonte é carregada uma vez; o contorno, quando ligado, é
+  // refeito a cada quadro sobre um canvas maior (a margem).
+  useEffect(() => {
+    if (!url || !animation) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    let created: AnimatedSource | null = null;
+    let texture: THREE.CanvasTexture | null = null;
+
+    (animation === "gif" ? loadGifSource(url) : loadLottieSource(url))
+      .then((source) => {
+        if (cancelled) {
+          source.dispose();
+
+          return;
+        }
+
+        created = source;
+
+        const margin = outline
+          ? Math.round(
+              Math.max(source.canvas.width, source.canvas.height) *
+                IMAGE_OUTLINE_MARGIN,
+            )
+          : 0;
+        const outliner = outline
+          ? createOutliner(source.canvas, margin, ANIMATED_OUTLINE_STEPS)
+          : null;
+
+        texture = new THREE.CanvasTexture(outliner?.canvas ?? source.canvas);
+        texture.colorSpace = THREE.SRGBColorSpace;
+
+        const ready = texture;
+
+        setAnimated({
+          show: (timeMs) => {
+            source.drawAt(timeMs);
+            outliner?.redraw();
+            ready.needsUpdate = true;
+          },
+          source,
+          status: "ready",
+          texture: ready,
+          url,
+        });
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAnimated({ status: "error", url });
+        }
+      });
+
+    return () => {
+      cancelled = true;
+      created?.dispose();
+      texture?.dispose();
+    };
+  }, [animation, outline, url]);
+
+  const currentAnimated =
+    isAnimated && animated?.url === url ? animated : null;
+  const showFrame =
+    currentAnimated?.status === "ready" ? currentAnimated.show : null;
+  const posterMs =
+    currentAnimated?.status === "ready" ? currentAnimated.source.posterMs : 0;
+
+  // Parada, a animação mostra o instante da cena (ou o quadro-cartaz). Tocando,
+  // o movimento a conduz, e só ao parar volta a valer o instante daqui: o React
+  // não reaplica o que não mudou, e o último quadro do play ficaria na tela.
+  useEffect(() => {
+    if (!showFrame || isPlaying) {
+      return;
+    }
+
+    showFrame(animationTimeMs === null ? posterMs : animationTimeMs * speed);
+    // O canvas só desenha quando pedem: sem isto, o quadro novo esperaria o
+    // próximo movimento de câmera para aparecer.
+    invalidate();
+  }, [animationTimeMs, invalidate, isPlaying, posterMs, showFrame, speed]);
+
+  // O gancho do movimento (preview e exportação de vídeo): o instante da cena
+  // em ms, desde o início do objeto; a velocidade é aplicada aqui.
+  useEffect(() => {
+    const mesh = meshRef.current;
+
+    if (!mesh || !showFrame) {
+      return undefined;
+    }
+
+    mesh.userData.setAnimationTime = (timeMs: number) => showFrame(timeMs * speed);
+
+    return () => {
+      delete mesh.userData.setAnimationTime;
+    };
+  }, [showFrame, speed]);
 
   const empty = useMemo(() => {
     if (typeof document === "undefined") {
@@ -338,19 +476,28 @@ export function SceneImageMesh({
 
   useEffect(() => () => empty?.dispose(), [empty]);
 
-  const current = url && loaded?.url === url ? loaded : null;
+  const current = !isAnimated && url && loaded?.url === url ? loaded : null;
   // Com arquivo e ainda carregando, não há o que mostrar: nem o espaço vazio,
   // que piscaria por cima de uma imagem que está para aparecer.
-  const isLoading = Boolean(url) && !current;
-  const isReady = current?.status === "ready";
-  const map = isReady ? current.texture : empty;
+  const isLoading = Boolean(url) && (isAnimated ? !currentAnimated : !current);
+  const isReady = isAnimated
+    ? currentAnimated?.status === "ready"
+    : current?.status === "ready";
+  const readyTexture = isAnimated
+    ? currentAnimated?.status === "ready"
+      ? currentAnimated.texture
+      : null
+    : current?.status === "ready"
+      ? current.texture
+      : null;
+  const map = isReady ? readyTexture : empty;
   const [width, height] = getImageSize(aspect);
   // A margem do contorno e da sombra, na mesma proporção da textura.
   const hasMargin = !isReady || outline;
   const margin = hasMargin ? Math.max(width, height) * IMAGE_OUTLINE_MARGIN : 0;
 
   return (
-    <mesh userData-editorOnly={!isReady} visible={!isLoading}>
+    <mesh ref={meshRef} userData-editorOnly={!isReady} visible={!isLoading}>
       <planeGeometry args={[width + margin * 2, height + margin * 2]} />
       <meshBasicMaterial
         depthWrite={false}

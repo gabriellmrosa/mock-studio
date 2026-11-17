@@ -1,6 +1,7 @@
+import { readGifInfo } from "./animated-image";
 import { cloneKeyframes } from "./scene-motion";
 import type { ImageObject } from "./scene-objects";
-import { STICKER_ASPECT, getStickerUrl } from "./stickers";
+import { STICKER_ASPECT, getStickerUrl, isAnimatedSticker } from "./stickers";
 
 /**
  * A imagem solta da cena: um plano com um PNG ou SVG, como o texto um objeto
@@ -14,7 +15,15 @@ import { STICKER_ASPECT, getStickerUrl } from "./stickers";
  * quem abre o template enviar de novo. O espaço vazio é só do editor: não sai na
  * exportação. Um sticker do acervo é diferente: é do app e volta com a arte.
  */
+/** Como a imagem se mexe: `lottie` (um sticker animado) ou `gif` (um arquivo). */
+export type ImageAnimation = "gif" | "lottie";
+
 export type SceneImage = {
+  /**
+   * `null` é uma imagem parada. Uma animada toca em loop no Vídeo; no Estático
+   * mostra um quadro só (ver `animated-image.ts`).
+   */
+  animation: ImageAnimation | null;
   /** Largura sobre altura. Com arquivo, é a dele; sem, a do espaço vazio. */
   aspect: number;
   /** Vetor (SVG): é desenhado na textura em tamanho máximo, não no natural. */
@@ -30,6 +39,8 @@ export type SceneImage = {
    * arquivo enviado, ele é do app: vai no template e no link (é só o id) e
    * volta com a arte, não como espaço vazio.
    */
+  /** Velocidade da animação: 1 é a original. Só vale para uma animada. */
+  speed: number;
   stickerId: string | null;
   /** O arquivo (blob URL ou o do sticker); `null` é o espaço vazio. */
   url: string | null;
@@ -56,14 +67,25 @@ export const MAX_IMAGE_ASPECT = 20;
 /** O que o navegador decodifica sem travar a aba; acima, o arquivo é recusado. */
 export const MAX_IMAGE_FILE_BYTES = 15 * 1024 * 1024;
 
-/** PNG e SVG: o que a interface oferece. */
-export const IMAGE_OBJECT_ACCEPT = "image/png,image/svg+xml";
+/** GIF, PNG e SVG: o que a interface oferece. */
+export const IMAGE_OBJECT_ACCEPT = "image/png,image/svg+xml,image/gif";
+
+export const MIN_IMAGE_SPEED = 0.25;
+export const MAX_IMAGE_SPEED = 4;
+
+export function normalizeImageSpeed(value: unknown): number {
+  const speed = typeof value === "number" && Number.isFinite(value) ? value : 1;
+
+  return Math.min(MAX_IMAGE_SPEED, Math.max(MIN_IMAGE_SPEED, speed));
+}
 
 export const DEFAULT_IMAGE: SceneImage = {
+  animation: null,
   aspect: 1,
   isVector: false,
   name: null,
   outline: false,
+  speed: 1,
   stickerId: null,
   url: null,
 };
@@ -74,10 +96,12 @@ export const DEFAULT_IMAGE: SceneImage = {
  */
 export function getStickerImage(stickerId: string): SceneImage {
   return {
+    animation: isAnimatedSticker(stickerId) ? "lottie" : null,
     aspect: STICKER_ASPECT,
     isVector: true,
     name: null,
     outline: true,
+    speed: 1,
     stickerId,
     url: getStickerUrl(stickerId),
   };
@@ -128,6 +152,7 @@ export function createImageObject({
       ...DEFAULT_IMAGE,
       ...image,
       aspect: normalizeImageAspect(image?.aspect),
+      speed: normalizeImageSpeed(image?.speed),
     },
     isVisible: true,
     keyframes: [],
@@ -229,6 +254,7 @@ export async function readImageFile(file: File): Promise<SceneImage> {
   }
 
   const isVector = file.type === "image/svg+xml";
+  const isGif = file.type === "image/gif";
   const url = URL.createObjectURL(file);
   const image = new Image();
 
@@ -247,11 +273,16 @@ export async function readImageFile(file: File): Promise<SceneImage> {
       throw new Error("A imagem não tem tamanho.");
     }
 
+    // Um GIF só é animado com mais de um quadro, e num navegador que os separa.
+    const gif = isGif ? await readGifInfo(await file.arrayBuffer()) : null;
+
     return {
+      animation: gif && gif.frames > 1 ? "gif" : null,
       aspect: normalizeImageAspect(aspect),
       isVector,
       name: file.name,
       outline: false,
+      speed: 1,
       stickerId: null,
       url,
     };

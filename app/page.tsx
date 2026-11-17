@@ -31,6 +31,7 @@ import {
   createImageObject,
   duplicateImageObject,
   getStickerImage,
+  normalizeImageSpeed,
   readImageFile,
   resetImageObject,
   type SceneImage,
@@ -507,6 +508,7 @@ export default function Home() {
   function handleRemoveObjectImage() {
     if (selectedObject) {
       updateObjectImage(selectedObject.id, {
+        animation: null,
         isVector: false,
         name: null,
         url: null,
@@ -1384,6 +1386,10 @@ export default function Home() {
         onResetObject={handleResetObject}
         onRemoveObjectImage={handleRemoveObjectImage}
         onChangeSticker={() => setStickerPickerMode("swap")}
+        onUpdateImageSpeed={(speed) =>
+          selectedObject &&
+          updateObjectImage(selectedObject.id, { speed: normalizeImageSpeed(speed) })
+        }
         onUpdateImageOutline={(outline) =>
           selectedObject &&
           updateObjectImage(selectedObject.id, { outline })
@@ -1456,12 +1462,16 @@ export default function Home() {
       />
       )}
       </main>
-      <StickerPicker
-        copy={copy}
-        isOpen={stickerPickerMode !== null}
-        onCancel={() => setStickerPickerMode(null)}
-        onPick={handlePickSticker}
-      />
+      {/* Montada só aberta: a busca e a categoria de uma vez não ficam para a
+          próxima. */}
+      {stickerPickerMode !== null ? (
+        <StickerPicker
+          copy={copy}
+          isOpen
+          onCancel={() => setStickerPickerMode(null)}
+          onPick={handlePickSticker}
+        />
+      ) : null}
       <AlertDialog
         isOpen={pendingAction !== null}
         title={

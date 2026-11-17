@@ -8,7 +8,7 @@ import {
   STICKER_CATEGORY_IDS,
   STICKERS,
   getStickerLabel,
-  getStickerUrl,
+  getStickerThumbUrl,
   type StickerCategoryId,
 } from "../../lib/stickers";
 import CustomSelect from "../CustomSelect/CustomSelect";
@@ -116,7 +116,7 @@ export default function StickerPicker({
                     alt=""
                     height={48}
                     loading="lazy"
-                    src={getStickerUrl(stickerId)}
+                    src={getStickerThumbUrl(stickerId)}
                     width={48}
                   />
                 </button>

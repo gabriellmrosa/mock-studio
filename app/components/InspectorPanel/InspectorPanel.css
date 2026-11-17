@@ -341,20 +341,6 @@
   transition: background-color 160ms ease;
 }
 
-/* A faixa que é um botão de verdade (a do sticker, que abre a grade): sem o
-   visual de botão do navegador, ocupando a linha toda. */
-button.screen-file-row {
-  border: 0;
-  color: inherit;
-  font-family: inherit;
-  text-align: left;
-  width: 100%;
-}
-
-button.screen-file-row:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
-  outline-offset: 1px;
-}
 
 .screen-file-row-action:hover {
   background: var(--surface-hover);
@@ -401,4 +387,11 @@ button.screen-file-row:focus-visible {
   display: flex;
   justify-content: flex-end;
   margin-bottom: calc(var(--space-1) * -1);
+}
+
+/* A velocidade de uma animação: o rótulo em cima e o campo, como os de texto. */
+.image-speed-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }

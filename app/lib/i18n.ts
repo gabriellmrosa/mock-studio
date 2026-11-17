@@ -24,6 +24,7 @@ export type AppCopy = {
   stickerSectionTitle: string;
   stickerChange: string;
   stickerOutlineLabel: string;
+  imageSpeedLabel: string;
   stickerPickerTitle: string;
   stickerSearchLabel: string;
   stickerCategoryLabel: string;
@@ -267,13 +268,14 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     addImageObject: "Imagem",
     imageObjectName: "Imagem",
     imageSectionTitle: "Imagem",
-    imageObjectHint: "PNG ou SVG",
-    imageEmptyLabel: "Envie seu PNG ou SVG",
+    imageObjectHint: "GIF, PNG ou SVG",
+    imageEmptyLabel: "Envie seu GIF, PNG ou SVG",
     addStickerObject: "Sticker",
     stickerObjectName: "Sticker",
     stickerSectionTitle: "Sticker",
     stickerChange: "Trocar sticker",
     stickerOutlineLabel: "Contorno",
+    imageSpeedLabel: "Velocidade",
     stickerPickerTitle: "Escolher sticker",
     stickerSearchLabel: "Buscar sticker",
     stickerCategoryLabel: "Categoria",
@@ -584,13 +586,14 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     addImageObject: "Image",
     imageObjectName: "Image",
     imageSectionTitle: "Image",
-    imageObjectHint: "PNG or SVG",
-    imageEmptyLabel: "Upload your PNG or SVG",
+    imageObjectHint: "GIF, PNG or SVG",
+    imageEmptyLabel: "Upload your GIF, PNG or SVG",
     addStickerObject: "Sticker",
     stickerObjectName: "Sticker",
     stickerSectionTitle: "Sticker",
     stickerChange: "Change sticker",
     stickerOutlineLabel: "Outline",
+    imageSpeedLabel: "Speed",
     stickerPickerTitle: "Choose a sticker",
     stickerSearchLabel: "Search stickers",
     stickerCategoryLabel: "Category",

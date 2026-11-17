@@ -39,6 +39,7 @@ const copy: AppCopy = {
   stickerSectionTitle: "Sticker",
   stickerChange: "Change sticker",
   stickerOutlineLabel: "Outline",
+  imageSpeedLabel: "Speed",
   stickerPickerTitle: "Choose a sticker",
   stickerSearchLabel: "Search stickers",
   stickerCategoryLabel: "Category",

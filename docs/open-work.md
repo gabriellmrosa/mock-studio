@@ -29,23 +29,31 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 
 ## Image objects: what is left
 
-PNG and SVG work (create, send the file, move, animate, templates, links, PNG and
-video export). Known gaps:
+PNG, SVG, GIF, stickers and animated stickers work (create, send the file, move,
+animate, templates, links, PNG and video export). Known gaps:
 
-- No GIF. It needs the frames decoded (`ImageDecoder`), tied to the timeline
-  clock, and the video export asking for the exact frame of each instant, like
-  the screen videos do.
+- The scene length does not come from an animation: an animated image with no
+  keyframes plays in Video mode but a keyframe is what gives the scene its
+  duration (the length of the animation is only known once it has loaded).
+- An animated sticker or GIF in Photo mode shows one frame (the fullest of the
+  Lottie, the first of the GIF), with no way to choose which.
+- GIF: at most 300 frames, each kept in memory at up to 512 px; it needs
+  `ImageDecoder` (Chrome, Edge, recent Safari and Firefox). Without it the file
+  opens as a still image.
+- Animated stickers are the 46 of ~880 Noto Animated that were picked; the ones
+  with Lottie effects or expressions are not supported by the light player.
 - The SVG is drawn once at the maximum texture size (2048) and not drawn again
   when zoomed in, so a very large enlargement of a vector blurs.
 - An uploaded file is not saved anywhere: opening a template or a link brings
   back the white empty circle, and the file has to be sent again (a sticker does
   come back, it belongs to the app).
 - The sticker grid has ~320 of the ~1,600 Fluent Emoji (no skin tones, no
-  religious symbols, weapons or alcohol) and no animated ones yet.
-- The outline was only seen on screen, not in an exported PNG or video.
-- Not checked: selecting an image by double-clicking it on the canvas, Safari
-  and Firefox, and an SVG with no `viewBox`, `width` or `height` (the proportion
-  falls back to what the browser reads, which may be wrong).
+  religious symbols, weapons or alcohol).
+- The animation was seen in a video export and in the editor, but its cost per
+  frame (with the outline redrawn every frame) was not measured, nor several
+  animated stickers at once.
+- Not checked: Safari and Firefox, an SVG with no `viewBox`, `width` or `height`,
+  selecting an image by double-clicking it on the canvas.
 
 ## Text in the scene: what is left
 

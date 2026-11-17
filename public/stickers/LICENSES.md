@@ -28,6 +28,16 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+## Animated stickers (`animated/`)
+
+The animated stickers are **Noto Animated Emoji** by Google
+(https://googlefonts.github.io/noto-emoji-animation/), as Lottie, with the still
+emoji of the Noto set (`@iconify-json/noto`, Apache-2.0) beside each as its
+thumbnail. The animations are licensed **CC BY 4.0**
+(https://creativecommons.org/licenses/by/4.0/), which requires credit: it is in
+the app's credits (`CreditsModal`). Fluent's license above covers only the static
+ones.
+
 One file per sticker, named by its id (`fire.svg`); the catalog with the
 categories is `app/lib/stickers.ts`. Adding a sticker: the file here and its id in
 the catalog (and its pt-BR name in `app/lib/sticker-labels.ts`).

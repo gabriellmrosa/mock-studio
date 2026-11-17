@@ -9,6 +9,9 @@ import {
   getSvgAspect,
   isDefaultImagePose,
   normalizeImageAspect,
+  normalizeImageSpeed,
+  MAX_IMAGE_SPEED,
+  MIN_IMAGE_SPEED,
   resetImageObject,
 } from "./image-objects";
 import { createKeyframe, captureTransform } from "./scene-motion";
@@ -101,12 +104,22 @@ describe("getSvgAspect", () => {
 describe("sticker images", () => {
   it("is a square vector from the catalog, with the outline on", () => {
     expect(getStickerImage("fire")).toEqual({
+      animation: null,
       aspect: 1,
       isVector: true,
       name: null,
       outline: true,
+      speed: 1,
       stickerId: "fire",
       url: "/stickers/fire.svg",
+    });
+  });
+
+  it("is a Lottie when the sticker is an animated one", () => {
+    expect(getStickerImage("animated-fire")).toMatchObject({
+      animation: "lottie",
+      stickerId: "animated-fire",
+      url: "/stickers/animated/fire.json",
     });
   });
 
@@ -115,5 +128,22 @@ describe("sticker images", () => {
 
     expect(sticker.image.stickerId).toBe("fire");
     expect(sticker.image.outline).toBe(true);
+  });
+});
+
+describe("normalizeImageSpeed", () => {
+  it("keeps the speed between a quarter and four times", () => {
+    expect(normalizeImageSpeed(1)).toBe(1);
+    expect(normalizeImageSpeed(100)).toBe(MAX_IMAGE_SPEED);
+    expect(normalizeImageSpeed(0)).toBe(MIN_IMAGE_SPEED);
+    expect(normalizeImageSpeed(-2)).toBe(MIN_IMAGE_SPEED);
+    expect(normalizeImageSpeed(NaN)).toBe(1);
+    expect(normalizeImageSpeed("2")).toBe(1);
+  });
+
+  it("is clamped when an object is created", () => {
+    expect(createImageObject({ name: "x", image: { speed: 99 } }).image.speed).toBe(
+      MAX_IMAGE_SPEED,
+    );
   });
 });

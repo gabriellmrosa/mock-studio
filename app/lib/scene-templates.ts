@@ -12,7 +12,11 @@ import {
   isTextObject,
   type SceneObject,
 } from "./scene-objects";
-import { getStickerImage, normalizeImageAspect } from "./image-objects";
+import {
+  getStickerImage,
+  normalizeImageAspect,
+  normalizeImageSpeed,
+} from "./image-objects";
 import { isStickerId } from "./stickers";
 import { normalizeSceneText, type SceneText } from "./text-objects";
 import {
@@ -131,6 +135,8 @@ export type TemplateImageObject = {
    * template (é só o id) e volta com a arte.
    */
   sticker?: string;
+  /** Velocidade de uma animação; sem ela, 1. */
+  speed?: number;
   isVisible: boolean;
   /** Só em templates de Movimento. */
   keyframes?: TemplateKeyframe[];
@@ -210,6 +216,9 @@ function toTemplateObject(
       // Só o que o arquivo não decide sozinho: o sticker é o que se guarda dele.
       ...(object.image.stickerId ? { sticker: object.image.stickerId } : {}),
       outline: object.image.outline,
+      // A velocidade é um ajuste do usuário, vale para o sticker animado e para
+      // um GIF que volta como espaço vazio; parada, 1 não precisa ser dita.
+      ...(object.image.speed !== 1 ? { speed: object.image.speed } : {}),
       name: object.name,
       opacity: object.opacity,
       positionX: object.positionX,
@@ -326,12 +335,15 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
           ...(isStickerId(object.sticker)
             ? getStickerImage(object.sticker)
             : {
+                animation: null,
                 aspect: normalizeImageAspect(object.aspect),
                 isVector: false,
                 name: null,
+                speed: 1,
                 stickerId: null,
                 url: null,
               }),
+          speed: normalizeImageSpeed(object.speed),
           outline:
             typeof object.outline === "boolean"
               ? object.outline

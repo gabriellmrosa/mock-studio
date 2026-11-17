@@ -10,11 +10,29 @@
  * `public/stickers/LICENSES.md` e em `CreditsModal`.
  */
 
-export const STICKER_CATEGORY_IDS = ["classicos", "tematizados", "natureza", "comida", "objetos", "numerais"] as const;
+export const STICKER_CATEGORY_IDS = ["classicos", "tematizados", "natureza", "comida", "objetos", "numerais", "animados"] as const;
 
 export type StickerCategoryId = (typeof STICKER_CATEGORY_IDS)[number];
 
 export const STICKERS: Record<StickerCategoryId, readonly string[]> = {
+  animados: [
+    "animated-alarm", "animated-alien", "animated-avocado",
+    "animated-balloon", "animated-butterfly", "animated-camera",
+    "animated-cherries", "animated-cherry-blossom", "animated-clap",
+    "animated-coffee", "animated-confetti-ball", "animated-crown",
+    "animated-crystal-ball", "animated-eyes", "animated-fire",
+    "animated-flex", "animated-four-leaf-clover", "animated-fox",
+    "animated-gem", "animated-ghost", "animated-hamburger",
+    "animated-heart-eyes", "animated-hundred", "animated-joy",
+    "animated-light-bulb", "animated-megaphone", "animated-ok",
+    "animated-panda", "animated-party-popper", "animated-pizza",
+    "animated-pray", "animated-rainbow", "animated-red-heart",
+    "animated-rocket", "animated-skull", "animated-sparkles",
+    "animated-star-struck", "animated-strawberry", "animated-sunglasses",
+    "animated-thumbs-up", "animated-trophy", "animated-unicorn",
+    "animated-victory", "animated-watermelon", "animated-wave",
+    "animated-wink",
+  ],
   classicos: [
     "grinning-face", "grinning-face-with-big-eyes",
     "beaming-face-with-smiling-eyes", "face-with-tears-of-joy",
@@ -110,6 +128,7 @@ export const STICKER_CATEGORY_NAMES_PT_BR: Record<StickerCategoryId, string> = {
   comida: "Comida",
   objetos: "Objetos",
   numerais: "Numerais",
+  animados: "Animados",
 };
 
 export const STICKER_CATEGORY_NAMES_EN_US: Record<StickerCategoryId, string> = {
@@ -119,6 +138,7 @@ export const STICKER_CATEGORY_NAMES_EN_US: Record<StickerCategoryId, string> = {
   comida: "Food",
   objetos: "Objects",
   numerais: "Numerals",
+  animados: "Animated",
 };
 
 const STICKER_IDS: ReadonlySet<string> = new Set(Object.values(STICKERS).flat());
@@ -130,8 +150,30 @@ export function isStickerId(value: unknown): value is string {
 /** Todos os stickers cabem num quadrado (o Fluent é 32 × 32). */
 export const STICKER_ASPECT = 1;
 
+const ANIMATED_PREFIX = "animated-";
+
+/**
+ * Os animados são o Noto Animated do Google (CC BY 4.0, pede crédito), em
+ * Lottie: um arquivo de ~80 KB que é vetor e que se posiciona num quadro
+ * exato. A grade mostra o emoji parado (o SVG ao lado) — tocar 46 animações
+ * ao mesmo tempo não é o que ela está ali para fazer.
+ */
+export function isAnimatedSticker(id: string) {
+  return id.startsWith(ANIMATED_PREFIX);
+}
+
+/** O arquivo do sticker: o SVG, ou o Lottie de um animado. */
 export function getStickerUrl(id: string) {
-  return `/stickers/${id}.svg`;
+  return isAnimatedSticker(id)
+    ? `/stickers/animated/${id.slice(ANIMATED_PREFIX.length)}.json`
+    : `/stickers/${id}.svg`;
+}
+
+/** A imagem parada do sticker, para a grade e para a faixa do Inspector. */
+export function getStickerThumbUrl(id: string) {
+  return isAnimatedSticker(id)
+    ? `/stickers/animated/${id.slice(ANIMATED_PREFIX.length)}.svg`
+    : `/stickers/${id}.svg`;
 }
 
 export function getStickerCategory(id: string): StickerCategoryId | null {

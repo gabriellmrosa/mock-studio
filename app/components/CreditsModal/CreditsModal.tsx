@@ -77,6 +77,14 @@ const ASSET_CREDITS: readonly AssetCredit[] = [
     licenseHref: "https://github.com/microsoft/fluentui-emoji/blob/main/LICENSE",
     licenseLabel: "MIT",
   },
+  {
+    title: "Animated stickers — Noto Animated Emoji",
+    author: "Google",
+    sourceHref: "https://googlefonts.github.io/noto-emoji-animation/",
+    sourceLabel: "Noto Emoji Animation",
+    licenseHref: "https://creativecommons.org/licenses/by/4.0/",
+    licenseLabel: "CC BY 4.0",
+  },
 ];
 
 export default function CreditsModal({

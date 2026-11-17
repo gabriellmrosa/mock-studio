@@ -5,7 +5,11 @@ import { FoldableIcon } from "../FoldableIcon/FoldableIcon";
 import { FolderTabPanel, FolderTabs } from "../FolderTabs/FolderTabs";
 import "./InspectorPanel.css";
 import { useRef, useState, type ReactNode } from "react";
-import { getStickerLabel } from "../../lib/stickers";
+import {
+  MAX_IMAGE_SPEED,
+  MIN_IMAGE_SPEED,
+} from "../../lib/image-objects";
+import { getStickerLabel, getStickerThumbUrl } from "../../lib/stickers";
 import ColorRow from "../ColorRow/ColorRow";
 import TextControls from "../TextControls/TextControls";
 import {
@@ -17,6 +21,7 @@ import {
   type SceneText,
 } from "../../lib/text-objects";
 import Control from "../Control/Control";
+import NumberField from "../NumberField/NumberField";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
 import type { ObjectAlignment } from "../MockupCanvas/object-alignment";
 import {
@@ -65,6 +70,7 @@ import {
   AlignStartHorizontal,
   AlignStartVertical,
   Crop,
+  Gauge,
   Image as ImageIcon,
   Laptop,
   MoreVertical,
@@ -111,6 +117,8 @@ type InspectorPanelProps = {
   onChangeSticker: () => void;
   /** O contorno de adesivo da imagem (ou sticker) selecionada. */
   onUpdateImageOutline: (outline: boolean) => void;
+  /** A velocidade da animação (1 é a original): sticker animado ou GIF. */
+  onUpdateImageSpeed: (speed: number) => void;
   /** O arquivo da imagem solta selecionada: enviar, e voltar ao espaço vazio. */
   onUploadObjectImage: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveObjectImage: () => void;
@@ -175,6 +183,7 @@ export default function InspectorPanel({
   onRemoveObjectImage,
   onChangeSticker,
   onUpdateImageOutline,
+  onUpdateImageSpeed,
   onOuterImageUpload,
   onOuterVideoUpload,
   onRemoveOuterImage,
@@ -406,33 +415,35 @@ export default function InspectorPanel({
         {imageObject?.image.stickerId ? (
           <PanelSection title={copy.stickerSectionTitle}>
             {/* A faixa abre a grade: o sticker é do acervo, não um arquivo. */}
-            <button
-              type="button"
-              className="screen-file-row screen-file-row-action"
-              onClick={onChangeSticker}
-              title={copy.stickerChange}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                alt=""
-                className="screen-file-icon"
-                height={20}
-                src={imageObject.image.url ?? ""}
-                width={20}
-              />
-              <span className="screen-file-name">
-                {getStickerLabel(
-                  imageObject.image.stickerId,
-                  copy.stickerLabels,
-                )}
-              </span>
-              <span className="screen-file-meta">{copy.stickerChange}</span>
-            </button>
+            <ScreenFileRow
+              icon={
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  alt=""
+                  height={16}
+                  src={getStickerThumbUrl(imageObject.image.stickerId)}
+                  width={16}
+                />
+              }
+              menuLabel={copy.stickerChange}
+              name={getStickerLabel(
+                imageObject.image.stickerId,
+                copy.stickerLabels,
+              )}
+              onActivate={onChangeSticker}
+            />
             <Switch
               checked={imageObject.image.outline}
               label={copy.stickerOutlineLabel}
               onChange={onUpdateImageOutline}
             />
+            {imageObject.image.animation ? (
+              <ImageSpeedField
+                copy={copy}
+                speed={imageObject.image.speed}
+                onChange={onUpdateImageSpeed}
+              />
+            ) : null}
           </PanelSection>
         ) : null}
 
@@ -481,6 +492,13 @@ export default function InspectorPanel({
                 checked={imageObject.image.outline}
                 label={copy.stickerOutlineLabel}
                 onChange={onUpdateImageOutline}
+              />
+            ) : null}
+            {imageObject.image.animation ? (
+              <ImageSpeedField
+                copy={copy}
+                speed={imageObject.image.speed}
+                onChange={onUpdateImageSpeed}
               />
             ) : null}
             {uploadError ? (
@@ -1090,6 +1108,36 @@ function AppearanceSettings({
 }
 
 /** Convite ao upload, enquanto a tela ainda mostra o placeholder. */
+/** A velocidade de uma animação, em %: 100 é a original. */
+function ImageSpeedField({
+  copy,
+  onChange,
+  speed,
+}: {
+  copy: AppCopy;
+  onChange: (speed: number) => void;
+  speed: number;
+}) {
+  return (
+    <div className="image-speed-field">
+      <span className="transform-control-label">{copy.imageSpeedLabel}</span>
+      <NumberField
+        ariaLabel={copy.imageSpeedLabel}
+        icon={<Gauge size={14} />}
+        max={MAX_IMAGE_SPEED}
+        min={MIN_IMAGE_SPEED}
+        scale={100}
+        step={0.05}
+        suffix="%"
+        value={speed}
+        onChange={(value) => {
+          if (value !== null) onChange(value);
+        }}
+      />
+    </div>
+  );
+}
+
 function UploadCard({
   accept,
   label,
@@ -1132,7 +1180,9 @@ function UploadCard({
  * sobe dele. (A linha da lista de objetos é diferente: tem o olho e o "⋮",
  * duas ações, e por isso cada uma tem o seu alvo.)
  *
- * Serve ao arquivo da tela (enviado ou ainda por enviar) e à cor do aparelho.
+ * Serve ao arquivo da tela (enviado ou ainda por enviar), à cor do aparelho e
+ * ao sticker. Com `onActivate`, a linha não abre um painel dela: chama o que
+ * quem a usa abre (a grade de stickers, que é um diálogo), e o resto é igual.
  */
 function ScreenFileRow({
   children,
@@ -1141,13 +1191,15 @@ function ScreenFileRow({
   menuLabel,
   meta,
   name,
+  onActivate,
 }: {
-  children: ReactNode;
-  closeLabel: string;
+  children?: ReactNode;
+  closeLabel?: string;
   icon: ReactNode;
   menuLabel: string;
   meta?: string;
   name: string;
+  onActivate?: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const rowRef = useRef<HTMLDivElement>(null);
@@ -1160,7 +1212,11 @@ function ScreenFileRow({
         // O painel está no React dentro da linha (num portal): o clique nele
         // sobe até aqui, e não pode contar como clique na linha.
         if (rowRef.current?.contains(event.target as Node)) {
-          setIsOpen((current) => !current);
+          if (onActivate) {
+            onActivate();
+          } else {
+            setIsOpen((current) => !current);
+          }
         }
       }}
     >
@@ -1183,10 +1239,10 @@ function ScreenFileRow({
       >
         <MoreVertical size={14} />
       </IconButton>
-      {isOpen ? (
+      {isOpen && !onActivate ? (
         <SidePopover
           anchorRef={rowRef}
-          closeLabel={closeLabel}
+          closeLabel={closeLabel ?? menuLabel}
           onClose={() => setIsOpen(false)}
           title={menuLabel}
         >

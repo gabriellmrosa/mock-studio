@@ -1,10 +1,12 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { createImageObject, getStickerImage } from "../../lib/image-objects";
 import { insertKeyframe } from "../../lib/scene-motion";
 import InspectorPanel from "./InspectorPanel";
 import {
   DEFAULT_SCREEN_FIT,
   createSceneObject,
+  type SceneObject,
 } from "../../lib/scene-objects";
 import { APP_COPY, type AppCopy } from "../../lib/i18n";
 
@@ -92,6 +94,7 @@ const copy: AppCopy = {
   stickerSectionTitle: "Sticker",
   stickerChange: "Change sticker",
   stickerOutlineLabel: "Outline",
+  imageSpeedLabel: "Speed",
   stickerPickerTitle: "Choose a sticker",
   stickerSearchLabel: "Search stickers",
   stickerCategoryLabel: "Category",
@@ -345,7 +348,7 @@ function openAppearance() {
 }
 
 function renderInspector(
-  object = createSceneObject({ id: "object-1", modelId: "smartphone", name: "Object 1" }),
+  object: SceneObject = createSceneObject({ id: "object-1", modelId: "smartphone", name: "Object 1" }),
   {
     motionTab = "static",
     selectedKeyframeId = "",
@@ -364,6 +367,7 @@ function renderInspector(
     onUploadObjectImage: jest.fn(),
     onChangeSticker: jest.fn(),
     onUpdateImageOutline: jest.fn(),
+    onUpdateImageSpeed: jest.fn(),
     onRemoveObjectImage: jest.fn(),
     onAlignObject: jest.fn(),
     onThemeColorChange: jest.fn(),
@@ -1058,6 +1062,62 @@ describe("InspectorPanel", () => {
 
       expect(screen.getByText("Custom")).toBeInTheDocument();
       expect(screen.queryByText("Star White")).toBeNull();
+    });
+  });
+
+  describe("sticker", () => {
+    function sticker(id = "red-heart") {
+      return createImageObject({ image: getStickerImage(id), name: "Sticker 1" });
+    }
+
+    it("shows the sticker in a row with the usual ⋮, and the row opens the grid", () => {
+      const handlers = renderInspector(sticker());
+
+      // Como a faixa do arquivo da tela: o nome e o "⋮", sem texto solto.
+      expect(screen.getByText("Red heart")).toBeInTheDocument();
+      expect(screen.queryByText("Change sticker")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Change sticker" }));
+
+      // O clique no "⋮" sobe até a linha, que abre a grade uma vez só.
+      expect(handlers.onChangeSticker).toHaveBeenCalledTimes(1);
+    });
+
+    it("opens the grid from the row too, not only from the ⋮", () => {
+      const handlers = renderInspector(sticker());
+
+      fireEvent.click(screen.getByText("Red heart"));
+
+      expect(handlers.onChangeSticker).toHaveBeenCalledTimes(1);
+    });
+
+    it("has the outline switch, on for a sticker", () => {
+      const handlers = renderInspector(sticker());
+      const toggle = screen.getByRole("switch", { name: "Outline" });
+
+      expect(toggle).toHaveAttribute("aria-checked", "true");
+
+      fireEvent.click(toggle);
+
+      expect(handlers.onUpdateImageOutline).toHaveBeenCalledWith(false);
+    });
+
+    it("has no speed for a still sticker", () => {
+      renderInspector(sticker());
+
+      expect(screen.queryByLabelText("Speed")).not.toBeInTheDocument();
+    });
+
+    it("has the speed in %, for an animated sticker", () => {
+      const handlers = renderInspector(sticker("animated-fire"));
+      const speed = screen.getByLabelText("Speed");
+
+      expect(speed).toHaveValue("100");
+
+      fireEvent.change(speed, { target: { value: "200" } });
+      fireEvent.blur(speed);
+
+      expect(handlers.onUpdateImageSpeed).toHaveBeenCalledWith(2);
     });
   });
 });
