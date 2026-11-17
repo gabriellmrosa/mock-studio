@@ -281,11 +281,14 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   vazio.
 - Sticker novo: o SVG em `public/stickers/`, o id em `stickers.ts` e o nome em
   pt-BR em `sticker-labels.ts` (`stickers.test.ts` confere os três).
-- O contorno (`image.outline`) é desenhado na textura, não em CSS: a silhueta
-  da arte, pintada de branco, é espalhada em 64 direções e recebe uma sombra
-  numa passada só (por cópia, a sombra se somaria). A textura e o plano ganham
-  a margem `IMAGE_OUTLINE_MARGIN` por lado; a arte não muda de tamanho. Nasce
-  ligado no sticker e desligado numa imagem enviada.
+- O contorno (`image.outline`) e a sombra (`image.shadow`) são desenhados na
+  textura, não em CSS, e cada um liga e desliga por si. O contorno: a silhueta
+  da arte, pintada de branco, espalhada em 64 direções. A sombra cai da forma que
+  estiver por baixo (a do contorno, ou a da própria arte) numa passada só (por
+  cópia, ela se somaria). A textura e o plano ganham a margem
+  `IMAGE_OUTLINE_MARGIN` por lado quando há um dos dois; a arte não muda de
+  tamanho. Nascem ligados no sticker e desligados numa imagem enviada. Um
+  template de antes da sombra própria volta com a sombra que o contorno tinha.
 
 **Imagem animada** (sticker animado e GIF)
 

@@ -997,3 +997,47 @@ describe("the grid of the floor in templates", () => {
     expect(loadTemplates()[0]).not.toHaveProperty("grid");
   });
 });
+
+describe("the shadow of an image in templates", () => {
+  const withImage = (image: Parameters<typeof createImageObject>[0]["image"]) => [
+    createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+    createImageObject({ image, name: "Imagem 1" }),
+  ];
+  const rebuild = (objects: ReturnType<typeof withImage>) =>
+    (applySceneTemplate(createSceneTemplate({ name: "T", objects }))[1] as ReturnType<
+      typeof createImageObject
+    >).image;
+
+  it("keeps the outline and the shadow apart: a sticker with the shadow alone, or the outline alone", () => {
+    expect(rebuild(withImage({ ...getStickerImage("rocket"), outline: false, shadow: true }))).toMatchObject({
+      outline: false,
+      shadow: true,
+    });
+    expect(rebuild(withImage({ ...getStickerImage("rocket"), outline: true, shadow: false }))).toMatchObject({
+      outline: true,
+      shadow: false,
+    });
+  });
+
+  it("gives an image saved before the shadow existed the shadow its outline had", () => {
+    const template = createSceneTemplate({
+      name: "T",
+      objects: withImage({ ...getStickerImage("rocket"), outline: true, shadow: true }),
+    });
+    const saved = template.objects[1];
+
+    if (!("sticker" in saved)) throw new Error("expected an image object");
+
+    delete saved.shadow;
+
+    expect(
+      (applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>).image.shadow,
+    ).toBe(true);
+
+    saved.outline = false;
+
+    expect(
+      (applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>).image.shadow,
+    ).toBe(false);
+  });
+});

@@ -94,6 +94,7 @@ const copy: AppCopy = {
   stickerSectionTitle: "Sticker",
   stickerChange: "Change sticker",
   stickerOutlineLabel: "Outline",
+  imageShadowLabel: "Shadow",
   imageSpeedLabel: "Speed",
   stickerPickerTitle: "Choose a sticker",
   stickerSearchLabel: "Search stickers",
@@ -375,6 +376,7 @@ function renderInspector(
     onUploadObjectImage: jest.fn(),
     onChangeSticker: jest.fn(),
     onUpdateImageOutline: jest.fn(),
+    onUpdateImageShadow: jest.fn(),
     onUpdateImageSpeed: jest.fn(),
     onRemoveObjectImage: jest.fn(),
     onAlignObject: jest.fn(),
@@ -1108,6 +1110,19 @@ describe("InspectorPanel", () => {
       fireEvent.click(toggle);
 
       expect(handlers.onUpdateImageOutline).toHaveBeenCalledWith(false);
+    });
+
+    it("has the shadow switch apart from the outline, on for a sticker", () => {
+      const handlers = renderInspector(sticker());
+      const toggle = screen.getByRole("switch", { name: "Shadow" });
+
+      expect(toggle).toHaveAttribute("aria-checked", "true");
+
+      fireEvent.click(toggle);
+
+      expect(handlers.onUpdateImageShadow).toHaveBeenCalledWith(false);
+      // Um não mexe no outro.
+      expect(handlers.onUpdateImageOutline).not.toHaveBeenCalled();
     });
 
     it("has no speed for a still sticker", () => {

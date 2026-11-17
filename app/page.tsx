@@ -488,6 +488,7 @@ export default function Home() {
                 image: {
                   ...getStickerImage(stickerId),
                   outline: object.image.outline,
+                  shadow: object.image.shadow,
                 },
               }
             : object,
@@ -1454,6 +1455,9 @@ export default function Home() {
         onUpdateImageSpeed={(speed) =>
           selectedObject &&
           updateObjectImage(selectedObject.id, { speed: normalizeImageSpeed(speed) })
+        }
+        onUpdateImageShadow={(shadow) =>
+          selectedObject && updateObjectImage(selectedObject.id, { shadow })
         }
         onUpdateImageOutline={(outline) =>
           selectedObject &&

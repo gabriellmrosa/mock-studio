@@ -31,10 +31,16 @@ export type SceneImage = {
   isVector: boolean;
   name: string | null;
   /**
-   * Contorno branco e sombra de adesivo, desenhados na textura. Nasce ligado
-   * nos stickers e desligado numa imagem enviada.
+   * Contorno branco de adesivo, desenhado na textura. Nasce ligado nos stickers
+   * e desligado numa imagem enviada.
    */
   outline: boolean;
+  /**
+   * A sombra suave atrás da arte (ou do contorno, quando há), desenhada na
+   * textura. É do contorno e do resto por si: um sticker pode ficar só com ela,
+   * só com o contorno ou sem nenhum. Nasce como o contorno.
+   */
+  shadow: boolean;
   /**
    * O sticker do acervo (`stickers.ts`), quando a imagem é um. Diferente de um
    * arquivo enviado, ele é do app: vai no template e no link (é só o id) e
@@ -86,6 +92,7 @@ export const DEFAULT_IMAGE: SceneImage = {
   isVector: false,
   name: null,
   outline: false,
+  shadow: false,
   speed: 1,
   stickerId: null,
   url: null,
@@ -102,6 +109,7 @@ export function getStickerImage(stickerId: string): SceneImage {
     isVector: true,
     name: null,
     outline: true,
+    shadow: true,
     speed: 1,
     stickerId,
     url: getStickerUrl(stickerId),
@@ -320,6 +328,7 @@ export async function readImageFile(file: File): Promise<SceneImage> {
       isVector,
       name: file.name,
       outline: false,
+      shadow: false,
       speed: 1,
       stickerId: null,
       url,

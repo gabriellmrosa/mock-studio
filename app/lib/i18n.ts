@@ -24,6 +24,7 @@ export type AppCopy = {
   stickerSectionTitle: string;
   stickerChange: string;
   stickerOutlineLabel: string;
+  imageShadowLabel: string;
   imageSpeedLabel: string;
   stickerPickerTitle: string;
   stickerSearchLabel: string;
@@ -283,6 +284,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     stickerSectionTitle: "Sticker",
     stickerChange: "Trocar sticker",
     stickerOutlineLabel: "Contorno",
+    imageShadowLabel: "Sombra",
     imageSpeedLabel: "Velocidade",
     stickerPickerTitle: "Escolher sticker",
     stickerSearchLabel: "Buscar sticker",
@@ -609,6 +611,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     stickerSectionTitle: "Sticker",
     stickerChange: "Change sticker",
     stickerOutlineLabel: "Outline",
+    imageShadowLabel: "Shadow",
     imageSpeedLabel: "Speed",
     stickerPickerTitle: "Choose a sticker",
     stickerSearchLabel: "Search stickers",

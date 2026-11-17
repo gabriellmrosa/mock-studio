@@ -112,6 +112,7 @@ describe("sticker images", () => {
       isVector: true,
       name: null,
       outline: true,
+      shadow: true,
       speed: 1,
       stickerId: "fire",
       url: "/stickers/fire.svg",
@@ -124,6 +125,11 @@ describe("sticker images", () => {
       stickerId: "animated-fire",
       url: "/stickers/animated/fire.json",
     });
+  });
+
+  it("has the shadow on, like the outline, and an uploaded image has neither", () => {
+    expect(getStickerImage("fire")).toMatchObject({ outline: true, shadow: true });
+    expect(createImageObject({ name: "x" }).image).toMatchObject({ outline: false, shadow: false });
   });
 
   it("can be the image of a new object", () => {

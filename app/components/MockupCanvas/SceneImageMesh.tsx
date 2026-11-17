@@ -33,7 +33,7 @@ import { MAX_TEXTURE_SIZE } from "../../lib/mockup-image";
  */
 
 const EMPTY_LONG_SIDE = 512;
-/** O contorno de um sticker vai em 1280 px: são 64 cópias da silhueta. */
+/** O que tem contorno ou sombra vai em 1280 px: o contorno são 64 cópias da silhueta. */
 const OUTLINE_LONG_SIDE = 1280;
 const OUTLINE_STEPS = 64;
 /** Uma animação refaz o contorno a cada quadro: menos cópias da silhueta. */
@@ -190,23 +190,49 @@ function drawEmptyState(aspect: number, label: string): HTMLCanvasElement {
 }
 
 /**
- * Contorno branco e sombra de adesivo em volta da arte: a silhueta da arte
- * (alfa, pintada de branco) é espalhada em círculo para engrossar, e é essa
- * forma que recebe a sombra; a arte vai por cima. Devolve o canvas e a função
- * que o refaz a partir da arte — uma animação a chama a cada quadro, e por isso
- * os canvases de trabalho são criados uma vez só.
+ * O contorno branco e a sombra de adesivo em volta da arte, cada um por si. O
+ * contorno: a silhueta da arte (alfa, pintada de branco) é espalhada em círculo
+ * para engrossar, e a arte vai por cima. A sombra: cai da forma que estiver por
+ * baixo — a do contorno, quando há, ou a da própria arte. Devolve o canvas e a
+ * função que o refaz a partir da arte; uma animação a chama a cada quadro, e por
+ * isso os canvases de trabalho são criados uma vez só.
  */
-function createOutliner(art: HTMLCanvasElement, margin: number, steps: number) {
+type Decoration = { outline: boolean; shadow: boolean };
+
+function createDecorator(
+  art: HTMLCanvasElement,
+  margin: number,
+  steps: number,
+  { outline, shadow }: Decoration,
+) {
   const canvas = makeCanvas(art.width + margin * 2, art.height + margin * 2);
-  const silhouette = makeCanvas(art.width, art.height);
-  const thick = makeCanvas(canvas.width, canvas.height);
   const context = canvas.getContext("2d");
-  const silhouetteContext = silhouette.getContext("2d");
-  const thickContext = thick.getContext("2d");
+  // Só o contorno precisa da silhueta e do que a engrossa.
+  const silhouette = outline ? makeCanvas(art.width, art.height) : null;
+  const thick = outline ? makeCanvas(canvas.width, canvas.height) : null;
+  const silhouetteContext = silhouette?.getContext("2d") ?? null;
+  const thickContext = thick?.getContext("2d") ?? null;
   const reach = Math.max(art.width, art.height) * OUTLINE_THICKNESS;
 
   function redraw() {
-    if (!context || !silhouetteContext || !thickContext) {
+    if (!context) {
+      return;
+    }
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Uma só passada com sombra: por cópia, ela se somaria e escureceria.
+    if (shadow) {
+      context.shadowColor = "rgb(0 0 0 / 0.3)";
+      context.shadowBlur = margin * 0.55;
+      context.shadowOffsetY = margin * 0.18;
+    }
+
+    if (!outline || !silhouette || !thick || !silhouetteContext || !thickContext) {
+      // Sem contorno: a sombra é a da própria arte, desenhada uma vez.
+      context.drawImage(art, margin, margin);
+      context.shadowColor = "transparent";
+
       return;
     }
 
@@ -229,11 +255,6 @@ function createOutliner(art: HTMLCanvasElement, margin: number, steps: number) {
       );
     }
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    // Uma só passada com sombra: por cópia, ela se somaria e escureceria.
-    context.shadowColor = "rgb(0 0 0 / 0.3)";
-    context.shadowBlur = margin * 0.55;
-    context.shadowOffsetY = margin * 0.18;
     context.drawImage(thick, 0, 0);
     context.shadowColor = "transparent";
     context.drawImage(art, margin, margin);
@@ -242,12 +263,12 @@ function createOutliner(art: HTMLCanvasElement, margin: number, steps: number) {
   return { canvas, redraw };
 }
 
-function drawOutlined(art: HTMLCanvasElement, margin: number) {
-  const outliner = createOutliner(art, margin, OUTLINE_STEPS);
+function decorate(art: HTMLCanvasElement, margin: number, decoration: Decoration) {
+  const decorator = createDecorator(art, margin, OUTLINE_STEPS, decoration);
 
-  outliner.redraw();
+  decorator.redraw();
 
-  return outliner.canvas;
+  return decorator.canvas;
 }
 
 /**
@@ -266,7 +287,8 @@ async function loadImageTexture(image: SceneImage) {
   await element.decode();
 
   const naturalLong = Math.max(element.naturalWidth, element.naturalHeight);
-  const longSide = image.outline
+  const isDecorated = image.outline || image.shadow;
+  const longSide = isDecorated
     ? OUTLINE_LONG_SIDE
     : image.isVector
       ? MAX_TEXTURE_SIZE
@@ -278,8 +300,8 @@ async function loadImageTexture(image: SceneImage) {
 
   art.getContext("2d")?.drawImage(element, 0, 0, art.width, art.height);
 
-  const source = image.outline
-    ? drawOutlined(art, Math.round(longSide * IMAGE_OUTLINE_MARGIN))
+  const source = isDecorated
+    ? decorate(art, Math.round(longSide * IMAGE_OUTLINE_MARGIN), image)
     : art;
   const texture = new THREE.CanvasTexture(source);
 
@@ -324,7 +346,7 @@ export function SceneImageMesh({
   isPlaying: boolean;
   opacity: number;
 }) {
-  const { animation, aspect, isVector, outline, speed, url } = image;
+  const { animation, aspect, isVector, outline, shadow, speed, url } = image;
   const isAnimated = animation !== null && Boolean(url);
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const [animated, setAnimated] = useState<AnimatedLoaded | null>(null);
@@ -339,7 +361,7 @@ export function SceneImageMesh({
     let cancelled = false;
     let created: THREE.Texture | null = null;
 
-    loadImageTexture({ ...image, aspect, isVector, outline, url })
+    loadImageTexture({ ...image, aspect, isVector, outline, shadow, url })
       .then((texture) => {
         if (cancelled) {
           texture.dispose();
@@ -362,7 +384,7 @@ export function SceneImageMesh({
     };
     // `image` só entra pelos campos que mudam a textura, listados abaixo.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aspect, isAnimated, isVector, outline, url]);
+  }, [aspect, isAnimated, isVector, outline, shadow, url]);
 
   // A animação: a fonte é carregada uma vez; o contorno, quando ligado, é
   // refeito a cada quadro sobre um canvas maior (a margem).
@@ -385,15 +407,19 @@ export function SceneImageMesh({
 
         created = source;
 
-        const margin = outline
+        const margin = outline || shadow
           ? Math.round(
               Math.max(source.canvas.width, source.canvas.height) *
                 IMAGE_OUTLINE_MARGIN,
             )
           : 0;
-        const outliner = outline
-          ? createOutliner(source.canvas, margin, ANIMATED_OUTLINE_STEPS)
-          : null;
+        const outliner =
+          outline || shadow
+            ? createDecorator(source.canvas, margin, ANIMATED_OUTLINE_STEPS, {
+                outline,
+                shadow,
+              })
+            : null;
 
         texture = new THREE.CanvasTexture(outliner?.canvas ?? source.canvas);
         texture.colorSpace = THREE.SRGBColorSpace;
@@ -423,7 +449,7 @@ export function SceneImageMesh({
       created?.dispose();
       texture?.dispose();
     };
-  }, [animation, outline, url]);
+  }, [animation, outline, shadow, url]);
 
   const currentAnimated =
     isAnimated && animated?.url === url ? animated : null;
@@ -493,7 +519,7 @@ export function SceneImageMesh({
   const map = isReady ? readyTexture : empty;
   const [width, height] = getImageSize(aspect);
   // A margem do contorno e da sombra, na mesma proporção da textura.
-  const hasMargin = !isReady || outline;
+  const hasMargin = !isReady || outline || shadow;
   const margin = hasMargin ? Math.max(width, height) * IMAGE_OUTLINE_MARGIN : 0;
 
   return (

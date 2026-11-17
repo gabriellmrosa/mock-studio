@@ -117,6 +117,8 @@ type InspectorPanelProps = {
   onChangeSticker: () => void;
   /** O contorno de adesivo da imagem (ou sticker) selecionada. */
   onUpdateImageOutline: (outline: boolean) => void;
+  /** A sombra atrás da imagem (ou sticker) selecionada. */
+  onUpdateImageShadow: (shadow: boolean) => void;
   /** A velocidade da animação (1 é a original): sticker animado ou GIF. */
   onUpdateImageSpeed: (speed: number) => void;
   /** O arquivo da imagem solta selecionada: enviar, e voltar ao espaço vazio. */
@@ -183,6 +185,7 @@ export default function InspectorPanel({
   onRemoveObjectImage,
   onChangeSticker,
   onUpdateImageOutline,
+  onUpdateImageShadow,
   onUpdateImageSpeed,
   onOuterImageUpload,
   onOuterVideoUpload,
@@ -437,6 +440,11 @@ export default function InspectorPanel({
               label={copy.stickerOutlineLabel}
               onChange={onUpdateImageOutline}
             />
+            <Switch
+              checked={imageObject.image.shadow}
+              label={copy.imageShadowLabel}
+              onChange={onUpdateImageShadow}
+            />
             {imageObject.image.animation ? (
               <ImageSpeedField
                 copy={copy}
@@ -488,11 +496,18 @@ export default function InspectorPanel({
             {/* O contorno só faz sentido com uma arte: o espaço vazio já é uma
                 forma própria. */}
             {imageObject.image.url ? (
-              <Switch
-                checked={imageObject.image.outline}
-                label={copy.stickerOutlineLabel}
-                onChange={onUpdateImageOutline}
-              />
+              <>
+                <Switch
+                  checked={imageObject.image.outline}
+                  label={copy.stickerOutlineLabel}
+                  onChange={onUpdateImageOutline}
+                />
+                <Switch
+                  checked={imageObject.image.shadow}
+                  label={copy.imageShadowLabel}
+                  onChange={onUpdateImageShadow}
+                />
+              </>
             ) : null}
             {imageObject.image.animation ? (
               <ImageSpeedField

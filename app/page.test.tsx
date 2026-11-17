@@ -143,6 +143,7 @@ async function addImageWithFile() {
     isVector: false,
     name: "a.png",
     outline: false,
+    shadow: false,
     speed: 1,
     stickerId: null,
     url: "blob:a",

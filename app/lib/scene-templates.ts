@@ -140,6 +140,8 @@ export type TemplateImageObject = {
    * template (é só o id) e volta com a arte.
    */
   sticker?: string;
+  /** A sombra; sem ela (templates de antes), a que o contorno tinha. */
+  shadow?: boolean;
   /** Velocidade de uma animação; sem ela, 1. */
   speed?: number;
   isVisible: boolean;
@@ -223,6 +225,7 @@ function toTemplateObject(
       // Só o que o arquivo não decide sozinho: o sticker é o que se guarda dele.
       ...(object.image.stickerId ? { sticker: object.image.stickerId } : {}),
       outline: object.image.outline,
+      shadow: object.image.shadow,
       // A velocidade é um ajuste do usuário, vale para o sticker animado e para
       // um GIF que volta como espaço vazio; parada, 1 não precisa ser dita.
       ...(object.image.speed !== 1 ? { speed: object.image.speed } : {}),
@@ -335,6 +338,11 @@ function fromTemplateKeyframes(keyframes: TemplateKeyframe[] | undefined) {
 export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
   return template.objects.map((object, index): SceneObject => {
     if (isTemplateImage(object)) {
+      const outline =
+        typeof object.outline === "boolean"
+          ? object.outline
+          : isStickerId(object.sticker);
+
       return {
         kind: "image",
         deletable: index > 0,
@@ -355,10 +363,10 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
                 url: null,
               }),
           speed: normalizeImageSpeed(object.speed),
-          outline:
-            typeof object.outline === "boolean"
-              ? object.outline
-              : isStickerId(object.sticker),
+          outline,
+          // Antes da sombra própria, ela ia com o contorno: sem o campo, a
+          // imagem volta como estava.
+          shadow: typeof object.shadow === "boolean" ? object.shadow : outline,
         },
         isVisible: object.isVisible,
         keyframes: fromTemplateKeyframes(object.keyframes),
