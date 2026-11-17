@@ -5,8 +5,13 @@ import { FoldableIcon } from "../FoldableIcon/FoldableIcon";
 import { FolderTabPanel, FolderTabs } from "../FolderTabs/FolderTabs";
 import "./InspectorPanel.css";
 import { useRef, useState, type ReactNode } from "react";
+import { getStickerLabel } from "../../lib/stickers";
 import ColorRow from "../ColorRow/ColorRow";
 import TextControls from "../TextControls/TextControls";
+import {
+  IMAGE_OBJECT_ACCEPT,
+  isDefaultImagePose,
+} from "../../lib/image-objects";
 import {
   isDefaultTextPose,
   type SceneText,
@@ -25,6 +30,7 @@ import {
   getActiveScreenFit,
   isDefaultObjectTransform,
   isDeviceObject,
+  isImageObject,
   isTextObject,
   isPlaceholderImageUrl,
   type DeviceObject,
@@ -101,6 +107,13 @@ type InspectorPanelProps = {
   onResetObject: () => void;
   /** Muda o que o texto selecionado diz ou como se vê. */
   onUpdateText: (patch: Partial<SceneText>) => void;
+  /** Abre a grade para trocar o sticker do objeto selecionado. */
+  onChangeSticker: () => void;
+  /** O contorno de adesivo da imagem (ou sticker) selecionada. */
+  onUpdateImageOutline: (outline: boolean) => void;
+  /** O arquivo da imagem solta selecionada: enviar, e voltar ao espaço vazio. */
+  onUploadObjectImage: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onRemoveObjectImage: () => void;
   /** Alinha o objeto ao quadro do canvas, na pose em edição. */
   onAlignObject: (alignment: ObjectAlignment) => void;
   onThemeColorChange: (part: string, hex: string) => void;
@@ -158,6 +171,10 @@ export default function InspectorPanel({
   onUpdateScale,
   onUpdateOpacity,
   onUpdateFoldAngle,
+  onUploadObjectImage,
+  onRemoveObjectImage,
+  onChangeSticker,
+  onUpdateImageOutline,
   onOuterImageUpload,
   onOuterVideoUpload,
   onRemoveOuterImage,
@@ -189,9 +206,10 @@ export default function InspectorPanel({
   // alinhamento são de todo objeto.
   const device = isDeviceObject(object) ? object : null;
   const textObject = isTextObject(object) ? object : null;
+  const imageObject = isImageObject(object) ? object : null;
   // O aparelho gira 180° em Y (o modelo olha para trás no arquivo) e o campo
-  // mostra o desvio disso; o texto já nasce de frente.
-  const baseRotationY = textObject ? 0 : 180;
+  // mostra o desvio disso; o texto e a imagem já nascem de frente.
+  const baseRotationY = device ? 180 : 0;
   const model = device
     ? DEVICE_MODEL_LIST.find((item) => item.id === device.modelId)
     : undefined;
@@ -385,6 +403,92 @@ export default function InspectorPanel({
           />
         ) : null}
 
+        {imageObject?.image.stickerId ? (
+          <PanelSection title={copy.stickerSectionTitle}>
+            {/* A faixa abre a grade: o sticker é do acervo, não um arquivo. */}
+            <button
+              type="button"
+              className="screen-file-row screen-file-row-action"
+              onClick={onChangeSticker}
+              title={copy.stickerChange}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                alt=""
+                className="screen-file-icon"
+                height={20}
+                src={imageObject.image.url ?? ""}
+                width={20}
+              />
+              <span className="screen-file-name">
+                {getStickerLabel(
+                  imageObject.image.stickerId,
+                  copy.stickerLabels,
+                )}
+              </span>
+              <span className="screen-file-meta">{copy.stickerChange}</span>
+            </button>
+            <Switch
+              checked={imageObject.image.outline}
+              label={copy.stickerOutlineLabel}
+              onChange={onUpdateImageOutline}
+            />
+          </PanelSection>
+        ) : null}
+
+        {imageObject && !imageObject.image.stickerId ? (
+          <PanelSection title={copy.imageSectionTitle}>
+            {/* O arquivo nunca vai para o template: voltando de um, o objeto é
+                o espaço vazio e a faixa pede o arquivo de novo. */}
+            <ScreenFileRow
+              closeLabel={copy.closeLabel}
+              icon={<ImageIcon size={16} />}
+              menuLabel={copy.imageOptions}
+              name={imageObject.image.name ?? copy.screenAddImage}
+            >
+              {imageObject.image.url ? (
+                <>
+                  <UploadCard
+                    accept={IMAGE_OBJECT_ACCEPT}
+                    label={copy.uploadImage}
+                    meta={copy.imageObjectHint}
+                    onUpload={onUploadObjectImage}
+                  />
+                  <div className="side-popover-footer">
+                    <button
+                      type="button"
+                      className="editor-button-danger"
+                      onClick={onRemoveObjectImage}
+                    >
+                      <Trash2 size={14} />
+                      {copy.removeImage}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <UploadCard
+                  accept={IMAGE_OBJECT_ACCEPT}
+                  label={copy.screenUploadImage}
+                  meta={copy.imageObjectHint}
+                  onUpload={onUploadObjectImage}
+                />
+              )}
+            </ScreenFileRow>
+            {/* O contorno só faz sentido com uma arte: o espaço vazio já é uma
+                forma própria. */}
+            {imageObject.image.url ? (
+              <Switch
+                checked={imageObject.image.outline}
+                label={copy.stickerOutlineLabel}
+                onChange={onUpdateImageOutline}
+              />
+            ) : null}
+            {uploadError ? (
+              <p className="inspector-error-note">{uploadError}</p>
+            ) : null}
+          </PanelSection>
+        ) : null}
+
         <PanelSection
           title={
             editedKeyframe
@@ -404,7 +508,9 @@ export default function InspectorPanel({
                 disabled={
                   device
                     ? isDefaultObjectTransform(device)
-                    : isDefaultTextPose(object)
+                    : imageObject
+                      ? isDefaultImagePose(imageObject)
+                      : isDefaultTextPose(object)
                 }
                 label={copy.resetObjectButton}
                 onReset={onResetObject}

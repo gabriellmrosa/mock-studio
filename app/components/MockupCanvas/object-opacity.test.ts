@@ -121,3 +121,39 @@ describe("orderObjectGroups", () => {
     expect(near.renderOrder).toBe(2);
   });
 });
+
+describe("applyObjectOpacity on an image object", () => {
+  function makeImage() {
+    const group = new THREE.Group();
+    const material = new THREE.MeshBasicMaterial({ transparent: true });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(), material);
+
+    group.userData.isImage = true;
+    group.add(plane);
+
+    return { group, material, plane };
+  }
+
+  it("fades the plane's own material, with no depth-pass copies", () => {
+    const { group, material, plane } = makeImage();
+
+    applyObjectOpacity(group, 0.4);
+
+    expect(plane.material).toBe(material);
+    expect(material.opacity).toBe(0.4);
+    expect(group.visible).toBe(true);
+    // Sem as passadas dos aparelhos: nada de mesh extra no grupo.
+    expect(group.children).toHaveLength(1);
+  });
+
+  it("hides the group at zero and brings it back", () => {
+    const { group, material } = makeImage();
+
+    applyObjectOpacity(group, 0);
+    expect(group.visible).toBe(false);
+
+    applyObjectOpacity(group, 1);
+    expect(group.visible).toBe(true);
+    expect(material.opacity).toBe(1);
+  });
+});

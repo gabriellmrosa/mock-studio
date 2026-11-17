@@ -14,6 +14,7 @@ import {
   type Keyframe,
   type MotionTransform,
 } from "./scene-motion";
+import type { SceneImage } from "./image-objects";
 import type { SceneText } from "./text-objects";
 
 /**
@@ -195,7 +196,7 @@ export type ActiveScreenVideo = {
  * assim vale igual para uma tela ou duas.
  */
 export function getActiveScreenVideos(object: SceneObject): ActiveScreenVideo[] {
-  // Um texto não tem tela, logo nenhum vídeo: quem percorre os objetos da cena
+  // Texto e imagem solta não têm tela, logo nenhum vídeo: quem percorre os objetos da cena
   // (timeline, exportação, controlador) não precisa separar os aparelhos antes.
   if (!isDeviceObject(object)) {
     return [];
@@ -311,7 +312,26 @@ export type TextObject = {
   text: SceneText;
 };
 
-export type SceneObject = DeviceObject | TextObject;
+/** Uma imagem solta (PNG, SVG): um plano na cena. Ver `image-objects.ts`. */
+export type ImageObject = {
+  kind: "image";
+  deletable: boolean;
+  id: string;
+  image: SceneImage;
+  isVisible: boolean;
+  keyframes: Keyframe[];
+  name: string;
+  opacity: number;
+  positionX: number;
+  positionY: number;
+  positionZ: number;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  scale: number;
+};
+
+export type SceneObject = DeviceObject | TextObject | ImageObject;
 
 /** A pose editável de um objeto: a do texto é a mesma, menos a abertura. */
 export type PosePatch = Partial<
@@ -337,6 +357,10 @@ export function isDeviceObject(object: SceneObject): object is DeviceObject {
 
 export function isTextObject(object: SceneObject): object is TextObject {
   return object.kind === "text";
+}
+
+export function isImageObject(object: SceneObject): object is ImageObject {
+  return object.kind === "image";
 }
 
 // Placeholders são gerados em runtime (canvas) no tamanho de upload

@@ -91,6 +91,7 @@ jest.mock("./components/InspectorPanel/InspectorPanel", () => ({
       positionX: number;
       positionZ: number;
       text?: { content: string; fontSize: number };
+      image?: { aspect: number; url: string | null };
     } | null;
     onModelChange: (modelId: string) => void;
     onResetObject: () => void;
@@ -110,7 +111,9 @@ jest.mock("./components/InspectorPanel/InspectorPanel", () => ({
         reset-object
       </button>
       {object
-        ? object.text
+        ? object.image
+          ? `${object.name} :: image :: file=${object.image.url ?? "none"} :: z=${object.positionZ.toFixed(2)}`
+          : object.text
           ? `${object.name} :: text "${object.text.content}" :: size=${object.text.fontSize} :: z=${object.positionZ.toFixed(2)}`
           : `${object.name} :: ${object.modelId} :: x=${object.positionX.toFixed(2)}`
         : "no-selection"}
@@ -118,8 +121,8 @@ jest.mock("./components/InspectorPanel/InspectorPanel", () => ({
   ),
 }));
 
-/** O "+" abre um menu: um aparelho ou um texto. */
-function addFromMenu(kind: "Device" | "Text") {
+/** O "+" abre um menu: um aparelho, um texto ou uma imagem. */
+function addFromMenu(kind: "Device" | "Text" | "Image" | "Sticker") {
   // O menu de mentira não fecha sozinho ao escolher; o de verdade fecha.
   if (!screen.queryByRole("button", { name: kind })) {
     fireEvent.click(screen.getByLabelText("Add object"));
@@ -299,5 +302,74 @@ describe("Home page layers and selection flow", () => {
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
       'text "Novo"',
     );
+  });
+
+  it("adds an image as an empty dashed placeholder, in front of the devices", () => {
+    render(<Home />);
+
+    addFromMenu("Image");
+
+    // Sem arquivo (o tracejado) até o usuário enviar um.
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
+      "Image 1 :: image :: file=none :: z=0.25",
+    );
+    expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
+  });
+
+  it("numbers the images apart from the texts and the devices", () => {
+    render(<Home />);
+
+    addFromMenu("Image");
+    addFromMenu("Text");
+    addFromMenu("Image");
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Image 2");
+  });
+
+  it("duplicates an image, offset from the original, and selects the copy", () => {
+    render(<Home />);
+
+    addFromMenu("Image");
+
+    fireEvent.click(screen.getAllByLabelText("Object options")[1]);
+    fireEvent.click(screen.getByText("Duplicate"));
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
+      "Image 1 copy :: image",
+    );
+    expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:3");
+  });
+
+  it("adds a sticker from the picker, with its art, outline and number", () => {
+    render(<Home />);
+
+    addFromMenu("Sticker");
+    fireEvent.click(screen.getByRole("button", { name: "Red heart" }));
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
+      "Sticker 1 :: image :: file=/stickers/red-heart.svg :: z=0.25",
+    );
+    expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
+    // A grade fecha ao escolher.
+    expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
+  });
+
+  it("numbers the stickers apart from the images", () => {
+    render(<Home />);
+
+    addFromMenu("Image");
+    addFromMenu("Sticker");
+    fireEvent.click(screen.getByRole("button", { name: "Red heart" }));
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Sticker 1");
+  });
+
+  it("resets the pose of an image", () => {
+    render(<Home />);
+
+    addFromMenu("Image");
+    fireEvent.click(screen.getByText("reset-object"));
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent("z=0.00");
   });
 });

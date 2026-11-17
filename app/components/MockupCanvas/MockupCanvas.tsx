@@ -2,6 +2,7 @@
 
 import "./MockupCanvas.css";
 import {
+  Fragment,
   Suspense,
   useCallback,
   useEffect,
@@ -38,6 +39,7 @@ import {
   getScreenVideoKey,
   getScreenVideoTime,
   isDeviceObject,
+  isImageObject,
   isTextObject,
   type SceneObject,
 } from "../../lib/scene-objects";
@@ -87,6 +89,7 @@ import {
 } from "./object-alignment";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
 import { applyTextStyle } from "./text-style";
+import { SceneImageMesh } from "./SceneImageMesh";
 import { SceneTextMesh } from "./SceneTextMesh";
 import { applyDuoFoldAngle, Duo } from "../Duo";
 import { warmUpModels } from "../../lib/model-warmup";
@@ -369,6 +372,7 @@ function OpacityController({
 
 function SceneBridge({
   alignmentAreaRef,
+  copy,
   modeFrameRef,
   isSceneSettled,
   objects,
@@ -596,6 +600,66 @@ function SceneBridge({
                     />
                   </group>
                 </Suspense>
+              );
+            }
+
+            if (isImageObject(object)) {
+              const sampledImage =
+                motionPlayheadMs !== null
+                  ? sampleDisplayedMotion(object, motionPlayheadMs)
+                  : null;
+              const shownImage = sampledImage
+                ? { ...object, ...sampledImage }
+                : object;
+
+              return (
+                <Fragment key={object.id}>
+                  {motionStartedAt !== null && hasMotion(object) ? (
+                    <MotionDriver
+                      groupsRef={objectGroupsRef}
+                      index={0}
+                      object={object}
+                      spawnOverrides={spawnOverrides}
+                      startedAt={motionStartedAt}
+                    />
+                  ) : null}
+                  {/* O plano existe desde o primeiro render (com o tamanho
+                      da proporção): a cena já pode se enquadrar nele, mesmo
+                      com o arquivo ainda decodificando. */}
+                  <SceneObjectResolvedReporter
+                    id={object.id}
+                    modelId="image"
+                    onObjectResolved={onObjectResolved}
+                  />
+                  <group
+                    name={object.id}
+                    ref={(node) => {
+                      if (node) {
+                        objectGroupsRef.current.set(object.id, node);
+                      } else {
+                        objectGroupsRef.current.delete(object.id);
+                      }
+                    }}
+                    onDoubleClick={(event) =>
+                      handleObjectDoubleClick(event, object.id)
+                    }
+                    position={getResolvedTextPosition(shownImage)}
+                    rotation={[
+                      (shownImage.rotationX * Math.PI) / 180,
+                      (shownImage.rotationY * Math.PI) / 180,
+                      (shownImage.rotationZ * Math.PI) / 180,
+                    ]}
+                    scale={shownImage.scale}
+                    userData-isImage
+                    userData-opacity={shownImage.opacity}
+                  >
+                    <SceneImageMesh
+                      emptyLabel={copy.imageEmptyLabel}
+                      image={object.image}
+                      opacity={shownImage.opacity}
+                    />
+                  </group>
+                </Fragment>
               );
             }
 

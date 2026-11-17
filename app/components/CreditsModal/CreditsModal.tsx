@@ -69,6 +69,14 @@ const ASSET_CREDITS: readonly AssetCredit[] = [
     warning:
       "Used strictly for educational/portfolio purposes, no monetization involved. Author may request removal at any time.",
   },
+  {
+    title: "Stickers — Fluent Emoji (Color)",
+    author: "Microsoft",
+    sourceHref: "https://github.com/microsoft/fluentui-emoji",
+    sourceLabel: "GitHub",
+    licenseHref: "https://github.com/microsoft/fluentui-emoji/blob/main/LICENSE",
+    licenseLabel: "MIT",
+  },
 ];
 
 export default function CreditsModal({

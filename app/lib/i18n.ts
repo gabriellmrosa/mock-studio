@@ -1,3 +1,9 @@
+import { STICKER_LABELS_PT_BR } from "./sticker-labels";
+import {
+  STICKER_CATEGORY_NAMES_EN_US,
+  STICKER_CATEGORY_NAMES_PT_BR,
+} from "./stickers";
+
 export type Locale = "pt-BR" | "en-US";
 export type UiTheme = "dark" | "light";
 
@@ -8,6 +14,23 @@ export type AppCopy = {
   addDeviceObject: string;
   addTextObject: string;
   textObjectName: string;
+  addImageObject: string;
+  imageObjectName: string;
+  imageSectionTitle: string;
+  imageObjectHint: string;
+  imageEmptyLabel: string;
+  addStickerObject: string;
+  stickerObjectName: string;
+  stickerSectionTitle: string;
+  stickerChange: string;
+  stickerOutlineLabel: string;
+  stickerPickerTitle: string;
+  stickerSearchLabel: string;
+  stickerCategoryLabel: string;
+  stickerCount: string;
+  stickerCategoryNames: Record<string, string>;
+  stickerNone: string;
+  stickerLabels: Record<string, string> | null;
   textDefaultContent: string;
   textSectionTitle: string;
   textContentLabel: string;
@@ -241,6 +264,23 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     addDeviceObject: "Aparelho",
     addTextObject: "Texto",
     textObjectName: "Texto",
+    addImageObject: "Imagem",
+    imageObjectName: "Imagem",
+    imageSectionTitle: "Imagem",
+    imageObjectHint: "PNG ou SVG",
+    imageEmptyLabel: "Envie seu PNG ou SVG",
+    addStickerObject: "Sticker",
+    stickerObjectName: "Sticker",
+    stickerSectionTitle: "Sticker",
+    stickerChange: "Trocar sticker",
+    stickerOutlineLabel: "Contorno",
+    stickerPickerTitle: "Escolher sticker",
+    stickerSearchLabel: "Buscar sticker",
+    stickerCategoryLabel: "Categoria",
+    stickerCount: "stickers",
+    stickerCategoryNames: STICKER_CATEGORY_NAMES_PT_BR,
+    stickerNone: "Nenhum sticker encontrado.",
+    stickerLabels: STICKER_LABELS_PT_BR,
     textDefaultContent: "Seu texto",
     textSectionTitle: "Texto",
     textContentLabel: "Conteúdo",
@@ -541,6 +581,23 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     addDeviceObject: "Device",
     addTextObject: "Text",
     textObjectName: "Text",
+    addImageObject: "Image",
+    imageObjectName: "Image",
+    imageSectionTitle: "Image",
+    imageObjectHint: "PNG or SVG",
+    imageEmptyLabel: "Upload your PNG or SVG",
+    addStickerObject: "Sticker",
+    stickerObjectName: "Sticker",
+    stickerSectionTitle: "Sticker",
+    stickerChange: "Change sticker",
+    stickerOutlineLabel: "Outline",
+    stickerPickerTitle: "Choose a sticker",
+    stickerSearchLabel: "Search stickers",
+    stickerCategoryLabel: "Category",
+    stickerCount: "stickers",
+    stickerCategoryNames: STICKER_CATEGORY_NAMES_EN_US,
+    stickerNone: "No sticker found.",
+    stickerLabels: null,
     textDefaultContent: "Your text",
     textSectionTitle: "Text",
     textContentLabel: "Content",

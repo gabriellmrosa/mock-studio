@@ -29,6 +29,23 @@ const copy: AppCopy = {
   addDeviceObject: "Device",
   addTextObject: "Text",
   textObjectName: "Text",
+  addImageObject: "Image",
+  imageObjectName: "Image",
+  imageSectionTitle: "Image",
+  imageObjectHint: "PNG or SVG",
+  imageEmptyLabel: "Upload your PNG or SVG",
+  addStickerObject: "Sticker",
+  stickerObjectName: "Sticker",
+  stickerSectionTitle: "Sticker",
+  stickerChange: "Change sticker",
+  stickerOutlineLabel: "Outline",
+  stickerPickerTitle: "Choose a sticker",
+  stickerSearchLabel: "Search stickers",
+  stickerCategoryLabel: "Category",
+  stickerCount: "stickers",
+  stickerCategoryNames: {},
+  stickerNone: "No sticker found.",
+  stickerLabels: null,
   textDefaultContent: "Your text",
   textSectionTitle: "Text",
   textContentLabel: "Content",
@@ -271,6 +288,8 @@ describe("LayersPanel", () => {
         locale="en-US"
         objects={[object]}
         onAddObject={jest.fn()}
+        onAddImage={jest.fn()}
+        onAddSticker={jest.fn()}
         onAddText={jest.fn()}
         onDuplicateObject={jest.fn()}
         onLocaleChange={jest.fn()}
@@ -302,6 +321,8 @@ describe("LayersPanel", () => {
         locale="en-US"
         objects={[object]}
         onAddObject={jest.fn()}
+        onAddImage={jest.fn()}
+        onAddSticker={jest.fn()}
         onAddText={jest.fn()}
         onDuplicateObject={jest.fn()}
         onLocaleChange={jest.fn()}
@@ -332,6 +353,8 @@ describe("LayersPanel", () => {
         locale="en-US"
         objects={[object]}
         onAddObject={jest.fn()}
+        onAddImage={jest.fn()}
+        onAddSticker={jest.fn()}
         onAddText={jest.fn()}
         onDuplicateObject={jest.fn()}
         onLocaleChange={jest.fn()}

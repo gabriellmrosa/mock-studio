@@ -24,8 +24,17 @@ import type { ObjectAlignment } from "./components/MockupCanvas/object-alignment
 import Snackbar, {
   type SnackbarNotification,
 } from "./components/Snackbar/Snackbar";
+import StickerPicker from "./components/StickerPicker/StickerPicker";
 import { APP_VERSION } from "./lib/app-version";
 import { buildNextDeviceColors } from "./lib/device-colors";
+import {
+  createImageObject,
+  duplicateImageObject,
+  getStickerImage,
+  readImageFile,
+  resetImageObject,
+  type SceneImage,
+} from "./lib/image-objects";
 import {
   createTextObject,
   duplicateTextObject,
@@ -58,6 +67,7 @@ import {
   duplicateSceneObject,
   getSequentialSpawnTransform,
   isDeviceObject,
+  isImageObject,
   isTextObject,
   resetSceneObject,
   type DeviceObject,
@@ -140,8 +150,8 @@ function detectBrowserLocale(): Locale {
  */
 const UI_THEME: UiTheme = "dark";
 
-/** Um texto novo nasce à frente dos aparelhos (em unidades de posição). */
-const NEW_TEXT_POSITION_Z = 0.25;
+/** Texto e imagem novos nascem à frente dos aparelhos (em unidades de posição). */
+const NEW_FLAT_OBJECT_POSITION_Z = 0.25;
 
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("pt-BR");
@@ -151,6 +161,7 @@ export default function Home() {
   );
   const isInitialized = useRef(false);
   const [uploadError, setUploadError] = useState("");
+  const [stickerPickerMode, setStickerPickerMode] = useState<"add" | "swap" | null>(null);
   const [sceneObjects, setSceneObjects] = useState<SceneObject[]>(() => [
     createSceneObject({
       deletable: false,
@@ -395,9 +406,112 @@ export default function Home() {
 
     setSceneObjects((current) => [
       ...current,
-      { ...nextText, positionZ: NEW_TEXT_POSITION_Z },
+      { ...nextText, positionZ: NEW_FLAT_OBJECT_POSITION_Z },
     ]);
     setSelectedObjectId(nextText.id);
+  }
+
+  /**
+   * Uma imagem nova: nasce como o espaço vazio, sem arquivo — o mesmo estado de
+   * uma imagem que voltou de um template —, e o Inspector pede o arquivo.
+   */
+  function handleAddImage() {
+    const images = sceneObjects.filter(isImageObject).length;
+    const nextImage = createImageObject({
+      name: `${copy.imageObjectName} ${images + 1}`,
+    });
+
+    setSceneObjects((current) => [
+      ...current,
+      { ...nextImage, positionZ: NEW_FLAT_OBJECT_POSITION_Z },
+    ]);
+    setSelectedObjectId(nextImage.id);
+  }
+
+  /**
+   * "+ Sticker" abre a grade para criar um objeto; "Trocar sticker" abre a mesma
+   * para mudar o do objeto selecionado. `null` é fechada.
+   */
+  function handlePickSticker(stickerId: string) {
+    const mode = stickerPickerMode;
+
+    setStickerPickerMode(null);
+
+    if (mode === "swap" && selectedObject) {
+      // Trocar a arte mantém o que o usuário ajustou (o contorno).
+      setSceneObjects((current) =>
+        current.map((object) =>
+          object.id === selectedObject.id && isImageObject(object)
+            ? {
+                ...object,
+                image: {
+                  ...getStickerImage(stickerId),
+                  outline: object.image.outline,
+                },
+              }
+            : object,
+        ),
+      );
+
+      return;
+    }
+
+    const stickers = sceneObjects.filter(
+      (object) => isImageObject(object) && object.image.stickerId,
+    ).length;
+    const nextSticker = createImageObject({
+      image: getStickerImage(stickerId),
+      name: `${copy.stickerObjectName} ${stickers + 1}`,
+    });
+
+    setSceneObjects((current) => [
+      ...current,
+      { ...nextSticker, positionZ: NEW_FLAT_OBJECT_POSITION_Z },
+    ]);
+    setSelectedObjectId(nextSticker.id);
+  }
+
+  /** O arquivo da imagem solta (ou o espaço vazio de volta); a proporção segue o que ele traz. */
+  function updateObjectImage(id: string, patch: Partial<SceneImage>) {
+    setSceneObjects((current) =>
+      current.map((object) =>
+        object.id === id && isImageObject(object)
+          ? { ...object, image: { ...object.image, ...patch } }
+          : object,
+      ),
+    );
+  }
+
+  async function handleObjectImageUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    const id = selectedObject?.id;
+
+    event.target.value = "";
+
+    if (!file || !id) {
+      return;
+    }
+
+    try {
+      // A largura do objeto na cena é fixa: um arquivo de outra proporção
+      // muda a altura, e o objeto não "cresce" (ver IMAGE_BASE_WIDTH).
+      updateObjectImage(id, await readImageFile(file));
+      setUploadError("");
+    } catch (error) {
+      console.error(error);
+      setUploadError(copy.uploadImageError);
+    }
+  }
+
+  /** Tira o arquivo e deixa o espaço vazio, na mesma proporção. */
+  function handleRemoveObjectImage() {
+    if (selectedObject) {
+      updateObjectImage(selectedObject.id, {
+        isVector: false,
+        name: null,
+        url: null,
+      });
+    }
   }
 
   /** O que o texto diz ou como se vê; dentro dos limites, sempre. */
@@ -486,6 +600,16 @@ export default function Home() {
 
       if (isTextObject(source)) {
         const copied = duplicateTextObject({
+          name: getDuplicateName(source.name),
+          source,
+        });
+
+        setSelectedObjectId(copied.id);
+        return [...current, copied];
+      }
+
+      if (isImageObject(source)) {
+        const copied = duplicateImageObject({
           name: getDuplicateName(source.name),
           source,
         });
@@ -591,8 +715,12 @@ export default function Home() {
           return object;
         }
 
-        return isDeviceObject(object)
-          ? resetSceneObject(object)
+        if (isDeviceObject(object)) {
+          return resetSceneObject(object);
+        }
+
+        return isImageObject(object)
+          ? resetImageObject(object)
           : resetTextObject(object);
       }),
     );
@@ -1118,6 +1246,8 @@ export default function Home() {
           locale={locale}
           objects={sceneObjects}
           onAddObject={handleAddObject}
+          onAddImage={handleAddImage}
+          onAddSticker={() => setStickerPickerMode("add")}
           onAddText={handleAddText}
           onDuplicateObject={handleDuplicateObject}
           onLocaleChange={setLocale}
@@ -1252,7 +1382,14 @@ export default function Home() {
         }}
         onModelChange={handleModelChange}
         onResetObject={handleResetObject}
+        onRemoveObjectImage={handleRemoveObjectImage}
+        onChangeSticker={() => setStickerPickerMode("swap")}
+        onUpdateImageOutline={(outline) =>
+          selectedObject &&
+          updateObjectImage(selectedObject.id, { outline })
+        }
         onUpdateText={handleUpdateText}
+        onUploadObjectImage={handleObjectImageUpload}
         onAlignObject={handleAlignObject}
         onThemeColorChange={handleThemeColorChange}
         onThemeChange={handleThemeChange}
@@ -1319,6 +1456,12 @@ export default function Home() {
       />
       )}
       </main>
+      <StickerPicker
+        copy={copy}
+        isOpen={stickerPickerMode !== null}
+        onCancel={() => setStickerPickerMode(null)}
+        onPick={handlePickSticker}
+      />
       <AlertDialog
         isOpen={pendingAction !== null}
         title={

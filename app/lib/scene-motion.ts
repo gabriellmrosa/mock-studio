@@ -2,6 +2,7 @@ import {
   getActiveScreenVideos,
   getScreenVideoClipDuration,
   isDeviceObject,
+  isTextObject,
   type SceneObject,
 } from "./scene-objects";
 import { DEFAULT_FOLD_ANGLE } from "./scene-presets";
@@ -203,13 +204,14 @@ export function captureTransform(object: SceneObject): MotionTransform {
     rotationZ: object.rotationZ,
     scale: object.scale,
     opacity: object.opacity,
-    // A abertura é só do dobrável; o texto não tem.
-    ...(isDeviceObject(object)
-      ? { foldAngle: object.foldAngle }
-      : {
+    // A abertura é só do dobrável; a cor e o espaço entre letras, só do texto.
+    ...(isDeviceObject(object) ? { foldAngle: object.foldAngle } : {}),
+    ...(isTextObject(object)
+      ? {
           letterSpacing: object.text.letterSpacing,
           textColor: object.text.color,
-        }),
+        }
+      : {}),
   };
 }
 

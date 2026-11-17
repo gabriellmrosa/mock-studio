@@ -1,6 +1,7 @@
 "use client";
 
 import * as THREE from "three";
+import { hideEditorOnlyObjects } from "./editor-only";
 import type { ExportPreset } from "./MockupCanvas";
 
 type ExportPhotoArgs = {
@@ -53,6 +54,7 @@ export async function exportCanvasPhoto({
   exportTarget.samples = gl.capabilities.isWebGL2 ? 8 : 0;
   exportTarget.texture.colorSpace = gl.outputColorSpace;
   let blob: Blob | null = null;
+  let showEditorOnly = () => {};
 
   try {
     if (preset.includeBackground) {
@@ -76,6 +78,12 @@ export async function exportCanvasPhoto({
     }
 
     gl.setRenderTarget(exportTarget);
+
+    // O espaço vazio de uma imagem sem arquivo é do editor: não sai no PNG. Fica
+    // escondido até a leitura dos pixels: entre o render e ela há um quadro, e
+    // o loop do R3F desenha a cena no alvo que estiver ligado — o desta
+    // exportação —, trazendo o espaço vazio de volta para dentro do arquivo.
+    showEditorOnly = hideEditorOnlyObjects(scene);
     gl.render(scene, camera);
 
     await new Promise<void>((resolve) => {
@@ -92,6 +100,7 @@ export async function exportCanvasPhoto({
       preset.height,
     );
   } finally {
+    showEditorOnly();
     if (gridRef.current) {
       gridRef.current.visible = previousGridVisible;
     }

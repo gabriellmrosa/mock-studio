@@ -20,6 +20,7 @@ import {
 } from "./scene-objects";
 import { captureTransform, createKeyframe, insertKeyframe } from "./scene-motion";
 import { createTextObject } from "./text-objects";
+import { createImageObject, getStickerImage } from "./image-objects";
 
 const STORAGE_KEY = "mock-photo-templates";
 
@@ -703,5 +704,173 @@ describe("text objects in templates", () => {
     expect(getTemplateSnapshot([phone, text], "static", null)).not.toBe(
       getTemplateSnapshot([phone, edited], "static", null),
     );
+  });
+});
+
+describe("image objects in templates", () => {
+  function sceneWithImage() {
+    return [
+      createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+      createImageObject({
+        id: "logo",
+        image: { aspect: 3, isVector: true, name: "logo.svg", url: "blob:logo" },
+        name: "Logo",
+      }),
+    ];
+  }
+
+  it("keeps the proportion but never the file", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: sceneWithImage(),
+    });
+
+    expect(template.objects[1]).toMatchObject({ kind: "image", aspect: 3, name: "Logo" });
+    expect(JSON.stringify(template)).not.toContain("blob:logo");
+    expect(JSON.stringify(template)).not.toContain("logo.svg");
+  });
+
+  it("brings it back as the placeholder, where it was and with the same proportion", () => {
+    const moved = [
+      sceneWithImage()[0],
+      { ...sceneWithImage()[1], positionX: 2, scale: 1.5 },
+    ];
+    const template = createSceneTemplate({ name: "Template 1", objects: moved });
+    const rebuilt = applySceneTemplate(template)[1];
+
+    expect(rebuilt).toMatchObject({
+      kind: "image",
+      image: { aspect: 3, isVector: false, name: null, url: null },
+      positionX: 2,
+      scale: 1.5,
+    });
+    expect(rebuilt.id).not.toBe("logo");
+  });
+
+  it("carries the keyframes of an image in a motion template", () => {
+    const [phone, image] = sceneWithImage();
+    const { keyframes } = insertKeyframe(image, 1000);
+    const template = createSceneTemplate({
+      mode: "motion",
+      name: "Template 1",
+      objects: [phone, { ...image, keyframes }],
+    });
+
+    expect(applySceneTemplate(template)[1].keyframes).toHaveLength(1);
+  });
+
+  it("puts a wild proportion from outside back inside the limits", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: sceneWithImage(),
+    });
+    const image = template.objects[1];
+
+    if (!("aspect" in image)) throw new Error("expected an image object");
+
+    image.aspect = 1e9;
+
+    expect(
+      (applySceneTemplate(template)[1] as { image: { aspect: number } }).image.aspect,
+    ).toBe(20);
+  });
+
+  it("drops a stored image object that has no proportion", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: sceneWithImage(),
+    });
+
+    localStorage.setItem(
+      "mock-photo-templates",
+      JSON.stringify({
+        templates: [
+          {
+            ...template,
+            objects: [template.objects[0], { ...template.objects[1], aspect: "wide" }],
+          },
+        ],
+        version: 1,
+      }),
+    );
+
+    expect(loadTemplates()).toEqual([]);
+  });
+});
+
+describe("stickers in templates", () => {
+  function sceneWithSticker(outline = true) {
+    return [
+      createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+      createImageObject({
+        id: "rocket",
+        image: { ...getStickerImage("rocket"), outline },
+        name: "Sticker 1",
+      }),
+    ];
+  }
+
+  it("saves only the id of the sticker and brings it back with its art", () => {
+    const template = createSceneTemplate({ name: "Template 1", objects: sceneWithSticker() });
+    const rebuilt = applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>;
+
+    expect(template.objects[1]).toMatchObject({ kind: "image", sticker: "rocket", outline: true });
+    // Diferente de um arquivo enviado, o sticker é do app: volta com a arte.
+    expect(rebuilt.image).toMatchObject({
+      outline: true,
+      stickerId: "rocket",
+      url: "/stickers/rocket.svg",
+    });
+  });
+
+  it("keeps the outline the user turned off", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: sceneWithSticker(false),
+    });
+    const rebuilt = applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>;
+
+    expect(rebuilt.image.outline).toBe(false);
+  });
+
+  it("turns the outline on for a sticker saved without the field", () => {
+    const template = createSceneTemplate({ name: "Template 1", objects: sceneWithSticker() });
+    const saved = template.objects[1];
+
+    if (!("sticker" in saved)) throw new Error("expected an image object");
+
+    delete saved.outline;
+
+    expect(
+      (applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>).image.outline,
+    ).toBe(true);
+  });
+
+  it("falls back to the empty space for a sticker this version does not know", () => {
+    const template = createSceneTemplate({ name: "Template 1", objects: sceneWithSticker() });
+    const saved = template.objects[1];
+
+    if (!("sticker" in saved)) throw new Error("expected an image object");
+
+    saved.sticker = "from-the-future";
+
+    expect(
+      (applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>).image,
+    ).toMatchObject({ stickerId: null, url: null });
+  });
+
+  it("does not turn an uploaded image into a sticker", () => {
+    const template = createSceneTemplate({
+      name: "Template 1",
+      objects: [
+        createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+        createImageObject({ image: { name: "a.png", url: "blob:a" }, name: "Imagem 1" }),
+      ],
+    });
+
+    expect(template.objects[1]).not.toHaveProperty("sticker");
+    expect(
+      (applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>).image,
+    ).toMatchObject({ outline: false, stickerId: null, url: null });
   });
 });

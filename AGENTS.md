@@ -225,6 +225,49 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - A caixa de um texto (alinhamento, enquadramento) só existe depois da
   primeira composição: o texto conta como carregado no `onSync`, não ao montar.
 
+**Imagem solta**
+
+- `ImageObject` (`kind: "image"`) é o terceiro tipo da união: PNG ou SVG num
+  plano, com a pose, a opacidade e os keyframes dos outros. Código que lê campo
+  de aparelho ou de texto testa `isDeviceObject` / `isTextObject`; o que vale
+  para todos usa a união. Não tem tela, então `getActiveScreenVideos` devolve
+  `[]`.
+- **O arquivo nunca entra em template nem em link** (blob URL, mesma razão das
+  telas). O que entra é a proporção (`aspect`): sem arquivo, o objeto é o
+  **espaço vazio** — um círculo branco sólido, uma pílula se a proporção não é
+  1:1 — do mesmo tamanho, no mesmo lugar. Um objeto novo já nasce assim.
+  A largura na cena é fixa (`IMAGE_BASE_WIDTH`); o arquivo só muda a altura, e o
+  tamanho se muda pela escala (que é pose).
+- O espaço vazio é do editor: `userData.editorOnly` no mesh, e `hideEditorOnlyObjects`
+  o esconde na exportação. No PNG ele fica escondido **até a leitura dos
+  pixels**: entre o render e a leitura há um quadro, e o loop do R3F desenha a
+  cena no alvo ligado — o da exportação —, trazendo o espaço vazio de volta para
+  dentro do arquivo. No vídeo, o render e a leitura são síncronos.
+- Opacidade de imagem é a do material do plano (`applyImageOpacity`), sem as
+  duas passadas dos aparelhos: a de profundidade tamparia o que está atrás da
+  folha. O grupo leva `userData-isImage`.
+- O SVG só é carregado como `<img>` (o que desliga os scripts dele), com limite
+  de tamanho de arquivo, e desenhado na textura no tamanho máximo para não
+  borrar; a proporção vem do `viewBox`/`width`/`height` do arquivo, não do
+  navegador, que lê 0×0 ou 300×150 num SVG sem tamanho.
+
+**Sticker**
+
+- É uma `ImageObject` cujo `image.stickerId` vem do acervo de `app/lib/stickers.ts`
+  (Fluent Emoji da Microsoft, MIT, em `public/stickers/<id>.svg`; licença em
+  `public/stickers/LICENSES.md` e em `CreditsModal`). **O id é o que o template e
+  o link guardam e nunca muda**: único no acervo todo, a categoria é só a
+  organização da grade. Ao contrário de um arquivo enviado, o sticker é do app:
+  volta do template com a arte; um id que esta versão não conhece cai no espaço
+  vazio.
+- Sticker novo: o SVG em `public/stickers/`, o id em `stickers.ts` e o nome em
+  pt-BR em `sticker-labels.ts` (`stickers.test.ts` confere os três).
+- O contorno (`image.outline`) é desenhado na textura, não em CSS: a silhueta
+  da arte, pintada de branco, é espalhada em 64 direções e recebe uma sombra
+  numa passada só (por cópia, a sombra se somaria). A textura e o plano ganham
+  a margem `IMAGE_OUTLINE_MARGIN` por lado; a arte não muda de tamanho. Nasce
+  ligado no sticker e desligado numa imagem enviada.
+
 **Templates**
 
 - Guardam composição, fundo, câmera e, no Movimento, os keyframes — **nunca**

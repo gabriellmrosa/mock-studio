@@ -155,11 +155,33 @@ function applyTextOpacity(group: THREE.Object3D, target: number) {
   });
 }
 
+/**
+ * A opacidade de uma imagem solta: a do material do plano. Como no texto, não
+ * há as duas passadas dos aparelhos — o plano é uma folha, sem partes por trás
+ * de outras, e a passada de profundidade tamparia o que está atrás dele.
+ */
+function applyImageOpacity(group: THREE.Object3D, target: number) {
+  group.visible = target > 0;
+  group.traverse((child) => {
+    const material = (child as THREE.Mesh).material;
+
+    if (material && !Array.isArray(material)) {
+      material.opacity = target;
+    }
+  });
+}
+
 export function applyObjectOpacity(group: THREE.Object3D, opacity: number) {
   const target = Math.min(1, Math.max(0, opacity));
 
   if (group.userData.isText) {
     applyTextOpacity(group, target);
+
+    return;
+  }
+
+  if (group.userData.isImage) {
+    applyImageOpacity(group, target);
 
     return;
   }

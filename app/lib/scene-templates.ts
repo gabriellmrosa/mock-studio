@@ -8,9 +8,12 @@ import {
 import {
   DEFAULT_SCREEN_FIT,
   getPlaceholderImageUrl,
+  isImageObject,
   isTextObject,
   type SceneObject,
 } from "./scene-objects";
+import { getStickerImage, normalizeImageAspect } from "./image-objects";
+import { isStickerId } from "./stickers";
 import { normalizeSceneText, type SceneText } from "./text-objects";
 import {
   EASING_IDS,
@@ -112,7 +115,46 @@ export type TemplateTextObject = {
   text: SceneText;
 };
 
-export type TemplateObject = TemplateDeviceObject | TemplateTextObject;
+/**
+ * Uma imagem solta da cena. O arquivo nunca entra (como as imagens das telas):
+ * o que fica é a proporção, para o objeto voltar como o espaço vazio do tamanho
+ * certo, no lugar em que estava, esperando o arquivo de novo.
+ */
+export type TemplateImageObject = {
+  kind: "image";
+  /** Largura sobre altura da imagem que estava aqui. */
+  aspect: number;
+  /** Contorno de adesivo; sem ele (templates de antes), vale o padrão do tipo. */
+  outline?: boolean;
+  /**
+   * O sticker do acervo, quando é um: do app, não do usuário, então entra no
+   * template (é só o id) e volta com a arte.
+   */
+  sticker?: string;
+  isVisible: boolean;
+  /** Só em templates de Movimento. */
+  keyframes?: TemplateKeyframe[];
+  name: string;
+  opacity?: number;
+  positionX: number;
+  positionY: number;
+  positionZ: number;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  scale: number;
+};
+
+export type TemplateObject =
+  | TemplateDeviceObject
+  | TemplateTextObject
+  | TemplateImageObject;
+
+export function isTemplateImage(
+  object: TemplateObject,
+): object is TemplateImageObject {
+  return object.kind === "image";
+}
 
 export function isTemplateText(
   object: TemplateObject,
@@ -159,6 +201,27 @@ function toTemplateObject(
   object: SceneObject,
   mode: TemplateMode,
 ): TemplateObject {
+  if (isImageObject(object)) {
+    return {
+      ...toTemplateKeyframes(object, mode),
+      kind: "image",
+      aspect: object.image.aspect,
+      isVisible: object.isVisible,
+      // Só o que o arquivo não decide sozinho: o sticker é o que se guarda dele.
+      ...(object.image.stickerId ? { sticker: object.image.stickerId } : {}),
+      outline: object.image.outline,
+      name: object.name,
+      opacity: object.opacity,
+      positionX: object.positionX,
+      positionY: object.positionY,
+      positionZ: object.positionZ,
+      rotationX: object.rotationX,
+      rotationY: object.rotationY,
+      rotationZ: object.rotationZ,
+      scale: object.scale,
+    };
+  }
+
   if (isTextObject(object)) {
     return {
       ...toTemplateKeyframes(object, mode),
@@ -251,6 +314,43 @@ function fromTemplateKeyframes(keyframes: TemplateKeyframe[] | undefined) {
 
 export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
   return template.objects.map((object, index): SceneObject => {
+    if (isTemplateImage(object)) {
+      return {
+        kind: "image",
+        deletable: index > 0,
+        id: crypto.randomUUID(),
+        // Um sticker volta com a arte (id desconhecido, de uma versão de fora,
+        // cai no espaço vazio); uma imagem enviada, como espaço vazio na
+        // proporção que tinha.
+        image: {
+          ...(isStickerId(object.sticker)
+            ? getStickerImage(object.sticker)
+            : {
+                aspect: normalizeImageAspect(object.aspect),
+                isVector: false,
+                name: null,
+                stickerId: null,
+                url: null,
+              }),
+          outline:
+            typeof object.outline === "boolean"
+              ? object.outline
+              : isStickerId(object.sticker),
+        },
+        isVisible: object.isVisible,
+        keyframes: fromTemplateKeyframes(object.keyframes),
+        name: object.name,
+        opacity: object.opacity ?? 1,
+        positionX: object.positionX,
+        positionY: object.positionY,
+        positionZ: object.positionZ,
+        rotationX: object.rotationX,
+        rotationY: object.rotationY,
+        rotationZ: object.rotationZ,
+        scale: object.scale,
+      };
+    }
+
     if (isTemplateText(object)) {
       return {
         kind: "text",
@@ -359,7 +459,9 @@ function isValidTemplateObject(value: unknown): value is TemplateObject {
   const hasKind =
     object.kind === "text"
       ? typeof object.text === "object" && object.text !== null
-      : typeof object.modelId === "string" && object.modelId in DEVICE_MODELS;
+      : object.kind === "image"
+        ? typeof object.aspect === "number"
+        : typeof object.modelId === "string" && object.modelId in DEVICE_MODELS;
 
   return (
     hasKind &&

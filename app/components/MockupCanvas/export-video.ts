@@ -15,6 +15,7 @@ import {
   getVideoExportFormat,
   type VideoExportSettings,
 } from "../../lib/video-export";
+import { hideEditorOnlyObjects } from "./editor-only";
 import { flipPixelRows, getSupersampleScale } from "./export-photo";
 
 /**
@@ -175,7 +176,16 @@ export function createVideoFrameRenderer(
       }
 
       gl.setRenderTarget(target);
-      gl.render(scene, camera);
+
+      // O espaço vazio de uma imagem sem arquivo é do editor: não sai no vídeo.
+      const showEditorOnly = hideEditorOnlyObjects(scene);
+
+      try {
+        gl.render(scene, camera);
+      } finally {
+        showEditorOnly();
+      }
+
       gl.readRenderTargetPixels(target, 0, 0, renderWidth, renderHeight, pixels);
       gl.setRenderTarget(previousTarget);
       gl.setClearColor(previousClearColor, previousClearAlpha);

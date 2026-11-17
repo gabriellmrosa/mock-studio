@@ -6,6 +6,7 @@ import { createSceneObject } from "./scene-objects";
 import { insertKeyframe } from "./scene-motion";
 import { createSceneTemplate } from "./scene-templates";
 import { createTextObject } from "./text-objects";
+import { createImageObject } from "./image-objects";
 
 function createMotionTemplate() {
   const base = createSceneObject({ id: "object-1", name: "Phone" });
@@ -60,6 +61,25 @@ describe("scene link", () => {
     const decoded = await decodeSceneLink(readSceneLinkHash(new URL(url).hash)!);
 
     expect(decoded!.objects[1]).toEqual(template.objects[1]);
+  });
+
+  it("carries an image as its placeholder: the proportion, never the file", async () => {
+    const template = createSceneTemplate({
+      name: "Com imagem",
+      objects: [
+        createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+        createImageObject({
+          image: { aspect: 1.5, name: "foto.png", url: "blob:foto" },
+          name: "Foto",
+        }),
+      ],
+    });
+    const url = await createSceneLink(template, "https://mock.studio/");
+    const decoded = await decodeSceneLink(readSceneLinkHash(new URL(url).hash)!);
+
+    expect(decoded!.objects[1]).toEqual(template.objects[1]);
+    expect(decoded!.objects[1]).toMatchObject({ kind: "image", aspect: 1.5 });
+    expect(url).not.toContain("foto");
   });
 
   it("stays short enough to paste anywhere", async () => {

@@ -1,0 +1,101 @@
+/* =========================================
+   StickerPicker — a grade de stickers (um Dialog mais largo)
+   ========================================= */
+
+.dialog.sticker-picker {
+  max-width: 36rem;
+}
+
+.sticker-picker-filters {
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: minmax(0, 1fr) 11rem;
+}
+
+.sticker-picker-search {
+  align-items: center;
+  background: var(--input-bg);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--sidebar-muted);
+  display: flex;
+  gap: var(--space-2);
+  min-height: var(--field-height);
+  min-width: 0;
+  padding: 0 var(--space-3);
+  transition: border-color 160ms ease;
+}
+
+.sticker-picker-search:hover {
+  border-color: var(--input-border);
+}
+
+.sticker-picker-search:focus-within {
+  border-color: var(--input-border-hover);
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.sticker-picker-search-input {
+  background: transparent;
+  border: 0;
+  color: var(--input-fg);
+  flex: 1;
+  font: inherit;
+  font-size: var(--font-size-200);
+  min-width: 0;
+  outline: none;
+  padding: 0;
+}
+
+.sticker-picker-grid {
+  display: grid;
+  list-style: none;
+  margin: 0;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fill, minmax(4.25rem, 1fr));
+  max-height: min(24rem, 52vh);
+  overflow-y: auto;
+  padding: var(--space-1);
+}
+
+.sticker-picker-grid > li {
+  display: flex;
+}
+
+.sticker-picker-item {
+  align-items: center;
+  width: 100%;
+  background: var(--surface-subtle);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2);
+  transition:
+    background-color 120ms ease,
+    transform 120ms ease;
+}
+
+.sticker-picker-item:hover {
+  background: var(--surface-hover);
+  transform: scale(1.06);
+}
+
+.sticker-picker-item:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.sticker-picker-empty,
+.sticker-picker-count {
+  color: var(--sidebar-muted);
+  font-size: var(--font-size-150);
+  margin: 0;
+}
+
+.sticker-picker-empty {
+  padding: var(--space-6) 0;
+  text-align: center;
+}

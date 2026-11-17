@@ -22,6 +22,8 @@ type LayersPanelProps = {
   locale: Locale;
   objects: SceneObject[];
   onAddObject: () => void;
+  onAddImage: () => void;
+  onAddSticker: () => void;
   onAddText: () => void;
   onApplyTemplate?: (id: string) => void;
   onFitObject?: (id: string) => void;
@@ -49,6 +51,8 @@ export default function LayersPanel({
   locale,
   objects,
   onAddObject,
+  onAddImage,
+  onAddSticker,
   onAddText,
   onApplyTemplate,
   onFitObject,
@@ -189,7 +193,7 @@ export default function LayersPanel({
             title={copy.layersSectionTitle}
             className="section-objects"
             action={
-              // O que entra na cena: um aparelho ou um texto.
+              // O que entra na cena: um aparelho, um texto, uma imagem ou um sticker.
               <ContextMenu
                 items={[
                   {
@@ -201,6 +205,16 @@ export default function LayersPanel({
                     type: "action",
                     label: copy.addTextObject,
                     onClick: onAddText,
+                  },
+                  {
+                    type: "action",
+                    label: copy.addImageObject,
+                    onClick: onAddImage,
+                  },
+                  {
+                    type: "action",
+                    label: copy.addStickerObject,
+                    onClick: onAddSticker,
                   },
                 ]}
                 triggerAriaLabel={copy.addObject}

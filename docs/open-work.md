@@ -27,6 +27,26 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - **Verify in the browser** after composing: numbers alone got the proportions and gaps wrong three times.
 - Found along the way: in `Motion`, auto-fit ignored the timeline's height, so a single device ended up partly behind it — fixed by the video size (item 13), which fits the canvas above the timeline.
 
+## Image objects: what is left
+
+PNG and SVG work (create, send the file, move, animate, templates, links, PNG and
+video export). Known gaps:
+
+- No GIF. It needs the frames decoded (`ImageDecoder`), tied to the timeline
+  clock, and the video export asking for the exact frame of each instant, like
+  the screen videos do.
+- The SVG is drawn once at the maximum texture size (2048) and not drawn again
+  when zoomed in, so a very large enlargement of a vector blurs.
+- An uploaded file is not saved anywhere: opening a template or a link brings
+  back the white empty circle, and the file has to be sent again (a sticker does
+  come back, it belongs to the app).
+- The sticker grid has ~320 of the ~1,600 Fluent Emoji (no skin tones, no
+  religious symbols, weapons or alcohol) and no animated ones yet.
+- The outline was only seen on screen, not in an exported PNG or video.
+- Not checked: selecting an image by double-clicking it on the canvas, Safari
+  and Firefox, and an SVG with no `viewBox`, `width` or `height` (the proportion
+  falls back to what the browser reads, which may be wrong).
+
 ## Text in the scene: what is left
 
 Text objects work (create, edit, move, animate, templates, links, PNG and video
