@@ -329,6 +329,37 @@ describe("scene-templates", () => {
       expect(loaded.mode).toBe("static");
     });
 
+    it("drops the animation when a keyframe carries a malformed text color", () => {
+      const template = createSceneTemplate({
+        mode: "motion",
+        name: "Template 1",
+        objects: buildAnimatedScene(),
+      });
+      const [first] = template.objects[0].keyframes ?? [];
+
+      storeRaw([
+        {
+          ...template,
+          objects: [
+            {
+              ...template.objects[0],
+              keyframes: [
+                {
+                  ...first,
+                  transform: { ...first.transform, textColor: "red" },
+                },
+              ],
+            },
+            template.objects[1],
+          ],
+        },
+      ]);
+
+      const [loaded] = loadTemplates();
+
+      expect(loaded.objects[0].keyframes).toEqual([]);
+    });
+
     it("drops only the animation of an object with corrupted keyframes", () => {
       const template = createSceneTemplate({
         mode: "motion",

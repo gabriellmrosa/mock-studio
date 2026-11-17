@@ -19,6 +19,7 @@ import { useState, type KeyboardEvent, type ReactNode } from "react";
  */
 export default function NumberField({
   ariaLabel,
+  disabled = false,
   emptyLabel,
   icon,
   max,
@@ -30,6 +31,8 @@ export default function NumberField({
   value,
 }: {
   ariaLabel: string;
+  /** Sem o que editar agora (ex.: nenhum keyframe selecionado). */
+  disabled?: boolean;
   emptyLabel?: string;
   icon: ReactNode;
   max: number;
@@ -122,13 +125,17 @@ export default function NumberField({
   }
 
   return (
-    <label className="number-field" title={ariaLabel}>
+    <label
+      className={`number-field${disabled ? " is-disabled" : ""}`}
+      title={ariaLabel}
+    >
       <span aria-hidden className="number-field-icon">
         {icon}
       </span>
       <input
         aria-label={ariaLabel}
         className="number-field-input"
+        disabled={disabled}
         inputMode="decimal"
         placeholder={emptyLabel}
         type="text"

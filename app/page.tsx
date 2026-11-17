@@ -408,6 +408,57 @@ export default function Home() {
       return;
     }
 
+    // No Vídeo, cor e espaço entre letras são pose: vão para o keyframe
+    // editado, como a posição, e o texto muda entre eles. O resto continua
+    // sendo do texto, em qualquer modo. A atualização parte do estado atual,
+    // não do render: o seletor de cor (memoizado) chama esta função de um
+    // render antigo, e montar o keyframe daqui desfaria a edição anterior.
+    if (motionTab === "motion" && selectedObject && isTextObject(selectedObject)) {
+      const { color, letterSpacing, ...rest } = patch;
+      const keyframeId = selectedKeyframe?.id;
+
+      if (selectedKeyframe && keyframeId && (color !== undefined || letterSpacing !== undefined)) {
+        setSceneObjects((current) =>
+          current.map((object) => {
+            const keyframe = isTextObject(object)
+              ? object.keyframes.find((item) => item.id === keyframeId)
+              : undefined;
+
+            if (object.id !== id || !isTextObject(object) || !keyframe) {
+              return object;
+            }
+
+            const clean = normalizeSceneText({
+              ...object.text,
+              ...(color !== undefined ? { color } : {}),
+              ...(letterSpacing !== undefined ? { letterSpacing } : {}),
+            });
+
+            return {
+              ...object,
+              keyframes: updateKeyframe(object.keyframes, keyframeId, {
+                transform: {
+                  ...keyframe.transform,
+                  ...(color !== undefined ? { textColor: clean.color } : {}),
+                  ...(letterSpacing !== undefined
+                    ? { letterSpacing: clean.letterSpacing }
+                    : {}),
+                },
+              }),
+            };
+          }),
+        );
+        // Editar tem que ser o que se vê, como na pose.
+        setPlayheadMs(selectedKeyframe.timeMs);
+      }
+
+      patch = rest;
+
+      if (Object.keys(patch).length === 0) {
+        return;
+      }
+    }
+
     setSceneObjects((current) =>
       current.map((object) =>
         object.id === id && isTextObject(object)

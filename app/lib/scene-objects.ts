@@ -9,7 +9,11 @@ import {
   OBJECT_POSITION_MULTIPLIER,
 } from "./scene-presets";
 import { createPlaceholderDataUrl } from "./placeholder-image";
-import { cloneKeyframes, type Keyframe } from "./scene-motion";
+import {
+  cloneKeyframes,
+  type Keyframe,
+  type MotionTransform,
+} from "./scene-motion";
 import type { SceneText } from "./text-objects";
 
 /**
@@ -323,7 +327,9 @@ export type PosePatch = Partial<
     | "rotationZ"
     | "scale"
   >
->;
+> &
+  // Estilo do texto que anima por keyframe (só o texto os tem).
+  Partial<Pick<MotionTransform, "letterSpacing" | "textColor">>;
 
 export function isDeviceObject(object: SceneObject): object is DeviceObject {
   return object.kind === "device";

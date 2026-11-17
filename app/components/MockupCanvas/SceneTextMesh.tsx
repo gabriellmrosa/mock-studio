@@ -1,6 +1,9 @@
 "use client";
 
 import { Text } from "@react-three/drei";
+import { useEffect, useRef } from "react";
+import type * as THREE from "three";
+import { applyTextStyle } from "./text-style";
 import { getTextFontUrl } from "../../lib/text-fonts";
 import { toRenderableText, type SceneText } from "../../lib/text-objects";
 
@@ -26,16 +29,35 @@ import { toRenderableText, type SceneText } from "../../lib/text-objects";
 const NO_FALLBACK_FONTS = { unicodeFontsURL: "/fonts/no-fallback" } as object;
 
 export function SceneTextMesh({
+  isPlaying = false,
   onSync,
   opacity,
   text,
 }: {
+  /** Tocando, o movimento escreve a cor e o espaço direto no texto. */
+  isPlaying?: boolean;
   onSync?: () => void;
   opacity: number;
   text: SceneText;
 }) {
+  const textRef = useRef<THREE.Object3D>(null);
+
+  // Ao parar o play, o texto volta ao estilo das props: o React só reaplica uma
+  // prop quando ela muda, e uma cor animada que termina igual à da prop ficaria
+  // com o valor do último quadro do play. É um efeito (depois do commit), então
+  // vale também para o estilo que acaba de mudar por causa do playhead.
+  useEffect(() => {
+    if (!isPlaying && textRef.current) {
+      applyTextStyle(textRef.current, {
+        color: text.color,
+        letterSpacing: text.letterSpacing,
+      });
+    }
+  }, [isPlaying, text.color, text.letterSpacing]);
+
   return (
     <Text
+      ref={textRef}
       anchorX="center"
       anchorY="middle"
       color={text.color}

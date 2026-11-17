@@ -7,6 +7,8 @@ type ColorRowProps = {
   /** Nome para leitores de tela, quando o rótulo visível fica fora da linha. */
   ariaLabel?: string;
   compact?: boolean;
+  /** Sem o que editar agora (ex.: nenhum keyframe selecionado). */
+  disabled?: boolean;
   /**
    * `field`: o quadrado e o campo hex têm a altura e a forma dos campos do
    * painel (NumberField), ocupam a largura toda e o rótulo vem de fora, em cima
@@ -30,6 +32,7 @@ function normalize(raw: string): string {
 
 function ColorRowImpl({
   compact = false,
+  disabled = false,
   label,
   ariaLabel,
   layout = "inline",
@@ -112,7 +115,7 @@ function ColorRowImpl({
     <div
       className={`color-row ${compact ? "color-row-compact" : ""}${
         isField ? " color-row-field" : ""
-      }`.trim()}
+      }${disabled ? " is-disabled" : ""}`.trim()}
     >
       {label ? (
         <span className="color-row-label">
@@ -131,6 +134,7 @@ function ColorRowImpl({
         <input
           type="color"
           aria-label={ariaLabel}
+          disabled={disabled}
           value={value}
           onChange={handleColorPicker}
           className="color-row-swatch-input"
@@ -140,6 +144,7 @@ function ColorRowImpl({
       <input
         type="text"
         aria-label={ariaLabel}
+        disabled={disabled}
         value={isFocused ? inputVal : value}
         onChange={handleHexInput}
         onFocus={handleFocus}
@@ -168,6 +173,7 @@ const ColorRow = memo(
   ColorRowImpl,
   (prevProps, nextProps) =>
     prevProps.compact === nextProps.compact &&
+    prevProps.disabled === nextProps.disabled &&
     prevProps.layout === nextProps.layout &&
     prevProps.ariaLabel === nextProps.ariaLabel &&
     prevProps.label === nextProps.label &&

@@ -19,8 +19,10 @@ import {
 } from "./scene-objects";
 import {
   captureTransform,
+  createKeyframe,
   getObjectMotionEnd,
   insertKeyframe,
+  sampleMotion,
 } from "./scene-motion";
 import { isTextFontId } from "./text-fonts";
 
@@ -204,3 +206,62 @@ describe("text weight in the model", () => {
   });
 });
 
+
+describe("text style in keyframes", () => {
+  function textWithKeyframes() {
+    const base = createTextObject({
+      content: "Hi",
+      name: "T",
+      text: { color: "#000000", letterSpacing: 0 },
+    });
+    const first = createKeyframe(0, captureTransform(base), "linear");
+    const last = createKeyframe(
+      1000,
+      { ...captureTransform(base), letterSpacing: 0.2, textColor: "#ffffff" },
+      "linear",
+    );
+
+    return { ...base, keyframes: [first, last] };
+  }
+
+  it("captures the text color and letter spacing, which devices never have", () => {
+    const text = createTextObject({ content: "Hi", name: "T" });
+
+    expect(captureTransform(text)).toMatchObject({
+      letterSpacing: text.text.letterSpacing,
+      textColor: text.text.color,
+    });
+    expect(captureTransform(createSceneObject({ id: "d", name: "D" }))).not.toHaveProperty(
+      "textColor",
+    );
+  });
+
+  it("blends color and letter spacing between keyframes", () => {
+    const mid = sampleMotion(textWithKeyframes(), 500);
+
+    expect(mid?.textColor).toBe("#808080");
+    expect(mid?.letterSpacing).toBeCloseTo(0.1);
+  });
+
+  it("leaves them out when no keyframe has them", () => {
+    const device = createSceneObject({ id: "d", name: "D" });
+    const keyframes = [createKeyframe(0, captureTransform(device))];
+
+    expect(sampleMotion({ ...device, keyframes }, 0)).not.toHaveProperty(
+      "textColor",
+    );
+  });
+
+  it("holds the value when only one side has it", () => {
+    const text = textWithKeyframes();
+    const keyframes = [
+      {
+        ...text.keyframes[0],
+        transform: { ...text.keyframes[0].transform, textColor: undefined },
+      },
+      text.keyframes[1],
+    ];
+
+    expect(sampleMotion({ ...text, keyframes }, 500)?.textColor).toBe("#ffffff");
+  });
+});

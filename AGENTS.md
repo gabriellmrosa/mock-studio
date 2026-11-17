@@ -212,6 +212,16 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - Opacidade de texto é o `fillOpacity` do troika, não o caminho dos aparelhos
   (`object-opacity.ts`): ali as duas passadas de profundidade tampariam o que
   está atrás da caixa do texto. O grupo do texto leva `userData-isText`.
+- **Cor e espaço entre letras são pose** (`textColor`, `letterSpacing` no
+  `MotionTransform`, opcionais): no Vídeo cada keyframe tem os seus e o texto
+  muda entre eles; no Estático, e sem o campo no keyframe, vale o do próprio
+  texto. Só esses dois animam — tamanho, peso, largura e fonte saltariam em vez
+  de deslizar, e recomporiam as quebras de linha. Em movimento são escritos
+  direto no troika (`applyTextStyle`), e como o espaço recompõe o texto num
+  worker, a exportação de vídeo **espera** `applyPoses` antes de cada quadro;
+  sem isso o quadro sairia com o espaço do anterior. Quem edita esses dois campos
+  no Vídeo parte do estado atual (`setSceneObjects` funcional): o `ColorRow` é
+  memoizado e chama um `onChange` de um render antigo.
 - A caixa de um texto (alinhamento, enquadramento) só existe depois da
   primeira composição: o texto conta como carregado no `onSync`, não ao montar.
 

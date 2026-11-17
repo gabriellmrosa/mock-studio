@@ -86,6 +86,7 @@ import {
   type ObjectAlignment,
 } from "./object-alignment";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
+import { applyTextStyle } from "./text-style";
 import { SceneTextMesh } from "./SceneTextMesh";
 import { applyDuoFoldAngle, Duo } from "../Duo";
 import { warmUpModels } from "../../lib/model-warmup";
@@ -295,11 +296,11 @@ function applyMotionPose(
   index: number,
   timeMs: number,
   spawnOverrides: SpawnOverrides,
-) {
+): Promise<void> | undefined {
   const sampled = sampleDisplayedMotion(object, timeMs);
 
   if (!sampled) {
-    return;
+    return undefined;
   }
 
   // Reusa a mesma resolução de posição do render estático para o preview não
@@ -331,6 +332,17 @@ function applyMotionPose(
   if (isDeviceObject(object) && object.modelId === "duo") {
     applyDuoFoldAngle(group, sampled.foldAngle ?? object.foldAngle);
   }
+
+  // Cor e espaço entre letras do texto: também pose. Quem devolve a promessa é
+  // a exportação, que espera a composição antes de renderizar o quadro.
+  if (isTextObject(object)) {
+    return applyTextStyle(group, {
+      color: sampled.textColor ?? object.text.color,
+      letterSpacing: sampled.letterSpacing ?? object.text.letterSpacing,
+    });
+  }
+
+  return undefined;
 }
 
 /**
@@ -423,6 +435,7 @@ function SceneBridge({
       // Mesma contagem do render: a posição de spawn depende do índice entre
       // os aparelhos visíveis (o texto não entra na conta).
       let deviceIndex = 0;
+      const pending: Array<Promise<void>> = [];
 
       current
         .filter((object) => object.isVisible)
@@ -431,9 +444,19 @@ function SceneBridge({
           const index = isDeviceObject(object) ? deviceIndex++ : 0;
 
           if (group) {
-            applyMotionPose(group, object, index, timeMs, overrides);
+            const composed = applyMotionPose(
+              group,
+              object,
+              index,
+              timeMs,
+              overrides,
+            );
+
+            if (composed) pending.push(composed);
           }
         });
+
+      return Promise.all(pending).then(() => undefined);
     }
 
     onVideoExportReady(async (request) => {
@@ -562,8 +585,14 @@ function SceneBridge({
                         conta como carregado e se enquadra de novo. */}
                     <SceneTextMesh
                       onSync={() => onObjectResolved(object.id)}
+                      isPlaying={motionStartedAt !== null}
                       opacity={shownText.opacity}
-                      text={object.text}
+                      text={{
+                        ...object.text,
+                        color: sampledText?.textColor ?? object.text.color,
+                        letterSpacing:
+                          sampledText?.letterSpacing ?? object.text.letterSpacing,
+                      }}
                     />
                   </group>
                 </Suspense>

@@ -31,7 +31,7 @@ export type VideoFrameRendererDeps = {
   /** Um quadro do R3F sob demanda: roda os useFrame (compositor das telas). */
   advance: (timestamp: number) => void;
   /** Põe cada objeto na pose de um instante da cena. */
-  applyPoses: (timeMs: number) => void;
+  applyPoses: (timeMs: number) => void | Promise<void>;
   camera: THREE.Camera;
   gl: THREE.WebGLRenderer;
   gridRef: { current: { visible: boolean } | null };
@@ -144,7 +144,9 @@ export function createVideoFrameRenderer(
         }),
       );
 
-      applyPoses(timeMs);
+      // O texto recompõe quando o espaço entre letras muda (num worker): o
+      // quadro só sai depois, ou sairia com o espaço do quadro anterior.
+      await applyPoses(timeMs);
 
       // O `seeked` marca a textura do vídeo para atualizar; este quadro do R3F
       // roda o compositor, que redesenha a tela antes do render abaixo.

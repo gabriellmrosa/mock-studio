@@ -125,3 +125,9 @@
   outline-offset: 1px;
 }
 
+
+/* Sem o que editar: apagado e sem resposta ao mouse. */
+.color-row.is-disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}

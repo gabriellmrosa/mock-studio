@@ -56,3 +56,18 @@
   flex-shrink: 0;
   font-size: var(--font-size-200);
 }
+
+/* Sem o que editar: mais apagado, e sem o realce de passar o mouse. Os mesmos
+   60% dos outros controles desligados do app. */
+.number-field.is-disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.number-field.is-disabled:hover {
+  border-color: transparent;
+}
+
+.number-field.is-disabled .number-field-input {
+  cursor: default;
+}

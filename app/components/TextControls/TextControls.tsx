@@ -50,16 +50,20 @@ const ICON_SIZE = 14;
  * numéricos substituem os sliders (cada um ocuparia uma linha só para si).
  *
  * Não é pose: posição, rotação e opacidade são os controles de Transformação,
- * comuns aos aparelhos. Por isso valem em qualquer modo e não animam: no Vídeo
- * o texto muda de lugar, não de conteúdo.
+ * comuns aos aparelhos. Conteúdo, fonte, peso, tamanho, entrelinha, alinhamento
+ * e largura valem em qualquer modo e não animam. Cor e espaço entre letras
+ * animam: no Vídeo são os do keyframe editado.
  */
 export default function TextControls({
   copy,
+  isStyleDisabled = false,
   onChange,
   text,
   uiTheme,
 }: {
   copy: AppCopy;
+  /** Cor e espaço entre letras (os que animam) sem keyframe para editar. */
+  isStyleDisabled?: boolean;
   onChange: (patch: Partial<SceneText>) => void;
   text: SceneText;
   uiTheme: UiTheme;
@@ -162,6 +166,7 @@ export default function TextControls({
             />
             <NumberField
               ariaLabel={copy.textLetterSpacingLabel}
+              disabled={isStyleDisabled}
               icon={<ArrowLeftRight size={ICON_SIZE} />}
               max={MAX_TEXT_LETTER_SPACING}
               min={MIN_TEXT_LETTER_SPACING}
@@ -213,6 +218,7 @@ export default function TextControls({
           <span className="transform-control-label">{copy.textColorLabel}</span>
           <ColorRow
             ariaLabel={copy.textColorLabel}
+            disabled={isStyleDisabled}
             label=""
             layout="field"
             uiTheme={uiTheme}

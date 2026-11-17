@@ -39,6 +39,10 @@ export). Known gaps:
 - No inline editing on the canvas: the text is edited in the Inspector.
 - No outline, shadow or curve (troika supports all three), no letter-by-letter
   animation, and no attaching a text to a device so it follows it.
-- The exported video with a text was checked only for completing and producing a
-  file (MP4, 1.5 s, 1920 x 1080); its frames were not inspected with ffprobe.
+- Only color and letter spacing animate per keyframe. Size, weight, width and
+  font would jump instead of gliding (and re-wrap the lines); weight only glides
+  with a variable font.
+- The exported video with a text animating color and letter spacing was checked
+  with ffprobe and frames (MP4, 2.1 s, 124 frames at 60 fps): white and tight at
+  the start, blended halfway, red and spaced at the end.
 - Browsers: checked in Chrome only.

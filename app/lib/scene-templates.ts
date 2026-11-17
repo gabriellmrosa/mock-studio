@@ -406,7 +406,12 @@ function isValidKeyframe(value: unknown): value is TemplateKeyframe {
     TRANSFORM_KEYS.every((key) => typeof transform[key] === "number") &&
     (transform.opacity === undefined || typeof transform.opacity === "number") &&
     (transform.foldAngle === undefined ||
-      typeof transform.foldAngle === "number")
+      typeof transform.foldAngle === "number") &&
+    (transform.letterSpacing === undefined ||
+      typeof transform.letterSpacing === "number") &&
+    (transform.textColor === undefined ||
+      (typeof transform.textColor === "string" &&
+        /^#[0-9a-f]{6}$/i.test(transform.textColor)))
   );
 }
 

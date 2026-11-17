@@ -82,6 +82,14 @@ export type MotionTransform = {
    * templates salvos) não a têm, e valem aberto.
    */
   foldAngle?: number;
+  /**
+   * Cor e espaço entre letras do texto, só dele. Opcionais: os keyframes dos
+   * aparelhos não os têm, e quem não os tem segura o valor do próprio texto.
+   * São os dois campos de estilo que animam sem recompor as quebras de linha
+   * (o tamanho, o peso e a largura não: saltariam em vez de deslizar).
+   */
+  letterSpacing?: number;
+  textColor?: string;
 };
 
 export type Keyframe = {
@@ -196,7 +204,12 @@ export function captureTransform(object: SceneObject): MotionTransform {
     scale: object.scale,
     opacity: object.opacity,
     // A abertura é só do dobrável; o texto não tem.
-    ...(isDeviceObject(object) ? { foldAngle: object.foldAngle } : {}),
+    ...(isDeviceObject(object)
+      ? { foldAngle: object.foldAngle }
+      : {
+          letterSpacing: object.text.letterSpacing,
+          textColor: object.text.color,
+        }),
   };
 }
 
@@ -351,6 +364,20 @@ function lerp(from: number, to: number, t: number): number {
   return from + (to - from) * t;
 }
 
+/** Mistura duas cores #rrggbb canal a canal (em sRGB, como o seletor mostra). */
+export function lerpHexColor(from: string, to: string, t: number): string {
+  const channel = (hex: string, offset: number) =>
+    parseInt(hex.slice(1 + offset * 2, 3 + offset * 2), 16);
+
+  return `#${[0, 1, 2]
+    .map((offset) =>
+      Math.round(lerp(channel(from, offset), channel(to, offset), t))
+        .toString(16)
+        .padStart(2, "0"),
+    )
+    .join("")}`;
+}
+
 function lerpTransform(
   from: MotionTransform,
   to: MotionTransform,
@@ -370,6 +397,26 @@ function lerpTransform(
       to.foldAngle ?? DEFAULT_FOLD_ANGLE,
       t,
     ),
+    // Só quando há de onde partir: sem o campo, o texto fica com o dele. Se
+    // só um lado o tem, o outro o segura (como a abertura).
+    ...(from.letterSpacing !== undefined || to.letterSpacing !== undefined
+      ? {
+          letterSpacing: lerp(
+            (from.letterSpacing ?? to.letterSpacing) as number,
+            (to.letterSpacing ?? from.letterSpacing) as number,
+            t,
+          ),
+        }
+      : {}),
+    ...(from.textColor !== undefined || to.textColor !== undefined
+      ? {
+          textColor: lerpHexColor(
+            (from.textColor ?? to.textColor) as string,
+            (to.textColor ?? from.textColor) as string,
+            t,
+          ),
+        }
+      : {}),
   };
 }
 

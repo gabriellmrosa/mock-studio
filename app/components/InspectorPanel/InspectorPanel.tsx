@@ -366,7 +366,20 @@ export default function InspectorPanel({
         {textObject ? (
           <TextControls
             copy={copy}
-            text={textObject.text}
+            // No Vídeo, cor e espaço entre letras são os do keyframe editado
+            // (sem keyframe, não há o que editar).
+            isStyleDisabled={motionTab === "motion" && !editedKeyframe}
+            text={
+              editedKeyframe
+                ? {
+                    ...textObject.text,
+                    color: editedKeyframe.transform.textColor ?? textObject.text.color,
+                    letterSpacing:
+                      editedKeyframe.transform.letterSpacing ??
+                      textObject.text.letterSpacing,
+                  }
+                : textObject.text
+            }
             uiTheme={uiTheme}
             onChange={onUpdateText}
           />
