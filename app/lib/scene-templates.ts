@@ -25,6 +25,11 @@ import {
   type EasingId,
   type MotionTransform,
 } from "./scene-motion";
+import {
+  isDefaultCanvasGrid,
+  normalizeCanvasGrid,
+  type CanvasGrid,
+} from "./canvas-grid";
 import { normalizeMotionFrame, type MotionFrame } from "./motion-frame";
 import { DEFAULT_FOLD_ANGLE } from "./scene-presets";
 
@@ -174,6 +179,8 @@ export type SceneTemplate = {
   createdAt: number;
   /** Só em templates de Movimento; sem ele, o quadro padrão (1920 × 1080). */
   frame?: MotionFrame;
+  /** As linhas do chão; sem ela (templates de antes), as automáticas. */
+  grid?: CanvasGrid;
   id: string;
   mode: TemplateMode;
   name: string;
@@ -280,6 +287,7 @@ export function createSceneTemplate({
   backgroundColor = null,
   camera = null,
   frame = null,
+  grid = null,
   id,
   mode = "static",
   name,
@@ -288,6 +296,7 @@ export function createSceneTemplate({
   backgroundColor?: string | null;
   camera?: CameraPose | null;
   frame?: MotionFrame | null;
+  grid?: CanvasGrid | null;
   id?: string;
   mode?: TemplateMode;
   name: string;
@@ -298,6 +307,8 @@ export function createSceneTemplate({
     camera,
     createdAt: Date.now(),
     ...(mode === "motion" && frame ? { frame: { ...frame } } : {}),
+    // Só o que difere do padrão: o template de uma cena comum fica como era.
+    ...(grid && !isDefaultCanvasGrid(grid) ? { grid: { ...grid } } : {}),
     id: id ?? crypto.randomUUID(),
     mode,
     name,
@@ -435,10 +446,12 @@ export function getTemplateSnapshot(
   mode: TemplateMode,
   backgroundColor: string | null,
   frame: MotionFrame | null = null,
+  grid: CanvasGrid | null = null,
 ) {
   return JSON.stringify({
     backgroundColor,
     ...(mode === "motion" && frame ? { frame } : {}),
+    ...(grid && !isDefaultCanvasGrid(grid) ? { grid } : {}),
     objects: objects.map((object) => toTemplateObject(object, mode)),
   });
 }
@@ -535,12 +548,14 @@ function isValidKeyframe(value: unknown): value is TemplateKeyframe {
  */
 export function normalizeTemplate(template: SceneTemplate): SceneTemplate {
   const mode: TemplateMode = template.mode === "motion" ? "motion" : "static";
-  const { frame: storedFrame, ...fields } = template;
+  const { frame: storedFrame, grid: storedGrid, ...fields } = template;
   const frame = mode === "motion" ? normalizeMotionFrame(storedFrame) : null;
+  const grid = storedGrid ? normalizeCanvasGrid(storedGrid) : null;
 
   return {
     ...fields,
     ...(frame ? { frame } : {}),
+    ...(grid && !isDefaultCanvasGrid(grid) ? { grid } : {}),
     mode,
     objects: template.objects.map((object) => {
       const { keyframes, ...rest } = object;

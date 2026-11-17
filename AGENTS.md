@@ -380,6 +380,21 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   quadrática: ela é mais quadrada e come o anel de espessura constante do
   modelo nos cantos.
 
+**Chão do canvas**
+
+- A cor e a opacidade das linhas do chão (`CanvasGrid`, `canvas-grid.ts`) são da
+  cena, como a cor de fundo: vão no template (só se diferirem da automática, para
+  o template de uma cena comum ficar como era), no link e no aviso de alterações
+  não salvas. `color: null` é a automática de sempre — linhas claras no fundo
+  escuro e escuras no claro.
+- O `Grid` do drei não tem opacidade: ela é a **mistura da linha com o fundo**
+  (`getGridLineColors`). Exata com um fundo liso; sobre o degradê do palco, uma
+  aproximação. As linhas só saem na exportação com fundo.
+- Fica no painel do botão de fundo da barra do canvas (`Fundo e grade`), numa
+  superfície flutuante (`--sidebar-bg` sólida). A edição parte do estado atual
+  (`setCanvasGrid` funcional): o `ColorRow` é memoizado e chama um `onChange` de
+  um render antigo.
+
 **Exportação**
 
 - PNG renderiza fora da tela com supersampling 2×.

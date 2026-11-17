@@ -939,3 +939,61 @@ describe("animated images in templates", () => {
     });
   });
 });
+
+describe("the grid of the floor in templates", () => {
+  const objects = () => [createSceneObject({ id: "phone", name: "Phone", deletable: false })];
+
+  it("is left out when it is the automatic one, so the template stays as it was", () => {
+    const template = createSceneTemplate({
+      grid: { color: null, opacity: 1 },
+      name: "Template 1",
+      objects: objects(),
+    });
+
+    expect(template).not.toHaveProperty("grid");
+  });
+
+  it("saves a chosen color and opacity, and gives them back", () => {
+    const template = createSceneTemplate({
+      grid: { color: "#ff6a3d", opacity: 0.6 },
+      name: "Template 1",
+      objects: objects(),
+    });
+
+    expect(template.grid).toEqual({ color: "#ff6a3d", opacity: 0.6 });
+  });
+
+  it("changes the unsaved-changes snapshot only when the grid is not the automatic one", () => {
+    const scene = objects();
+    const base = getTemplateSnapshot(scene, "static", null);
+
+    expect(getTemplateSnapshot(scene, "static", null, null, { color: null, opacity: 1 })).toBe(base);
+    expect(getTemplateSnapshot(scene, "static", null, null, { color: null, opacity: 0.5 })).not.toBe(
+      base,
+    );
+  });
+
+  it("is put back inside the limits when it comes from outside (a stored template or a link)", () => {
+    const template = createSceneTemplate({ name: "Template 1", objects: objects() });
+
+    storeRaw([{ ...template, grid: { color: "not-a-color", opacity: 9 } }]);
+
+    // Um template sem grade (ou com a automática) volta sem o campo; um valor
+    // fora do formato vira a automática e some.
+    const [loaded] = loadTemplates();
+
+    expect(loaded.grid).toBeUndefined();
+
+    storeRaw([{ ...template, grid: { color: "#AABBCC", opacity: 9 } }]);
+
+    expect(loadTemplates()[0].grid).toEqual({ color: "#aabbcc", opacity: 1 });
+  });
+
+  it("opens templates saved before the grid existed", () => {
+    const template = createSceneTemplate({ name: "Template 1", objects: objects() });
+
+    storeRaw([template]);
+
+    expect(loadTemplates()[0]).not.toHaveProperty("grid");
+  });
+});

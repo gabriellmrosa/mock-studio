@@ -3,6 +3,7 @@
 import "./FloatingCanvasControls.css";
 import {
   useCallback,
+  useEffect,
   useLayoutEffect,
   useRef,
   useState,
@@ -14,6 +15,7 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
+  Blend,
   Camera,
   Eye,
   EyeOff,
@@ -22,7 +24,15 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { Tooltip } from "../EditorPrimitives/EditorPrimitives";
+import { ResetButton, Tooltip } from "../EditorPrimitives/EditorPrimitives";
+import {
+  DEFAULT_CANVAS_GRID,
+  getGridLineColors,
+  isDefaultCanvasGrid,
+  type CanvasGrid,
+} from "../../lib/canvas-grid";
+import ColorRow from "../ColorRow/ColorRow";
+import NumberField from "../NumberField/NumberField";
 import ExportDialog, { type ExportKind } from "./ExportDialog";
 import type { Locale } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
@@ -34,8 +44,12 @@ import {
 type FloatingCanvasControlsProps = {
   bgColor: string | null;
   copy: AppCopy;
+  /** As linhas do chão: a cor (ou automática) e a opacidade. */
+  grid: CanvasGrid;
   isUiHidden: boolean;
   onBgColorChange: (color: string) => void;
+  /** Muda só o que veio no patch; o resto da grade fica como está. */
+  onGridChange: (patch: Partial<CanvasGrid>) => void;
   locale: Locale;
   onCreateProjectLink?: () => Promise<string>;
   onFitToScene: () => void;
@@ -99,9 +113,11 @@ function nearestCorner(x: number, y: number): Corner {
 export default function FloatingCanvasControls({
   bgColor,
   copy,
+  grid,
   isUiHidden,
   locale,
   onBgColorChange,
+  onGridChange,
   onCreateProjectLink,
   onFitToScene,
   onPanDown,
@@ -117,9 +133,39 @@ export default function FloatingCanvasControls({
   uiTheme,
   video,
 }: FloatingCanvasControlsProps) {
-  const colorInputRef = useRef<HTMLInputElement>(null);
+  const [isAppearanceOpen, setIsAppearanceOpen] = useState(false);
+  const appearanceRef = useRef<HTMLDivElement>(null);
+
+  // O painel fecha com Esc e com um clique fora dele.
+  useEffect(() => {
+    if (!isAppearanceOpen) {
+      return undefined;
+    }
+
+    function handlePointerDown(event: MouseEvent) {
+      if (!appearanceRef.current?.contains(event.target as Node)) {
+        setIsAppearanceOpen(false);
+      }
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setIsAppearanceOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAppearanceOpen]);
 
   const displayColor = bgColor ?? DEFAULT_BG[uiTheme];
+  // A cor que a grade tem quando é automática: é o que o seletor mostra.
+  const autoGridColor = getGridLineColors(displayColor, DEFAULT_CANVAS_GRID).section;
   const circleBorder =
     uiTheme === "dark"
       ? "1.5px solid rgba(255,255,255,0.28)"
@@ -396,12 +442,14 @@ export default function FloatingCanvasControls({
           <Tooltip label={copy.zoomInButton} />
         </button>
 
-        <div className="canvas-color-control">
+        <div ref={appearanceRef} className="canvas-color-control">
           <button
             type="button"
             className="editor-fab editor-tooltip-trigger"
             aria-label={copy.backgroundColorButton}
-            onClick={() => colorInputRef.current?.click()}
+            aria-haspopup="dialog"
+            aria-expanded={isAppearanceOpen}
+            onClick={() => setIsAppearanceOpen((current) => !current)}
           >
             <div
               className="canvas-color-swatch"
@@ -410,15 +458,70 @@ export default function FloatingCanvasControls({
                 border: circleBorder,
               }}
             />
-            <Tooltip label={copy.backgroundColorButton} />
+            {isAppearanceOpen ? null : <Tooltip label={copy.backgroundColorButton} />}
           </button>
-          <input
-            ref={colorInputRef}
-            type="color"
-            value={displayColor}
-            onChange={(e) => onBgColorChange(e.target.value)}
-            className="canvas-color-input"
-          />
+
+          {isAppearanceOpen ? (
+            <div
+              className="canvas-appearance-panel"
+              role="dialog"
+              aria-label={copy.backgroundColorButton}
+            >
+              <section className="canvas-appearance-section">
+                <h3 className="canvas-appearance-title">
+                  {copy.canvasBackgroundSection}
+                </h3>
+                <ColorRow
+                  ariaLabel={copy.backgroundColorButton}
+                  label=""
+                  layout="field"
+                  uiTheme={uiTheme}
+                  value={displayColor}
+                  onChange={onBgColorChange}
+                />
+              </section>
+
+              <section className="canvas-appearance-section">
+                <div className="canvas-appearance-heading">
+                  <h3 className="canvas-appearance-title">
+                    {copy.canvasGridSection}
+                  </h3>
+                  <ResetButton
+                    disabled={isDefaultCanvasGrid(grid)}
+                    label={copy.canvasGridResetLabel}
+                    size="small"
+                    onReset={() =>
+                      onGridChange({
+                        color: DEFAULT_CANVAS_GRID.color,
+                        opacity: DEFAULT_CANVAS_GRID.opacity,
+                      })
+                    }
+                  />
+                </div>
+                <ColorRow
+                  ariaLabel={copy.canvasGridColorLabel}
+                  label=""
+                  layout="field"
+                  uiTheme={uiTheme}
+                  value={grid.color ?? autoGridColor}
+                  onChange={(color) => onGridChange({ color })}
+                />
+                <NumberField
+                  ariaLabel={copy.canvasGridOpacityLabel}
+                  icon={<Blend size={14} />}
+                  max={1}
+                  min={0}
+                  scale={100}
+                  step={0.05}
+                  suffix="%"
+                  value={grid.opacity}
+                  onChange={(opacity) => {
+                    if (opacity !== null) onGridChange({ opacity });
+                  }}
+                />
+              </section>
+            </div>
+          ) : null}
         </div>
       </div>
 

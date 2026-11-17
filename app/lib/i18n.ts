@@ -227,6 +227,12 @@ export type AppCopy = {
   zoomInButton: string;
   zoomOutButton: string;
   backgroundColorButton: string;
+  canvasBackgroundSection: string;
+  canvasGridSection: string;
+  canvasGridColorLabel: string;
+  canvasGridOpacityLabel: string;
+  canvasGridResetLabel: string;
+  canvasColorLabel: string;
   hideUiButton: string;
   showUiButton: string;
   debugOn: string;
@@ -482,7 +488,13 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     moveRightButton: "Mover para a direita",
     zoomInButton: "Aproximar",
     zoomOutButton: "Afastar",
-    backgroundColorButton: "Cor de fundo",
+    backgroundColorButton: "Fundo e grade",
+    canvasBackgroundSection: "Fundo",
+    canvasGridSection: "Grade do chão",
+    canvasGridColorLabel: "Cor da grade",
+    canvasGridOpacityLabel: "Opacidade da grade",
+    canvasGridResetLabel: "Voltar a grade ao automático",
+    canvasColorLabel: "Cor",
     hideUiButton: "Ocultar interface",
     showUiButton: "Mostrar interface",
     debugOn: "Debug interativo: ON",
@@ -802,7 +814,13 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     moveRightButton: "Move right",
     zoomInButton: "Zoom in",
     zoomOutButton: "Zoom out",
-    backgroundColorButton: "Background color",
+    backgroundColorButton: "Background and grid",
+    canvasBackgroundSection: "Background",
+    canvasGridSection: "Floor grid",
+    canvasGridColorLabel: "Grid color",
+    canvasGridOpacityLabel: "Grid opacity",
+    canvasGridResetLabel: "Back to automatic grid",
+    canvasColorLabel: "Color",
     hideUiButton: "Hide UI",
     showUiButton: "Show UI",
     debugOn: "Interactive debug: ON",

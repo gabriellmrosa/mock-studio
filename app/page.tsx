@@ -102,11 +102,17 @@ import {
   createSceneLink,
   decodeSceneLink,
 } from "./lib/scene-link";
+import {
+  DEFAULT_CANVAS_GRID,
+  normalizeCanvasGrid,
+  type CanvasGrid,
+} from "./lib/canvas-grid";
 import { DEVICE_MODELS } from "./models/device-models";
 
 /** Cena de um modo guardada enquanto o outro está ativo. */
 type ModeScene = {
   backgroundColor: string | null;
+  grid: CanvasGrid;
   /**
    * A câmera de quando se saiu do modo. Cada modo volta como estava: sem ela,
    * a câmera do outro modo (com outro quadro, outra cena) ficaria no lugar.
@@ -189,6 +195,7 @@ export default function Home() {
   // Cor de fundo do canvas: mora aqui (e não no MockupCanvas) para poder ser
   // capturada e restaurada junto com os templates.
   const [canvasBgColor, setCanvasBgColor] = useState<string | null>(null);
+  const [canvasGrid, setCanvasGrid] = useState<CanvasGrid>(DEFAULT_CANVAS_GRID);
   // Tamanho do vídeo no Movimento. Não entra na troca de cenas: só o
   // Movimento o usa, então ele simplesmente fica aqui enquanto o Estático
   // está na tela.
@@ -788,6 +795,7 @@ export default function Home() {
     motionTab,
     canvasBgColor,
     motionFrame,
+    canvasGrid,
   );
   const hasUnsavedChanges = currentSnapshot !== savedSnapshot;
 
@@ -796,6 +804,7 @@ export default function Home() {
       backgroundColor: canvasBgColor,
       camera: cameraApiRef.current?.getPose() ?? null,
       frame: motionFrame,
+      grid: canvasGrid,
       mode: motionTab,
       name: getNextTemplateName(modeTemplates),
       objects: sceneObjects,
@@ -827,6 +836,7 @@ export default function Home() {
       ...current,
       [motionTab]: {
         backgroundColor: canvasBgColor,
+        grid: canvasGrid,
         camera: cameraApiRef.current?.getPose() ?? null,
         objects: sceneObjects,
         savedSnapshot: snapshotToPark,
@@ -838,6 +848,7 @@ export default function Home() {
       setSceneObjects(target.objects);
       setSelectedObjectId(target.selectedObjectId);
       setCanvasBgColor(target.backgroundColor);
+      setCanvasGrid(target.grid);
       setSavedSnapshot(target.savedSnapshot);
       setPendingCamera(
         target.camera ? { pose: target.camera, source: "mode" } : null,
@@ -846,7 +857,13 @@ export default function Home() {
       // Mesmos ids de propósito: só uma cena é montada por vez, e manter os
       // ids evita recarregar os modelos e re-enquadrar a câmera na troca.
       setSavedSnapshot(
-        getTemplateSnapshot(sceneObjects, mode, canvasBgColor, motionFrame),
+        getTemplateSnapshot(
+          sceneObjects,
+          mode,
+          canvasBgColor,
+          motionFrame,
+          canvasGrid,
+        ),
       );
     }
 
@@ -882,6 +899,9 @@ export default function Home() {
     setMotionStartedAt(null);
     setPlayheadMs(0);
     setCanvasBgColor(template.backgroundColor);
+    const nextGrid = normalizeCanvasGrid(template.grid);
+
+    setCanvasGrid(nextGrid);
 
     if (template.mode === "motion") {
       setMotionFrame(nextFrame);
@@ -893,6 +913,7 @@ export default function Home() {
         template.mode,
         template.backgroundColor,
         nextFrame,
+        nextGrid,
       ),
     );
     // A câmera é o último passo: fica pendente até a cena assentar.
@@ -948,6 +969,7 @@ export default function Home() {
       backgroundColor: canvasBgColor,
       camera: cameraApiRef.current?.getPose() ?? null,
       frame: motionFrame,
+      grid: canvasGrid,
       mode: motionTab,
       name: copy.projectLinkTemplateName,
       objects: sceneObjects,
@@ -1315,7 +1337,13 @@ export default function Home() {
         copy={copy}
         isUiHidden={isUiHidden}
         objects={sceneObjects}
+        grid={canvasGrid}
         onBgColorChange={setCanvasBgColor}
+        onGridChange={(patch) =>
+          // A partir do estado atual: o seletor de cor (memoizado) chama de um
+          // render antigo.
+          setCanvasGrid((current) => normalizeCanvasGrid({ ...current, ...patch }))
+        }
         onCameraApiReady={handleCameraApiReady}
         onNotify={(tone, message) =>
           setNotification({

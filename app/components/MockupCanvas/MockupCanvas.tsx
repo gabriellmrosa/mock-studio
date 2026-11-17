@@ -88,6 +88,7 @@ import {
   type ObjectAlignment,
 } from "./object-alignment";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
+import { getGridLineColors, type CanvasGrid } from "../../lib/canvas-grid";
 import { applyImageAnimationTime } from "./image-animation";
 import { applyTextStyle } from "./text-style";
 import { SceneImageMesh } from "./SceneImageMesh";
@@ -131,10 +132,13 @@ export type ExportPreset = {
 type MockupCanvasProps = {
   bgColor: string | null;
   copy: AppCopy;
+  /** As linhas do chão: a cor (ou automática) e a opacidade. */
+  grid: CanvasGrid;
   isUiHidden: boolean;
   locale: Locale;
   objects: SceneObject[];
   onBgColorChange: (color: string | null) => void;
+  onGridChange: (patch: Partial<CanvasGrid>) => void;
   onCameraApiReady: (api: CameraApi | null) => void;
   /** A URL desta cena, para abrir em outro navegador (ver scene-link.ts). */
   onCreateProjectLink?: () => Promise<string>;
@@ -220,18 +224,6 @@ type SceneBridgeProps = MockupCanvasProps & {
 const DEFAULT_BG: Record<UiTheme, string> = { dark: "#2e2b28", light: "#f2ebe0" };
 
 const TIMELINE_HEIGHT_KEY = "mock-photo-timeline-height";
-
-function getGridColors(bgHex: string | null, uiTheme: UiTheme) {
-  const hex = bgHex ?? DEFAULT_BG[uiTheme];
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-
-  return luminance > 0.5
-    ? { cell: "#888888", section: "#555555" }
-    : { cell: "#555555", section: "#888888" };
-}
 
 const CAMERA_POSITION: [number, number, number] = [0, 0, 5];
 const CAMERA_FOV = 45;
@@ -383,6 +375,7 @@ function OpacityController({
 function SceneBridge({
   alignmentAreaRef,
   copy,
+  grid,
   modeFrameRef,
   isSceneSettled,
   objects,
@@ -516,7 +509,10 @@ function SceneBridge({
     };
   }, [advance, camera, gl, onVideoExportReady, scene]);
 
-  const gridColors = getGridColors(canvasBgColor, uiTheme);
+  const gridColors = getGridLineColors(
+    canvasBgColor ?? DEFAULT_BG[uiTheme],
+    grid,
+  );
   const visibleObjects = objects.filter((object) => object.isVisible);
   // A posição de partida de um aparelho depende do índice entre os aparelhos
   // visíveis; o texto não entra na conta, ou criar um texto empurraria os
@@ -1845,7 +1841,9 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           copy={props.copy}
           isUiHidden={props.isUiHidden}
           locale={props.locale}
+          grid={props.grid}
           onBgColorChange={setCanvasBgColor}
+          onGridChange={props.onGridChange}
           onFitToScene={() => viewportControls?.fitToScene()}
           onPanDown={() => viewportControls?.panDown()}
           onPanLeft={() => viewportControls?.panLeft()}
