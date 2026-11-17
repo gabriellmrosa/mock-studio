@@ -192,6 +192,11 @@ export default function ContextMenu({
     }, 280);
   }
 
+  function closeSubmenu() {
+    cancelCloseSubmenu();
+    setActiveSubmenuIndex(null);
+  }
+
   function cancelCloseSubmenu() {
     if (closeTimerRef.current) {
       clearTimeout(closeTimerRef.current);
@@ -236,6 +241,11 @@ export default function ContextMenu({
                     type="button"
                     className={`context-menu-row${item.variant === "danger" ? " context-menu-row-danger" : ""}${item.disabled ? " context-menu-row-disabled" : ""}`}
                     disabled={item.disabled}
+                    // Um item comum ao lado de um submenu fecha o submenu aberto:
+                    // sem isto, passar o mouse de "Idioma" para o item de baixo
+                    // deixava as opções de idioma abertas por cima do menu.
+                    onFocus={closeSubmenu}
+                    onMouseEnter={closeSubmenu}
                     onClick={(event) => {
                       if (item.disabled) {
                         return;
