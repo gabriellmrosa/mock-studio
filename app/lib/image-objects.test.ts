@@ -5,6 +5,8 @@ import {
   createImageObject,
   duplicateImageObject,
   getImageSize,
+  getImageSpawnPosition,
+  IMAGE_SPAWN_OFFSET,
   getStickerImage,
   getSvgAspect,
   isDefaultImagePose,
@@ -15,6 +17,7 @@ import {
   resetImageObject,
 } from "./image-objects";
 import { createKeyframe, captureTransform } from "./scene-motion";
+import { createSceneObject } from "./scene-objects";
 
 describe("image objects", () => {
   it("is born as an empty placeholder, facing the camera", () => {
@@ -145,5 +148,59 @@ describe("normalizeImageSpeed", () => {
     expect(createImageObject({ name: "x", image: { speed: 99 } }).image.speed).toBe(
       MAX_IMAGE_SPEED,
     );
+  });
+});
+
+describe("getImageSpawnPosition", () => {
+  const at = (positionX: number, positionY: number) => ({
+    ...createImageObject({ name: "i" }),
+    positionX,
+    positionY,
+  });
+
+  it("starts at the top right, away from the center", () => {
+    expect(getImageSpawnPosition([])).toEqual({
+      positionX: IMAGE_SPAWN_OFFSET,
+      positionY: IMAGE_SPAWN_OFFSET,
+    });
+  });
+
+  it("takes the next free diagonal so the new ones fan out", () => {
+    const o = IMAGE_SPAWN_OFFSET;
+
+    expect(getImageSpawnPosition([at(o, o)])).toEqual({ positionX: -o, positionY: o });
+    expect(getImageSpawnPosition([at(o, o), at(-o, o)])).toEqual({ positionX: o, positionY: -o });
+    expect(getImageSpawnPosition([at(o, o), at(-o, o), at(o, -o)])).toEqual({
+      positionX: -o,
+      positionY: -o,
+    });
+  });
+
+  it("goes back to a freed diagonal", () => {
+    const o = IMAGE_SPAWN_OFFSET;
+
+    // A primeira foi removida: a vaga dela volta a ser a primeira livre.
+    expect(getImageSpawnPosition([at(-o, o)])).toEqual({ positionX: o, positionY: o });
+  });
+
+  it("does not count an image the user moved away from a diagonal", () => {
+    expect(getImageSpawnPosition([at(0.3, 0.2)])).toEqual({
+      positionX: IMAGE_SPAWN_OFFSET,
+      positionY: IMAGE_SPAWN_OFFSET,
+    });
+  });
+
+  it("repeats in order when the four are taken", () => {
+    const o = IMAGE_SPAWN_OFFSET;
+    const all = [at(o, o), at(-o, o), at(o, -o), at(-o, -o)];
+
+    expect(getImageSpawnPosition(all)).toEqual({ positionX: o, positionY: o });
+  });
+
+  it("ignores devices and texts", () => {
+    const o = IMAGE_SPAWN_OFFSET;
+    const phone = { ...createSceneObject({ id: "p", name: "P" }), positionX: o, positionY: o };
+
+    expect(getImageSpawnPosition([phone])).toEqual({ positionX: o, positionY: o });
   });
 });

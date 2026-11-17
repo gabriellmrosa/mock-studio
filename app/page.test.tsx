@@ -99,6 +99,7 @@ jest.mock("./components/InspectorPanel/InspectorPanel", () => ({
       name: string;
       modelId?: string;
       positionX: number;
+      positionY: number;
       positionZ: number;
       text?: { content: string; fontSize: number };
       image?: { aspect: number; url: string | null };
@@ -122,7 +123,7 @@ jest.mock("./components/InspectorPanel/InspectorPanel", () => ({
       </button>
       {object
         ? object.image
-          ? `${object.name} :: image :: file=${object.image.url ?? "none"} :: z=${object.positionZ.toFixed(2)}`
+          ? `${object.name} :: image :: file=${object.image.url ?? "none"} :: z=${object.positionZ.toFixed(2)} :: at=${object.positionX.toFixed(0)},${object.positionY.toFixed(0)}`
           : object.text
           ? `${object.name} :: text "${object.text.content}" :: size=${object.text.fontSize} :: z=${object.positionZ.toFixed(2)}`
           : `${object.name} :: ${object.modelId} :: x=${object.positionX.toFixed(2)}`
@@ -387,6 +388,29 @@ describe("Home page layers and selection flow", () => {
     error.mockRestore();
   });
 
+  it("puts a new image on a diagonal, never at the center where it would look like the device's screen", async () => {
+    render(<Home />);
+
+    await addImageWithFile();
+
+    // Direita em cima: o deslocamento é de uma unidade de posição nos dois eixos.
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(":: at=1,1");
+  });
+
+  it("sends each new image or sticker to a diagonal that is still free", async () => {
+    render(<Home />);
+
+    await addImageWithFile();
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(":: at=1,1");
+
+    addFromMenu("Sticker");
+    fireEvent.click(screen.getByRole("button", { name: "Red heart" }));
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(":: at=-1,1");
+
+    await addImageWithFile();
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(":: at=1,-1");
+  });
+
   it("numbers the images apart from the texts and the devices", async () => {
     render(<Home />);
 
@@ -418,7 +442,7 @@ describe("Home page layers and selection flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Red heart" }));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
-      "Sticker 1 :: image :: file=/stickers/red-heart.svg :: z=0.25",
+      "Sticker 1 :: image :: file=/stickers/red-heart.svg :: z=0.25 :: at=1,1",
     );
     expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
     // A grade fecha ao escolher.

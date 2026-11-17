@@ -30,6 +30,7 @@ import { buildNextDeviceColors } from "./lib/device-colors";
 import {
   createImageObject,
   duplicateImageObject,
+  getImageSpawnPosition,
   getStickerImage,
   normalizeImageSpeed,
   IMAGE_OBJECT_ACCEPT,
@@ -152,7 +153,11 @@ function detectBrowserLocale(): Locale {
  */
 const UI_THEME: UiTheme = "dark";
 
-/** Texto e imagem novos nascem à frente dos aparelhos (em unidades de posição). */
+/**
+ * Texto, imagem e sticker novos nascem à frente dos aparelhos (em unidades de
+ * posição). Imagem e sticker nascem também deslocados na diagonal
+ * (`getImageSpawnPosition`).
+ */
 const NEW_FLAT_OBJECT_POSITION_Z = 0.25;
 
 export default function Home() {
@@ -443,7 +448,11 @@ export default function Home() {
 
       setSceneObjects((current) => [
         ...current,
-        { ...nextImage, positionZ: NEW_FLAT_OBJECT_POSITION_Z },
+        {
+          ...nextImage,
+          ...getImageSpawnPosition(current),
+          positionZ: NEW_FLAT_OBJECT_POSITION_Z,
+        },
       ]);
       setSelectedObjectId(nextImage.id);
     } catch (error) {
@@ -491,7 +500,11 @@ export default function Home() {
 
     setSceneObjects((current) => [
       ...current,
-      { ...nextSticker, positionZ: NEW_FLAT_OBJECT_POSITION_Z },
+      {
+        ...nextSticker,
+        ...getImageSpawnPosition(current),
+        positionZ: NEW_FLAT_OBJECT_POSITION_Z,
+      },
     ]);
     setSelectedObjectId(nextSticker.id);
   }

@@ -251,6 +251,12 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   nasce com o arquivo — quem desiste do seletor não deixa um objeto vazio na cena.
   A largura na cena é fixa (`IMAGE_BASE_WIDTH`); o arquivo só muda a altura, e o
   tamanho se muda pela escala (que é pose).
+- Imagem e sticker novos **não nascem no centro**: entram numa diagonal
+  (`getImageSpawnPosition`: direita em cima, esquerda em cima, direita em baixo,
+  esquerda em baixo, a primeira livre), a `IMAGE_SPAWN_OFFSET` = 1 unidade de
+  posição nos dois eixos. No centro, de certos ângulos da câmera pareceriam
+  desenhados na tela do aparelho que está atrás; deslocados, é claro que são
+  objetos à parte. O usuário zera em Transformação.
 - O espaço vazio é do editor: `userData.editorOnly` no mesh, e `hideEditorOnlyObjects`
   o esconde na exportação. No PNG ele fica escondido **até a leitura dos
   pixels**: entre o render e a leitura há um quadro, e o loop do R3F desenha a

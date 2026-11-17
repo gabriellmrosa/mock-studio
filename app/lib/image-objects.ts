@@ -1,6 +1,6 @@
 import { readGifInfo } from "./animated-image";
 import { cloneKeyframes } from "./scene-motion";
-import type { ImageObject } from "./scene-objects";
+import { isImageObject, type ImageObject, type SceneObject } from "./scene-objects";
 import { STICKER_ASPECT, getStickerUrl, isAnimatedSticker } from "./stickers";
 
 /**
@@ -160,6 +160,43 @@ export function createImageObject({
     name,
     ...DEFAULT_IMAGE_POSE,
   };
+}
+
+/**
+ * Onde uma imagem ou sticker novo entra, em unidades de posição (1 = 140 da
+ * cena, quase a largura de um celular): numa diagonal, nunca no centro. No
+ * centro ele cairia em cima do aparelho, e de certos ângulos pareceria já
+ * estar na tela dele; deslocado, fica claro que é um objeto à parte. O usuário
+ * zera nos controles de Transformação se quiser.
+ */
+export const IMAGE_SPAWN_OFFSET = 1;
+
+/** As quatro diagonais, em ordem: direita em cima, esquerda em cima, direita em baixo, esquerda em baixo. */
+const SPAWN_DIAGONALS = [
+  [1, 1],
+  [-1, 1],
+  [1, -1],
+  [-1, -1],
+] as const;
+
+/**
+ * A primeira diagonal que ainda não tem uma imagem ou sticker, para os novos se
+ * espalharem em vez de se empilharem. Com as quatro ocupadas, volta a repetir
+ * na ordem — são só objetos, e o usuário os move.
+ */
+export function getImageSpawnPosition(objects: SceneObject[]) {
+  const images = objects.filter(isImageObject);
+  const free = SPAWN_DIAGONALS.find(
+    ([x, y]) =>
+      !images.some(
+        (image) =>
+          image.positionX === x * IMAGE_SPAWN_OFFSET &&
+          image.positionY === y * IMAGE_SPAWN_OFFSET,
+      ),
+  );
+  const [x, y] = free ?? SPAWN_DIAGONALS[images.length % SPAWN_DIAGONALS.length];
+
+  return { positionX: x * IMAGE_SPAWN_OFFSET, positionY: y * IMAGE_SPAWN_OFFSET };
 }
 
 /** Quanto a cópia fica deslocada do original, em unidades de posição. */
