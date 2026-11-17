@@ -13,6 +13,7 @@ import {
 import { Bookmark, Eye, EyeOff, Github, MoreVertical, Plus } from "lucide-react";
 import ContextMenu from "../ContextMenu/ContextMenu";
 import CreditsModal from "../CreditsModal/CreditsModal";
+import PatchNotesModal from "../PatchNotesModal/PatchNotesModal";
 
 const REPOSITORY_URL = "https://github.com/gabriellmrosa/mockup-studio";
 
@@ -94,6 +95,7 @@ export default function LayersPanel({
   }
   const [draftName, setDraftName] = useState("");
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
+  const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
     null,
   );
@@ -144,6 +146,12 @@ export default function LayersPanel({
 
   return (
     <aside className="editor-sidebar editor-sidebar-shell layers-sidebar">
+      <PatchNotesModal
+        copy={copy}
+        isOpen={isPatchNotesOpen}
+        locale={locale}
+        onClose={() => setIsPatchNotesOpen(false)}
+      />
       <CreditsModal
         isOpen={isCreditsOpen}
         copy={copy}
@@ -176,6 +184,11 @@ export default function LayersPanel({
                         onClick: () => onLocaleChange("en-US"),
                       },
                     ],
+                  },
+                  {
+                    type: "action",
+                    label: copy.patchNotesTitle,
+                    onClick: () => setIsPatchNotesOpen(true),
                   },
                 ]}
                 triggerAriaLabel={copy.preferencesLabel}

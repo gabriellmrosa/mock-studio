@@ -56,6 +56,8 @@ export type AppCopy = {
   fitSceneButton: string;
   restoreTemplateView: string;
   languageLabel: string;
+  patchNotesTitle: string;
+  patchNotesEyebrow: string;
   themeLabel: string;
   preferencesLabel: string;
   darkMode: string;
@@ -307,6 +309,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     fitSceneButton: "Enquadrar cena",
     restoreTemplateView: "Restaurar enquadramento",
     languageLabel: "Idioma",
+    patchNotesTitle: "Novidades",
+    patchNotesEyebrow: "Histórico de versões",
     themeLabel: "Interface",
     preferencesLabel: "Preferências",
     darkMode: "Escuro",
@@ -625,6 +629,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     fitSceneButton: "Fit scene",
     restoreTemplateView: "Restore framing",
     languageLabel: "Language",
+    patchNotesTitle: "What's new",
+    patchNotesEyebrow: "Version history",
     themeLabel: "Interface",
     preferencesLabel: "Preferences",
     darkMode: "Dark",

@@ -372,4 +372,19 @@ describe("Home page layers and selection flow", () => {
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent("z=0.00");
   });
+
+  it("opens the patch notes from the preferences menu, and closes them", () => {
+    render(<Home />);
+
+    expect(screen.queryByRole("dialog", { name: "What's new" })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByLabelText("Preferences"));
+    fireEvent.click(screen.getByRole("button", { name: "What's new" }));
+
+    expect(screen.getByRole("dialog", { name: "What's new" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+
+    expect(screen.queryByRole("dialog", { name: "What's new" })).not.toBeInTheDocument();
+  });
 });

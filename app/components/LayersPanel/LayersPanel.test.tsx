@@ -107,6 +107,8 @@ const copy: AppCopy = {
   tabletBezelToggleLabel: "Screen bezel",
   matteFinishToggleLabel: "Matte finish",
   languageLabel: "Language",
+  patchNotesTitle: "What's new",
+  patchNotesEyebrow: "Version history",
   layersSectionTitle: "Objects",
   lightMode: "Light",
   moveDownButton: "Move down",

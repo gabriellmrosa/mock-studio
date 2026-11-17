@@ -61,6 +61,15 @@ A versão vem do `package.json` e aparece no painel de objetos. Cada release
 publicado ganha uma tag (`v1.5.1`). Subir a versão é decisão de produto: o
 agente nota e pergunta, nunca sobe sozinho.
 
+**Novidades da versão:** o menu ⋮ → "Novidades" lê `app/lib/patch-notes.ts` (uma
+linha do tempo, a mais nova primeiro, nos dois idiomas, um título e uma descrição
+curtos por item). Ao propor o número da versão, propor também a entrada dela ali,
+curada dos commits (`git log vX..HEAD`): só o que muda para quem usa, em
+linguagem de quem usa — ajuste fino e passos de outro commit ficam de fora. O texto
+é de produto: o usuário aprova. A entrada vem **antes** do `npm version`; o
+`patch-notes.test.ts` falha se a nota mais nova ficar atrás do `package.json`.
+Nada avisa o usuário de que há versão nova: só vê quem abre o modal.
+
 Perguntar:
 
 - ao preparar um merge para a `main`;
