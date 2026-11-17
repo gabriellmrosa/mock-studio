@@ -61,6 +61,18 @@ export const PATCH_NOTES: PatchNote[] = [
         },
       },
       {
+        title: {
+          "pt-BR": "Cor e opacidade da grade",
+          "en-US": "Grid color and opacity",
+        },
+        description: {
+          "pt-BR":
+            "O botão de fundo agora abre um painel: além da cor de fundo, você escolhe a cor e a opacidade das linhas do chão, que saem na exportação com fundo.",
+          "en-US":
+            "The background button now opens a panel: besides the background color, you choose the color and opacity of the floor lines, which show in an export with a background.",
+        },
+      },
+      {
         title: { "pt-BR": "Menu corrigido", "en-US": "Menu fixed" },
         description: {
           "pt-BR":
