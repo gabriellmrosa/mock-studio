@@ -28,6 +28,21 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-17",
+    version: "2.3.1",
+    items: [
+      {
+        title: { "pt-BR": "Sombra à parte", "en-US": "Shadow on its own" },
+        description: {
+          "pt-BR":
+            "Stickers e imagens ganharam um interruptor de sombra, separado do contorno.",
+          "en-US":
+            "Stickers and images have a shadow switch, apart from the outline.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-17",
     version: "2.3.0",
     items: [
       {
