@@ -584,7 +584,7 @@ describe("text objects in templates", () => {
         content: "Novo\nlançamento",
         id: "headline",
         name: "Título",
-        text: { color: "#ff8800", fontId: "oswald", weight: "bold" },
+        text: { color: "#ff8800", fontId: "oswald", weight: 700 },
       }),
     ];
   }

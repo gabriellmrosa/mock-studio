@@ -75,6 +75,11 @@
      SIZING
      ===================== */
   --input-min-height: 26px;
+  /* A altura dos campos do painel (NumberField, CustomSelect, o campo e o
+     quadrado da cor, o controle segmentado): um degrau abaixo do que já foi
+     (+ --space-3, 38px), para o Inspector render mais por tela. Um lugar só:
+     os campos irmãos têm sempre a mesma altura. */
+  --field-height: calc(var(--input-min-height) + var(--space-2));
   /* Toggle Estático / Movimento, fixo no topo central do canvas. */
   --canvas-mode-toggle-top: var(--space-6);
   --canvas-mode-toggle-height: 2.5rem;

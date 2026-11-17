@@ -13,8 +13,6 @@ export type AppCopy = {
   textContentLabel: string;
   textFontLabel: string;
   textWeightLabel: string;
-  textWeightRegular: string;
-  textWeightBold: string;
   textSizeLabel: string;
   textColorLabel: string;
   textAlignLabel: string;
@@ -23,7 +21,7 @@ export type AppCopy = {
   textAlignRight: string;
   textLineHeightLabel: string;
   textLetterSpacingLabel: string;
-  textWrapLabel: string;
+  textWidthAuto: string;
   textMaxWidthLabel: string;
   textUnsupportedHint: string;
   baseObject: string;
@@ -248,17 +246,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     textContentLabel: "Conteúdo",
     textFontLabel: "Fonte",
     textWeightLabel: "Peso",
-    textWeightRegular: "Normal",
-    textWeightBold: "Negrito",
     textSizeLabel: "Tamanho",
     textColorLabel: "Cor",
-    textAlignLabel: "Alinhamento do texto",
+    textAlignLabel: "Alinhar",
     textAlignLeft: "Esquerda",
     textAlignCenter: "Centro",
     textAlignRight: "Direita",
     textLineHeightLabel: "Entrelinha",
     textLetterSpacingLabel: "Espaço entre letras",
-    textWrapLabel: "Quebrar linhas",
+    textWidthAuto: "Auto",
     textMaxWidthLabel: "Largura",
     textUnsupportedHint: "Letras fora do alfabeto latino aparecem como ?",
     baseObject: "Objeto base",
@@ -550,17 +546,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     textContentLabel: "Content",
     textFontLabel: "Font",
     textWeightLabel: "Weight",
-    textWeightRegular: "Regular",
-    textWeightBold: "Bold",
     textSizeLabel: "Size",
     textColorLabel: "Color",
-    textAlignLabel: "Text alignment",
+    textAlignLabel: "Align",
     textAlignLeft: "Left",
     textAlignCenter: "Center",
     textAlignRight: "Right",
     textLineHeightLabel: "Line height",
     textLetterSpacingLabel: "Letter spacing",
-    textWrapLabel: "Wrap lines",
+    textWidthAuto: "Auto",
     textMaxWidthLabel: "Width",
     textUnsupportedHint: "Letters outside the Latin alphabet show as ?",
     baseObject: "Base object",

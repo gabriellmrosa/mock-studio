@@ -4,7 +4,16 @@ import "./ColorRow.css";
 import { ChangeEvent, memo, useEffect, useRef, useState } from "react";
 
 type ColorRowProps = {
+  /** Nome para leitores de tela, quando o rótulo visível fica fora da linha. */
+  ariaLabel?: string;
   compact?: boolean;
+  /**
+   * `field`: o quadrado e o campo hex têm a altura e a forma dos campos do
+   * painel (NumberField), ocupam a largura toda e o rótulo vem de fora, em cima
+   * — como nos campos irmãos. Sem ele, a linha de sempre: rótulo, quadrado e
+   * campo hex lado a lado.
+   */
+  layout?: "inline" | "field";
   label: string;
   onChange: (hex: string) => void;
   uiTheme: "dark" | "light";
@@ -22,10 +31,13 @@ function normalize(raw: string): string {
 function ColorRowImpl({
   compact = false,
   label,
+  ariaLabel,
+  layout = "inline",
   onChange,
   uiTheme,
   value,
 }: ColorRowProps) {
+  const isField = layout === "field";
   const [inputVal, setInputVal] = useState(value);
   const [isInvalid, setIsInvalid] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
@@ -97,7 +109,11 @@ function ColorRowImpl({
   };
 
   return (
-    <div className={`color-row ${compact ? "color-row-compact" : ""}`.trim()}>
+    <div
+      className={`color-row ${compact ? "color-row-compact" : ""}${
+        isField ? " color-row-field" : ""
+      }`.trim()}
+    >
       {label ? (
         <span className="color-row-label">
           {label}
@@ -105,11 +121,16 @@ function ColorRowImpl({
       ) : null}
       <label
         className={`color-row-swatch ${
-          compact ? "color-row-swatch-compact" : "color-row-swatch-default"
+          isField
+            ? "color-row-swatch-field"
+            : compact
+              ? "color-row-swatch-compact"
+              : "color-row-swatch-default"
         }`}
       >
         <input
           type="color"
+          aria-label={ariaLabel}
           value={value}
           onChange={handleColorPicker}
           className="color-row-swatch-input"
@@ -118,6 +139,7 @@ function ColorRowImpl({
       </label>
       <input
         type="text"
+        aria-label={ariaLabel}
         value={isFocused ? inputVal : value}
         onChange={handleHexInput}
         onFocus={handleFocus}
@@ -129,7 +151,11 @@ function ColorRowImpl({
         autoCorrect="off"
         autoCapitalize="off"
         className={`editor-input color-row-input ${
-          compact ? "color-row-input-compact" : "color-row-input-default"
+          isField
+            ? "color-row-input-field"
+            : compact
+              ? "color-row-input-compact"
+              : "color-row-input-default"
         } ${
           uiTheme === "dark" ? "color-row-input-dark" : "color-row-input-light"
         }${isInvalid ? " color-row-input-error" : ""}`}
@@ -142,6 +168,8 @@ const ColorRow = memo(
   ColorRowImpl,
   (prevProps, nextProps) =>
     prevProps.compact === nextProps.compact &&
+    prevProps.layout === nextProps.layout &&
+    prevProps.ariaLabel === nextProps.ariaLabel &&
     prevProps.label === nextProps.label &&
     prevProps.uiTheme === nextProps.uiTheme &&
     prevProps.value === nextProps.value,

@@ -512,13 +512,16 @@
    superfície elevada. Ex.: Imagem | Vídeo; Ajuste | Corte. */
 .editor-segmented {
   background: var(--segmented-track);
-  /* Pílula, como o seletor Estático | Movimento do canvas: as escolhas
-     exclusivas do app têm a mesma forma. A opção selecionada acompanha,
-     também em pílula, dentro dos 2px de respiro do trilho. */
-  border-radius: var(--radius-full);
+  /* O raio dos campos (--radius-sm), como o NumberField ao lado: os controles
+     do painel têm todos a mesma forma. Só o seletor Foto | Vídeo do canvas é
+     pílula (ver MockupCanvas.css). A opção selecionada e as abas ficam um
+     degrau abaixo (--radius-xs): o raio do trilho menos os 2px de respiro,
+     para as curvas serem concêntricas. */
+  border-radius: var(--radius-sm);
   display: flex;
   gap: 2px;
   margin-bottom: var(--space-3);
+  min-height: var(--field-height);
   /* Respiro entre o trilho e as abas; o indicador conta com ele. */
   --segmented-padding: 2px;
   padding: var(--segmented-padding);
@@ -531,7 +534,7 @@
    passo de aba mais o vão de 2px por índice. */
 .editor-segmented-thumb {
   background: var(--surface-raised);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
   bottom: var(--segmented-padding);
   left: var(--segmented-padding);
   pointer-events: none;
@@ -549,7 +552,7 @@
   align-items: center;
   background: transparent;
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-xs);
   color: var(--sidebar-muted);
   cursor: pointer;
   display: flex;

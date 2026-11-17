@@ -246,9 +246,8 @@
 
 /* --- Transform section --- */
 
-.transform-section {
-  padding: var(--space-6);
-}
+/* O espaçamento é o do .panel-section (--space-4), como o das outras seções:
+   com 24px a Transformação ficava uns 8px mais para dentro que o resto. */
 
 .transform-reset-label {
   color: var(--sidebar-muted);
@@ -292,6 +291,7 @@
 
 .transform-align-group {
   flex: 1;
+  height: var(--field-height);
   margin-bottom: 0;
 }
 

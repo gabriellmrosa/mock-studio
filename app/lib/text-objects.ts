@@ -2,7 +2,8 @@ import { cloneKeyframes } from "./scene-motion";
 import type { TextObject } from "./scene-objects";
 import {
   DEFAULT_TEXT_FONT_ID,
-  TEXT_WEIGHTS,
+  DEFAULT_TEXT_WEIGHT,
+  getNearestWeight,
   isTextFontId,
   type TextFontId,
   type TextWeight,
@@ -64,7 +65,7 @@ export const DEFAULT_TEXT: SceneText = {
   // 1.2 é o padrão dos editores para títulos; para corpo de texto, 1.4 a 1.6.
   lineHeight: 1.2,
   maxWidth: null,
-  weight: "regular",
+  weight: DEFAULT_TEXT_WEIGHT,
 };
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
@@ -99,6 +100,8 @@ function finite(value: unknown, fallback: number) {
 export function normalizeSceneText(value: Partial<SceneText> | undefined): SceneText {
   const input = value ?? {};
 
+  const fontId = isTextFontId(input.fontId) ? input.fontId : DEFAULT_TEXT.fontId;
+
   return {
     align: TEXT_ALIGNS.includes(input.align as TextAlign)
       ? (input.align as TextAlign)
@@ -108,7 +111,7 @@ export function normalizeSceneText(value: Partial<SceneText> | undefined): Scene
       typeof input.content === "string"
         ? input.content.slice(0, MAX_TEXT_LENGTH)
         : DEFAULT_TEXT.content,
-    fontId: isTextFontId(input.fontId) ? input.fontId : DEFAULT_TEXT.fontId,
+    fontId,
     fontSize: clamp(
       finite(input.fontSize, DEFAULT_TEXT.fontSize),
       MIN_TEXT_FONT_SIZE,
@@ -128,9 +131,9 @@ export function normalizeSceneText(value: Partial<SceneText> | undefined): Scene
       typeof input.maxWidth === "number" && Number.isFinite(input.maxWidth)
         ? clamp(input.maxWidth, MIN_TEXT_MAX_WIDTH, MAX_TEXT_MAX_WIDTH)
         : null,
-    weight: TEXT_WEIGHTS.includes(input.weight as TextWeight)
-      ? (input.weight as TextWeight)
-      : DEFAULT_TEXT.weight,
+    // O peso que a fonte tem: o de antes ("regular", "bold") e o que a fonte
+    // nova não tem vão para o vizinho mais perto.
+    weight: getNearestWeight(fontId, input.weight),
   };
 }
 

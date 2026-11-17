@@ -190,3 +190,17 @@ describe("duplicating and resetting a text", () => {
   });
 });
 
+describe("text weight in the model", () => {
+  it("brings the weight of an old template (regular, bold) to the numeric scale", () => {
+    expect(normalizeSceneText({ weight: "bold" as never }).weight).toBe(700);
+    expect(normalizeSceneText({ weight: "regular" as never }).weight).toBe(400);
+  });
+
+  it("moves the weight to one the new font has when the font changes", () => {
+    const thin = normalizeSceneText({ fontId: "inter", weight: 100 });
+
+    expect(thin.weight).toBe(100);
+    expect(normalizeSceneText({ ...thin, fontId: "playfair-display" }).weight).toBe(400);
+  });
+});
+

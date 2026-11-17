@@ -183,6 +183,13 @@
   background: var(--canvas-toggle-thumb);
 }
 
+/* O único controle em pílula do app: os outros seguem o raio dos campos. */
+.editor-segmented.canvas-mode-toggle,
+.canvas-mode-toggle .editor-segmented-thumb,
+.canvas-mode-toggle .editor-segmented-tab {
+  border-radius: var(--radius-full);
+}
+
 .canvas-mode-toggle .editor-segmented-tab {
   padding: 0 var(--space-5);
   white-space: nowrap;

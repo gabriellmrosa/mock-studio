@@ -121,6 +121,8 @@ primeiro degrau que resolve:
 | liga/desliga de verdade | `Switch` |
 | escolha exclusiva, sempre uma selecionada | `SegmentedTabs` (trilho `--segmented-track`, indicador que desliza) |
 | escolha exclusiva que abre um conteúdo próprio (Imagem \| Vídeo da tela) | `FolderTabs` + `FolderTabPanel` (abas de pasta, estilo Chrome; é um `SegmentedTabs` com outra roupa) |
+| escolha entre poucas opções que todos reconhecem pelo ícone (alinhamento) | `SegmentedTabs` com `iconOnly` |
+| valor numérico compacto, com ícone à frente (tamanho, entrelinha, largura) | `NumberField` — digita, setas andam um passo (Shift: dez), vale ao sair do campo; `scale` mostra uma fração como %; com `emptyLabel`, vazio é um valor ("Auto"). O slider com número (`Control`) fica para o que se arrasta (posição, rotação) |
 | grupos de sub-opções que nascem fechados | `SubTabs` / `SubTabPanel` |
 | ação extra que acompanha outra ("Salvar como template") | `Checkbox` |
 | escolha numa lista | `CustomSelect` |
@@ -144,6 +146,10 @@ primeiro degrau que resolve:
   e os botões redondos sobre o palco) usam `--sidebar-bg`, a mesma dos
   painéis, **sólida e sem opacidade**: nada da cena 3D pode transparecer
   numa superfície de interface.
+- **Campos do painel** (`NumberField`, `CustomSelect`, o campo e o quadrado
+  da cor, o controle segmentado) têm a altura `--field-height` e o raio
+  `--radius-sm`; só o seletor Foto | Vídeo é pílula. Altura de campo nova
+  não se escreve à mão: usa o token.
 - **Selecionado** é marcado por fundo e cor, nunca por negrito.
 - **Gatilhos `⋮` e o ✕ de fechar** são discretos, sem fundo no hover
   (`context-menu-trigger-quiet`, `editor-icon-button-no-hover-bg`).
@@ -194,11 +200,14 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   partida por índice nem deslocamento de modelo. O índice dos aparelhos conta
   só os aparelhos.
 - Fontes: as cinco de `public/fonts/`, auto-hospedadas, `.woff` (o troika não
-  lê `.woff2`). **Nenhuma requisição de fonte a CDN**: o troika buscaria uma
+  lê `.woff2`), um arquivo por peso (`inter-300.woff`) — só os pesos que cada
+  família tem, em `TEXT_FONTS`. O peso é numérico (100 a 900); `"regular"` e
+  `"bold"` de templates antigos são lidos, e um peso que a fonte não tem vai
+  para o vizinho mais perto (`getNearestWeight`). **Nenhuma requisição de fonte a CDN**: o troika buscaria uma
   fonte de reserva no jsDelivr para a letra que falta, então o texto passa por
   `toRenderableText` (o que as fontes não têm vira `?`) e o `unicodeFontsURL`
   aponta para um caminho que não existe. Sem isso, uma letra faltando
-  derruba o texto inteiro. Fonte nova: arquivo em `public/fonts/`, entrada em
+  derruba o texto inteiro. Fonte nova: arquivos em `public/fonts/`, entrada em
   `text-fonts.ts` e linha em `public/fonts/LICENSES.md`.
 - Opacidade de texto é o `fillOpacity` do troika, não o caminho dos aparelhos
   (`object-opacity.ts`): ali as duas passadas de profundidade tampariam o que

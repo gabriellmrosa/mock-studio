@@ -457,12 +457,15 @@ export function Switch({
 export function SegmentedTabs<T extends string>({
   ariaLabel,
   className,
+  iconOnly = false,
   idPrefix,
   items,
   onChange,
   value,
 }: {
   ariaLabel: string;
+  /** Só o ícone: o nome vira `aria-label` e dica, para opções que todos reconhecem (alinhamento). */
+  iconOnly?: boolean;
   /** Variação de visual (ex.: o seletor Estático | Movimento do canvas). */
   className?: string;
   idPrefix?: string;
@@ -530,13 +533,15 @@ export function SegmentedTabs<T extends string>({
             aria-selected={isActive}
             aria-controls={idPrefix ? `${idPrefix}-panel` : undefined}
             tabIndex={isActive ? 0 : -1}
+            aria-label={iconOnly ? item.label : undefined}
+            title={iconOnly ? item.label : undefined}
             className={`editor-segmented-tab${isActive ? " is-active" : ""}`}
             onClick={() => onChange(item.id)}
           >
             <span className="editor-segmented-icon" aria-hidden>
               {item.icon}
             </span>
-            {item.label}
+            {iconOnly ? null : item.label}
           </button>
         );
       })}

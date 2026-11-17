@@ -14,8 +14,10 @@
   font-size: var(--font-size-300);
   gap: var(--space-3);
   justify-content: space-between;
-  min-height: calc(var(--input-min-height) + var(--space-3));
-  padding: var(--space-3);
+  min-height: var(--field-height);
+  /* Só o respiro dos lados: a altura é a do campo, não a do texto mais o
+     preenchimento. */
+  padding: 0 var(--space-3);
   text-align: left;
   transition:
     border-color 160ms ease,

@@ -32,6 +32,7 @@
   border-radius: 0;
   gap: var(--space-1);
   margin-bottom: -1px;
+  min-height: 0;
   padding: 0;
 }
 

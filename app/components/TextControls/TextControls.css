@@ -13,6 +13,26 @@
   gap: var(--space-1);
 }
 
+/* Um rótulo pequeno em cima de uma linha de campos. */
+.text-controls-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Dois campos lado a lado, de larguras iguais. */
+.text-controls-row {
+  align-items: center;
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr 1fr;
+}
+
+/* O trilho do controle segmentado não carrega a margem de baixo que tem sozinho. */
+.text-controls-segmented {
+  margin-bottom: 0;
+}
+
 .text-controls-textarea {
   background: var(--input-bg);
   border: 1px solid var(--input-border);
@@ -40,5 +60,5 @@
 .text-controls-hint {
   font-size: var(--font-size-100);
   line-height: 1.4;
-  margin: calc(var(--space-1) * -1) 0 0;
+  margin: 0;
 }

@@ -52,7 +52,7 @@ describe("scene link", () => {
         createTextObject({
           content: "Lançamento\nçãõ — 2026",
           name: "Título",
-          text: { fontId: "playfair-display", weight: "bold", maxWidth: 600 },
+          text: { fontId: "playfair-display", weight: 700, maxWidth: 600 },
         }),
       ],
     });
