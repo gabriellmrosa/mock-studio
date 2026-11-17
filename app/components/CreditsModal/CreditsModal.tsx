@@ -1,10 +1,9 @@
 "use client";
 
 import "./CreditsModal.css";
-import { useEffect } from "react";
-import { createPortal } from "react-dom";
-import { ExternalLink, X } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import type { AppCopy } from "../../lib/i18n";
+import Modal from "../Modal/Modal";
 
 type CreditsModalProps = {
   copy: AppCopy;
@@ -92,115 +91,62 @@ export default function CreditsModal({
   isOpen,
   onClose,
 }: CreditsModalProps) {
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-      }
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isOpen, onClose]);
-
-  if (!isOpen) {
-    return null;
-  }
-
-  return createPortal(
-    <div
-      className="credits-modal-overlay"
-      onClick={onClose}
-      role="presentation"
+  return (
+    <Modal
+      closeLabel={copy.creditsCloseButton}
+      eyebrow={copy.creditsEyebrow}
+      isOpen={isOpen}
+      title={copy.creditsTitle}
+      onClose={onClose}
     >
-      <div
-        className="credits-modal"
-        onClick={(event) => event.stopPropagation()}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="credits-modal-title"
-      >
-        <div className="credits-modal-header">
-          <div>
-            <p className="credits-modal-eyebrow">{copy.creditsEyebrow}</p>
-            <h2 id="credits-modal-title" className="credits-modal-title">
-              {copy.creditsTitle}
-            </h2>
-          </div>
+      <p className="credits-modal-intro">{copy.creditsIntro}</p>
 
-          <button
-            type="button"
-            className="credits-modal-close"
-            onClick={onClose}
-            aria-label={copy.creditsCloseButton}
-            title={copy.creditsCloseButton}
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="credits-modal-body">
-          <p className="credits-modal-intro">{copy.creditsIntro}</p>
-
-          <div className="credits-modal-list">
-            {ASSET_CREDITS.map((item) => (
-              <section key={item.title} className="credits-card">
-                <h3 className="credits-card-title">{item.title}</h3>
-                <p className="credits-card-line">
-                  <span>{copy.creditsAuthor}:</span> {item.author}
-                </p>
-                <p className="credits-card-line">
-                  <span>{copy.creditsSource}:</span>{" "}
-                  <a
-                    href={item.sourceHref}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="credits-link"
-                  >
-                    {item.sourceLabel}
-                    <ExternalLink size={12} aria-hidden="true" />
-                  </a>
-                </p>
-                <p className="credits-card-line">
-                  <span>{copy.creditsLicense}:</span>{" "}
-                  {item.licenseHref ? (
-                    <a
-                      href={item.licenseHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="credits-link"
-                    >
-                      {item.licenseLabel}
-                      <ExternalLink size={12} aria-hidden="true" />
-                    </a>
-                  ) : (
-                    item.licenseLabel
-                  )}
-                </p>
-                {item.warning ? (
-                  <p className="credits-card-warning">{item.warning}</p>
-                ) : null}
-              </section>
-            ))}
-          </div>
-
-          <div className="credits-modal-footer">
-            <p>{copy.creditsFooterThanks}</p>
-            <p>{copy.creditsFooterRemoval}</p>
-          </div>
-        </div>
+      <div className="credits-modal-list">
+        {ASSET_CREDITS.map((item) => (
+          <section key={item.title} className="credits-card">
+            <h3 className="credits-card-title">{item.title}</h3>
+            <p className="credits-card-line">
+              <span>{copy.creditsAuthor}:</span> {item.author}
+            </p>
+            <p className="credits-card-line">
+              <span>{copy.creditsSource}:</span>{" "}
+              <a
+                href={item.sourceHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="credits-link"
+              >
+                {item.sourceLabel}
+                <ExternalLink size={12} aria-hidden="true" />
+              </a>
+            </p>
+            <p className="credits-card-line">
+              <span>{copy.creditsLicense}:</span>{" "}
+              {item.licenseHref ? (
+                <a
+                  href={item.licenseHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="credits-link"
+                >
+                  {item.licenseLabel}
+                  <ExternalLink size={12} aria-hidden="true" />
+                </a>
+              ) : (
+                item.licenseLabel
+              )}
+            </p>
+            {item.warning ? (
+              <p className="credits-card-warning">{item.warning}</p>
+            ) : null}
+          </section>
+        ))}
       </div>
-    </div>,
-    document.body,
+
+      <div className="credits-modal-footer">
+        <p>{copy.creditsFooterThanks}</p>
+        <p>{copy.creditsFooterRemoval}</p>
+      </div>
+    </Modal>
   );
 }

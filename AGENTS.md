@@ -130,6 +130,7 @@ primeiro degrau que resolve:
 | painel de opções ao lado do Inspector (arrastável pelo topo) | `SidePopover` |
 | menu de ações (`⋮`) | `ContextMenu` |
 | decisão central com máscara (Exportar) | `Dialog` |
+| conteúdo para ler, que só se fecha (Créditos, Novidades) | `Modal` (título, sobretítulo opcional, ✕ e corpo que rola; não conhece o conteúdo) |
 | confirmação que interrompe um fluxo | `AlertDialog` (é um `Dialog`) |
 | trabalho longo que não pode ser interrompido por acidente | `Dialog` com `dismissible={false}` |
 | aviso que informa sem alarmar | `Callout` |

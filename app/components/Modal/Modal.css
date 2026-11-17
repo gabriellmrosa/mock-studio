@@ -1,0 +1,114 @@
+/* =========================================
+   Modal — o modal de leitura (créditos, novidades)
+   Título e ✕ no topo, corpo que rola. Overlay igual ao do Dialog.
+   ========================================= */
+
+.modal-overlay {
+  align-items: center;
+  background: color-mix(in srgb, var(--background) 28%, rgba(0, 0, 0, 0.64));
+  backdrop-filter: blur(8px);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: var(--space-5);
+  position: fixed;
+  z-index: 1200;
+}
+
+.modal {
+  background: var(--panel-bg);
+  border: 1px solid var(--panel-border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 18px 56px rgba(0, 0, 0, 0.22);
+  color: var(--foreground);
+  display: flex;
+  flex-direction: column;
+  max-height: min(42rem, calc(100vh - 2.5rem));
+  max-width: 40rem;
+  overflow: hidden;
+  width: min(100%, 40rem);
+}
+
+.modal:focus {
+  outline: none;
+}
+
+.modal-header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--panel-border);
+  display: flex;
+  gap: var(--space-4);
+  justify-content: space-between;
+  padding: var(--space-5) var(--space-5) var(--space-4);
+}
+
+.modal-eyebrow {
+  color: var(--sidebar-muted);
+  font-size: var(--font-size-050);
+  letter-spacing: 0.14em;
+  margin: 0 0 var(--space-1);
+  text-transform: uppercase;
+}
+
+.modal-title {
+  font-size: var(--font-size-400);
+  font-weight: var(--font-medium);
+  line-height: 1.1;
+  margin: 0;
+}
+
+.modal-close {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
+  color: var(--sidebar-muted);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 2rem;
+  justify-content: center;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+  width: 2rem;
+}
+
+.modal-close:hover {
+  background: color-mix(in srgb, var(--surface-hover) 60%, transparent);
+  border-color: var(--panel-border);
+  color: var(--foreground);
+}
+
+.modal-close:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.modal-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--space-4) var(--space-5) var(--space-8);
+}
+
+@media (max-width: 640px) {
+  .modal-overlay {
+    align-items: flex-end;
+    padding: var(--space-3);
+  }
+
+  .modal {
+    max-height: calc(100vh - 1.5rem);
+  }
+
+  .modal-header,
+  .modal-body {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
+}
