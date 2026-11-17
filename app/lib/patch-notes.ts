@@ -28,6 +28,51 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-17",
+    version: "2.3.0",
+    items: [
+      {
+        title: { "pt-BR": "Veja o que mudou", "en-US": "See what changed" },
+        description: {
+          "pt-BR":
+            "Um histórico das versões, com o que mudou em cada uma, no menu ⋮ do painel de objetos.",
+          "en-US":
+            "A history of the versions, with what changed in each one, in the ⋮ menu of the objects panel.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Imagem direto do computador",
+          "en-US": "Image straight from your computer",
+        },
+        description: {
+          "pt-BR":
+            "Ao adicionar uma imagem, o seletor de arquivos abre na hora, e a imagem só entra na cena depois de escolhida.",
+          "en-US":
+            "When you add an image, the file picker opens right away, and the image enters the scene only once you pick it.",
+        },
+      },
+      {
+        title: { "pt-BR": "Objetos novos à parte", "en-US": "New objects stand apart" },
+        description: {
+          "pt-BR":
+            "Imagens e stickers novos entram deslocados na diagonal, para ficar claro que não fazem parte do aparelho.",
+          "en-US":
+            "New images and stickers enter offset on a diagonal, so it is clear they are not part of the device.",
+        },
+      },
+      {
+        title: { "pt-BR": "Menu corrigido", "en-US": "Menu fixed" },
+        description: {
+          "pt-BR":
+            "O submenu de idioma agora fecha ao descer para outro item do menu.",
+          "en-US":
+            "The language submenu now closes when you move down to another menu item.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-17",
     version: "2.2.0",
     items: [
       {
