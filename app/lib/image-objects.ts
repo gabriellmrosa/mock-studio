@@ -12,7 +12,8 @@ import { STICKER_ASPECT, getStickerUrl, isAnimatedSticker } from "./stickers";
  * `localStorage` e para a URL): o que se guarda é a proporção. Sem arquivo, o
  * objeto é um espaço vazio (um círculo branco convidando ao upload) no mesmo
  * lugar e com a mesma proporção — a referência de onde a imagem estava, para
- * quem abre o template enviar de novo. O espaço vazio é só do editor: não sai na
+ * quem abre o template enviar de novo. É só para isso: "+ Imagem" abre direto o
+ * seletor de arquivos, e o objeto só nasce com o arquivo. O espaço vazio é só do editor: não sai na
  * exportação. Um sticker do acervo é diferente: é do app e volta com a arte.
  */
 /** Como a imagem se mexe: `lottie` (um sticker animado) ou `gif` (um arquivo). */

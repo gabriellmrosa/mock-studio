@@ -1,5 +1,15 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import Home from "./page";
+import { readImageFile } from "./lib/image-objects";
+
+// O jsdom não decodifica imagem nem tem URL.createObjectURL: a leitura do
+// arquivo é de mentira, e o resto de image-objects é de verdade.
+jest.mock("./lib/image-objects", () => ({
+  ...jest.requireActual("./lib/image-objects"),
+  readImageFile: jest.fn(),
+}));
+
+const mockedReadImageFile = readImageFile as jest.MockedFunction<typeof readImageFile>;
 
 jest.mock("./components/CreditsModal/CreditsModal", () => ({
   __esModule: true,
@@ -120,6 +130,33 @@ jest.mock("./components/InspectorPanel/InspectorPanel", () => ({
     </aside>
   ),
 }));
+
+/**
+ * "Imagem" abre direto o seletor de arquivos: o objeto só nasce quando um arquivo
+ * é escolhido. Aqui, o arquivo escolhido é `a.png`.
+ */
+async function addImageWithFile() {
+  mockedReadImageFile.mockResolvedValue({
+    animation: null,
+    aspect: 1,
+    isVector: false,
+    name: "a.png",
+    outline: false,
+    speed: 1,
+    stickerId: null,
+    url: "blob:a",
+  });
+
+  addFromMenu("Image");
+
+  fireEvent.change(document.querySelector('input[type="file"][accept*="gif"]') as HTMLInputElement, {
+    target: { files: [new File(["x"], "a.png", { type: "image/png" })] },
+  });
+
+  await waitFor(() =>
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent(/image :: file=blob:a/),
+  );
+}
 
 /** O "+" abre um menu: um aparelho, um texto ou uma imagem. */
 function addFromMenu(kind: "Device" | "Text" | "Image" | "Sticker") {
@@ -304,32 +341,66 @@ describe("Home page layers and selection flow", () => {
     );
   });
 
-  it("adds an image as an empty dashed placeholder, in front of the devices", () => {
+  it("opens the file picker for an image, and adds nothing until a file is chosen", () => {
+    const click = jest.spyOn(HTMLInputElement.prototype, "click");
+
     render(<Home />);
 
     addFromMenu("Image");
 
-    // Sem arquivo (o tracejado) até o usuário enviar um.
+    const calls = click.mock.contexts.filter(
+      (input) => (input as HTMLInputElement).type === "file",
+    );
+
+    expect(calls.length).toBeGreaterThan(0);
+    // Desistir do seletor não deixa um objeto vazio na cena.
+    expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:1");
+    expect(screen.getByTestId("inspector-panel")).not.toHaveTextContent("Image 1");
+
+    click.mockRestore();
+  });
+
+  it("adds the image with its file once it is chosen, in front of the devices", async () => {
+    render(<Home />);
+
+    await addImageWithFile();
+
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent(
-      "Image 1 :: image :: file=none :: z=0.25",
+      "Image 1 :: image :: file=blob:a :: z=0.25",
     );
     expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
   });
 
-  it("numbers the images apart from the texts and the devices", () => {
+  it("shows a note and adds nothing when the browser cannot open the file", async () => {
+    mockedReadImageFile.mockRejectedValue(new Error("nope"));
+    const error = jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+    render(<Home />);
+    addFromMenu("Image");
+    fireEvent.change(document.querySelector('input[type="file"][accept*="gif"]') as HTMLInputElement, {
+      target: { files: [new File(["x"], "a.heic", { type: "image/heic" })] },
+    });
+
+    await waitFor(() => expect(error).toHaveBeenCalled());
+
+    expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:1");
+    error.mockRestore();
+  });
+
+  it("numbers the images apart from the texts and the devices", async () => {
     render(<Home />);
 
-    addFromMenu("Image");
+    await addImageWithFile();
     addFromMenu("Text");
-    addFromMenu("Image");
+    await addImageWithFile();
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Image 2");
   });
 
-  it("duplicates an image, offset from the original, and selects the copy", () => {
+  it("duplicates an image, offset from the original, and selects the copy", async () => {
     render(<Home />);
 
-    addFromMenu("Image");
+    await addImageWithFile();
 
     fireEvent.click(screen.getAllByLabelText("Object options")[1]);
     fireEvent.click(screen.getByText("Duplicate"));
@@ -354,20 +425,20 @@ describe("Home page layers and selection flow", () => {
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
-  it("numbers the stickers apart from the images", () => {
+  it("numbers the stickers apart from the images", async () => {
     render(<Home />);
 
-    addFromMenu("Image");
+    await addImageWithFile();
     addFromMenu("Sticker");
     fireEvent.click(screen.getByRole("button", { name: "Red heart" }));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Sticker 1");
   });
 
-  it("resets the pose of an image", () => {
+  it("resets the pose of an image", async () => {
     render(<Home />);
 
-    addFromMenu("Image");
+    await addImageWithFile();
     fireEvent.click(screen.getByText("reset-object"));
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent("z=0.00");

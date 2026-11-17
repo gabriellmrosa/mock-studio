@@ -32,6 +32,7 @@ import {
   duplicateImageObject,
   getStickerImage,
   normalizeImageSpeed,
+  IMAGE_OBJECT_ACCEPT,
   readImageFile,
   resetImageObject,
   type SceneImage,
@@ -161,6 +162,7 @@ export default function Home() {
     null,
   );
   const isInitialized = useRef(false);
+  const addImageInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState("");
   const [stickerPickerMode, setStickerPickerMode] = useState<"add" | "swap" | null>(null);
   const [sceneObjects, setSceneObjects] = useState<SceneObject[]>(() => [
@@ -413,20 +415,42 @@ export default function Home() {
   }
 
   /**
-   * Uma imagem nova: nasce como o espaço vazio, sem arquivo — o mesmo estado de
-   * uma imagem que voltou de um template —, e o Inspector pede o arquivo.
+   * "+ Imagem" abre direto o seletor de arquivos do computador. O objeto só
+   * nasce com o arquivo escolhido: quem desiste do seletor não fica com um
+   * objeto vazio na cena. O espaço vazio (o círculo branco) existe só para o que
+   * volta de um template ou de um link, onde o arquivo nunca vem junto.
    */
   function handleAddImage() {
-    const images = sceneObjects.filter(isImageObject).length;
-    const nextImage = createImageObject({
-      name: `${copy.imageObjectName} ${images + 1}`,
-    });
+    addImageInputRef.current?.click();
+  }
 
-    setSceneObjects((current) => [
-      ...current,
-      { ...nextImage, positionZ: NEW_FLAT_OBJECT_POSITION_Z },
-    ]);
-    setSelectedObjectId(nextImage.id);
+  async function handleAddImageFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const image = await readImageFile(file);
+      const images = sceneObjects.filter(isImageObject).length;
+      const nextImage = createImageObject({
+        image,
+        name: `${copy.imageObjectName} ${images + 1}`,
+      });
+
+      setSceneObjects((current) => [
+        ...current,
+        { ...nextImage, positionZ: NEW_FLAT_OBJECT_POSITION_Z },
+      ]);
+      setSelectedObjectId(nextImage.id);
+    } catch (error) {
+      // Sem objeto selecionado não há onde mostrar o aviso do Inspector.
+      console.error(error);
+      notify("error", copy.uploadImageError);
+    }
   }
 
   /**
@@ -1462,6 +1486,16 @@ export default function Home() {
       />
       )}
       </main>
+      {/* O seletor de arquivos do "+ Imagem": fora do menu, que fecha ao escolher. */}
+      <input
+        ref={addImageInputRef}
+        accept={IMAGE_OBJECT_ACCEPT}
+        aria-hidden
+        hidden
+        tabIndex={-1}
+        type="file"
+        onChange={handleAddImageFile}
+      />
       {/* Montada só aberta: a busca e a categoria de uma vez não ficam para a
           próxima. */}
       {stickerPickerMode !== null ? (

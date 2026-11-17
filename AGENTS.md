@@ -245,7 +245,10 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - **O arquivo nunca entra em template nem em link** (blob URL, mesma razão das
   telas). O que entra é a proporção (`aspect`): sem arquivo, o objeto é o
   **espaço vazio** — um círculo branco sólido, uma pílula se a proporção não é
-  1:1 — do mesmo tamanho, no mesmo lugar. Um objeto novo já nasce assim.
+  1:1 — do mesmo tamanho, no mesmo lugar. **Só existe para o que volta de um
+  template ou link**: "+ Imagem" abre direto o seletor de arquivos do computador
+  (um `<input type="file">` fora do menu, que fecha ao escolher) e o objeto só
+  nasce com o arquivo — quem desiste do seletor não deixa um objeto vazio na cena.
   A largura na cena é fixa (`IMAGE_BASE_WIDTH`); o arquivo só muda a altura, e o
   tamanho se muda pela escala (que é pose).
 - O espaço vazio é do editor: `userData.editorOnly` no mesh, e `hideEditorOnlyObjects`
