@@ -30,7 +30,15 @@ jest.mock("../ContextMenu/ContextMenu", () => ({
       {items
         .filter((item) => item.type === "action")
         .map((item) => (
-          <button key={item.label} type="button" onClick={item.onClick}>
+          // Como o menu de verdade: o clique num item não sobe até o card.
+          <button
+            key={item.label}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              item.onClick?.();
+            }}
+          >
             {item.label}
           </button>
         ))}
@@ -494,6 +502,90 @@ describe("LayersPanel", () => {
       renderWithTemplate();
 
       expect(screen.queryByText("Share template")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("renaming a template", () => {
+    function renderTemplates(onApplyTemplate: jest.Mock, onRenameTemplate: jest.Mock) {
+      const object = createSceneObject({ id: "object-1", name: "Object 1" });
+      const template = createSceneTemplate({
+        id: "template-1",
+        name: "My template",
+        objects: [object],
+      });
+
+      render(
+        <LayersPanel
+          appMeta="v1.0.0"
+          copy={copy}
+          locale="en-US"
+          objects={[object]}
+          onAddObject={jest.fn()}
+          onAddImage={jest.fn()}
+          onAddSticker={jest.fn()}
+          onAddText={jest.fn()}
+          onApplyTemplate={onApplyTemplate}
+          onDuplicateObject={jest.fn()}
+          onLocaleChange={jest.fn()}
+          onRenameObject={jest.fn()}
+          onRenameTemplate={onRenameTemplate}
+          onRemoveObject={jest.fn()}
+          onSelectObject={jest.fn()}
+          onToggleObjectVisibility={jest.fn()}
+          selectedObjectId={object.id}
+          templates={[template]}
+        />,
+      );
+    }
+
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it("does not apply the template when Enter confirms the new name", () => {
+      const onApplyTemplate = jest.fn();
+      const onRenameTemplate = jest.fn();
+
+      renderTemplates(onApplyTemplate, onRenameTemplate);
+      // O menu do objeto também tem "Rename": o do template vem depois.
+      const renameButtons = screen.getAllByText("Rename");
+
+      fireEvent.click(renameButtons[renameButtons.length - 1]);
+
+      const input = screen.getByDisplayValue("My template");
+
+      fireEvent.change(input, { target: { value: "Renamed" } });
+      fireEvent.keyDown(input, { key: "Enter" });
+      act(() => jest.runAllTimers());
+
+      expect(onRenameTemplate).toHaveBeenCalledWith("template-1", "Renamed");
+      expect(onApplyTemplate).not.toHaveBeenCalled();
+    });
+
+    it("does not apply the template on the clicks of a double-click that renames it", () => {
+      const onApplyTemplate = jest.fn();
+
+      renderTemplates(onApplyTemplate, jest.fn());
+
+      const title = screen.getByText("My template");
+
+      // O navegador manda dois cliques antes do duplo clique.
+      fireEvent.click(title, { detail: 1 });
+      fireEvent.click(title, { detail: 2 });
+      fireEvent.doubleClick(title, { detail: 2 });
+      act(() => jest.runAllTimers());
+
+      expect(screen.getByDisplayValue("My template")).toBeInTheDocument();
+      expect(onApplyTemplate).not.toHaveBeenCalled();
+    });
+
+    it("still applies the template on a single click", () => {
+      const onApplyTemplate = jest.fn();
+
+      renderTemplates(onApplyTemplate, jest.fn());
+      fireEvent.click(screen.getByText("My template"), { detail: 1 });
+      act(() => jest.runAllTimers());
+
+      expect(onApplyTemplate).toHaveBeenCalledWith("template-1");
     });
   });
 

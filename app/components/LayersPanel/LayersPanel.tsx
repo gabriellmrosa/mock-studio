@@ -1,7 +1,7 @@
 "use client";
 
 import "./LayersPanel.css";
-import { KeyboardEvent, useEffect, useState } from "react";
+import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { AppCopy, Locale } from "../../lib/i18n";
 import { isCameraObject, type SceneObject } from "../../lib/scene-objects";
 import type { SceneTemplate } from "../../lib/scene-templates";
@@ -26,6 +26,9 @@ import ShareTemplateModal from "../ShareTemplateModal/ShareTemplateModal";
 import PatchNotesModal from "../PatchNotesModal/PatchNotesModal";
 
 const REPOSITORY_URL = "https://github.com/gabriellmrosa/mockup-studio";
+
+/** Quanto o clique de aplicar um template espera por um segundo clique. */
+const DOUBLE_CLICK_MS = 250;
 
 type LayersPanelProps = {
   appMeta: string;
@@ -117,6 +120,19 @@ export default function LayersPanel({
     null,
   );
   const [templateDraftName, setTemplateDraftName] = useState("");
+
+  // O clique que aplicaria um template, à espera de saber se é o primeiro de
+  // um duplo clique (ver o card do template).
+  const pendingApplyRef = useRef<number | null>(null);
+
+  function clearPendingApply() {
+    if (pendingApplyRef.current !== null) {
+      window.clearTimeout(pendingApplyRef.current);
+      pendingApplyRef.current = null;
+    }
+  }
+
+  useEffect(() => clearPendingApply, []);
 
   function startEditingTemplate(template: SceneTemplate) {
     setEditingTemplateId(template.id);
@@ -425,7 +441,19 @@ export default function LayersPanel({
                 {templates.map((template) => (
                   <div
                     key={template.id}
-                    onClick={() => onApplyTemplate?.(template.id)}
+                    onClick={(event) => {
+                      // Aplicar troca a cena inteira — e os arquivos das telas
+                      // não vêm no template. Os cliques de um duplo clique
+                      // (que renomeia) não podem aplicar: o primeiro espera um
+                      // instante, e o duplo clique o cancela.
+                      if (event.detail > 1) return;
+
+                      clearPendingApply();
+                      pendingApplyRef.current = window.setTimeout(() => {
+                        pendingApplyRef.current = null;
+                        onApplyTemplate?.(template.id);
+                      }, DOUBLE_CLICK_MS);
+                    }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
                         event.preventDefault();
@@ -450,6 +478,12 @@ export default function LayersPanel({
                             onClick={(event) => event.stopPropagation()}
                             onDoubleClick={(event) => event.stopPropagation()}
                             onKeyDown={(event) => {
+                              // O Enter subiria até o card, que o lê como
+                              // "aplicar": confirmar o nome trocava a cena.
+                              if (event.key === "Enter" || event.key === "Escape") {
+                                event.stopPropagation();
+                              }
+
                               if (event.key === "Enter") {
                                 commitEditingTemplate(template);
                                 return;
@@ -467,6 +501,7 @@ export default function LayersPanel({
                             className="layer-card-title"
                             onDoubleClick={(event) => {
                               event.stopPropagation();
+                              clearPendingApply();
                               startEditingTemplate(template);
                             }}
                           >

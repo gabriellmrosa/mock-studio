@@ -348,6 +348,10 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - O schema fica na versão 1, com campos novos sempre opcionais. Subir a
   versão faria uma cópia antiga do app em cache (PWA) ler zero templates e
   sobrescrever a lista ao salvar.
+- **Clicar num template aplica; o duplo clique renomeia.** O clique de aplicar
+  espera um instante (`DOUBLE_CLICK_MS`) e o duplo clique o cancela, e o Enter
+  do campo do nome não sobe até o card: renomear aplicava o template e trocava
+  a cena (os arquivos das telas sumiam).
 - Aplicar um template é objetos primeiro, câmera por último
   (`pendingCameraPose`, no lugar do auto-enquadramento).
 - **Sobrepor ou salvar novo:** a página guarda de qual template veio a cena de
