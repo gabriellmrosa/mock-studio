@@ -1,7 +1,13 @@
 /**
  * @jest-environment node
  */
-import { createSceneLink, decodeSceneLink, readSceneLinkHash } from "./scene-link";
+import {
+  createSceneCode,
+  createSceneLink,
+  decodeSceneLink,
+  extractSceneLink,
+  readSceneLinkHash,
+} from "./scene-link";
 import { createSceneObject } from "./scene-objects";
 import { insertKeyframe } from "./scene-motion";
 import { createSceneTemplate } from "./scene-templates";
@@ -100,5 +106,49 @@ describe("scene link", () => {
 
     expect(await decodeSceneLink(encoded.slice(0, encoded.length / 2))).toBeNull();
     expect(await decodeSceneLink("not-a-scene")).toBeNull();
+  });
+});
+
+describe("extractSceneLink", () => {
+  it("takes what comes after #scene= from a whole address", () => {
+    expect(extractSceneLink("https://mock.studio/app/#scene=abc_DEF-123")).toBe(
+      "abc_DEF-123",
+    );
+  });
+
+  it("accepts just the content, and ignores the spaces and line breaks around it", () => {
+    expect(extractSceneLink("  abc_DEF-123\n")).toBe("abc_DEF-123");
+  });
+
+  it("refuses an empty text and one with characters the format never uses", () => {
+    expect(extractSceneLink("   ")).toBeNull();
+    expect(extractSceneLink("https://mock.studio/")).toBeNull();
+    expect(extractSceneLink("#scene=abc def")).toBeNull();
+  });
+
+  it("opens what createSceneLink made, address and all", async () => {
+    const template = createMotionTemplate();
+    const link = await createSceneLink(template, "https://mock.studio/");
+    const decoded = await decodeSceneLink(extractSceneLink(link)!);
+
+    expect(decoded?.name).toBe("My scene");
+  });
+});
+
+describe("createSceneCode", () => {
+  it("is only the content: no address, nothing before it", async () => {
+    const code = await createSceneCode(createMotionTemplate());
+
+    expect(code).toMatch(/^[A-Za-z0-9_-]+$/);
+    expect(code).not.toContain("http");
+  });
+
+  it("is what follows #scene= in the link, and opens back as the same scene", async () => {
+    const template = createMotionTemplate();
+    const code = await createSceneCode(template);
+    const link = await createSceneLink(template, "https://mock.studio/");
+
+    expect(link).toBe(`https://mock.studio/#scene=${code}`);
+    expect((await decodeSceneLink(code))?.name).toBe("My scene");
   });
 });

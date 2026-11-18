@@ -15,11 +15,14 @@ import {
   Eye,
   EyeOff,
   Github,
+  Import,
   MoreVertical,
   Plus,
 } from "lucide-react";
 import ContextMenu from "../ContextMenu/ContextMenu";
 import CreditsModal from "../CreditsModal/CreditsModal";
+import ImportTemplateModal from "../ImportTemplateModal/ImportTemplateModal";
+import ShareTemplateModal from "../ShareTemplateModal/ShareTemplateModal";
 import PatchNotesModal from "../PatchNotesModal/PatchNotesModal";
 
 const REPOSITORY_URL = "https://github.com/gabriellmrosa/mockup-studio";
@@ -35,7 +38,9 @@ type LayersPanelProps = {
   onAddText: () => void;
   onApplyTemplate?: (id: string) => void;
   onFitObject?: (id: string) => void;
-  onCopyTemplateLink?: (id: string) => void;
+  /** O código do template (ou `null` se não deu); abre o modal de compartilhar. */
+  onCreateTemplateCode?: (id: string) => Promise<string | null>;
+  onImportTemplate?: (text: string) => Promise<boolean>;
   onRestoreTemplateView?: (id: string) => void;
   onDuplicateObject: (id: string) => void;
   onLocaleChange: (locale: Locale) => void;
@@ -65,7 +70,8 @@ export default function LayersPanel({
   onAddText,
   onApplyTemplate,
   onFitObject,
-  onCopyTemplateLink,
+  onCreateTemplateCode,
+  onImportTemplate,
   onRestoreTemplateView,
   onDuplicateObject,
   onLocaleChange,
@@ -105,6 +111,8 @@ export default function LayersPanel({
   const [draftName, setDraftName] = useState("");
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);
   const [isPatchNotesOpen, setIsPatchNotesOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [shareCode, setShareCode] = useState<string | null>(null);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(
     null,
   );
@@ -160,6 +168,20 @@ export default function LayersPanel({
         isOpen={isPatchNotesOpen}
         locale={locale}
         onClose={() => setIsPatchNotesOpen(false)}
+      />
+      {onImportTemplate ? (
+        <ImportTemplateModal
+          copy={copy}
+          isOpen={isImportOpen}
+          onClose={() => setIsImportOpen(false)}
+          onImport={onImportTemplate}
+        />
+      ) : null}
+      <ShareTemplateModal
+        key={shareCode ?? "closed"}
+        code={shareCode}
+        copy={copy}
+        onClose={() => setShareCode(null)}
       />
       <CreditsModal
         isOpen={isCreditsOpen}
@@ -461,12 +483,15 @@ export default function LayersPanel({
                             label: copy.renameObject,
                             onClick: () => startEditingTemplate(template),
                           },
-                          ...(onCopyTemplateLink
+                          ...(onCreateTemplateCode
                             ? [
                                 {
                                   type: "action" as const,
-                                  label: copy.copyTemplateLink,
-                                  onClick: () => onCopyTemplateLink(template.id),
+                                  label: copy.shareTemplate,
+                                  onClick: () =>
+                                    void onCreateTemplateCode(template.id).then(
+                                      setShareCode,
+                                    ),
                                 },
                               ]
                             : []),
@@ -507,6 +532,17 @@ export default function LayersPanel({
                 <Bookmark size={14} />
                 {copy.saveTemplate}
               </button>
+              {onImportTemplate ? (
+                <button
+                  type="button"
+                  className="editor-link-button templates-import-link"
+                  onClick={() => setIsImportOpen(true)}
+                  title={copy.importTemplate}
+                >
+                  <Import size={13} aria-hidden />
+                  {copy.importTemplate}
+                </button>
+              ) : null}
               </div>
             </PanelSection>
         </div>

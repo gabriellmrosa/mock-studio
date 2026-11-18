@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import LayersPanel from "./LayersPanel";
 import { createCameraObject } from "../../lib/camera-objects";
@@ -156,9 +156,24 @@ const copy: AppCopy = {
   renameObject: "Rename",
   resetObjectButton: "Reset transform",
   resetCameraButton: "Reset camera",
-  copyTemplateLink: "Copy template link",
-  exportTemplateLabel: "Template",
-  exportShareLabel: "Share",
+  shareTemplate: "Share template",
+  shareTemplateIntro: "Copy the code.",
+  shareTemplateNote: "Screens don't travel.",
+  shareTemplateNext: "Import it.",
+  shareTemplateCodeLabel: "Template code",
+  shareTemplateCopy: "Copy code",
+  templateCodeCopied: "Code copied",
+  templateCodeCopyError: "Couldn't copy the code.",
+  templateCodeCreateError: "Couldn't create the code.",
+  importTemplateInvalid: "This code is incomplete or corrupted.",
+  importTemplate: "Import template",
+  importTemplateIntro: "Paste the link.",
+  importTemplateNote: "Screens don't travel.",
+  importTemplateFieldLabel: "Template link",
+  importTemplatePlaceholder: "https://…/#scene=…",
+  importTemplateSubmit: "Import",
+  templateImported: "Template imported.",
+  templateImportedIn: "Template imported into the list of",
   alignmentLabel: "Alignment",
   alignmentHorizontal: "Horizontal alignment",
   alignmentVertical: "Vertical alignment",
@@ -413,7 +428,7 @@ describe("LayersPanel", () => {
   });
 
   describe("template menu", () => {
-    function renderWithTemplate(onCopyTemplateLink?: jest.Mock) {
+    function renderWithTemplate(onCreateTemplateCode?: jest.Mock) {
       const object = createSceneObject({ id: "object-1", name: "Object 1" });
       const template = createSceneTemplate({
         id: "template-1",
@@ -431,7 +446,7 @@ describe("LayersPanel", () => {
           onAddImage={jest.fn()}
           onAddSticker={jest.fn()}
           onAddText={jest.fn()}
-          onCopyTemplateLink={onCopyTemplateLink}
+          onCreateTemplateCode={onCreateTemplateCode}
           onDuplicateObject={jest.fn()}
           onLocaleChange={jest.fn()}
           onRenameObject={jest.fn()}
@@ -444,19 +459,76 @@ describe("LayersPanel", () => {
       );
     }
 
-    it("copies the link of that template from its menu", () => {
-      const onCopyTemplateLink = jest.fn();
+    it("opens the share modal with the code of that template", async () => {
+      const onCreateTemplateCode = jest.fn(() => Promise.resolve("CODE123"));
 
-      renderWithTemplate(onCopyTemplateLink);
-      fireEvent.click(screen.getByText("Copy template link"));
+      renderWithTemplate(onCreateTemplateCode);
+      fireEvent.click(screen.getByText("Share template"));
+      await act(async () => {});
 
-      expect(onCopyTemplateLink).toHaveBeenCalledWith("template-1");
+      expect(onCreateTemplateCode).toHaveBeenCalledWith("template-1");
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+      expect(screen.getByLabelText("Template code")).toHaveValue("CODE123");
     });
 
-    it("offers no link action when nothing handles it", () => {
+    it("stays closed when the code could not be made", async () => {
+      renderWithTemplate(jest.fn(() => Promise.resolve(null)));
+      fireEvent.click(screen.getByText("Share template"));
+      await act(async () => {});
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    });
+
+    it("offers no share action when nothing handles it", () => {
       renderWithTemplate();
 
-      expect(screen.queryByText("Copy template link")).not.toBeInTheDocument();
+      expect(screen.queryByText("Share template")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("import template", () => {
+    function renderWithImport(onImportTemplate?: jest.Mock) {
+      const object = createSceneObject({ id: "object-1", name: "Object 1" });
+
+      render(
+        <LayersPanel
+          appMeta="v1.0.0"
+          copy={copy}
+          locale="en-US"
+          objects={[object]}
+          onAddObject={jest.fn()}
+          onAddImage={jest.fn()}
+          onAddSticker={jest.fn()}
+          onAddText={jest.fn()}
+          onDuplicateObject={jest.fn()}
+          onImportTemplate={onImportTemplate}
+          onLocaleChange={jest.fn()}
+          onRenameObject={jest.fn()}
+          onRemoveObject={jest.fn()}
+          onSelectObject={jest.fn()}
+          onToggleObjectVisibility={jest.fn()}
+          selectedObjectId={object.id}
+          templates={[]}
+        />,
+      );
+    }
+
+    it("opens the import modal from a button in the templates section", () => {
+      renderWithImport(jest.fn(() => Promise.resolve(true)));
+
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Import template" }));
+
+      expect(screen.getByRole("dialog")).toBeInTheDocument();
+    });
+
+    it("has no import button when nothing handles it", () => {
+      renderWithImport();
+
+      expect(
+        screen.queryByRole("button", { name: "Import template" }),
+      ).not.toBeInTheDocument();
     });
   });
 

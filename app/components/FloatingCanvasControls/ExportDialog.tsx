@@ -40,8 +40,7 @@ export type VideoExportDialogProps = {
  * select, com o valor à vista; nada exporta no meio do caminho.
  *
  * No Estático é só imagem. No Movimento, o primeiro select troca entre
- * imagem e vídeo. "Salvar como template" e o link do template vêm por último,
- * na mesma lista, e valem para os dois.
+ * imagem e vídeo. "Salvar como template" vale para os dois.
  */
 export default function ExportDialog({
   backgroundSwatch,
@@ -70,7 +69,7 @@ export default function ExportDialog({
   kind: ExportKind;
   locale: Locale;
   onCancel: () => void;
-  /** A URL desta cena: liga o "Copiar link do template" (qualquer navegador) e o aviso do Safari. */
+  /** A URL desta cena; liga o "Copiar link do projeto" do aviso do Safari. */
   onCreateProjectLink?: () => Promise<string>;
   /** Exporta o que está escolhido; quem chama já tem as escolhas. */
   onExport: () => void;
@@ -133,6 +132,13 @@ export default function ExportDialog({
           variant: "primary",
         },
       ]}
+      footerStart={
+        <Checkbox
+          checked={saveTemplate}
+          label={copy.saveAsTemplate}
+          onChange={onSaveTemplateChange}
+        />
+      }
     >
       {video ? (
         <Field label={copy.exportFormatLabel}>
@@ -198,26 +204,6 @@ export default function ExportDialog({
           video={video!}
         />
       )}
-
-      {/* O template: salvar junto e compartilhar. Ficam por último, discretos,
-          na mesma lista das escolhas. */}
-      <Field label={copy.exportTemplateLabel}>
-        <Checkbox
-          checked={saveTemplate}
-          label={copy.saveAsTemplate}
-          onChange={onSaveTemplateChange}
-        />
-      </Field>
-      {onCreateProjectLink ? (
-        <Field label={copy.exportShareLabel}>
-          <ProjectLinkButton
-            className="export-dialog-link-action"
-            copy={copy}
-            label={copy.copyTemplateLink}
-            onCreate={onCreateProjectLink}
-          />
-        </Field>
-      ) : null}
     </Dialog>
   );
 }
@@ -321,11 +307,7 @@ function VideoFields({
         <Callout
           action={
             onCreateProjectLink ? (
-              <ProjectLinkButton
-                copy={copy}
-                label={copy.projectLinkCopy}
-                onCreate={onCreateProjectLink}
-              />
+              <ProjectLinkButton copy={copy} onCreate={onCreateProjectLink} />
             ) : null
           }
         >
@@ -342,14 +324,10 @@ function VideoFields({
  * atrás da máscara do dialog.
  */
 function ProjectLinkButton({
-  className = "",
   copy,
-  label,
   onCreate,
 }: {
-  className?: string;
   copy: AppCopy;
-  label: string;
   onCreate: () => Promise<string>;
 }) {
   const [status, setStatus] = useState<"copied" | "error" | "idle">("idle");
@@ -367,7 +345,7 @@ function ProjectLinkButton({
   return (
     <button
       type="button"
-      className={`editor-callout-action ${className}`.trim()}
+      className="editor-callout-action"
       aria-live="polite"
       onClick={() => {
         copyPendingText(onCreate())
@@ -380,7 +358,7 @@ function ProjectLinkButton({
         ? copy.projectLinkCopied
         : status === "error"
           ? copy.projectLinkCopyError
-          : label}
+          : copy.projectLinkCopy}
     </button>
   );
 }

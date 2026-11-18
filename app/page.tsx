@@ -15,7 +15,6 @@ import type {
   SpawnOverrides,
 } from "./components/MockupCanvas/MockupCanvas";
 import AlertDialog from "./components/AlertDialog/AlertDialog";
-import { copyPendingText } from "./lib/browser";
 import AnalyticsConsent from "./components/AnalyticsConsent/AnalyticsConsent";
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
@@ -101,8 +100,10 @@ import {
 } from "./lib/scene-templates";
 import {
   consumeSceneLinkFromUrl,
+  createSceneCode,
   createSceneLink,
   decodeSceneLink,
+  extractSceneLink,
 } from "./lib/scene-link";
 import {
   DEFAULT_CANVAS_GRID,
@@ -1354,20 +1355,58 @@ export default function Home() {
   }
 
   /**
-   * O link de um template salvo, copiado para a área de transferência: abre em
-   * qualquer navegador e vira template de quem recebe. Usa o template como está
-   * guardado, não a cena aberta.
+   * O código de um template salvo, para o modal de compartilhar: o que está
+   * guardado, não a cena aberta. `null` (com o aviso na tela) se não deu.
    */
-  function handleCopyTemplateLink(id: string) {
+  async function handleCreateTemplateCode(id: string) {
     const template = templates.find((item) => item.id === id);
 
     if (!template) {
-      return;
+      return null;
     }
 
-    copyPendingText(createSceneLink(template, window.location.href))
-      .then(() => notify("success", copy.projectLinkCopied))
-      .catch(() => notify("error", copy.projectLinkCopyError));
+    return createCodeOrNotify(template);
+  }
+
+  async function createCodeOrNotify(template: SceneTemplate) {
+    try {
+      return await createSceneCode(template);
+    } catch {
+      notify("error", copy.templateCodeCreateError);
+      return null;
+    }
+  }
+
+  /**
+   * Guarda como template o código que alguém compartilhou, colado à mão. Não
+   * abre a cena nem muda de modo: só entra na lista (a do modo dela), com o
+   * nome que veio. Devolve `false` se o código não vale, para o modal avisar.
+   */
+  async function handleImportTemplate(text: string) {
+    const encoded = extractSceneLink(text);
+    const template = encoded ? await decodeSceneLink(encoded) : null;
+
+    if (!template) {
+      return false;
+    }
+
+    if (!persistAndSetTemplates(upsertTemplate(templates, template))) {
+      // O erro de gravação já foi mostrado; o código em si estava certo.
+      return true;
+    }
+
+    notify(
+      "success",
+      template.mode === motionTab
+        ? copy.templateImported
+        : `${copy.templateImportedIn} ${
+            template.mode === "motion"
+              ? copy.canvasModeVideo
+              : copy.canvasModePhoto
+          }.`,
+    );
+
+    return true;
   }
 
   function handleFitObject(id: string) {
@@ -1452,7 +1491,8 @@ export default function Home() {
           onToggleObjectVisibility={handleToggleObjectVisibility}
           onApplyTemplate={handleApplyTemplate}
           onFitObject={handleFitObject}
-          onCopyTemplateLink={handleCopyTemplateLink}
+          onCreateTemplateCode={handleCreateTemplateCode}
+          onImportTemplate={handleImportTemplate}
           onRestoreTemplateView={handleRestoreTemplateView}
           onRemoveTemplate={handleRemoveTemplate}
           onRenameTemplate={handleRenameTemplate}

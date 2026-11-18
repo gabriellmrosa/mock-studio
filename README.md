@@ -61,7 +61,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 ### Keep and share
 
 - **Templates** saved in your browser: composition, camera and keyframes, rebuilt in one click.
-- **Project links**: the whole scene compressed into the URL hash, to open in another browser or send to someone. It is never sent to a server. `Copy template link` is in the `⋮` menu of each saved template and, for the current scene, in the `Export` dialog.
+- **Project links and template codes**: the whole scene compressed into the URL hash, to open in another browser. It is never sent to a server. To send a scene to someone, `Share template`, in the `⋮` menu of each saved template, opens a modal that explains what travels and shows a code — only the compressed content, no address — to copy; the other person uses `Import template` in the templates section, pastes it and gets a template of their own, without touching the open scene.
 - `pt-BR` and `en-US`, a dark interface (the light theme is switched off for now and will come back) and a `Hide UI` mode for clean captures.
 
 <details>

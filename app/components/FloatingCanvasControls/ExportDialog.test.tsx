@@ -236,25 +236,21 @@ describe("ExportDialog", () => {
     });
   });
 
-  it("copies the template link in any browser, from the body of the dialog", async () => {
-    const writeText = jest.fn(() => Promise.resolve());
-
-    Object.assign(navigator, { clipboard: { writeText } });
+  it("does not offer to share the template here: that lives in the template menu", () => {
     render(<Harness isMotion={false} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Copy template link" }));
-    await act(async () => {});
-
-    expect(writeText).toHaveBeenCalledWith("https://mock.studio/#scene=abc");
-    expect(screen.getByRole("button", { name: "Link copied" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Share template" }),
+    ).not.toBeInTheDocument();
   });
 
-  it("keeps Save as template in the body, next to the other choices", () => {
+  it("keeps Save as template in the footer, on the left", () => {
     render(<Harness isMotion={false} />);
 
     const checkbox = screen.getByRole("checkbox", { name: "Save as template" });
 
-    expect(checkbox.closest(".export-dialog-field")).not.toBeNull();
+    expect(checkbox.closest(".dialog-footer-start")).not.toBeNull();
+    expect(checkbox.closest(".export-dialog-field")).toBeNull();
   });
 
   it("shows no Safari notice in other browsers", async () => {

@@ -451,15 +451,19 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   comprimida no hash da URL, com formato versionado à parte dos templates
   (`v: 1`); campo novo de template entra no link sem mudar nada. Ao abrir,
   vira template do navegador. Copiar usa `copyPendingText`, porque o Safari
-  só deixa escrever na área de transferência durante o clique. Dois pontos de
-  entrada, em qualquer navegador: "Copiar link do template" no `⋮` de cada
-  template (o template como está guardado, com o retorno no snackbar) e na
-  linha "Compartilhar" do Exportar (a cena de agora, com o retorno no próprio
-  rótulo, porque o snackbar ficaria atrás da máscara). O link de `localhost`
-  só abre na máquina de quem o gerou: para outra pessoa, gerar no deploy.
-- O dialog Exportar é: escolher tudo (formato, tamanho, fundo, e no fim
-  "Salvar como template" e "Compartilhar", na mesma lista), depois um botão
-  Exportar. O rótulo é
+  só deixa escrever na área de transferência durante o clique. Para mandar uma cena a
+  alguém, o que se compartilha é o **código** (`createSceneCode`: só o conteúdo
+  comprimido, sem endereço, igual em `localhost` e no deploy), não o link:
+  "Compartilhar template" no `⋮` de cada template (o template como está
+  guardado), só ali — no Exportar não faz sentido (decisão do usuário). Abre o
+  `ShareTemplateModal`: explica o que vai e o que não vai, mostra o código só
+  para leitura e o copia, com o retorno no próprio botão. Receber é o
+  "Importar template" (seção de templates, no `Modal`): cola o código — ou uma
+  URL inteira, `extractSceneLink` — e o guarda como template do modo dele, sem
+  abrir a cena nem trocar de modo. O link com endereço continua para abrir o app
+  já com a cena (o aviso do Safari, e links antigos).
+- O dialog Exportar é: escolher tudo, depois um botão Exportar; o "Salvar como
+  template" fica no rodapé, à esquerda (decisão do usuário). O rótulo é
   "Exportar", não "Download", e não há seletor de pasta (decisões do usuário).
 
 **Analytics**

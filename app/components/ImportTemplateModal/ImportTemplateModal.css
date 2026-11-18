@@ -1,0 +1,59 @@
+/* =========================================
+   ImportTemplateModal — o que é só da importação (a moldura é do Modal)
+   ========================================= */
+
+.import-template {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.import-template-text {
+  color: var(--sidebar-label);
+  font-size: var(--font-size-200);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.import-template-note {
+  color: var(--sidebar-muted);
+}
+
+.import-template-label {
+  color: var(--foreground);
+  font-size: var(--font-size-200);
+  font-weight: var(--font-medium);
+}
+
+.import-template-field {
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: var(--font-size-200);
+  line-height: 1.5;
+  /* O link é uma linha comprida sem espaços: quebra onde precisar, em vez de
+     abrir uma rolagem na horizontal. */
+  overflow-wrap: anywhere;
+  resize: vertical;
+}
+
+.import-template-error {
+  color: var(--danger-fg);
+  font-size: var(--font-size-200);
+  margin: 0;
+}
+
+.import-template-submit {
+  align-self: flex-end;
+}
+
+.import-template-submit:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* O botão de copiar do ShareTemplateModal reusa a moldura do modal de importar. */
+.share-template-copy {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--space-1);
+}

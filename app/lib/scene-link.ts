@@ -51,24 +51,48 @@ async function transform(
   return new Uint8Array(await new Response(output).arrayBuffer());
 }
 
-/** A URL que abre esta cena, a partir do endereço atual do app. */
-export async function createSceneLink(template: SceneTemplate, baseUrl: string) {
-  // `id` e `createdAt` são de quem salva: quem abre o link cria os seus.
+/**
+ * Só o conteúdo de um template, comprimido e em texto: o que vai depois de
+ * `#scene=` num link. É o que se compartilha à mão ("Compartilhar template" e
+ * "Importar template"), igual em qualquer endereço do app.
+ */
+export async function createSceneCode(template: SceneTemplate) {
+  // `id` e `createdAt` são de quem salva: quem abre o código cria os seus.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { createdAt, id, ...fields } = template;
   const payload: LinkPayload = { template: fields, v: LINK_VERSION };
   const json = new TextEncoder().encode(JSON.stringify(payload));
   const compressed = await transform(json, new CompressionStream("deflate-raw"));
+
+  return toBase64Url(compressed);
+}
+
+/** A URL que abre esta cena, a partir do endereço atual do app. */
+export async function createSceneLink(template: SceneTemplate, baseUrl: string) {
   const url = new URL(baseUrl);
 
   url.hash = "";
 
-  return `${url.toString()}${HASH_PREFIX}${toBase64Url(compressed)}`;
+  return `${url.toString()}${HASH_PREFIX}${await createSceneCode(template)}`;
 }
 
 /** O conteúdo do link, se o endereço trouxer um. */
 export function readSceneLinkHash(hash: string) {
   return hash.startsWith(HASH_PREFIX) ? hash.slice(HASH_PREFIX.length) : null;
+}
+
+/**
+ * O código colado à mão ("Importar template"): aceita só o código ou um link
+ * inteiro (de onde sai o que vem depois de `#scene=`). `null` se o texto não
+ * parece um código — vazio, ou com letras que o formato nunca usa.
+ */
+export function extractSceneLink(text: string) {
+  const trimmed = text.trim();
+  const start = trimmed.indexOf(HASH_PREFIX);
+  const encoded =
+    start === -1 ? trimmed : trimmed.slice(start + HASH_PREFIX.length);
+
+  return /^[A-Za-z0-9_-]+$/.test(encoded) ? encoded : null;
 }
 
 /**

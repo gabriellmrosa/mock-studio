@@ -113,3 +113,18 @@ the panel does show is the dark entering from the free edge.
   and its cost per frame was not measured.
 - Not checked: Safari and Firefox.
 
+## Import template: what is left
+
+`Import template` (templates section → `Modal` with the explanation and a field to
+paste the code) saves the pasted code (or a whole link) as a template of its own mode, without
+opening it or switching modes. Checked in Chrome only, with a bad text and with a
+real link.
+
+- An imported template keeps the name that came in the link, so it can end up
+  with the same name as one already in the list ("Template 1" twice); it is not
+  renamed on import.
+- A pasted code that a messaging app cut short fails with the same "incomplete or
+  corrupted" message as any other bad code; there is no hint that it was cut.
+- The pasted text is not read back from the real clipboard in the test, only
+  typed into the field.
+

@@ -252,6 +252,22 @@
   padding: var(--space-6) 0;
 }
 
+.templates-import-link {
+  align-items: center;
+  align-self: center;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+}
+
+.templates-import-link:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 2px;
+}
+
 .templates-dock-body .templates-empty-hint {
   text-align: center;
 }

@@ -144,16 +144,6 @@
   min-width: 0;
 }
 
-.export-dialog-field .editor-checkbox-row {
-  /* Na altura de um select, como o rótulo à esquerda. */
-  min-height: var(--field-height);
-}
-
-.export-dialog-link-action {
-  /* Na altura de um select, para o rótulo e a ação ficarem na mesma linha. */
-  min-height: var(--field-height);
-}
-
 .export-dialog-note {
   color: var(--sidebar-muted);
   font-size: var(--font-size-150);

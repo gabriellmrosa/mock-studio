@@ -70,9 +70,24 @@ export type AppCopy = {
   exportWithBackground: string;
   exportTransparent: string;
   saveAsTemplate: string;
-  copyTemplateLink: string;
-  exportTemplateLabel: string;
-  exportShareLabel: string;
+  shareTemplate: string;
+  shareTemplateIntro: string;
+  shareTemplateNote: string;
+  shareTemplateNext: string;
+  shareTemplateCodeLabel: string;
+  shareTemplateCopy: string;
+  templateCodeCopied: string;
+  templateCodeCopyError: string;
+  templateCodeCreateError: string;
+  importTemplateInvalid: string;
+  importTemplate: string;
+  importTemplateIntro: string;
+  importTemplateNote: string;
+  importTemplateFieldLabel: string;
+  importTemplatePlaceholder: string;
+  importTemplateSubmit: string;
+  templateImported: string;
+  templateImportedIn: string;
   exportFormatLabel: string;
   exportSizeLabel: string;
   dialogCancel: string;
@@ -343,9 +358,29 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     exportWithBackground: "Com fundo",
     exportTransparent: "Transparente",
     saveAsTemplate: "Salvar como template",
-    copyTemplateLink: "Copiar link do template",
-    exportTemplateLabel: "Template",
-    exportShareLabel: "Compartilhar",
+    shareTemplate: "Compartilhar template",
+    shareTemplateIntro:
+      "Copie o código deste template e envie para quem quiser. Ele leva a composição, o fundo, a câmera e os keyframes.",
+    shareTemplateNote:
+      "As imagens e os vídeos das telas não vão no código: quem receber precisa enviá-los de novo.",
+    shareTemplateNext:
+      "Para usar, a pessoa abre o Mock Studio, clica em “Importar template” e cola o código.",
+    shareTemplateCodeLabel: "Código do template",
+    shareTemplateCopy: "Copiar código",
+    templateCodeCopied: "Código copiado",
+    templateCodeCopyError: "Não foi possível copiar o código.",
+    templateCodeCreateError: "Não foi possível gerar o código.",
+    importTemplateInvalid: "Este código está incompleto ou corrompido.",
+    importTemplate: "Importar template",
+    importTemplateIntro:
+      "Cole o código de um template que alguém compartilhou com você. Ele entra na sua lista de templates, sem mexer na cena que está aberta, e você aplica quando quiser.",
+    importTemplateNote:
+      "O código leva a composição, o fundo, a câmera e os keyframes. As imagens e os vídeos das telas não vão nele: depois de aplicar, envie-os de novo.",
+    importTemplateFieldLabel: "Código do template",
+    importTemplatePlaceholder: "Cole o código aqui",
+    importTemplateSubmit: "Importar",
+    templateImported: "Template importado.",
+    templateImportedIn: "Template importado na lista de",
     exportFormatLabel: "Formato",
     exportSizeLabel: "Tamanho",
     dialogCancel: "Cancelar",
@@ -683,9 +718,29 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     exportWithBackground: "With background",
     exportTransparent: "Transparent",
     saveAsTemplate: "Save as template",
-    copyTemplateLink: "Copy template link",
-    exportTemplateLabel: "Template",
-    exportShareLabel: "Share",
+    shareTemplate: "Share template",
+    shareTemplateIntro:
+      "Copy this template's code and send it to whoever you want. It carries the layout, the background, the camera and the keyframes.",
+    shareTemplateNote:
+      "Screen images and videos don't travel in the code: whoever receives it has to upload them again.",
+    shareTemplateNext:
+      "To use it, they open Mock Studio, click “Import template” and paste the code.",
+    shareTemplateCodeLabel: "Template code",
+    shareTemplateCopy: "Copy code",
+    templateCodeCopied: "Code copied",
+    templateCodeCopyError: "Couldn't copy the code.",
+    templateCodeCreateError: "Couldn't create the code.",
+    importTemplateInvalid: "This code is incomplete or corrupted.",
+    importTemplate: "Import template",
+    importTemplateIntro:
+      "Paste the code of a template someone shared with you. It joins your list of templates without touching the scene that is open, and you apply it whenever you want.",
+    importTemplateNote:
+      "The code carries the layout, the background, the camera and the keyframes. Screen images and videos don't travel in it: upload them again after applying.",
+    importTemplateFieldLabel: "Template code",
+    importTemplatePlaceholder: "Paste the code here",
+    importTemplateSubmit: "Import",
+    templateImported: "Template imported.",
+    templateImportedIn: "Template imported into the list of",
     exportFormatLabel: "Format",
     exportSizeLabel: "Size",
     dialogCancel: "Cancel",
