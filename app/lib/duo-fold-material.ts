@@ -162,7 +162,12 @@ function writeUniforms(material: THREE.Material, fx: DuoFoldFx) {
       : role === "cover"
         ? fx.inner.baseDarken
         : fx.base.baseDarken;
-  uniforms.uFxDarkenEdge.value = role === "cover" ? fx.inner.freeEdgeDarken : 0;
+  uniforms.uFxDarkenEdge.value =
+    role === "cover"
+      ? fx.inner.freeEdgeDarken
+      : role === "outer"
+        ? fx.outer.darkenEdge
+        : 0;
 }
 
 /**

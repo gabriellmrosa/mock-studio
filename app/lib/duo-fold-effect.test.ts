@@ -42,13 +42,17 @@ describe("getDuoFoldFx", () => {
 
   it("turns the outer screen off by the black angle and brings it back when open", () => {
     expect(getDuoFoldFx(0).outer.darken).toBe(0);
-    expect(getDuoFoldFx(DUO_FOLD_FX.outerBlackAngle).outer.darken).toBeCloseTo(
-      DUO_FOLD_FX.outerDarken,
-    );
-    expect(getDuoFoldFx(DUO_FOLD_FX.outerHoldEnd).outer.darken).toBeCloseTo(
-      DUO_FOLD_FX.outerDarken,
-    );
+    const total = (angle: number) => {
+      const { outer } = getDuoFoldFx(angle);
+
+      // O escuro que chega à borda livre soma o parado com o do degradê.
+      return outer.darken + outer.darkenEdge;
+    };
+
+    expect(total(DUO_FOLD_FX.outerBlackAngle)).toBeCloseTo(DUO_FOLD_FX.outerDarken);
+    expect(total(DUO_FOLD_FX.outerHoldEnd)).toBeCloseTo(DUO_FOLD_FX.outerDarken);
     expect(getDuoFoldFx(180).outer.darken).toBe(0);
+    expect(getDuoFoldFx(180).outer.darkenEdge).toBe(0);
   });
 
   it("clamps the angle to what the hinge allows", () => {

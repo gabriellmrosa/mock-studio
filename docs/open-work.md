@@ -97,7 +97,10 @@ export). Known gaps:
 ## Duo fold blur: what is left
 
 The screens blur and darken with the hinge angle (see `duo-fold-effect.ts`). Tuned
-against eight screenshots of a real opening video, in Chrome only.
+against eight screenshots of a real opening video and then a 20 s clip of it
+(frames cut with ffmpeg), in Chrome only. The clip shows the image staying on the
+panel and foreshortening with it, so it is not a flat image behind the halves; what
+the panel does show is the dark entering from the free edge.
 
 - The inner half that turns is a bit darker than the half that stays, so a thin
   vertical seam shows at the hinge; in the real phone the transition is softer

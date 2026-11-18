@@ -40,6 +40,12 @@ export type DuoFoldFxParams = {
   outerBlurShare: number;
   /** Quanto a tela de fora escurece no máximo (0 a 1). */
   outerDarken: number;
+  /**
+   * Quanto desse escuro vem como degradê a partir da borda livre (0 a 1): no
+   * vídeo real o preto entra pela borda livre e só depois toma o lado da
+   * dobradiça. 0 escurece a tela por igual.
+   */
+  outerEdgeShare: number;
 };
 
 /**
@@ -63,6 +69,7 @@ export const DUO_FOLD_FX: Readonly<DuoFoldFxParams> = {
   outerHoldEnd: 100,
   outerBlurShare: 0.75,
   outerDarken: 0.9,
+  outerEdgeShare: 0.7,
 };
 
 export type DuoFoldFx = {
@@ -75,7 +82,12 @@ export type DuoFoldFx = {
   };
   /** A de baixo (parada) só escurece, por igual. */
   base: { baseDarken: number };
-  outer: { blurPx: number; darken: number; falloffPower: number };
+  outer: {
+    blurPx: number;
+    darken: number;
+    darkenEdge: number;
+    falloffPower: number;
+  };
 };
 
 function clamp01(value: number) {
@@ -122,7 +134,8 @@ export function getDuoFoldFx(
     base: { baseDarken: params.baseDarken * motion },
     outer: {
       blurPx: params.blurPx * params.outerBlurShare * outerBlur,
-      darken: params.outerDarken * outerBlack,
+      darken: params.outerDarken * outerBlack * (1 - params.outerEdgeShare),
+      darkenEdge: params.outerDarken * outerBlack * params.outerEdgeShare,
       falloffPower: params.outerFalloffPower,
     },
   };
