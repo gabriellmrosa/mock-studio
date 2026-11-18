@@ -35,6 +35,7 @@ type LayersPanelProps = {
   onAddText: () => void;
   onApplyTemplate?: (id: string) => void;
   onFitObject?: (id: string) => void;
+  onCopyTemplateLink?: (id: string) => void;
   onRestoreTemplateView?: (id: string) => void;
   onDuplicateObject: (id: string) => void;
   onLocaleChange: (locale: Locale) => void;
@@ -64,6 +65,7 @@ export default function LayersPanel({
   onAddText,
   onApplyTemplate,
   onFitObject,
+  onCopyTemplateLink,
   onRestoreTemplateView,
   onDuplicateObject,
   onLocaleChange,
@@ -459,6 +461,15 @@ export default function LayersPanel({
                             label: copy.renameObject,
                             onClick: () => startEditingTemplate(template),
                           },
+                          ...(onCopyTemplateLink
+                            ? [
+                                {
+                                  type: "action" as const,
+                                  label: copy.copyTemplateLink,
+                                  onClick: () => onCopyTemplateLink(template.id),
+                                },
+                              ]
+                            : []),
                           ...(template.camera
                             ? [
                                 {

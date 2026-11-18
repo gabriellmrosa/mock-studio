@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import LayersPanel from "./LayersPanel";
 import { createCameraObject } from "../../lib/camera-objects";
 import { createSceneObject } from "../../lib/scene-objects";
+import { createSceneTemplate } from "../../lib/scene-templates";
 import { APP_COPY, type AppCopy } from "../../lib/i18n";
 
 jest.mock("../CreditsModal/CreditsModal", () => ({
@@ -12,16 +13,28 @@ jest.mock("../CreditsModal/CreditsModal", () => ({
 
 jest.mock("../ContextMenu/ContextMenu", () => ({
   __esModule: true,
+  // Só os itens de ação, sempre à vista: o menu de verdade abre num portal.
   default: ({
+    items = [],
     triggerAriaLabel,
     triggerIcon,
   }: {
+    items?: { label?: string; onClick?: () => void; type: string }[];
     triggerAriaLabel: string;
     triggerIcon: ReactNode;
   }) => (
-    <button type="button" aria-label={triggerAriaLabel}>
-      {triggerIcon}
-    </button>
+    <>
+      <button type="button" aria-label={triggerAriaLabel}>
+        {triggerIcon}
+      </button>
+      {items
+        .filter((item) => item.type === "action")
+        .map((item) => (
+          <button key={item.label} type="button" onClick={item.onClick}>
+            {item.label}
+          </button>
+        ))}
+    </>
   ),
 }));
 
@@ -143,6 +156,9 @@ const copy: AppCopy = {
   renameObject: "Rename",
   resetObjectButton: "Reset transform",
   resetCameraButton: "Reset camera",
+  copyTemplateLink: "Copy template link",
+  exportTemplateLabel: "Template",
+  exportShareLabel: "Share",
   alignmentLabel: "Alignment",
   alignmentHorizontal: "Horizontal alignment",
   alignmentVertical: "Vertical alignment",
@@ -394,6 +410,54 @@ describe("LayersPanel", () => {
     fireEvent.blur(input);
 
     expect(onRenameObject).toHaveBeenCalledWith("object-2", "Homepage Mockup");
+  });
+
+  describe("template menu", () => {
+    function renderWithTemplate(onCopyTemplateLink?: jest.Mock) {
+      const object = createSceneObject({ id: "object-1", name: "Object 1" });
+      const template = createSceneTemplate({
+        id: "template-1",
+        name: "My template",
+        objects: [object],
+      });
+
+      render(
+        <LayersPanel
+          appMeta="v1.0.0"
+          copy={copy}
+          locale="en-US"
+          objects={[object]}
+          onAddObject={jest.fn()}
+          onAddImage={jest.fn()}
+          onAddSticker={jest.fn()}
+          onAddText={jest.fn()}
+          onCopyTemplateLink={onCopyTemplateLink}
+          onDuplicateObject={jest.fn()}
+          onLocaleChange={jest.fn()}
+          onRenameObject={jest.fn()}
+          onRemoveObject={jest.fn()}
+          onSelectObject={jest.fn()}
+          onToggleObjectVisibility={jest.fn()}
+          selectedObjectId={object.id}
+          templates={[template]}
+        />,
+      );
+    }
+
+    it("copies the link of that template from its menu", () => {
+      const onCopyTemplateLink = jest.fn();
+
+      renderWithTemplate(onCopyTemplateLink);
+      fireEvent.click(screen.getByText("Copy template link"));
+
+      expect(onCopyTemplateLink).toHaveBeenCalledWith("template-1");
+    });
+
+    it("offers no link action when nothing handles it", () => {
+      renderWithTemplate();
+
+      expect(screen.queryByText("Copy template link")).not.toBeInTheDocument();
+    });
   });
 
   describe("camera", () => {

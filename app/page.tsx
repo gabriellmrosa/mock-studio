@@ -15,6 +15,7 @@ import type {
   SpawnOverrides,
 } from "./components/MockupCanvas/MockupCanvas";
 import AlertDialog from "./components/AlertDialog/AlertDialog";
+import { copyPendingText } from "./lib/browser";
 import AnalyticsConsent from "./components/AnalyticsConsent/AnalyticsConsent";
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
@@ -1352,6 +1353,23 @@ export default function Home() {
     setPlayheadMs(selectedKeyframe.timeMs);
   }
 
+  /**
+   * O link de um template salvo, copiado para a área de transferência: abre em
+   * qualquer navegador e vira template de quem recebe. Usa o template como está
+   * guardado, não a cena aberta.
+   */
+  function handleCopyTemplateLink(id: string) {
+    const template = templates.find((item) => item.id === id);
+
+    if (!template) {
+      return;
+    }
+
+    copyPendingText(createSceneLink(template, window.location.href))
+      .then(() => notify("success", copy.projectLinkCopied))
+      .catch(() => notify("error", copy.projectLinkCopyError));
+  }
+
   function handleFitObject(id: string) {
     cameraApiRef.current?.fitObject(id);
   }
@@ -1434,6 +1452,7 @@ export default function Home() {
           onToggleObjectVisibility={handleToggleObjectVisibility}
           onApplyTemplate={handleApplyTemplate}
           onFitObject={handleFitObject}
+          onCopyTemplateLink={handleCopyTemplateLink}
           onRestoreTemplateView={handleRestoreTemplateView}
           onRemoveTemplate={handleRemoveTemplate}
           onRenameTemplate={handleRenameTemplate}

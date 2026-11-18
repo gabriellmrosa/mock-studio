@@ -70,6 +70,9 @@ export type AppCopy = {
   exportWithBackground: string;
   exportTransparent: string;
   saveAsTemplate: string;
+  copyTemplateLink: string;
+  exportTemplateLabel: string;
+  exportShareLabel: string;
   exportFormatLabel: string;
   exportSizeLabel: string;
   dialogCancel: string;
@@ -340,6 +343,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     exportWithBackground: "Com fundo",
     exportTransparent: "Transparente",
     saveAsTemplate: "Salvar como template",
+    copyTemplateLink: "Copiar link do template",
+    exportTemplateLabel: "Template",
+    exportShareLabel: "Compartilhar",
     exportFormatLabel: "Formato",
     exportSizeLabel: "Tamanho",
     dialogCancel: "Cancelar",
@@ -677,6 +683,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     exportWithBackground: "With background",
     exportTransparent: "Transparent",
     saveAsTemplate: "Save as template",
+    copyTemplateLink: "Copy template link",
+    exportTemplateLabel: "Template",
+    exportShareLabel: "Share",
     exportFormatLabel: "Format",
     exportSizeLabel: "Size",
     dialogCancel: "Cancel",

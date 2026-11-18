@@ -451,8 +451,15 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   comprimida no hash da URL, com formato versionado à parte dos templates
   (`v: 1`); campo novo de template entra no link sem mudar nada. Ao abrir,
   vira template do navegador. Copiar usa `copyPendingText`, porque o Safari
-  só deixa escrever na área de transferência durante o clique.
-- O dialog Exportar é: escolher tudo, depois um botão Exportar. O rótulo é
+  só deixa escrever na área de transferência durante o clique. Dois pontos de
+  entrada, em qualquer navegador: "Copiar link do template" no `⋮` de cada
+  template (o template como está guardado, com o retorno no snackbar) e na
+  linha "Compartilhar" do Exportar (a cena de agora, com o retorno no próprio
+  rótulo, porque o snackbar ficaria atrás da máscara). O link de `localhost`
+  só abre na máquina de quem o gerou: para outra pessoa, gerar no deploy.
+- O dialog Exportar é: escolher tudo (formato, tamanho, fundo, e no fim
+  "Salvar como template" e "Compartilhar", na mesma lista), depois um botão
+  Exportar. O rótulo é
   "Exportar", não "Download", e não há seletor de pasta (decisões do usuário).
 
 **Analytics**
