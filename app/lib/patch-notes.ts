@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-17",
+    version: "2.4.0",
+    items: [
+      {
+        title: {
+          "pt-BR": "A câmera também anima",
+          "en-US": "The camera animates too",
+        },
+        description: {
+          "pt-BR":
+            "A câmera virou um objeto da lista, com keyframes no modo Vídeo: gire, aproxime e mude a lente ao longo do tempo. No Foto, ajuste a vista pelos campos e use o reset para enquadrar a cena de novo.",
+          "en-US":
+            "The camera is now an object in the list, with keyframes in Video mode: orbit, move in and change the lens over time. In Photo, adjust the view with the fields and use reset to frame the scene again.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-17",
     version: "2.3.1",
     items: [
       {
