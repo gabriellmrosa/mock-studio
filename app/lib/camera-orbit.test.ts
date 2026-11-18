@@ -1,4 +1,5 @@
 import {
+  isSameOrbit,
   DEFAULT_CAMERA_ORBIT,
   isOrbit,
   lerpOrbit,
@@ -107,3 +108,19 @@ describe("normalizeOrbit and isOrbit", () => {
     expect(isOrbit(null)).toBe(false);
   });
 });
+
+describe("isSameOrbit", () => {
+  it("treats the round-trip error through the camera as the same orbit", () => {
+    const orbit = { ...DEFAULT_CAMERA_ORBIT, azimuth: -2.02658582089552, distance: 1249.3246684274166 };
+
+    expect(
+      isSameOrbit({ ...orbit, azimuth: -2.0265858208955203, distance: 1249.3246684274163 }, orbit),
+    ).toBe(true);
+  });
+
+  it("sees a real change in any field", () => {
+    expect(isSameOrbit({ ...DEFAULT_CAMERA_ORBIT, targetX: 1 }, DEFAULT_CAMERA_ORBIT)).toBe(false);
+    expect(isSameOrbit({ ...DEFAULT_CAMERA_ORBIT, fov: 46 }, DEFAULT_CAMERA_ORBIT)).toBe(false);
+  });
+});
+

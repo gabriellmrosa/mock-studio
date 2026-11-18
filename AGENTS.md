@@ -341,6 +341,13 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   sobrescrever a lista ao salvar.
 - Aplicar um template é objetos primeiro, câmera por último
   (`pendingCameraPose`, no lugar do auto-enquadramento).
+- **Sobrepor ou salvar novo:** a página guarda de qual template veio a cena de
+  cada modo (`sourceTemplateIds`: aplicar um template ou salvar um novo marca).
+  O "Salvar template" da barra lateral, com origem, pergunta num `AlertDialog`
+  ("Salvar como novo" ou "Sobrepor", o principal); sobrepor troca só o conteúdo
+  e mantém id, nome, data e lugar na lista. O "Salvar como template" do
+  Exportar e o "Salvar e sair" da troca de modo salvam sempre um novo, para
+  não interromper o fluxo deles (decisão do usuário).
 
 **Canvas (React Three Fiber)**
 
@@ -411,7 +418,13 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   `createCameraKeyframe`, com a pose nos zeros.
 - Parado no Vídeo, a câmera vai ao playhead sempre que ele ou um keyframe muda
   (`CameraMotion`); entre uma mudança e outra o usuário orbita livre, e o "+
-  keyframe" captura **a vista de agora**. Em play e na exportação a mesma conta
+  keyframe" captura **a vista de agora**. **Com um keyframe da câmera
+  selecionado** (e o playhead nele), o que o usuário faz na vista — gesto,
+  setas, zoom, "Enquadrar cena", "Enquadrar objeto" — é gravado nesse keyframe
+  (`onCameraViewEdited`, como os campos da câmera já faziam); sem isso, a vista
+  sumia ao mover o playhead e parecia um pulo. Só o que vem do usuário marca
+  (`userMovedRef`): a câmera posta pelos keyframes, template ou troca de modo
+  não grava nada. Em play e na exportação a mesma conta
   (`applyCameraOrbit`) roda por quadro, antes das poses dos objetos; a exportação
   não pode esperar o `camera-controls` (`controls.update(0)` logo após o
   `setLookAt` sem transição).

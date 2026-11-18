@@ -152,6 +152,13 @@ type MockupCanvasProps = {
   onCameraApiReady: (api: CameraApi | null) => void;
   /** A câmera parou depois de um gesto: quem mostra a órbita a lê de novo. */
   onCameraRest?: () => void;
+  /**
+   * A câmera parou depois de uma ação do usuário sobre a vista (gesto, setas,
+   * zoom, "Enquadrar cena", "Enquadrar objeto", "Resetar câmera"), e não por
+   * um keyframe ou template: quem tem um keyframe da câmera selecionado grava
+   * nele a vista nova.
+   */
+  onCameraViewEdited?: () => void;
   /** A URL desta cena, para abrir em outro navegador (ver scene-link.ts). */
   onCreateProjectLink?: () => Promise<string>;
   onNotify?: (tone: "error" | "success", message: string) => void;
@@ -412,6 +419,7 @@ function SceneBridge({
   objects,
   onCameraApiReady,
   onCameraRest,
+  onCameraViewEdited,
   onExportReady,
   onObjectLoadStateChange,
   onObjectResolved,
@@ -871,6 +879,7 @@ function SceneBridge({
           hasCameraMotion={hasCameraMotion}
           onCameraApiReady={onCameraApiReady}
           onCameraRest={onCameraRest}
+          onCameraViewEdited={onCameraViewEdited}
           onTemplateApplied={onTemplateApplied}
           pendingCameraPose={pendingCameraPose}
           sceneFitKey={sceneFitKey}
@@ -1321,6 +1330,7 @@ function BoundsResetController({
   isSceneSettled,
   onCameraApiReady,
   onCameraRest,
+  onCameraViewEdited,
   onTemplateApplied,
   pendingCameraPose,
   sceneFitKey,
@@ -1335,6 +1345,8 @@ function BoundsResetController({
   onCameraApiReady: (api: CameraApi | null) => void;
   /** A câmera parou depois de um gesto: o Inspector lê a órbita de novo. */
   onCameraRest?: () => void;
+  /** Ver o `MockupCanvasProps`: a vista nova veio de uma ação do usuário. */
+  onCameraViewEdited?: () => void;
   onTemplateApplied: () => void;
   pendingCameraPose: CameraPose | null;
   sceneFitKey: string;
@@ -1375,6 +1387,17 @@ function BoundsResetController({
   useEffect(() => {
     onCameraRestRef.current = onCameraRest;
   }, [onCameraRest]);
+
+  const onCameraViewEditedRef = useRef(onCameraViewEdited);
+
+  useEffect(() => {
+    onCameraViewEditedRef.current = onCameraViewEdited;
+  }, [onCameraViewEdited]);
+
+  // Marca que o próximo "rest" da câmera vem de uma ação do usuário (gesto,
+  // botão, enquadrar). O que o código move sozinho (keyframes no playhead,
+  // template, troca de modo) não marca, e não é gravado em keyframe nenhum.
+  const userMovedRef = useRef(false);
 
   // O primeiro quadro de um modo, desenhado na hora da troca (ver o
   // useLayoutEffect do MockupCanvas): o tamanho novo do canvas, a câmera de
@@ -1566,6 +1589,7 @@ function BoundsResetController({
           return;
         }
 
+        userMovedRef.current = true;
         fitWithMargin(controls, target);
       },
       resetView: () => {
@@ -1575,6 +1599,7 @@ function BoundsResetController({
           return;
         }
 
+        userMovedRef.current = true;
         fitWithMargin(controls, sceneGroup);
 
         const orbit = readCameraOrbit(controls);
@@ -1656,6 +1681,8 @@ function BoundsResetController({
     // A trava acompanha a cena: objetos podem ter se movido desde o último
     // enquadramento. Antes de cada gesto e de cada botão de navegação.
     function refreshLimits() {
+      userMovedRef.current = true;
+
       const sceneGroup = sceneRef.current;
 
       if (controls && sceneGroup) {
@@ -1673,7 +1700,14 @@ function BoundsResetController({
     // Durante o gesto, só a folga muda com o zoom; a caixa é a do início.
     const followGesture = () => updateOrbitBoundary(controls);
 
-    const handleRest = () => onCameraRestRef.current?.();
+    const handleRest = () => {
+      onCameraRestRef.current?.();
+
+      if (userMovedRef.current) {
+        userMovedRef.current = false;
+        onCameraViewEditedRef.current?.();
+      }
+    };
 
     controls.addEventListener("controlstart", refreshLimits);
     controls.addEventListener("control", followGesture);

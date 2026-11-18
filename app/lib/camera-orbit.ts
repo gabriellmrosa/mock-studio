@@ -125,6 +125,17 @@ export function normalizeOrbit(value: unknown): CameraOrbit {
   };
 }
 
+/**
+ * Duas órbitas iguais a menos do erro de ida e volta pela posição (ler a
+ * câmera e devolvê-la não dá os mesmos bits): para não gravar num keyframe o
+ * que ele já tem.
+ */
+export function isSameOrbit(a: CameraOrbit, b: CameraOrbit, epsilon = 1e-6) {
+  return (
+    ["azimuth", "distance", "elevation", "fov", "targetX", "targetY", "targetZ"] as const
+  ).every((key) => Math.abs(a[key] - b[key]) <= epsilon * Math.max(1, Math.abs(b[key])));
+}
+
 export function isOrbit(value: unknown): value is CameraOrbit {
   if (!value || typeof value !== "object") {
     return false;

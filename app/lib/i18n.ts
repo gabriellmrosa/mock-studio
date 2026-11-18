@@ -81,6 +81,11 @@ export type AppCopy = {
   templateCodeCreateError: string;
   importTemplateInvalid: string;
   importTemplate: string;
+  templateOverwriteTitle: string;
+  templateOverwriteDescription: string;
+  templateOverwrite: string;
+  templateSaveAsNew: string;
+  templateOverwrittenMessage: string;
   importTemplateIntro: string;
   importTemplateNote: string;
   importTemplateFieldLabel: string;
@@ -372,6 +377,12 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     templateCodeCreateError: "Não foi possível gerar o código.",
     importTemplateInvalid: "Este código está incompleto ou corrompido.",
     importTemplate: "Importar template",
+    templateOverwriteTitle: "Salvar template",
+    templateOverwriteDescription:
+      "Esta cena veio do template “{name}”. Você pode atualizar esse template com as mudanças ou salvar como um template novo.",
+    templateOverwrite: "Sobrepor “{name}”",
+    templateSaveAsNew: "Salvar como novo",
+    templateOverwrittenMessage: "Template “{name}” atualizado.",
     importTemplateIntro:
       "Cole o código de um template que alguém compartilhou com você. Ele entra na sua lista de templates, sem mexer na cena que está aberta, e você aplica quando quiser.",
     importTemplateNote:
@@ -732,6 +743,12 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     templateCodeCreateError: "Couldn't create the code.",
     importTemplateInvalid: "This code is incomplete or corrupted.",
     importTemplate: "Import template",
+    templateOverwriteTitle: "Save template",
+    templateOverwriteDescription:
+      "This scene came from the template “{name}”. You can update that template with the changes or save a new one.",
+    templateOverwrite: "Overwrite “{name}”",
+    templateSaveAsNew: "Save as new",
+    templateOverwrittenMessage: "Template “{name}” updated.",
     importTemplateIntro:
       "Paste the code of a template someone shared with you. It joins your list of templates without touching the scene that is open, and you apply it whenever you want.",
     importTemplateNote:

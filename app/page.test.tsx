@@ -513,4 +513,64 @@ describe("Home page layers and selection flow", () => {
 
     expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Object 2");
   });
+
+  describe("saving over the template the scene came from", () => {
+    beforeEach(() => {
+      window.localStorage.clear();
+    });
+
+    function savedTemplates() {
+      return JSON.parse(window.localStorage.getItem("mock-photo-templates") ?? "{}")
+        .templates as { createdAt: number; id: string; name: string }[];
+    }
+
+    it("saves a new template when the scene did not come from one", () => {
+      render(<Home />);
+
+      fireEvent.click(screen.getByRole("button", { name: "Save template" }));
+
+      expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      expect(savedTemplates()).toHaveLength(1);
+    });
+
+    it("asks before saving again, and overwrites keeping the name and the place", () => {
+      render(<Home />);
+      fireEvent.click(screen.getByRole("button", { name: "Save template" }));
+
+      const [first] = savedTemplates();
+
+      addFromMenu("Device");
+      fireEvent.click(screen.getByRole("button", { name: "Save template" }));
+
+      const dialog = screen.getByRole("alertdialog");
+
+      expect(dialog).toHaveTextContent(first.name);
+
+      fireEvent.click(
+        within(dialog).getByRole("button", { name: `Overwrite “${first.name}”` }),
+      );
+
+      const after = savedTemplates();
+
+      expect(after).toHaveLength(1);
+      expect(after[0]).toMatchObject({
+        createdAt: first.createdAt,
+        id: first.id,
+        name: first.name,
+      });
+    });
+
+    it("can still save a new one from the same question", () => {
+      render(<Home />);
+      fireEvent.click(screen.getByRole("button", { name: "Save template" }));
+      fireEvent.click(screen.getByRole("button", { name: "Save template" }));
+      fireEvent.click(
+        within(screen.getByRole("alertdialog")).getByRole("button", {
+          name: "Save as new",
+        }),
+      );
+
+      expect(savedTemplates()).toHaveLength(2);
+    });
+  });
 });

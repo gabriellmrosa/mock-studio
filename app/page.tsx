@@ -111,7 +111,7 @@ import {
   type CanvasGrid,
 } from "./lib/canvas-grid";
 import { createCameraKeyframe, createCameraObject } from "./lib/camera-objects";
-import { normalizeOrbit, type CameraOrbit } from "./lib/camera-orbit";
+import { isSameOrbit, normalizeOrbit, type CameraOrbit } from "./lib/camera-orbit";
 import { DEVICE_MODELS } from "./models/device-models";
 
 /** Cena de um modo guardada enquanto o outro está ativo. */
@@ -231,6 +231,13 @@ export default function Home() {
     pose: CameraPose;
     source: "mode" | "template";
   } | null>(null);
+  // O template de onde veio a cena de cada modo (Foto e Vídeo têm cenas
+  // separadas): salvar pela barra lateral pergunta se sobrepõe ele ou cria um
+  // novo. Some quando o template é apagado.
+  const [sourceTemplateIds, setSourceTemplateIds] = useState<
+    Record<TemplateMode, string | null>
+  >({ motion: null, static: null });
+  const [isOverwriteOpen, setIsOverwriteOpen] = useState(false);
   const cameraApiRef = useRef<CameraApi | null>(null);
   // A vista de agora (o que a câmera mostra), lida do canvas quando ela para
   // depois de um gesto: no Foto é o que os campos da câmera mostram, e no Vídeo
@@ -860,8 +867,66 @@ export default function Home() {
     }
 
     setSavedSnapshot(currentSnapshot);
+    setSourceTemplate(motionTab, template.id);
     notify("success", copy.templateSavedMessage);
     return true;
+  }
+
+  function setSourceTemplate(mode: TemplateMode, id: string | null) {
+    setSourceTemplateIds((current) => ({ ...current, [mode]: id }));
+  }
+
+  // O template de onde veio a cena deste modo, se ainda existe.
+  const sourceTemplate =
+    modeTemplates.find((template) => template.id === sourceTemplateIds[motionTab]) ??
+    null;
+
+  /**
+   * O "Salvar template" da barra lateral: se a cena veio de um template,
+   * pergunta se sobrepõe ele ou salva um novo. O "Salvar como template" do
+   * Exportar e o "Salvar e sair" da troca de modo salvam sempre um novo, para
+   * não interromper o fluxo deles com outro diálogo (decisão do usuário).
+   */
+  function handleRequestSaveTemplate() {
+    if (sourceTemplate) {
+      setIsOverwriteOpen(true);
+      return;
+    }
+
+    handleSaveTemplate();
+  }
+
+  /** Sobrepõe o template de origem: o conteúdo é o de agora; nome e lugar ficam. */
+  function handleOverwriteTemplate() {
+    setIsOverwriteOpen(false);
+
+    if (!sourceTemplate) {
+      return;
+    }
+
+    const template = {
+      ...createSceneTemplate({
+        backgroundColor: canvasBgColor,
+        camera: cameraApiRef.current?.getPose() ?? null,
+        frame: motionFrame,
+        grid: canvasGrid,
+        id: sourceTemplate.id,
+        mode: motionTab,
+        name: sourceTemplate.name,
+        objects: sceneObjects,
+      }),
+      createdAt: sourceTemplate.createdAt,
+    };
+
+    if (!persistAndSetTemplates(upsertTemplate(templates, template))) {
+      return;
+    }
+
+    setSavedSnapshot(currentSnapshot);
+    notify(
+      "success",
+      copy.templateOverwrittenMessage.replace("{name}", sourceTemplate.name),
+    );
   }
 
   /**
@@ -935,6 +1000,8 @@ export default function Home() {
   ) {
     const nextObjects = applySceneTemplate(template);
     const nextFrame = template.frame ?? DEFAULT_MOTION_FRAME;
+
+    setSourceTemplate(template.mode, template.id);
 
     setSceneObjects(nextObjects);
     setSelectedObjectId(nextObjects[0]?.id ?? "");
@@ -1057,6 +1124,10 @@ export default function Home() {
   // Estável: o AlertDialog reassina o Esc quando o callback muda.
   const handleCancelPendingAction = useCallback(
     () => setPendingAction(null),
+    [],
+  );
+  const closeOverwriteDialog = useCallback(
+    () => setIsOverwriteOpen(false),
     [],
   );
 
@@ -1334,6 +1405,47 @@ export default function Home() {
     setPlayheadMs(selectedKeyframe.timeMs);
   }
 
+  /**
+   * A vista mudou por ação do usuário (gesto, setas, zoom, "Enquadrar cena",
+   * "Enquadrar objeto"). No Vídeo, com um keyframe da câmera selecionado e o
+   * playhead nele, ela vira a órbita desse keyframe — como os campos da câmera
+   * já fazem. Sem keyframe selecionado a vista fica livre, e o "+" a captura.
+   * Sem isso, enquadrar num keyframe sumia ao mover o playhead.
+   */
+  function handleCameraViewEdited() {
+    if (motionTab !== "motion" || isMotionPlaying) return;
+    if (!selectedObject || !isCameraObject(selectedObject)) return;
+    if (!selectedKeyframe?.transform.orbit) return;
+    if (playheadMs !== selectedKeyframe.timeMs) return;
+
+    const view = cameraApiRef.current?.getOrbit();
+
+    if (!view) return;
+
+    const orbit = normalizeOrbit(view);
+
+    if (isSameOrbit(orbit, selectedKeyframe.transform.orbit)) return;
+
+    const keyframeId = selectedKeyframe.id;
+
+    // A partir do estado atual: o canvas chama isto depois do render em que a
+    // câmera parou, e a lista pode ter mudado no meio.
+    setSceneObjects((current) =>
+      current.map((object) =>
+        object.id === selectedObject.id
+          ? {
+              ...object,
+              keyframes: object.keyframes.map((keyframe) =>
+                keyframe.id === keyframeId
+                  ? { ...keyframe, transform: { ...keyframe.transform, orbit } }
+                  : keyframe,
+              ),
+            }
+          : object,
+      ),
+    );
+  }
+
   function updateTransform(patch: PosePatch) {
     if (!selectedObject) return;
 
@@ -1496,7 +1608,7 @@ export default function Home() {
           onRestoreTemplateView={handleRestoreTemplateView}
           onRemoveTemplate={handleRemoveTemplate}
           onRenameTemplate={handleRenameTemplate}
-          onSaveTemplate={handleSaveTemplate}
+          onSaveTemplate={handleRequestSaveTemplate}
           selectedObjectId={selectedObject?.id ?? ""}
           templates={modeTemplates}
           templatesEmptyHint={
@@ -1521,6 +1633,7 @@ export default function Home() {
         }
         onCameraApiReady={handleCameraApiReady}
         onCameraRest={refreshLiveCamera}
+        onCameraViewEdited={handleCameraViewEdited}
         onNotify={(tone, message) =>
           setNotification({
             id: Date.now(),
@@ -1763,6 +1876,33 @@ export default function Home() {
                 ? copy.templateOpenSave
                 : copy.modeSwitchSave,
             onClick: handleSaveAndContinue,
+            variant: "primary",
+          },
+        ]}
+      />
+      <AlertDialog
+        isOpen={isOverwriteOpen && sourceTemplate !== null}
+        title={copy.templateOverwriteTitle}
+        description={copy.templateOverwriteDescription.replace(
+          "{name}",
+          sourceTemplate?.name ?? "",
+        )}
+        cancelLabel={copy.dialogCancel}
+        onCancel={closeOverwriteDialog}
+        actions={[
+          {
+            label: copy.templateSaveAsNew,
+            onClick: () => {
+              setIsOverwriteOpen(false);
+              handleSaveTemplate();
+            },
+          },
+          {
+            label: copy.templateOverwrite.replace(
+              "{name}",
+              sourceTemplate?.name ?? "",
+            ),
+            onClick: handleOverwriteTemplate,
             variant: "primary",
           },
         ]}
