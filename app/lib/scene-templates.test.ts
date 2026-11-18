@@ -21,6 +21,12 @@ import {
 import { captureTransform, createKeyframe, insertKeyframe } from "./scene-motion";
 import { createTextObject } from "./text-objects";
 import { createImageObject, getStickerImage } from "./image-objects";
+import {
+  createCameraKeyframe,
+  createCameraObject,
+  findCameraObject,
+} from "./camera-objects";
+import { DEFAULT_CAMERA_ORBIT } from "./camera-orbit";
 
 const STORAGE_KEY = "mock-photo-templates";
 
@@ -1039,5 +1045,110 @@ describe("the shadow of an image in templates", () => {
     expect(
       (applySceneTemplate(template)[1] as ReturnType<typeof createImageObject>).image.shadow,
     ).toBe(false);
+  });
+});
+
+describe("the camera in templates", () => {
+  const phone = () => createSceneObject({ id: "phone", name: "Phone", deletable: false });
+  const animatedCamera = () => ({
+    ...createCameraObject({ name: "Camera" }),
+    keyframes: [
+      createCameraKeyframe(0, DEFAULT_CAMERA_ORBIT),
+      createCameraKeyframe(1000, { ...DEFAULT_CAMERA_ORBIT, azimuth: 90, fov: 30 }),
+    ],
+  });
+
+  it("goes into a Video template with its keyframes, and comes back animated", () => {
+    const template = createSceneTemplate({
+      mode: "motion",
+      name: "T",
+      objects: [phone(), animatedCamera()],
+    });
+    const rebuilt = findCameraObject(applySceneTemplate(template));
+
+    expect(template.objects.map((object) => object.kind)).toEqual([undefined, "camera"]);
+    expect(rebuilt?.keyframes).toHaveLength(2);
+    expect(rebuilt?.keyframes[1].transform.orbit).toMatchObject({ azimuth: 90, fov: 30 });
+  });
+
+  it("is left out of a Photo template and of a Video one with nothing to keep", () => {
+    const photo = createSceneTemplate({ name: "T", objects: [phone(), animatedCamera()] });
+    const still = createSceneTemplate({
+      mode: "motion",
+      name: "T",
+      objects: [phone(), createCameraObject({ name: "Camera" })],
+    });
+
+    expect(photo.objects.some((object) => object.kind === "camera")).toBe(false);
+    expect(still.objects.some((object) => object.kind === "camera")).toBe(false);
+  });
+
+  it("gives a template that has no camera one when it is applied, so a scene always has its own", () => {
+    const old = createSceneTemplate({ name: "T", objects: [phone()] });
+    const objects = applySceneTemplate(old);
+
+    expect(objects.filter((object) => object.kind === "camera")).toHaveLength(1);
+    expect(findCameraObject(objects)?.deletable).toBe(false);
+    // O aparelho continua o primeiro, e o único que herda o invariante da base.
+    expect(objects[0].kind).toBe("device");
+  });
+
+  it("puts an orbit that comes from outside back inside the limits", () => {
+    const template = createSceneTemplate({
+      mode: "motion",
+      name: "T",
+      objects: [phone(), animatedCamera()],
+    });
+    const camera = template.objects[1];
+
+    if (!("keyframes" in camera) || !camera.keyframes) throw new Error("expected a camera");
+
+    camera.keyframes[1].transform.orbit = {
+      ...DEFAULT_CAMERA_ORBIT,
+      elevation: 500,
+      fov: 500,
+    };
+
+    const rebuilt = findCameraObject(applySceneTemplate(template));
+
+    expect(rebuilt?.keyframes[1].transform.orbit).toMatchObject({ elevation: 85, fov: 90 });
+  });
+
+  it("drops the animation of a camera whose keyframe has a malformed orbit", () => {
+    const template = createSceneTemplate({
+      mode: "motion",
+      name: "T",
+      objects: [phone(), animatedCamera()],
+    });
+    const camera = template.objects[1];
+
+    if (!("keyframes" in camera) || !camera.keyframes) throw new Error("expected a camera");
+
+    (camera.keyframes[0].transform as { orbit: unknown }).orbit = { azimuth: "x" };
+    storeRaw([template]);
+
+    const [loaded] = loadTemplates();
+    const loadedCamera = loaded.objects[1];
+
+    expect("keyframes" in loadedCamera ? loadedCamera.keyframes : undefined).toEqual([]);
+  });
+
+  it("changes the unsaved-changes snapshot of a Video scene when the camera moves", () => {
+    const scene = [phone(), animatedCamera()];
+    const moved = [
+      phone(),
+      {
+        ...animatedCamera(),
+        keyframes: [createCameraKeyframe(0, { ...DEFAULT_CAMERA_ORBIT, azimuth: 5 })],
+      },
+    ];
+
+    expect(getTemplateSnapshot(scene, "motion", null)).not.toBe(
+      getTemplateSnapshot(moved, "motion", null),
+    );
+    // No Foto a câmera não entra: mexer nela não é uma alteração da cena.
+    expect(getTemplateSnapshot(scene, "static", null)).toBe(
+      getTemplateSnapshot(moved, "static", null),
+    );
   });
 });

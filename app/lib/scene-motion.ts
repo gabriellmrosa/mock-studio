@@ -1,10 +1,12 @@
 import {
   getActiveScreenVideos,
   getScreenVideoClipDuration,
+  isCameraObject,
   isDeviceObject,
   isTextObject,
   type SceneObject,
 } from "./scene-objects";
+import { DEFAULT_CAMERA_ORBIT, lerpOrbit, type CameraOrbit } from "./camera-orbit";
 import { DEFAULT_FOLD_ANGLE } from "./scene-presets";
 
 /**
@@ -91,6 +93,11 @@ export type MotionTransform = {
    */
   letterSpacing?: number;
   textColor?: string;
+  /**
+   * A órbita da câmera num keyframe dela; os campos de pose acima ficam nos
+   * zeros. Só a câmera o tem (ver `camera-orbit.ts`).
+   */
+  orbit?: CameraOrbit;
 };
 
 export type Keyframe = {
@@ -212,6 +219,9 @@ export function captureTransform(object: SceneObject): MotionTransform {
           textColor: object.text.color,
         }
       : {}),
+    // A câmera não tem pose: a órbita dela vem do canvas, não do objeto. Isto é
+    // só o ponto de partida se faltar de onde capturar.
+    ...(isCameraObject(object) ? { orbit: { ...DEFAULT_CAMERA_ORBIT } } : {}),
   };
 }
 
@@ -406,6 +416,15 @@ function lerpTransform(
           letterSpacing: lerp(
             (from.letterSpacing ?? to.letterSpacing) as number,
             (to.letterSpacing ?? from.letterSpacing) as number,
+            t,
+          ),
+        }
+      : {}),
+    ...(from.orbit !== undefined || to.orbit !== undefined
+      ? {
+          orbit: lerpOrbit(
+            (from.orbit ?? to.orbit) as CameraOrbit,
+            (to.orbit ?? from.orbit) as CameraOrbit,
             t,
           ),
         }

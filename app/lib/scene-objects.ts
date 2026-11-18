@@ -331,7 +331,30 @@ export type ImageObject = {
   scale: number;
 };
 
-export type SceneObject = DeviceObject | TextObject | ImageObject;
+/**
+ * A câmera da cena, na lista como um objeto que não se apaga. Não tem malha: o
+ * que ela tem são os keyframes (a órbita em `transform.orbit`), e a pose abaixo
+ * é só para ela caber onde o resto trata um objeto qualquer — fica sempre nos
+ * zeros. Ver `camera-objects.ts`.
+ */
+export type CameraObject = {
+  kind: "camera";
+  deletable: false;
+  id: string;
+  isVisible: boolean;
+  keyframes: Keyframe[];
+  name: string;
+  opacity: number;
+  positionX: number;
+  positionY: number;
+  positionZ: number;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  scale: number;
+};
+
+export type SceneObject = DeviceObject | TextObject | ImageObject | CameraObject;
 
 /** A pose editável de um objeto: a do texto é a mesma, menos a abertura. */
 export type PosePatch = Partial<
@@ -361,6 +384,10 @@ export function isTextObject(object: SceneObject): object is TextObject {
 
 export function isImageObject(object: SceneObject): object is ImageObject {
   return object.kind === "image";
+}
+
+export function isCameraObject(object: SceneObject): object is CameraObject {
+  return object.kind === "camera";
 }
 
 // Placeholders são gerados em runtime (canvas) no tamanho de upload

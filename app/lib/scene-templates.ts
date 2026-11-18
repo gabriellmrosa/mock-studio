@@ -8,6 +8,7 @@ import {
 import {
   DEFAULT_SCREEN_FIT,
   getPlaceholderImageUrl,
+  isCameraObject,
   isImageObject,
   isTextObject,
   type SceneObject,
@@ -18,6 +19,8 @@ import {
   normalizeImageSpeed,
 } from "./image-objects";
 import { isStickerId } from "./stickers";
+import { createCameraObject, withCameraObject } from "./camera-objects";
+import { isOrbit, normalizeOrbit } from "./camera-orbit";
 import { normalizeSceneText, type SceneText } from "./text-objects";
 import {
   EASING_IDS,
@@ -158,10 +161,28 @@ export type TemplateImageObject = {
   scale: number;
 };
 
+/**
+ * A câmera: só entra num template de Vídeo, e só com keyframes — sem eles não
+ * há o que guardar (a pose do momento já vai em `camera`). A cena sempre tem a
+ * sua; um template sem ela ganha uma na hora de aplicar.
+ */
+export type TemplateCameraObject = {
+  kind: "camera";
+  keyframes?: TemplateKeyframe[];
+  name: string;
+};
+
 export type TemplateObject =
   | TemplateDeviceObject
   | TemplateTextObject
-  | TemplateImageObject;
+  | TemplateImageObject
+  | TemplateCameraObject;
+
+export function isTemplateCamera(
+  object: TemplateObject,
+): object is TemplateCameraObject {
+  return object.kind === "camera";
+}
 
 export function isTemplateImage(
   object: TemplateObject,
@@ -212,10 +233,35 @@ function toTemplateKeyframes(
     : {};
 }
 
+/**
+ * Os objetos de um template: todos, menos a câmera quando ela não tem o que
+ * guardar (no Foto, ou sem keyframes).
+ */
+function toTemplateObjects(
+  objects: SceneObject[],
+  mode: TemplateMode,
+): TemplateObject[] {
+  return objects
+    .filter(
+      (object) =>
+        !isCameraObject(object) ||
+        (mode === "motion" && object.keyframes.length > 0),
+    )
+    .map((object) => toTemplateObject(object, mode));
+}
+
 function toTemplateObject(
   object: SceneObject,
   mode: TemplateMode,
 ): TemplateObject {
+  if (isCameraObject(object)) {
+    return {
+      ...toTemplateKeyframes(object, mode),
+      kind: "camera",
+      name: object.name,
+    };
+  }
+
   if (isImageObject(object)) {
     return {
       ...toTemplateKeyframes(object, mode),
@@ -315,7 +361,7 @@ export function createSceneTemplate({
     id: id ?? crypto.randomUUID(),
     mode,
     name,
-    objects: objects.map((object) => toTemplateObject(object, mode)),
+    objects: toTemplateObjects(objects, mode),
   };
 }
 
@@ -331,12 +377,23 @@ function fromTemplateKeyframes(keyframes: TemplateKeyframe[] | undefined) {
       ...keyframe.transform,
       // Keyframes salvos antes da opacidade não a têm: 100%.
       opacity: keyframe.transform.opacity ?? 1,
+      // A órbita da câmera vem de fora: volta pelos limites.
+      ...(keyframe.transform.orbit
+        ? { orbit: normalizeOrbit(keyframe.transform.orbit) }
+        : {}),
     },
   }));
 }
 
 export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
-  return template.objects.map((object, index): SceneObject => {
+  const objects = template.objects.map((object, index): SceneObject => {
+    if (isTemplateCamera(object)) {
+      return {
+        ...createCameraObject({ name: object.name }),
+        keyframes: fromTemplateKeyframes(object.keyframes),
+      };
+    }
+
     if (isTemplateImage(object)) {
       const outline =
         typeof object.outline === "boolean"
@@ -442,6 +499,9 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       matteFinish: object.matteFinish ?? true,
     };
   });
+
+  // A cena sempre tem a sua câmera; o nome na lista vem do idioma, não daqui.
+  return withCameraObject(objects, "Camera");
 }
 
 /**
@@ -460,7 +520,7 @@ export function getTemplateSnapshot(
     backgroundColor,
     ...(mode === "motion" && frame ? { frame } : {}),
     ...(grid && !isDefaultCanvasGrid(grid) ? { grid } : {}),
-    objects: objects.map((object) => toTemplateObject(object, mode)),
+    objects: toTemplateObjects(objects, mode),
   });
 }
 
@@ -486,6 +546,12 @@ function isValidTemplateObject(value: unknown): value is TemplateObject {
   }
 
   const object = value as Record<string, unknown>;
+
+  // A câmera não tem pose nem modelo: só o nome e os keyframes (validados à
+  // parte, um a um).
+  if (object.kind === "camera") {
+    return typeof object.name === "string";
+  }
 
   // Um texto não tem modelo: o que vale é o `text` ser um objeto. O conteúdo
   // em si é completado e limitado depois, por `normalizeSceneText`.
@@ -546,7 +612,8 @@ function isValidKeyframe(value: unknown): value is TemplateKeyframe {
       typeof transform.letterSpacing === "number") &&
     (transform.textColor === undefined ||
       (typeof transform.textColor === "string" &&
-        /^#[0-9a-f]{6}$/i.test(transform.textColor)))
+        /^#[0-9a-f]{6}$/i.test(transform.textColor))) &&
+    (transform.orbit === undefined || isOrbit(transform.orbit))
   );
 }
 

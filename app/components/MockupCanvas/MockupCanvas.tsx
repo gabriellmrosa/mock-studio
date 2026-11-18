@@ -39,8 +39,10 @@ import {
   getScreenVideoKey,
   getScreenVideoTime,
   isDeviceObject,
+  isCameraObject,
   isImageObject,
   isTextObject,
+  type CameraObject,
   type SceneObject,
 } from "../../lib/scene-objects";
 import {
@@ -57,6 +59,7 @@ import {
   getSceneMotionDuration,
   hasMotion,
   sampleDisplayedMotion,
+  sampleMotion,
 } from "../../lib/scene-motion";
 import { DEVICE_MODELS } from "../../models/device-models";
 import FloatingCanvasControls from "../FloatingCanvasControls/FloatingCanvasControls";
@@ -89,6 +92,13 @@ import {
 } from "./object-alignment";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
 import { getGridLineColors, type CanvasGrid } from "../../lib/canvas-grid";
+import {
+  DEFAULT_CAMERA_FOV,
+  lookAtToOrbit,
+  orbitToLookAt,
+  type CameraOrbit,
+} from "../../lib/camera-orbit";
+import { createCameraObject, findCameraObject } from "../../lib/camera-objects";
 import { applyImageAnimationTime } from "./image-animation";
 import { applyTextStyle } from "./text-style";
 import { SceneImageMesh } from "./SceneImageMesh";
@@ -140,6 +150,8 @@ type MockupCanvasProps = {
   onBgColorChange: (color: string | null) => void;
   onGridChange: (patch: Partial<CanvasGrid>) => void;
   onCameraApiReady: (api: CameraApi | null) => void;
+  /** A câmera parou depois de um gesto: quem mostra a órbita a lê de novo. */
+  onCameraRest?: () => void;
   /** A URL desta cena, para abrir em outro navegador (ver scene-link.ts). */
   onCreateProjectLink?: () => Promise<string>;
   onNotify?: (tone: "error" | "success", message: string) => void;
@@ -174,6 +186,8 @@ type MockupCanvasProps = {
 
 export type CameraApi = {
   fitObject: (id: string) => void;
+  /** Volta a vista ao enquadramento de todos os objetos, com a lente padrão. */
+  resetView: () => void;
   /**
    * Quanto mover um objeto, em coordenadas do mundo, para alinhá-lo ao quadro
    * do canvas — no Movimento, o do vídeo exportado —, sem mudar a distância
@@ -185,6 +199,12 @@ export type CameraApi = {
   ) => [number, number, number] | null;
   getPose: () => CameraPose | null;
   setPose: (pose: CameraPose) => void;
+  /** A câmera como órbita (o que se anima); `null` sem câmera de perspectiva. */
+  getOrbit: () => CameraOrbit | null;
+  /** O intervalo de distância que a trava da cena permite agora. */
+  getDistanceRange: () => [number, number] | null;
+  /** Leva a câmera a uma órbita, na hora (um campo do Inspector mudou). */
+  setOrbit: (orbit: CameraOrbit) => void;
 };
 
 type ViewportControlsApi = {
@@ -235,6 +255,17 @@ const ANGLE_LIMITS = {
   maxPolarAngle: Math.PI * 0.68,
   minAzimuthAngle: -0.85,
   minPolarAngle: Math.PI * 0.32,
+};
+/**
+ * Com a câmera animada o limite do gesto sairia no caminho: uma volta de 360°
+ * passa de qualquer azimute. Livre na horizontal, e na vertical só um pouco
+ * antes dos polos, onde a órbita giraria de ponta-cabeça.
+ */
+const ANIMATED_ANGLE_LIMITS = {
+  maxAzimuthAngle: Infinity,
+  maxPolarAngle: Math.PI * (1 - 5 / 180),
+  minAzimuthAngle: -Infinity,
+  minPolarAngle: Math.PI * (5 / 180),
 };
 function getObjectPosition(
   index: number,
@@ -380,6 +411,7 @@ function SceneBridge({
   isSceneSettled,
   objects,
   onCameraApiReady,
+  onCameraRest,
   onExportReady,
   onObjectLoadStateChange,
   onObjectResolved,
@@ -403,6 +435,10 @@ function SceneBridge({
   // nascem dentro de um .map, então não dá para ter um useRef por objeto.
   const objectGroupsRef = useRef(new Map<string, THREE.Group>());
   const { advance, camera, gl, scene, size } = useThree();
+  // A câmera da cena e se ela está animada: com keyframes, o limite de ângulo
+  // do gesto sai da frente e o auto-enquadramento não briga com ela.
+  const cameraObject = findCameraObject(objects);
+  const hasCameraMotion = (cameraObject?.keyframes.length ?? 0) > 0;
   // Enquanto um vídeo é exportado, os vídeos das telas são do exportador: o
   // controlador do editor não pode posicioná-los no playhead por cima.
   const isExportingVideoRef = useRef(false);
@@ -443,6 +479,18 @@ function SceneBridge({
       // os aparelhos visíveis (o texto não entra na conta).
       let deviceIndex = 0;
       const pending: Array<Promise<void>> = [];
+
+      // A câmera, com a mesma conta do preview: a cena exportada tem a órbita
+      // de cada quadro, e só assim o arquivo sai igual ao que o editor mostra.
+      const controls = controlsRef.current;
+      const orbit = sampleMotion(
+        findCameraObject(current) ?? EMPTY_CAMERA,
+        timeMs,
+      )?.orbit;
+
+      if (controls && orbit) {
+        applyCameraOrbit(controls, orbit, sceneRef.current, FULL_VISIBLE_SHARE);
+      }
 
       current
         .filter((object) => object.isVisible)
@@ -681,6 +729,12 @@ function SceneBridge({
               );
             }
 
+            // A câmera não se desenha: ela é o ponto de vista, não uma coisa na
+            // cena (ver `CameraMotion`).
+            if (isCameraObject(object)) {
+              return null;
+            }
+
             const index = deviceIndexById.get(object.id) ?? 0;
             const model = DEVICE_MODELS[object.modelId];
             // Em modo movimento a cena inteira mostra o instante do playhead.
@@ -795,6 +849,14 @@ function SceneBridge({
           })}
         </group>
         <OpacityController groupsRef={objectGroupsRef} />
+        <CameraMotion
+          controlsRef={controlsRef}
+          settleKey={`${sceneFitKey}:${isSceneSettled}`}
+          motionPlayheadMs={motionPlayheadMs}
+          motionStartedAt={motionStartedAt}
+          object={cameraObject}
+          sceneRef={sceneRef}
+        />
         <ScreenVideoController
           isPausedRef={isExportingVideoRef}
           motionPlayheadMs={motionPlayheadMs}
@@ -806,7 +868,9 @@ function SceneBridge({
           modeFrameRef={modeFrameRef}
           controlsRef={controlsRef}
           isSceneSettled={isSceneSettled}
+          hasCameraMotion={hasCameraMotion}
           onCameraApiReady={onCameraApiReady}
+          onCameraRest={onCameraRest}
           onTemplateApplied={onTemplateApplied}
           pendingCameraPose={pendingCameraPose}
           sceneFitKey={sceneFitKey}
@@ -817,7 +881,7 @@ function SceneBridge({
       <CameraControls
         ref={controlsRef}
         makeDefault
-        {...ANGLE_LIMITS}
+        {...(hasCameraMotion ? ANIMATED_ANGLE_LIMITS : ANGLE_LIMITS)}
         dampingFactor={0.08}
         azimuthRotateSpeed={1}
         dollyToCursor
@@ -1053,6 +1117,139 @@ function applyCameraLimits(
   updateOrbitBoundary(controls);
 }
 
+/**
+ * Leva a câmera a uma órbita, na hora e sem transição: é o que o preview, o
+ * play e a exportação de vídeo fazem a cada quadro, a mesma conta nos três.
+ * Se a lente mudou, a trava acompanha (os limites de distância e o near/far
+ * dependem do campo de visão).
+ */
+function applyCameraOrbit(
+  controls: CameraControlsImpl,
+  orbit: CameraOrbit,
+  sceneGroup: THREE.Object3D | null,
+  visible: VisibleShare,
+) {
+  const camera = controls.camera;
+
+  if (!(camera instanceof THREE.PerspectiveCamera)) {
+    return;
+  }
+
+  if (camera.fov !== orbit.fov) {
+    camera.fov = orbit.fov;
+    camera.updateProjectionMatrix();
+
+    if (sceneGroup) {
+      applyCameraLimits(controls, sceneGroup, visible);
+    }
+  }
+
+  const { position, target } = orbitToLookAt(orbit);
+
+  void controls.setLookAt(...position, ...target, false);
+  // A câmera só é posta no próximo quadro do controle; a exportação renderiza
+  // antes dele.
+  controls.update(0);
+}
+
+/** A órbita em que a câmera está agora. */
+function readCameraOrbit(controls: CameraControlsImpl): CameraOrbit | null {
+  const camera = controls.camera;
+
+  if (!(camera instanceof THREE.PerspectiveCamera)) {
+    return null;
+  }
+
+  const position = controls.getPosition(new THREE.Vector3());
+  const target = controls.getTarget(new THREE.Vector3());
+
+  return lookAtToOrbit(
+    [position.x, position.y, position.z],
+    [target.x, target.y, target.z],
+    camera.fov,
+  );
+}
+
+/**
+ * Conduz a câmera pelos keyframes dela. Parado, a câmera vai ao instante do
+ * playhead sempre que ele (ou um keyframe) muda — e entre uma mudança e outra o
+ * usuário orbita livre, como um objeto mostrado num keyframe não é o objeto. Em
+ * play, escreve direto a cada quadro, sem passar pelo React.
+ */
+function CameraMotion({
+  controlsRef,
+  motionPlayheadMs,
+  motionStartedAt,
+  object,
+  sceneRef,
+  settleKey,
+}: {
+  controlsRef: { current: CameraControlsImpl | null };
+  /**
+   * Muda quando a cena assenta ou se enquadra: a câmera volta ao playhead depois
+   * do enquadramento e da trava (que vêm um quadro depois de montar a cena).
+   */
+  settleKey: string;
+  motionPlayheadMs: number | null;
+  motionStartedAt: number | null;
+  object: CameraObject | null;
+  sceneRef: { current: THREE.Group | null };
+}) {
+  const invalidate = useThree((state) => state.invalidate);
+  const keyframes = object?.keyframes ?? [];
+  const hasKeyframes = keyframes.length > 0;
+  const isPlaying = motionStartedAt !== null;
+
+  useEffect(() => {
+    const controls = controlsRef.current;
+
+    if (!object || !controls || !hasKeyframes || isPlaying || motionPlayheadMs === null) {
+      return;
+    }
+
+    const orbit = sampleMotion(object, motionPlayheadMs)?.orbit;
+
+    if (orbit) {
+      applyCameraOrbit(controls, orbit, sceneRef.current, FULL_VISIBLE_SHARE);
+      invalidate();
+    }
+  }, [
+    controlsRef,
+    hasKeyframes,
+    invalidate,
+    isPlaying,
+    motionPlayheadMs,
+    object,
+    sceneRef,
+    settleKey,
+  ]);
+
+  useFrame(() => {
+    const controls = controlsRef.current;
+
+    if (!object || !controls || !hasKeyframes || motionStartedAt === null) {
+      return;
+    }
+
+    const orbit = sampleMotion(object, Date.now() - motionStartedAt)?.orbit;
+
+    if (orbit) {
+      applyCameraOrbit(controls, orbit, sceneRef.current, FULL_VISIBLE_SHARE);
+    }
+  });
+
+  return null;
+}
+
+/** Uma câmera sem keyframes: `sampleMotion` devolve `null` e nada se mexe. */
+const EMPTY_CAMERA: CameraObject = createCameraObject({
+  id: "no-camera",
+  name: "Camera",
+});
+
+/** No Vídeo o canvas inteiro é o quadro: a câmera o vê todo. */
+const FULL_VISIBLE_SHARE: VisibleShare = { height: 1, width: 1 };
+
 /** A folga do centro da órbita para a distância de agora (ver getOrbitBoundary). */
 function updateOrbitBoundary(controls: CameraControlsImpl) {
   const scene = sceneBoxes.get(controls);
@@ -1115,19 +1312,24 @@ function BoundsResetController({
   alignmentAreaRef,
   modeFrameRef,
   controlsRef,
+  hasCameraMotion,
   isSceneSettled,
   onCameraApiReady,
+  onCameraRest,
   onTemplateApplied,
   pendingCameraPose,
   sceneFitKey,
   onViewportControlsReady,
   sceneRef,
 }: {
+  hasCameraMotion: boolean;
   alignmentAreaRef: { current: HTMLDivElement | null };
   modeFrameRef: { current: ((pose: CameraPose | null) => void) | null };
   controlsRef: { current: CameraControlsImpl | null };
   isSceneSettled: boolean;
   onCameraApiReady: (api: CameraApi | null) => void;
+  /** A câmera parou depois de um gesto: o Inspector lê a órbita de novo. */
+  onCameraRest?: () => void;
   onTemplateApplied: () => void;
   pendingCameraPose: CameraPose | null;
   sceneFitKey: string;
@@ -1156,6 +1358,13 @@ function BoundsResetController({
   useEffect(() => {
     onTemplateAppliedRef.current = onTemplateApplied;
   }, [onTemplateApplied]);
+
+  // Pelo mesmo motivo: o callback muda a cada render do page.
+  const onCameraRestRef = useRef(onCameraRest);
+
+  useEffect(() => {
+    onCameraRestRef.current = onCameraRest;
+  }, [onCameraRest]);
 
   // O primeiro quadro de um modo, desenhado na hora da troca (ver o
   // useLayoutEffect do MockupCanvas): o tamanho novo do canvas, a câmera de
@@ -1249,6 +1458,18 @@ function BoundsResetController({
       // Reaplicamos a cada passada (os objetos resolvem um a um) e só
       // liberamos quando a cena inteira assentou, garantindo que a câmera
       // seja de fato o último passo.
+      if (pendingCameraPose && hasCameraMotion) {
+        // Uma câmera animada é a do playhead, não a pose que o template trazia
+        // (a de quando foi salvo): só se libera o aviso de template aplicado.
+        restoredPoseKeyRef.current = sceneFitKey;
+
+        if (isSceneSettled) {
+          onTemplateAppliedRef.current();
+        }
+
+        return;
+      }
+
       if (pendingCameraPose) {
         const [px, py, pz] = pendingCameraPose.position;
         const [tx, ty, tz] = pendingCameraPose.target;
@@ -1272,6 +1493,11 @@ function BoundsResetController({
         return;
       }
 
+      // Uma câmera animada é de quem a animou: entrar um objeto não a reenquadra.
+      if (hasCameraMotion) {
+        return;
+      }
+
       void controls.setLookAt(
         center.x, center.y, center.z + distance,
         center.x, center.y, center.z,
@@ -1290,6 +1516,7 @@ function BoundsResetController({
     getVisibleShare,
     controlsRef,
     gl,
+    hasCameraMotion,
     isSceneSettled,
     pendingCameraPose,
     sceneFitKey,
@@ -1316,6 +1543,26 @@ function BoundsResetController({
         }
 
         fitWithMargin(controls, target);
+      },
+      resetView: () => {
+        const sceneGroup = sceneRef.current;
+
+        if (!sceneGroup) {
+          return;
+        }
+
+        fitWithMargin(controls, sceneGroup);
+
+        const orbit = readCameraOrbit(controls);
+
+        if (orbit) {
+          applyCameraOrbit(
+            controls,
+            { ...orbit, fov: DEFAULT_CAMERA_FOV },
+            sceneGroup,
+            getVisibleShare(),
+          );
+        }
       },
       getAlignmentOffset: (id, alignment) => {
         const target = sceneRef.current?.getObjectByName(id);
@@ -1349,12 +1596,31 @@ function BoundsResetController({
 
         void controls.setLookAt(px, py, pz, tx, ty, tz, true);
       },
+      getOrbit: () => readCameraOrbit(controls),
+      getDistanceRange: () => {
+        const sceneGroup = sceneRef.current;
+
+        // A trava acompanha a cena: objetos podem ter se movido.
+        if (sceneGroup) {
+          applyCameraLimits(controls, sceneGroup, getVisibleShare());
+        }
+
+        return [controls.minDistance, controls.maxDistance];
+      },
+      setOrbit: (orbit) => {
+        applyCameraOrbit(
+          controls,
+          orbit,
+          sceneRef.current,
+          getVisibleShare(),
+        );
+      },
     });
 
     return () => {
       onCameraApiReady(null);
     };
-  }, [alignmentAreaRef, controlsRef, gl, onCameraApiReady, sceneRef]);
+  }, [alignmentAreaRef, controlsRef, getVisibleShare, gl, onCameraApiReady, sceneRef]);
 
   useEffect(() => {
     const controls = controlsRef.current;
@@ -1383,8 +1649,11 @@ function BoundsResetController({
     // Durante o gesto, só a folga muda com o zoom; a caixa é a do início.
     const followGesture = () => updateOrbitBoundary(controls);
 
+    const handleRest = () => onCameraRestRef.current?.();
+
     controls.addEventListener("controlstart", refreshLimits);
     controls.addEventListener("control", followGesture);
+    controls.addEventListener("rest", handleRest);
 
     onViewportControlsReady({
       // Enquadra todos os objetos visíveis, recalculado na hora — ao contrário
@@ -1418,6 +1687,7 @@ function BoundsResetController({
     return () => {
       controls.removeEventListener("controlstart", refreshLimits);
       controls.removeEventListener("control", followGesture);
+      controls.removeEventListener("rest", handleRest);
       onViewportControlsReady(null);
     };
   }, [controlsRef, getVisibleShare, onViewportControlsReady, sceneRef]);
@@ -1533,9 +1803,11 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     canvasBgColor && !isFramed
       ? "mockup-stage relative flex-1 h-screen"
       : `mockup-stage relative flex-1 h-screen ${props.uiTheme === "dark" ? "mockup-stage-dark" : "mockup-stage-light"}`;
+  // A câmera não carrega nada e nunca se resolve: contá-la deixaria a cena
+  // para sempre "por assentar".
   const currentObjectIds = new Set(
     props.objects
-      .filter((object) => object.isVisible)
+      .filter((object) => object.isVisible && !isCameraObject(object))
       .map((object) => object.id),
   );
   const visibleObjectCount = currentObjectIds.size;
