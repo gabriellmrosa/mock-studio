@@ -1,6 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import LayersPanel from "./LayersPanel";
+import { createCameraObject } from "../../lib/camera-objects";
 import { createSceneObject } from "../../lib/scene-objects";
 import { APP_COPY, type AppCopy } from "../../lib/i18n";
 
@@ -70,6 +71,15 @@ const copy: AppCopy = {
   appearanceTabsLabel: "Appearance options",
   appearanceTabCustom: "Custom",
   backgroundColorButton: "Background color",
+  cameraObjectName: "Camera",
+  cameraSectionTitle: "Camera",
+  cameraAzimuthLabel: "Horizontal orbit (°)",
+  cameraElevationLabel: "Vertical orbit (°)",
+  cameraDistanceLabel: "Distance",
+  cameraTargetXLabel: "Target X",
+  cameraTargetYLabel: "Target Y",
+  cameraTargetZLabel: "Target Z",
+  cameraFovLabel: "Lens (field of view °)",
   canvasBackgroundSection: "Background",
   canvasGridSection: "Floor grid",
   canvasGridColorLabel: "Grid color",
@@ -132,6 +142,7 @@ const copy: AppCopy = {
   portuguese: "PT-BR",
   renameObject: "Rename",
   resetObjectButton: "Reset transform",
+  resetCameraButton: "Reset camera",
   alignmentLabel: "Alignment",
   alignmentHorizontal: "Horizontal alignment",
   alignmentVertical: "Vertical alignment",
@@ -383,5 +394,71 @@ describe("LayersPanel", () => {
     fireEvent.blur(input);
 
     expect(onRenameObject).toHaveBeenCalledWith("object-2", "Homepage Mockup");
+  });
+
+  describe("camera", () => {
+    function renderWithCamera(onSelectObject = jest.fn()) {
+      const phone = createSceneObject({ id: "phone", name: "Object 1" });
+      const camera = { ...createCameraObject({ id: "camera", name: "Camera" }), name: "Camera" };
+
+      // A câmera vai no fim dos dados, e a lista a mostra primeiro.
+      render(
+        <LayersPanel
+          appMeta="v1.0.0"
+          copy={copy}
+          locale="en-US"
+          objects={[phone, camera]}
+          onAddObject={jest.fn()}
+          onAddImage={jest.fn()}
+          onAddSticker={jest.fn()}
+          onAddText={jest.fn()}
+          onDuplicateObject={jest.fn()}
+          onLocaleChange={jest.fn()}
+          onRenameObject={jest.fn()}
+          onRemoveObject={jest.fn()}
+          onSelectObject={onSelectObject}
+          onToggleObjectVisibility={jest.fn()}
+          selectedObjectId="phone"
+        />,
+      );
+
+      return onSelectObject;
+    }
+
+    it("is the first row of the list, before the objects", () => {
+      renderWithCamera();
+
+      expect(
+        screen.getByText("Camera").compareDocumentPosition(screen.getByText("Object 1")) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it("can be selected, like any object", () => {
+      const onSelectObject = renderWithCamera();
+
+      fireEvent.click(screen.getByText("Camera"));
+
+      expect(onSelectObject).toHaveBeenCalledWith("camera");
+    });
+
+    it("has nothing to hide, duplicate, rename or delete: no eye and no menu", () => {
+      renderWithCamera();
+
+      const row = screen.getByText("Camera").closest('[role="button"]') as HTMLElement;
+
+      expect(row.querySelector("[title='Hide']")).toBeNull();
+      expect(row.querySelector("[aria-label='Object options']")).toBeNull();
+      // Só o aparelho tem o olho e o menu.
+      expect(screen.getAllByLabelText("Object options")).toHaveLength(1);
+    });
+
+    it("cannot be renamed by a double click", () => {
+      renderWithCamera();
+
+      fireEvent.doubleClick(screen.getByText("Camera"));
+
+      expect(screen.queryByDisplayValue("Camera")).not.toBeInTheDocument();
+    });
   });
 });

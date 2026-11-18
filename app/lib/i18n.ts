@@ -199,6 +199,7 @@ export type AppCopy = {
   motionBezierReset: string;
   motionBezierDone: string;
   resetObjectButton: string;
+  resetCameraButton: string;
   alignmentLabel: string;
   alignmentHorizontal: string;
   alignmentVertical: string;
@@ -228,6 +229,15 @@ export type AppCopy = {
   zoomInButton: string;
   zoomOutButton: string;
   backgroundColorButton: string;
+  cameraObjectName: string;
+  cameraSectionTitle: string;
+  cameraAzimuthLabel: string;
+  cameraElevationLabel: string;
+  cameraDistanceLabel: string;
+  cameraTargetXLabel: string;
+  cameraTargetYLabel: string;
+  cameraTargetZLabel: string;
+  cameraFovLabel: string;
   canvasBackgroundSection: string;
   canvasGridSection: string;
   canvasGridColorLabel: string;
@@ -464,6 +474,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "cubic-bezier": "Cubic bezier",
     },
     resetObjectButton: "Resetar transformação",
+    resetCameraButton: "Resetar câmera",
     alignmentLabel: "Alinhamento",
     alignmentHorizontal: "Alinhamento horizontal",
     alignmentVertical: "Alinhamento vertical",
@@ -491,6 +502,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     zoomInButton: "Aproximar",
     zoomOutButton: "Afastar",
     backgroundColorButton: "Fundo e grade",
+    cameraObjectName: "Câmera",
+    cameraSectionTitle: "Câmera",
+    cameraAzimuthLabel: "Órbita horizontal (°)",
+    cameraElevationLabel: "Órbita vertical (°)",
+    cameraDistanceLabel: "Distância",
+    cameraTargetXLabel: "Alvo X",
+    cameraTargetYLabel: "Alvo Y",
+    cameraTargetZLabel: "Alvo Z",
+    cameraFovLabel: "Lente (campo de visão °)",
     canvasBackgroundSection: "Fundo",
     canvasGridSection: "Grade do chão",
     canvasGridColorLabel: "Cor da grade",
@@ -791,6 +811,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
       "cubic-bezier": "Cubic bezier",
     },
     resetObjectButton: "Reset transform",
+    resetCameraButton: "Reset camera",
     alignmentLabel: "Alignment",
     alignmentHorizontal: "Horizontal alignment",
     alignmentVertical: "Vertical alignment",
@@ -818,6 +839,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     zoomInButton: "Zoom in",
     zoomOutButton: "Zoom out",
     backgroundColorButton: "Background and grid",
+    cameraObjectName: "Camera",
+    cameraSectionTitle: "Camera",
+    cameraAzimuthLabel: "Horizontal orbit (°)",
+    cameraElevationLabel: "Vertical orbit (°)",
+    cameraDistanceLabel: "Distance",
+    cameraTargetXLabel: "Target X",
+    cameraTargetYLabel: "Target Y",
+    cameraTargetZLabel: "Target Z",
+    cameraFovLabel: "Lens (field of view °)",
     canvasBackgroundSection: "Background",
     canvasGridSection: "Floor grid",
     canvasGridColorLabel: "Grid color",

@@ -27,6 +27,25 @@ A first set of templates shipped with the app (five `Static`, five `Motion`) was
 - **Verify in the browser** after composing: numbers alone got the proportions and gaps wrong three times.
 - Found along the way: in `Motion`, auto-fit ignored the timeline's height, so a single device ended up partly behind it — fixed by the video size (item 13), which fits the canvas above the timeline.
 
+## Camera: what is left
+
+The camera row, its fields and its keyframes work (Photo and Video, preview, play,
+export, templates and links). Known gaps:
+
+- No presets of one click (spin 360°, push in, reveal) and no "follow an object":
+  the target is a point, not an object.
+- No roll, depth of field or motion blur.
+- Distance and target stay inside the limits of the scene (`applyCameraLimits`),
+  so a keyframe too far or too wide is clamped, with no warning.
+- The Photo mode keeps the gesture limits of the angles (about ±48° horizontal and
+  ±32° vertical); only a camera with keyframes lifts them, and the free look in
+  Video mode lifts them with it.
+- Seen in the browser: the fields in Photo, two keyframes in Video, a video export
+  that orbits the device, and a template that brings the keyframes back. Not
+  checked: the play of the preview over a long scene, orbiting by hand and then
+  capturing a keyframe, an idle render count with an animated camera, Safari and
+  Firefox.
+
 ## Image objects: what is left
 
 PNG, SVG, GIF, stickers and animated stickers work (create, send the file, move,

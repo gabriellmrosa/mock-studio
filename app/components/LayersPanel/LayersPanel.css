@@ -57,6 +57,9 @@
   display: flex;
   gap: var(--space-3);
   justify-content: space-between;
+  /* A altura que os botões de olho e menu dão às faixas dos objetos: a da
+     câmera, que não os tem, fica igual. */
+  min-height: calc(1.5rem + var(--space-1) * 2);
   padding: var(--space-1) var(--space-0) var(--space-1) var(--space-2);
   transition:
     transform 160ms ease,

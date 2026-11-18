@@ -70,6 +70,7 @@ import {
   duplicateSceneObject,
   getSequentialSpawnTransform,
   isDeviceObject,
+  isCameraObject,
   isImageObject,
   isTextObject,
   resetSceneObject,
@@ -107,6 +108,8 @@ import {
   normalizeCanvasGrid,
   type CanvasGrid,
 } from "./lib/canvas-grid";
+import { createCameraKeyframe, createCameraObject } from "./lib/camera-objects";
+import { normalizeOrbit, type CameraOrbit } from "./lib/camera-orbit";
 import { DEVICE_MODELS } from "./models/device-models";
 
 /** Cena de um modo guardada enquanto o outro está ativo. */
@@ -182,6 +185,8 @@ export default function Home() {
       id: "base-object",
       name: "Object 1",
     }),
+    // A câmera da cena: sempre na lista, o nome na tela vem do idioma.
+    createCameraObject({ id: "camera", name: "Camera" }),
   ]);
   const [selectedObjectId, setSelectedObjectId] = useState("");
   const [motionTab, setMotionTab] = useState<TemplateMode>("static");
@@ -225,6 +230,13 @@ export default function Home() {
     source: "mode" | "template";
   } | null>(null);
   const cameraApiRef = useRef<CameraApi | null>(null);
+  // A vista de agora (o que a câmera mostra), lida do canvas quando ela para
+  // depois de um gesto: no Foto é o que os campos da câmera mostram, e no Vídeo
+  // o que "+ keyframe" captura. Não é estado da cena.
+  const [liveCamera, setLiveCamera] = useState<{
+    distanceRange: [number, number] | null;
+    orbit: CameraOrbit | null;
+  }>({ distanceRange: null, orbit: null });
   const copy = APP_COPY[locale];
   const minViewportLabel = `${MIN_DESKTOP_WIDTH} x ${MIN_DESKTOP_HEIGHT} px`;
   const selectedObject =
@@ -235,6 +247,17 @@ export default function Home() {
   // não tem tela, modelo nem cores de aparelho.
   const selectedDevice =
     selectedObject && isDeviceObject(selectedObject) ? selectedObject : null;
+  // A câmera se chama no idioma da interface (o nome guardado é só interno), e
+  // na timeline ela vem primeiro, como na lista.
+  const displayObjects = sceneObjects
+    .map((object) =>
+      isCameraObject(object) ? { ...object, name: copy.cameraObjectName } : object,
+    )
+    .sort((a, b) => Number(isCameraObject(b)) - Number(isCameraObject(a)));
+  const displaySelectedObject =
+    selectedObject && isCameraObject(selectedObject)
+      ? { ...selectedObject, name: copy.cameraObjectName }
+      : selectedObject;
 
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("mock-photo-locale");
@@ -390,8 +413,10 @@ export default function Home() {
   }
 
   function handleAddObject() {
+    // O número conta os aparelhos: o texto, a imagem e a câmera não entram.
+    const devices = sceneObjects.filter(isDeviceObject).length;
     const nextObject = createSceneObject({
-      name: `Object ${sceneObjects.length + 1}`,
+      name: `Object ${devices + 1}`,
     });
 
     setSceneObjects((current) => {
@@ -665,6 +690,11 @@ export default function Home() {
         return [...current, copied];
       }
 
+      // A câmera é única por cena: não se duplica.
+      if (isCameraObject(source)) {
+        return current;
+      }
+
       const duplicated = duplicateSceneObject({
         name: getDuplicateName(source.name),
         objects: current,
@@ -754,6 +784,14 @@ export default function Home() {
       return;
     }
 
+    // A câmera é a vista: reset é enquadrar a cena de novo, com a lente padrão.
+    if (isCameraObject(selectedObject)) {
+      cameraApiRef.current?.resetView();
+      refreshLiveCamera();
+
+      return;
+    }
+
     const id = selectedObject.id;
 
     setSceneObjects((current) =>
@@ -764,6 +802,10 @@ export default function Home() {
 
         if (isDeviceObject(object)) {
           return resetSceneObject(object);
+        }
+
+        if (isCameraObject(object)) {
+          return object;
         }
 
         return isImageObject(object)
@@ -1083,6 +1125,25 @@ export default function Home() {
       return;
     }
 
+    // O keyframe da câmera captura a vista de agora (a interpolada, ou a que o
+    // usuário orbitou depois), e não um valor guardado no objeto.
+    if (isCameraObject(target)) {
+      const orbit = cameraApiRef.current?.getOrbit();
+
+      if (!orbit) return;
+
+      const created = createCameraKeyframe(playheadMs, orbit);
+
+      updateShared(objectId, {
+        keyframes: [...target.keyframes, created].sort(
+          (a, b) => a.timeMs - b.timeMs,
+        ),
+      });
+      selectKeyframe(objectId, created);
+
+      return;
+    }
+
     const { id, keyframes } = insertKeyframe(target, playheadMs);
     const created = keyframes.find((keyframe) => keyframe.id === id);
 
@@ -1239,6 +1300,38 @@ export default function Home() {
     });
   }
 
+  /**
+   * Um campo da câmera mudou. No Foto leva a câmera ao valor (a vista é a
+   * câmera) e lê de volta o que a trava deixou; no Vídeo escreve no keyframe
+   * selecionado e põe o playhead nele, que é então o que o canvas mostra.
+   */
+  function handleUpdateCameraOrbit(patch: Partial<CameraOrbit>) {
+    if (!selectedObject || !isCameraObject(selectedObject)) return;
+
+    if (motionTab === "static") {
+      const current = cameraApiRef.current?.getOrbit();
+
+      if (!current) return;
+
+      cameraApiRef.current?.setOrbit(normalizeOrbit({ ...current, ...patch }));
+      refreshLiveCamera();
+
+      return;
+    }
+
+    if (!selectedKeyframe?.transform.orbit) return;
+
+    updateShared(selectedObject.id, {
+      keyframes: updateKeyframe(selectedObject.keyframes, selectedKeyframe.id, {
+        transform: {
+          ...selectedKeyframe.transform,
+          orbit: normalizeOrbit({ ...selectedKeyframe.transform.orbit, ...patch }),
+        },
+      }),
+    });
+    setPlayheadMs(selectedKeyframe.timeMs);
+  }
+
   function updateTransform(patch: PosePatch) {
     if (!selectedObject) return;
 
@@ -1277,9 +1370,31 @@ export default function Home() {
   // é só voltar.
   const isRestoringTemplate = pendingCamera?.source === "template";
   // Estável: vai para um efeito do canvas, que rodaria de novo a cada render.
-  const handleCameraApiReady = useCallback((api: CameraApi | null) => {
-    cameraApiRef.current = api;
+  const refreshLiveCamera = useCallback(() => {
+    const api = cameraApiRef.current;
+
+    setLiveCamera({
+      distanceRange: api?.getDistanceRange() ?? null,
+      orbit: api?.getOrbit() ?? null,
+    });
   }, []);
+  // Selecionar a câmera (ou trocar de modo com ela selecionada) lê a vista de
+  // agora: os campos dela nascem com o que se vê.
+  const isCameraSelected = selectedObject ? isCameraObject(selectedObject) : false;
+
+  useEffect(() => {
+    if (isCameraSelected) {
+      refreshLiveCamera();
+    }
+  }, [isCameraSelected, motionTab, refreshLiveCamera]);
+
+  const handleCameraApiReady = useCallback(
+    (api: CameraApi | null) => {
+      cameraApiRef.current = api;
+      refreshLiveCamera();
+    },
+    [refreshLiveCamera],
+  );
 
   const appliedMessage = pendingCamera?.message;
   const handleTemplateApplied = useCallback(() => {
@@ -1306,7 +1421,7 @@ export default function Home() {
           appMeta={APP_VERSION}
           copy={copy}
           locale={locale}
-          objects={sceneObjects}
+          objects={displayObjects}
           onAddObject={handleAddObject}
           onAddImage={handleAddImage}
           onAddSticker={() => setStickerPickerMode("add")}
@@ -1346,6 +1461,7 @@ export default function Home() {
           setCanvasGrid((current) => normalizeCanvasGrid({ ...current, ...patch }))
         }
         onCameraApiReady={handleCameraApiReady}
+        onCameraRest={refreshLiveCamera}
         onNotify={(tone, message) =>
           setNotification({
             id: Date.now(),
@@ -1375,7 +1491,7 @@ export default function Home() {
             frame={motionFrame}
             isPlaying={isMotionPlaying}
             locale={locale}
-            objects={sceneObjects.filter((object) => object.isVisible)}
+            objects={displayObjects.filter((object) => object.isVisible)}
             onChangeFrame={setMotionFrame}
             onChangeKeyframes={handleChangeKeyframes}
             onChangeVideo={(objectId, screen, patch) =>
@@ -1413,7 +1529,16 @@ export default function Home() {
       {!isUiHidden && (
       <InspectorPanel
         copy={copy}
-        object={selectedObject}
+        object={displaySelectedObject}
+        cameraOrbit={
+          selectedObject && isCameraObject(selectedObject)
+            ? motionTab === "motion"
+              ? (selectedKeyframe?.transform.orbit ?? null)
+              : liveCamera.orbit
+            : null
+        }
+        cameraDistanceRange={liveCamera.distanceRange}
+        onUpdateCameraOrbit={handleUpdateCameraOrbit}
         onImageUpload={handleImageUpload}
         onVideoUpload={handleVideoUpload}
         onRemoveImage={() =>

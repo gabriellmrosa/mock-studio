@@ -383,6 +383,36 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   quadrática: ela é mais quadrada e come o anel de espessura constante do
   modelo nos cantos.
 
+**Câmera**
+
+- A câmera é um objeto da lista (`CameraObject`, `kind: "camera"`, `deletable:
+  false`), um por cena (Foto e Vídeo têm cada um a sua), **sempre o primeiro na
+  lista e na timeline** — nos dados vai no fim, para o aparelho continuar sendo
+  `objects[0]`. Nome na tela vem do idioma (`displayObjects`), o guardado
+  (`"Camera"`) é interno. Ela entrou na união porque a timeline, os keyframes e a
+  seleção já eram genéricos; o preço é a pose zerada que ela carrega, e que
+  nada deve mostrar nem usar.
+- O keyframe dela guarda a órbita em `transform.orbit` (`camera-orbit.ts`):
+  azimute, elevação, distância, alvo X/Y/Z e lente (FOV), em graus. **Órbita, e
+  não XYZ**: interpolar posições cortaria por dentro do aparelho, e o azimute
+  **não** encurta o caminho (0° a 360° é uma volta). Cada keyframe é criado por
+  `createCameraKeyframe`, com a pose nos zeros.
+- Parado no Vídeo, a câmera vai ao playhead sempre que ele ou um keyframe muda
+  (`CameraMotion`); entre uma mudança e outra o usuário orbita livre, e o "+
+  keyframe" captura **a vista de agora**. Em play e na exportação a mesma conta
+  (`applyCameraOrbit`) roda por quadro, antes das poses dos objetos; a exportação
+  não pode esperar o `camera-controls` (`controls.update(0)` logo após o
+  `setLookAt` sem transição).
+- Com keyframes, o limite de ângulo do gesto sai (`ANIMATED_ANGLE_LIMITS`) e o
+  auto-enquadramento e a pose salva do template **não brigam** com ela. A
+  distância e o alvo continuam presos à trava da cena (`applyCameraLimits`).
+- **A câmera não se resolve nem se desenha**: fica fora da contagem de objetos
+  carregados (`currentObjectIds`); contá-la deixava a cena para sempre "por
+  assentar" e o aviso de template aplicado nunca saía.
+- No template, só no Vídeo e só com keyframes; todo template ganha uma câmera
+  ao ser aplicado (`withCameraObject`). O Foto não guarda a câmera como objeto: a
+  vista dele continua sendo o campo `camera` (posição e alvo).
+
 **Chão do canvas**
 
 - A cor e a opacidade das linhas do chão (`CanvasGrid`, `canvas-grid.ts`) são da

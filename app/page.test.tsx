@@ -66,12 +66,16 @@ jest.mock("./components/ContextMenu/ContextMenu", () => ({
 jest.mock("./components/MockupCanvas/MockupCanvas", () => ({
   __esModule: true,
   default: ({
-    objects,
+    objects: allObjects,
     onSelectObject,
   }: {
-    objects: Array<{ id: string; name: string; isVisible: boolean }>;
+    objects: Array<{ id: string; isVisible: boolean; kind: string; name: string }>;
     onSelectObject: (id: string) => void;
-  }) => (
+  }) => {
+    // A câmera não se desenha: o canvas de mentira só conta o que é desenhado.
+    const objects = allObjects.filter((object) => object.kind !== "camera");
+
+    return (
     <div data-testid="mockup-canvas">
       <p>visible:{objects.filter((object) => object.isVisible).length}</p>
       {objects.map((object) => (
@@ -84,7 +88,8 @@ jest.mock("./components/MockupCanvas/MockupCanvas", () => ({
         </button>
       ))}
     </div>
-  ),
+    );
+  },
 }));
 
 jest.mock("./components/InspectorPanel/InspectorPanel", () => ({
@@ -482,5 +487,30 @@ describe("Home page layers and selection flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
 
     expect(screen.queryByRole("dialog", { name: "What's new" })).not.toBeInTheDocument();
+  });
+
+  it("has the camera in the list from the start, in the language of the interface", () => {
+    render(<Home />);
+
+    expect(screen.getByText("Camera")).toBeInTheDocument();
+    // O que está selecionado ao abrir continua sendo o aparelho.
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Object 1");
+  });
+
+  it("selects the camera like any object, and only the device has an options menu", () => {
+    render(<Home />);
+
+    fireEvent.click(screen.getByText("Camera"));
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Camera ::");
+    expect(screen.getAllByLabelText("Object options")).toHaveLength(1);
+  });
+
+  it("does not count the camera when numbering the new devices", () => {
+    render(<Home />);
+
+    addFromMenu("Device");
+
+    expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Object 2");
   });
 });

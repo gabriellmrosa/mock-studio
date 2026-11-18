@@ -21,6 +21,8 @@ import {
   type SceneText,
 } from "../../lib/text-objects";
 import Control from "../Control/Control";
+import type { CameraOrbit } from "../../lib/camera-orbit";
+import { MAX_CAMERA_ELEVATION, MAX_CAMERA_FOV, MIN_CAMERA_FOV } from "../../lib/camera-orbit";
 import NumberField from "../NumberField/NumberField";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
 import type { ObjectAlignment } from "../MockupCanvas/object-alignment";
@@ -35,6 +37,7 @@ import {
   getActiveScreenFit,
   isDefaultObjectTransform,
   isDeviceObject,
+  isCameraObject,
   isImageObject,
   isTextObject,
   isPlaceholderImageUrl,
@@ -113,6 +116,14 @@ type InspectorPanelProps = {
   onResetObject: () => void;
   /** Muda o que o texto selecionado diz ou como se vê. */
   onUpdateText: (patch: Partial<SceneText>) => void;
+  /**
+   * A órbita da câmera mostrada quando ela é o objeto selecionado: a do
+   * keyframe editado no Vídeo, a vista de agora no Foto.
+   */
+  cameraOrbit: CameraOrbit | null;
+  /** O que a trava da cena deixa de distância agora. */
+  cameraDistanceRange: [number, number] | null;
+  onUpdateCameraOrbit: (patch: Partial<CameraOrbit>) => void;
   /** Abre a grade para trocar o sticker do objeto selecionado. */
   onChangeSticker: () => void;
   /** O contorno de adesivo da imagem (ou sticker) selecionada. */
@@ -184,6 +195,9 @@ export default function InspectorPanel({
   onUploadObjectImage,
   onRemoveObjectImage,
   onChangeSticker,
+  cameraOrbit,
+  cameraDistanceRange,
+  onUpdateCameraOrbit,
   onUpdateImageOutline,
   onUpdateImageShadow,
   onUpdateImageSpeed,
@@ -219,6 +233,7 @@ export default function InspectorPanel({
   const device = isDeviceObject(object) ? object : null;
   const textObject = isTextObject(object) ? object : null;
   const imageObject = isImageObject(object) ? object : null;
+  const cameraObject = isCameraObject(object) ? object : null;
   // O aparelho gira 180° em Y (o modelo olha para trás no arquivo) e o campo
   // mostra o desvio disso; o texto e a imagem já nascem de frente.
   const baseRotationY = device ? 180 : 0;
@@ -522,6 +537,44 @@ export default function InspectorPanel({
           </PanelSection>
         ) : null}
 
+        {cameraObject ? (
+          <PanelSection
+            title={
+              editedKeyframe
+                ? `${copy.cameraSectionTitle} · ${copy.motionKeyframeLabel} ${(
+                    editedKeyframe.timeMs / 1000
+                  ).toFixed(2)}s`
+                : motionTab === "motion"
+                  ? `${copy.cameraSectionTitle} · ${copy.canvasModeVideo}`
+                  : copy.cameraSectionTitle
+            }
+            className="transform-section"
+            action={
+              // No Foto o reset enquadra a cena de novo; no Movimento a vista
+              // é a de cada keyframe, e ele não se aplica.
+              motionTab === "static" ? (
+                <ResetButton
+                  label={copy.resetCameraButton}
+                  onReset={onResetObject}
+                />
+              ) : undefined
+            }
+          >
+            {motionTab === "motion" && !editedKeyframe ? (
+              <p className="editor-sidebar-muted motion-empty-hint">
+                {copy.motionEmptyHint}
+              </p>
+            ) : cameraOrbit ? (
+              <CameraFields
+                copy={copy}
+                distanceRange={cameraDistanceRange}
+                isMotion={motionTab === "motion"}
+                orbit={cameraOrbit}
+                onChange={onUpdateCameraOrbit}
+              />
+            ) : null}
+          </PanelSection>
+        ) : (
         <PanelSection
           title={
             editedKeyframe
@@ -686,6 +739,7 @@ export default function InspectorPanel({
           </div>
           )}
         </PanelSection>
+        )}
 
       </div>
     </aside>
@@ -1123,6 +1177,99 @@ function AppearanceSettings({
 }
 
 /** Convite ao upload, enquanto a tela ainda mostra o placeholder. */
+/**
+ * Os campos da câmera: a órbita (horizontal, vertical e distância), o alvo e a
+ * lente. No Vídeo o keyframe aceita uma volta inteira ou mais no horizontal; no
+ * Foto, onde é só a vista, os limites do gesto.
+ */
+function CameraFields({
+  copy,
+  distanceRange,
+  isMotion,
+  onChange,
+  orbit,
+}: {
+  copy: AppCopy;
+  distanceRange: [number, number] | null;
+  isMotion: boolean;
+  onChange: (patch: Partial<CameraOrbit>) => void;
+  orbit: CameraOrbit;
+}) {
+  const azimuthLimit = isMotion ? 720 : 48;
+  const elevationLimit = isMotion ? MAX_CAMERA_ELEVATION : 32;
+  const [minDistance, maxDistance] = distanceRange ?? [1, Math.max(orbit.distance * 4, 10)];
+  const targetLimit = Math.max(500, Math.ceil(Math.abs(maxDistance)));
+
+  return (
+    <div className="transform-groups">
+      <div className="transform-group transform-group-offset">
+        <Control
+          label={copy.cameraAzimuthLabel}
+          value={Math.round(orbit.azimuth)}
+          setValue={(azimuth) => onChange({ azimuth })}
+          min={-azimuthLimit}
+          max={azimuthLimit}
+          step={1}
+        />
+        <Control
+          label={copy.cameraElevationLabel}
+          value={Math.round(orbit.elevation)}
+          setValue={(elevation) => onChange({ elevation })}
+          min={-elevationLimit}
+          max={elevationLimit}
+          step={1}
+        />
+        <Control
+          label={copy.cameraDistanceLabel}
+          value={Math.round(orbit.distance)}
+          setValue={(distance) => onChange({ distance })}
+          min={Math.floor(minDistance)}
+          max={Math.ceil(maxDistance)}
+          step={1}
+        />
+      </div>
+
+      <div className="transform-group transform-group-offset">
+        <Control
+          label={copy.cameraTargetXLabel}
+          value={Math.round(orbit.targetX)}
+          setValue={(targetX) => onChange({ targetX })}
+          min={-targetLimit}
+          max={targetLimit}
+          step={1}
+        />
+        <Control
+          label={copy.cameraTargetYLabel}
+          value={Math.round(orbit.targetY)}
+          setValue={(targetY) => onChange({ targetY })}
+          min={-targetLimit}
+          max={targetLimit}
+          step={1}
+        />
+        <Control
+          label={copy.cameraTargetZLabel}
+          value={Math.round(orbit.targetZ)}
+          setValue={(targetZ) => onChange({ targetZ })}
+          min={-targetLimit}
+          max={targetLimit}
+          step={1}
+        />
+      </div>
+
+      <div className="transform-group transform-group-offset">
+        <Control
+          label={copy.cameraFovLabel}
+          value={Math.round(orbit.fov)}
+          setValue={(fov) => onChange({ fov })}
+          min={MIN_CAMERA_FOV}
+          max={MAX_CAMERA_FOV}
+          step={1}
+        />
+      </div>
+    </div>
+  );
+}
+
 /** A velocidade de uma animação, em %: 100 é a original. */
 function ImageSpeedField({
   copy,

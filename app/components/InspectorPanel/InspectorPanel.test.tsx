@@ -1,5 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { createCameraKeyframe, createCameraObject } from "../../lib/camera-objects";
+import { DEFAULT_CAMERA_ORBIT, type CameraOrbit } from "../../lib/camera-orbit";
 import { createImageObject, getStickerImage } from "../../lib/image-objects";
 import { insertKeyframe } from "../../lib/scene-motion";
 import InspectorPanel from "./InspectorPanel";
@@ -125,6 +127,15 @@ const copy: AppCopy = {
   appearanceTabsLabel: "Appearance options",
   appearanceTabCustom: "Custom",
   backgroundColorButton: "Background color",
+  cameraObjectName: "Camera",
+  cameraSectionTitle: "Camera",
+  cameraAzimuthLabel: "Horizontal orbit (°)",
+  cameraElevationLabel: "Vertical orbit (°)",
+  cameraDistanceLabel: "Distance",
+  cameraTargetXLabel: "Target X",
+  cameraTargetYLabel: "Target Y",
+  cameraTargetZLabel: "Target Z",
+  cameraFovLabel: "Lens (field of view °)",
   canvasBackgroundSection: "Background",
   canvasGridSection: "Floor grid",
   canvasGridColorLabel: "Grid color",
@@ -187,6 +198,7 @@ const copy: AppCopy = {
   portuguese: "PT-BR",
   renameObject: "Rename",
   resetObjectButton: "Reset transform",
+  resetCameraButton: "Reset camera",
   alignmentLabel: "Alignment",
   alignmentHorizontal: "Horizontal alignment",
   alignmentVertical: "Vertical alignment",
@@ -359,9 +371,14 @@ function openAppearance() {
 function renderInspector(
   object: SceneObject = createSceneObject({ id: "object-1", modelId: "smartphone", name: "Object 1" }),
   {
+    cameraOrbit = null,
     motionTab = "static",
     selectedKeyframeId = "",
-  }: { motionTab?: "static" | "motion"; selectedKeyframeId?: string } = {},
+  }: {
+    cameraOrbit?: CameraOrbit | null;
+    motionTab?: "static" | "motion";
+    selectedKeyframeId?: string;
+  } = {},
 ) {
   const handlers = {
     onImageUpload: jest.fn(),
@@ -376,6 +393,8 @@ function renderInspector(
     onUploadObjectImage: jest.fn(),
     onChangeSticker: jest.fn(),
     onUpdateImageOutline: jest.fn(),
+    onUpdateCameraOrbit: jest.fn(),
+    cameraDistanceRange: null,
     onUpdateImageShadow: jest.fn(),
     onUpdateImageSpeed: jest.fn(),
     onRemoveObjectImage: jest.fn(),
@@ -407,6 +426,7 @@ function renderInspector(
       motionTab={motionTab}
       selectedKeyframeId={selectedKeyframeId}
       uploadError=""
+      cameraOrbit={cameraOrbit}
       {...handlers}
     />,
   );
@@ -1141,6 +1161,63 @@ describe("InspectorPanel", () => {
       fireEvent.blur(speed);
 
       expect(handlers.onUpdateImageSpeed).toHaveBeenCalledWith(2);
+    });
+  });
+
+  describe("camera", () => {
+    const camera = () => createCameraObject({ id: "camera", name: "Camera" });
+
+    function renderCamera(extra: Parameters<typeof renderInspector>[1] = {}) {
+      return renderInspector(camera(), extra);
+    }
+
+    it("shows the camera fields and not the pose of an object", () => {
+      renderCamera();
+
+      expect(screen.getByRole("heading", { name: "Camera" })).toBeInTheDocument();
+      expect(screen.queryByText("Position X")).not.toBeInTheDocument();
+      expect(screen.queryByText("Scale")).not.toBeInTheDocument();
+    });
+
+    it("resets the view in Photo", () => {
+      const handlers = renderCamera({ cameraOrbit: DEFAULT_CAMERA_ORBIT });
+
+      fireEvent.click(screen.getByRole("button", { name: "Reset camera" }));
+
+      expect(handlers.onResetObject).toHaveBeenCalledTimes(1);
+    });
+
+    it("has no reset in Video", () => {
+      renderCamera({ motionTab: "motion" });
+
+      expect(
+        screen.queryByRole("button", { name: "Reset camera" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("shows nothing to edit in Video until a keyframe is selected", () => {
+      renderCamera({ motionTab: "motion" });
+
+      expect(screen.getByText(copy.motionEmptyHint)).toBeInTheDocument();
+      expect(screen.queryByText("control:Horizontal orbit (°)")).not.toBeInTheDocument();
+    });
+
+    it("edits the orbit of the selected keyframe in Video, one field at a time", () => {
+      const orbit = { ...DEFAULT_CAMERA_ORBIT, azimuth: 20, fov: 50 };
+      const object = { ...camera(), keyframes: [createCameraKeyframe(0, orbit)] };
+      const handlers = renderInspector(object, {
+        cameraOrbit: orbit,
+        motionTab: "motion",
+        selectedKeyframeId: object.keyframes[0].id,
+      });
+
+      // O Control de mentira muda o valor para 12 ao clicar.
+      fireEvent.click(screen.getByText("control:Horizontal orbit (°)"));
+      fireEvent.click(screen.getByText("control:Lens (field of view °)"));
+
+      // Cada campo muda só o seu pedaço da órbita.
+      expect(handlers.onUpdateCameraOrbit).toHaveBeenNthCalledWith(1, { azimuth: 12 });
+      expect(handlers.onUpdateCameraOrbit).toHaveBeenNthCalledWith(2, { fov: 12 });
     });
   });
 });

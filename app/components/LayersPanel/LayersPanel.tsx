@@ -3,14 +3,21 @@
 import "./LayersPanel.css";
 import { KeyboardEvent, useEffect, useState } from "react";
 import type { AppCopy, Locale } from "../../lib/i18n";
-import type { SceneObject } from "../../lib/scene-objects";
+import { isCameraObject, type SceneObject } from "../../lib/scene-objects";
 import type { SceneTemplate } from "../../lib/scene-templates";
 import {
   IconButton,
   LayersPanelHeader,
   PanelSection,
 } from "../EditorPrimitives/EditorPrimitives";
-import { Bookmark, Eye, EyeOff, Github, MoreVertical, Plus } from "lucide-react";
+import {
+  Bookmark,
+  Eye,
+  EyeOff,
+  Github,
+  MoreVertical,
+  Plus,
+} from "lucide-react";
 import ContextMenu from "../ContextMenu/ContextMenu";
 import CreditsModal from "../CreditsModal/CreditsModal";
 import PatchNotesModal from "../PatchNotesModal/PatchNotesModal";
@@ -238,7 +245,35 @@ export default function LayersPanel({
             }
           >
             <div className="layers-stack">
-              {objects.map((object) => {
+              {/* A câmera da cena: sempre a primeira, e a única que não tem o
+                  que esconder, duplicar, renomear nem apagar. */}
+              {objects.filter(isCameraObject).map((camera) => {
+                const isSelected = camera.id === selectedObjectId;
+
+                return (
+                  <div
+                    key={camera.id}
+                    onClick={() => onSelectObject(camera.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        onSelectObject(camera.id);
+                      }
+                    }}
+                    className={`layer-card ${isSelected ? "layer-card-active" : "layer-card-inactive"}`}
+                    role="button"
+                    tabIndex={0}
+                    aria-pressed={isSelected}
+                  >
+                    <div className="layer-card-main">
+                      <div className="layer-title-row">
+                        <p className="layer-card-title">{camera.name}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {objects.filter((object) => !isCameraObject(object)).map((object) => {
                 const isSelected = object.id === selectedObjectId;
                 return (
                   <div
