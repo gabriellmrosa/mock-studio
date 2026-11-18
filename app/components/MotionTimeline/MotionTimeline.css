@@ -506,6 +506,17 @@
    Editor de curva cubic-bezier (popover do menu de transição)
    ========================================= */
 
+/* O menu do keyframe tem frases mais longas ("Copiar do keyframe anterior"):
+   ele cresce com elas, em vez de quebrar cada uma em duas linhas. */
+.motion-timeline-menu:not(.is-bezier):not(.is-panel) {
+  min-width: 9.5rem;
+  width: max-content;
+}
+
+.motion-timeline-menu:not(.is-bezier):not(.is-panel) .context-menu-row-label {
+  white-space: nowrap;
+}
+
 .motion-timeline-menu.is-bezier,
 .motion-timeline-menu.is-panel {
   padding: var(--space-3);

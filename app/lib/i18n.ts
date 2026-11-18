@@ -218,6 +218,8 @@ export type AppCopy = {
   motionAddKeyframe: string;
   motionKeyframeLabel: string;
   motionRemoveKeyframe: string;
+  motionCopyPreviousKeyframe: string;
+  motionCopyNextKeyframe: string;
   motionPlay: string;
   motionStop: string;
   motionEasing: string;
@@ -521,6 +523,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionAddKeyframe: "Adicionar keyframe",
     motionKeyframeLabel: "Keyframe",
     motionRemoveKeyframe: "Remover keyframe",
+    motionCopyPreviousKeyframe: "Copiar do keyframe anterior",
+    motionCopyNextKeyframe: "Copiar do próximo keyframe",
     motionPlay: "Reproduzir",
     motionStop: "Parar",
     motionEasing: "Transição",
@@ -892,6 +896,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionAddKeyframe: "Add keyframe",
     motionKeyframeLabel: "Keyframe",
     motionRemoveKeyframe: "Remove keyframe",
+    motionCopyPreviousKeyframe: "Copy from previous keyframe",
+    motionCopyNextKeyframe: "Copy from next keyframe",
     motionPlay: "Play",
     motionStop: "Stop",
     motionEasing: "Transition",

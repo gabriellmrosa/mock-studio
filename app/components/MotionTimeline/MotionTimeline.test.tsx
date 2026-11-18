@@ -327,4 +327,47 @@ describe("MotionTimeline", () => {
       );
     });
   });
+
+  describe("the keyframe menu", () => {
+    function withKeyframes(): DeviceObject {
+      const object = createSceneObject({ id: "a", name: "Phone" });
+      const pose = (positionX: number) => ({
+        opacity: 1,
+        positionX,
+        positionY: 0,
+        positionZ: 0,
+        rotationX: 0,
+        rotationY: 0,
+        rotationZ: 0,
+        scale: 1,
+      });
+
+      return {
+        ...object,
+        keyframes: [
+          { easing: "ease-in-out", id: "k0", timeMs: 0, transform: pose(0) },
+          { easing: "ease-in-out", id: "k1", timeMs: 1000, transform: pose(1) },
+        ],
+      };
+    }
+
+    it("copies the pose of the next keyframe, and the first has no previous one", () => {
+      const object = withKeyframes();
+      const { handlers } = renderTimeline([object]);
+
+      fireEvent.contextMenu(screen.getByLabelText("Keyframe 0.0s · Phone"));
+
+      expect(
+        screen.getByRole("menuitem", { name: "Copy from previous keyframe" }),
+      ).toBeDisabled();
+
+      fireEvent.click(screen.getByRole("menuitem", { name: "Copy from next keyframe" }));
+
+      const [objectId, keyframes] = handlers.onChangeKeyframes.mock.calls[0];
+
+      expect(objectId).toBe("a");
+      expect(keyframes[0]).toMatchObject({ id: "k0", timeMs: 0, transform: { positionX: 1 } });
+    });
+  });
 });
+

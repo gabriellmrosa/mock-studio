@@ -331,6 +331,50 @@ export function updateKeyframe(
   );
 }
 
+/**
+ * O keyframe vizinho no tempo, antes ou depois, de onde se copia a pose
+ * (`copyNeighborPose`). `null` no primeiro (para trás) e no último (para a
+ * frente).
+ */
+export function findNeighborKeyframe(
+  keyframes: Keyframe[],
+  id: string,
+  direction: "previous" | "next",
+): Keyframe | null {
+  const sorted = [...keyframes].sort((a, b) => a.timeMs - b.timeMs);
+  const index = sorted.findIndex((keyframe) => keyframe.id === id);
+
+  if (index === -1) {
+    return null;
+  }
+
+  return sorted[direction === "previous" ? index - 1 : index + 1] ?? null;
+}
+
+/**
+ * O keyframe fica com a pose do vizinho — posição, rotação, escala, opacidade,
+ * e o que mais for pose (a abertura do Duo, a cor do texto, a órbita da
+ * câmera). O instante e a curva dele ficam: é o "igual ao anterior" dos
+ * editores de animação, para segurar uma pose ou voltar a ela.
+ */
+export function copyNeighborPose(
+  keyframes: Keyframe[],
+  id: string,
+  direction: "previous" | "next",
+): Keyframe[] {
+  const neighbor = findNeighborKeyframe(keyframes, id, direction);
+
+  if (!neighbor) {
+    return keyframes;
+  }
+
+  const { orbit, ...pose } = neighbor.transform;
+
+  return updateKeyframe(keyframes, id, {
+    transform: { ...pose, ...(orbit ? { orbit: { ...orbit } } : {}) },
+  });
+}
+
 /** Mesmos keyframes com ids novos — para duplicar um objeto sem compartilhar ids. */
 export function cloneKeyframes(keyframes: Keyframe[]): Keyframe[] {
   return keyframes.map((keyframe) => ({

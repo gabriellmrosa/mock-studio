@@ -49,6 +49,8 @@ import {
   findKeyframeAt,
   moveKeyframeTo,
   shiftKeyframes,
+  copyNeighborPose,
+  findNeighborKeyframe,
   updateKeyframe,
   type EasingId,
   type Keyframe,
@@ -816,19 +818,64 @@ export default function MotionTimeline({
               ))}
             </>
           ) : (
-            <button
-              type="button"
-              role="menuitem"
-              className="context-menu-row context-menu-row-danger"
-              onClick={() => {
-                onRemoveKeyframe(menu.objectId, menu.keyframeId);
-                setMenu(null);
-              }}
-            >
-              <span className="context-menu-row-label">
-                {copy.motionRemoveKeyframe}
-              </span>
-            </button>
+            <>
+              {/* A pose do vizinho no tempo vira a deste keyframe (o instante
+                  e a curva ficam). Sem vizinho naquele lado, a opção fica
+                  desligada em vez de sumir: o menu não muda de forma. */}
+              {(["previous", "next"] as const).map((direction) => {
+                const neighbor = menuObject
+                  ? findNeighborKeyframe(
+                      menuObject.keyframes,
+                      menuKeyframe.id,
+                      direction,
+                    )
+                  : null;
+
+                return (
+                  <button
+                    key={direction}
+                    type="button"
+                    role="menuitem"
+                    className={`context-menu-row${
+                      neighbor ? "" : " context-menu-row-disabled"
+                    }`}
+                    disabled={!neighbor}
+                    onClick={() => {
+                      if (!menuObject) return;
+
+                      onChangeKeyframes(
+                        menuObject.id,
+                        copyNeighborPose(
+                          menuObject.keyframes,
+                          menuKeyframe.id,
+                          direction,
+                        ),
+                      );
+                      setMenu(null);
+                    }}
+                  >
+                    <span className="context-menu-row-label">
+                      {direction === "previous"
+                        ? copy.motionCopyPreviousKeyframe
+                        : copy.motionCopyNextKeyframe}
+                    </span>
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                role="menuitem"
+                className="context-menu-row context-menu-row-danger"
+                onClick={() => {
+                  onRemoveKeyframe(menu.objectId, menu.keyframeId);
+                  setMenu(null);
+                }}
+              >
+                <span className="context-menu-row-label">
+                  {copy.motionRemoveKeyframe}
+                </span>
+              </button>
+            </>
           )}
         </TimelineMenu>
       ) : null}

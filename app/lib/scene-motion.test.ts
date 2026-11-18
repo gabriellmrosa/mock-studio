@@ -7,6 +7,8 @@ import {
   trimVideoClip,
 } from "./scene-objects";
 import {
+  copyNeighborPose,
+  findNeighborKeyframe,
   DEFAULT_BEZIER,
   applyEasing,
   captureTransform,
@@ -425,3 +427,54 @@ describe("scene-motion", () => {
     });
   });
 });
+
+describe("copying the pose of a neighbor keyframe", () => {
+  const pose = (positionX: number) => ({
+    opacity: 1,
+    positionX,
+    positionY: 0,
+    positionZ: 0,
+    rotationX: 0,
+    rotationY: 0,
+    rotationZ: 0,
+    scale: 1,
+  });
+  // Fora de ordem de propósito: o vizinho é pelo tempo, não pela lista.
+  const keyframes = [
+    { ...createKeyframe(2000, pose(2), "linear"), id: "c" },
+    { ...createKeyframe(0, pose(0)), id: "a" },
+    { ...createKeyframe(1000, pose(1), "ease-in"), id: "b" },
+  ];
+
+  it("finds the neighbor in time, and nothing past the ends", () => {
+    expect(findNeighborKeyframe(keyframes, "b", "previous")?.id).toBe("a");
+    expect(findNeighborKeyframe(keyframes, "b", "next")?.id).toBe("c");
+    expect(findNeighborKeyframe(keyframes, "a", "previous")).toBeNull();
+    expect(findNeighborKeyframe(keyframes, "c", "next")).toBeNull();
+  });
+
+  it("takes the pose and keeps the time and the curve of the keyframe", () => {
+    const copied = copyNeighborPose(keyframes, "b", "next").find((item) => item.id === "b");
+
+    expect(copied?.transform.positionX).toBe(2);
+    expect(copied?.timeMs).toBe(1000);
+    expect(copied?.easing).toBe("ease-in");
+  });
+
+  it("copies the camera orbit as its own object, not shared", () => {
+    const orbit = { azimuth: 30, distance: 500, elevation: 5, fov: 45, targetX: 1, targetY: 2, targetZ: 3 };
+    const withOrbit = [
+      { ...createKeyframe(0, { ...pose(0), orbit }), id: "a" },
+      { ...createKeyframe(1000, pose(0)), id: "b" },
+    ];
+    const copied = copyNeighborPose(withOrbit, "b", "previous")[1];
+
+    expect(copied.transform.orbit).toEqual(orbit);
+    expect(copied.transform.orbit).not.toBe(orbit);
+  });
+
+  it("changes nothing without a neighbor on that side", () => {
+    expect(copyNeighborPose(keyframes, "a", "previous")).toBe(keyframes);
+  });
+});
+

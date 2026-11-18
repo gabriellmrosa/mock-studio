@@ -277,6 +277,8 @@ const copy: AppCopy = {
   motionAddKeyframe: "Add keyframe",
   motionKeyframeLabel: "Keyframe",
   motionRemoveKeyframe: "Remove keyframe",
+  motionCopyPreviousKeyframe: "Copy from previous keyframe",
+  motionCopyNextKeyframe: "Copy from next keyframe",
   motionPlay: "Play",
   motionStop: "Stop",
   motionEasing: "Easing",
