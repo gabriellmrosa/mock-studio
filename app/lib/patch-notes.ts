@@ -28,6 +28,36 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-17",
+    version: "2.5.0",
+    items: [
+      {
+        title: {
+          "pt-BR": "O Duo desfoca ao dobrar",
+          "en-US": "The Duo blurs as it folds",
+        },
+        description: {
+          "pt-BR":
+            "As telas do Duo desfocam e escurecem enquanto ele abre e fecha, como no aparelho de verdade, no editor e no vídeo exportado.",
+          "en-US":
+            "The Duo's screens blur and darken while it opens and closes, like the real phone, in the editor and in the exported video.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Compartilhe templates",
+          "en-US": "Share templates",
+        },
+        description: {
+          "pt-BR":
+            "No menu de cada template, copie um código para enviar a quem quiser; quem recebe usa “Importar template” e cola.",
+          "en-US":
+            "From each template's menu, copy a code to send to anyone; they use “Import template” and paste it.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-17",
     version: "2.4.0",
     items: [
       {
