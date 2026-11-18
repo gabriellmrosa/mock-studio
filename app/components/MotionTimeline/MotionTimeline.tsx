@@ -22,6 +22,7 @@ import {
 import BezierEditor from "./BezierEditor";
 import MotionFrameControl from "./MotionFrameControl";
 import TimelineMenu from "./TimelineMenu";
+import { SNAP_DISTANCE_PX, snapDelta } from "../../lib/timeline-snap";
 import {
   MAX_TIMELINE_ZOOM,
   MIN_TIMELINE_ZOOM,
@@ -187,6 +188,8 @@ export default function MotionTimeline({
   // de escala no meio do gesto, o keyframe fugiria do cursor.
   const [frozenAxisMs, setFrozenAxisMs] = useState<number | null>(null);
   const [menu, setMenu] = useState<MenuState | null>(null);
+  // Onde o arrasto grudou (ver timeline-snap.ts): a linha-guia vertical.
+  const [snapGuideMs, setSnapGuideMs] = useState<number | null>(null);
   // Guarda de qual play veio o valor: sem isso, o primeiro quadro de um novo
   // play mostraria o instante em que o anterior terminou.
   const [livePlayhead, setLivePlayhead] = useState({ ms: 0, startedAt: 0 });
@@ -273,6 +276,88 @@ export default function MotionTimeline({
     return Math.min(axisMs, Math.max(0, ratio * axisMs));
   }
 
+  /** O clipe de uma tela, no eixo da cena: onde começa e onde termina. */
+  function getClipEdges(objectId: string, screen: ScreenId) {
+    const object = objects.find((item) => item.id === objectId);
+    const entry = object
+      ? getActiveScreenVideos(object).find((item) => item.screen === screen)
+      : undefined;
+
+    return entry
+      ? [entry.video.startMs, entry.video.startMs + getScreenVideoClipDuration(entry.video)]
+      : null;
+  }
+
+  /**
+   * Onde o arrasto pode grudar: o zero, o playhead, os keyframes de todas as
+   * trilhas e as pontas de todos os clipes — menos o que está sendo arrastado.
+   */
+  function getSnapTargets(skip: {
+    clip?: { objectId: string; screen: ScreenId };
+    keyframeId?: string;
+    playhead?: boolean;
+    trackObjectId?: string;
+  }) {
+    const targets = [0];
+
+    if (!skip.playhead) {
+      targets.push(displayedPlayheadMs);
+    }
+
+    for (const object of objects) {
+      if (object.id !== skip.trackObjectId) {
+        for (const keyframe of object.keyframes) {
+          if (keyframe.id !== skip.keyframeId) {
+            targets.push(keyframe.timeMs);
+          }
+        }
+      }
+
+      for (const entry of getActiveScreenVideos(object)) {
+        if (
+          skip.clip?.objectId === object.id &&
+          skip.clip.screen === entry.screen
+        ) {
+          continue;
+        }
+
+        targets.push(
+          entry.video.startMs,
+          entry.video.startMs + getScreenVideoClipDuration(entry.video),
+        );
+      }
+    }
+
+    return targets;
+  }
+
+  /**
+   * O deslocamento final de um arrasto: grudado num alvo perto (a até
+   * `SNAP_DISTANCE_PX` na tela) ou, longe de tudo — ou com o Alt apertado, que
+   * desliga o ímã —, o passo de sempre.
+   */
+  function snapDrag(
+    event: ReactPointerEvent<HTMLElement>,
+    edgesMs: number[],
+    rawDeltaMs: number,
+    targetsMs: number[],
+    fallback: (rawDeltaMs: number) => number,
+  ) {
+    const result = event.altKey
+      ? { deltaMs: fallback(rawDeltaMs), guideMs: null }
+      : snapDelta({
+          edgesMs,
+          fallback,
+          rawDeltaMs,
+          targetsMs,
+          thresholdMs: msFromDeltaX(SNAP_DISTANCE_PX),
+        });
+
+    setSnapGuideMs(result.guideMs);
+
+    return result.deltaMs;
+  }
+
   function msFromDeltaX(deltaX: number) {
     const width = lanesRef.current?.getBoundingClientRect().width ?? 1;
 
@@ -291,8 +376,20 @@ export default function MotionTimeline({
     setFrozenAxisMs(axisMs);
 
     if (state.kind === "scrub") {
-      onScrub(snap(timeFromClientX(event.clientX)));
+      scrubTo(event);
     }
+  }
+
+  // O playhead também gruda nos keyframes e nas pontas dos clipes.
+  function scrubTo(event: ReactPointerEvent<HTMLElement>) {
+    const time = timeFromClientX(event.clientX);
+
+    onScrub(
+      time +
+        snapDrag(event, [time], 0, getSnapTargets({ playhead: true }), (delta) =>
+          snap(time + delta) - time,
+        ),
+    );
   }
 
   function handleDragMove(event: ReactPointerEvent<HTMLElement>) {
@@ -303,7 +400,7 @@ export default function MotionTimeline({
     }
 
     if (drag.kind === "scrub") {
-      onScrub(snap(timeFromClientX(event.clientX)));
+      scrubTo(event);
       return;
     }
 
@@ -318,35 +415,72 @@ export default function MotionTimeline({
     const deltaMs = msFromDeltaX(deltaX);
 
     if (drag.kind === "video") {
+      // As duas pontas do clipe procuram onde grudar.
+      const edges = getClipEdges(drag.objectId, drag.screen);
+      const length = edges ? edges[1] - edges[0] : 0;
+      const delta = snapDrag(
+        event,
+        [drag.startMs, drag.startMs + length],
+        deltaMs,
+        getSnapTargets({ clip: { objectId: drag.objectId, screen: drag.screen } }),
+        (raw) => snap(drag.startMs + raw) - drag.startMs,
+      );
+
       onChangeVideo(drag.objectId, drag.screen, {
-        startMs: Math.max(0, snap(drag.startMs + deltaMs)),
+        startMs: Math.max(0, Math.round(drag.startMs + delta)),
       });
       return;
     }
 
     if (drag.kind === "video-trim") {
+      // A borda cortada, na posição de antes do arrasto.
+      const edge =
+        drag.edge === "start"
+          ? drag.video.startMs
+          : drag.video.startMs + getScreenVideoClipDuration(drag.video);
+      const delta = snapDrag(
+        event,
+        [edge],
+        deltaMs,
+        getSnapTargets({ clip: { objectId: drag.objectId, screen: drag.screen } }),
+        snap,
+      );
+
       onChangeVideo(
         drag.objectId,
         drag.screen,
-        trimVideoClip(drag.video, drag.edge, snap(deltaMs)),
+        trimVideoClip(drag.video, drag.edge, Math.round(delta)),
       );
       return;
     }
 
     if (drag.kind === "track") {
-      onChangeKeyframes(
-        drag.objectId,
-        shiftKeyframes(drag.startKeyframes, snap(deltaMs)),
+      const delta = snapDrag(
+        event,
+        drag.startKeyframes.map((keyframe) => keyframe.timeMs),
+        deltaMs,
+        getSnapTargets({ trackObjectId: drag.objectId }),
+        snap,
       );
+
+      onChangeKeyframes(drag.objectId, shiftKeyframes(drag.startKeyframes, delta));
       return;
     }
+
+    const delta = snapDrag(
+      event,
+      [drag.startTimeMs],
+      deltaMs,
+      getSnapTargets({ keyframeId: drag.keyframeId }),
+      (raw) => snap(drag.startTimeMs + raw) - drag.startTimeMs,
+    );
 
     onChangeKeyframes(
       drag.objectId,
       moveKeyframeTo(
         drag.startKeyframes,
         drag.keyframeId,
-        Math.min(axisMs, snap(drag.startTimeMs + deltaMs)),
+        Math.min(axisMs, drag.startTimeMs + delta),
       ),
     );
   }
@@ -354,6 +488,7 @@ export default function MotionTimeline({
   function endDrag() {
     dragRef.current = null;
     setFrozenAxisMs(null);
+    setSnapGuideMs(null);
   }
 
   function openMenu(
@@ -766,6 +901,14 @@ export default function MotionTimeline({
               className="motion-timeline-playhead"
               style={{ left: toPercent(displayedPlayheadMs) }}
             />
+            {snapGuideMs !== null ? (
+              <div
+                aria-hidden="true"
+                className="motion-timeline-snap-guide"
+                data-testid="timeline-snap-guide"
+                style={{ left: toPercent(snapGuideMs) }}
+              />
+            ) : null}
           </div>
           </div>
         </div>

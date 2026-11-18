@@ -481,6 +481,19 @@
   text-transform: uppercase;
 }
 
+/* A linha que aparece enquanto um arrasto está grudado num ponto (ver
+   timeline-snap.ts), como a do snapping do Premiere: tracejada, para não se
+   confundir com o playhead. */
+.motion-timeline-snap-guide {
+  border-left: 1px dashed var(--foreground);
+  bottom: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  width: 0;
+  z-index: 3;
+}
+
 .motion-timeline-playhead {
   background: var(--foreground);
   bottom: 0;

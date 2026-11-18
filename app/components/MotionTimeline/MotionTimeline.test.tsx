@@ -145,6 +145,73 @@ describe("MotionTimeline", () => {
     });
   });
 
+  describe("snapping", () => {
+    // Clipe de 1 s a 4.637 s (duração fora da grade de 50 ms) e um keyframe a 4.6 s.
+    function clipAndKeyframe() {
+      const phone = withVideo(createSceneObject({ id: "a", name: "Phone" }));
+      const tablet = createSceneObject({ id: "b", name: "Tablet" });
+
+      return [
+        { ...phone, screenVideo: { ...phone.screenVideo!, durationMs: 3637 } },
+        {
+          ...tablet,
+          keyframes: [
+            {
+              easing: "linear" as const,
+              id: "k",
+              timeMs: 4600,
+              transform: {
+                opacity: 1,
+                positionX: 0,
+                positionY: 0,
+                positionZ: 0,
+                rotationX: 0,
+                rotationY: 0,
+                rotationZ: 0,
+                scale: 1,
+              },
+            },
+          ],
+        },
+      ];
+    }
+
+    function dragEndEdge(clientX: number, altKey = false) {
+      const { container, handlers } = renderTimeline(clipAndKeyframe());
+      const lanes = container.querySelector(".motion-timeline-lanes") as HTMLElement;
+      const handle = container.querySelector(
+        ".motion-timeline-clip-trim.is-end",
+      ) as HTMLElement;
+
+      // 600 px para 6 s: 1 px = 10 ms, e o ímã pega 8 px = 80 ms.
+      lanes.getBoundingClientRect = () => ({ left: 0, width: 600 }) as DOMRect;
+      handle.setPointerCapture = jest.fn();
+      fireEvent.pointerDown(handle, { button: 0, clientX: 464, pointerId: 1 });
+      fireEvent.pointerMove(handle, { altKey, clientX, pointerId: 1 });
+
+      return { container, handlers };
+    }
+
+    it("lands the end of a clip exactly on a nearby keyframe and shows the guide", () => {
+      const { container, handlers } = dragEndEdge(460);
+
+      // Fim em 4.637 → 4.600: 37 ms a mais de corte no fim.
+      expect(handlers.onChangeVideo).toHaveBeenLastCalledWith("a", "main", {
+        trimEndMs: 37,
+      });
+      expect(container.querySelector(".motion-timeline-snap-guide")).not.toBeNull();
+    });
+
+    it("lets go with Alt held, back to the usual step", () => {
+      const { container, handlers } = dragEndEdge(460, true);
+
+      expect(handlers.onChangeVideo).toHaveBeenLastCalledWith("a", "main", {
+        trimEndMs: 50,
+      });
+      expect(container.querySelector(".motion-timeline-snap-guide")).toBeNull();
+    });
+  });
+
   describe("a foldable with a video on each screen", () => {
     const duoWithTwoVideos = () => {
       const duo = withVideo(

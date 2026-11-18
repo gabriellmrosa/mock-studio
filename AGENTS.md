@@ -406,6 +406,13 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - Um shader próprio que lê `VideoTexture` decodifica sRGB ele mesmo.
 - O tempo do vídeo pertence à timeline (o clipe tem trilha própria); fora do
   clipe, a tela mostra só o fundo.
+- **Ímã da timeline** (`timeline-snap.ts`): ao arrastar um keyframe, a trilha,
+  o clipe ou as bordas dele (e o playhead), a borda gruda exatamente num
+  keyframe, na ponta de um clipe, no playhead ou no zero quando passa a até 8 px
+  deles, e uma linha tracejada mostra onde; longe de tudo, vale o passo de 50 ms.
+  É o snapping do Premiere: o fim de um clipe é início + duração do arquivo,
+  fora da grade, e só o passo nunca o alinhava. `Alt` durante o arrasto desliga
+  o ímã.
 - O vídeo é por tela, não por objeto: o Duo tem duas telas, cada uma com o seu
   vídeo e a sua trilha. Quem posiciona vídeo no tempo (controlador do canvas,
   exportação, timeline) usa `getActiveScreenVideos(object)`, nunca
