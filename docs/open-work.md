@@ -93,3 +93,20 @@ export). Known gaps:
   with ffprobe and frames (MP4, 2.1 s, 124 frames at 60 fps): white and tight at
   the start, blended halfway, red and spaced at the end.
 - Browsers: checked in Chrome only.
+
+## Duo fold blur: what is left
+
+The screens blur and darken with the hinge angle (see `duo-fold-effect.ts`). Tuned
+against eight screenshots of a real opening video, in Chrome only.
+
+- The inner half that turns is a bit darker than the half that stays, so a thin
+  vertical seam shows at the hinge; in the real phone the transition is softer
+  and reaches a little into the still half.
+- Only the opening was compared; closing is assumed to be the same thing in
+  reverse.
+- The outer screen comes back sharp and bright when the phone is fully open (so
+  views from behind don't change); the real phone would have it off.
+- The blur was checked on still images, not on a video playing on the screen,
+  and its cost per frame was not measured.
+- Not checked: Safari and Firefox.
+

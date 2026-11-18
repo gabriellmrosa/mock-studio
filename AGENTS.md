@@ -197,6 +197,18 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   escrita direto nos nós do modelo (`applyDuoFoldAngle`), sem passar pelo
   React. Um campo de pose novo é opcional nos keyframes e templates salvos.
   As telas dele são planos nossos presos às metades, não as do arquivo.
+- **Fosco da abertura do Duo:** as telas desfocam e escurecem enquanto a
+  dobradiça se move (a transição do aparelho real). É função só do `foldAngle`
+  (`getDuoFoldFx`, `app/lib/duo-fold-effect.ts`), escrita direto nos materiais
+  junto com a pose (`applyDuoFoldFx`): preview, play e exportação saem iguais, e
+  nada vai para template nem link. Os números (`DUO_FOLD_FX`) foram afinados
+  contra prints de um vídeo real — não há guideline da Apple —, então não os
+  "limpe" sem comparar. O desfoque é no shader (`duo-fold-material.ts`), por
+  amostras em disco, sem mipmap (o `VideoTexture` não tem). **O `if` que decide
+  amostrar tem de testar um uniforme, nunca o raio do pixel:** com um ramo que
+  muda entre pixels vizinhos, o GPU erra as derivadas e a tela ganha uma linha
+  fina onde o raio cruza o limiar. Cada tela tem o seu material (metade que
+  gira, metade parada, tela de fora), porque desfocam diferente.
 
 **Texto da cena**
 

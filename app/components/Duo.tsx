@@ -14,6 +14,11 @@ import {
 } from "../lib/scene-objects";
 import { DEFAULT_FOLD_ANGLE } from "../lib/scene-presets";
 import { getDuoFoldPose } from "../lib/duo-fold";
+import {
+  applyDuoFoldFx,
+  createFoldScreenMaterial,
+  type DuoFoldRole,
+} from "../lib/duo-fold-material";
 import { getRoundedShape } from "../lib/duo-shapes";
 import {
   DUO_DEFAULT_THEME,
@@ -134,6 +139,8 @@ export function applyDuoFoldAngle(root: THREE.Object3D, foldAngle: number) {
   root.getObjectByName(BASE_NODE)?.rotation.set(0, 0, Math.PI + half);
   root.getObjectByName(COVER_NODE)?.rotation.set(0, 0, -half);
   root.getObjectByName(CENTER_GROUP)?.position.set(pose.shiftX, 0, pose.shiftZ);
+  // O fosco das telas segue o mesmo ângulo, no mesmo caminho.
+  applyDuoFoldFx(root, foldAngle);
 }
 
 /**
@@ -428,15 +435,10 @@ function applyMatteFinish(material: THREE.Material) {
   material.envMapIntensity = Math.min(material.envMapIntensity, 0.18);
 }
 
-function useScreenMaterial(texture: THREE.Texture | null) {
+function useScreenMaterial(texture: THREE.Texture | null, role: DuoFoldRole) {
   const material = useMemo(
-    () =>
-      new THREE.MeshBasicMaterial({
-        map: texture,
-        side: THREE.DoubleSide,
-        toneMapped: false,
-      }),
-    [texture],
+    () => createFoldScreenMaterial(texture, role),
+    [role, texture],
   );
 
   useEffect(() => () => material.dispose(), [material]);
@@ -536,8 +538,11 @@ function DuoImpl({
       flipY: true,
     },
   );
-  const innerScreenMaterial = useScreenMaterial(innerTexture);
-  const outerScreenMaterial = useScreenMaterial(outerTexture);
+  // A metade que gira e a parada desfocam diferente, então cada uma tem o seu
+  // material (a textura é a mesma).
+  const coverScreenMaterial = useScreenMaterial(innerTexture, "cover");
+  const baseScreenMaterial = useScreenMaterial(innerTexture, "base");
+  const outerScreenMaterial = useScreenMaterial(outerTexture, "outer");
 
   // As nossas peças entram nos nós das metades, para dobrar junto com elas.
   const overlay = useMemo(() => createOverlay(), []);
@@ -563,11 +568,24 @@ function DuoImpl({
   }, [clone, overlay]);
 
   useLayoutEffect(() => {
-    overlay.innerScreens.forEach((mesh) => {
-      mesh.material = innerScreenMaterial;
-    });
+    const [coverScreen, baseScreen] = overlay.innerScreens;
+
+    coverScreen.material = coverScreenMaterial;
+    coverScreen.userData.foldFxRole = "cover";
+    baseScreen.material = baseScreenMaterial;
+    baseScreen.userData.foldFxRole = "base";
     overlay.outerScreen.material = outerScreenMaterial;
-  }, [innerScreenMaterial, outerScreenMaterial, overlay]);
+    overlay.outerScreen.userData.foldFxRole = "outer";
+    // As telas mudaram de material: o fosco do ângulo atual vai para os novos.
+    applyDuoFoldFx(clone, foldAngle);
+  }, [
+    baseScreenMaterial,
+    clone,
+    coverScreenMaterial,
+    foldAngle,
+    outerScreenMaterial,
+    overlay,
+  ]);
 
   // As malhas do GLB, cada uma com o nome do material original: ele diz a
   // que parte de cor a malha pertence, mesmo depois de trocado.
