@@ -415,9 +415,19 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   (`applyCameraOrbit`) roda por quadro, antes das poses dos objetos; a exportação
   não pode esperar o `camera-controls` (`controls.update(0)` logo após o
   `setLookAt` sem transição).
-- Com keyframes, o limite de ângulo do gesto sai (`ANIMATED_ANGLE_LIMITS`) e o
-  auto-enquadramento e a pose salva do template **não brigam** com ela. A
-  distância e o alvo continuam presos à trava da cena (`applyCameraLimits`).
+- Com keyframes, o limite de ângulo do gesto sai (`ANIMATED_ANGLE_LIMITS`) e a
+  pose salva do template **não briga** com ela. A trava da cena
+  (`applyCameraLimits`) limita o gesto, mas não reposiciona: a folga do alvo
+  sempre inclui o alvo de agora (`updateOrbitBoundary`), senão o `setBoundary`
+  o puxaria para perto dos objetos no começo do gesto. O `setLookAt` dos
+  keyframes não passa pela trava.
+- **A câmera só se mexe por ação do usuário ou pelos keyframes.** O único
+  enquadramento automático é o inicial, quando ainda não há vista: ao abrir a
+  cena (acompanha os objetos carregando e fica quando ela assenta, `hasViewRef`)
+  e na primeira entrada num modo sem câmera guardada (`modeFrame`). Entrar, sair
+  ou carregar um objeto, ou mudar o tamanho do vídeo, **não** reenquadra; para
+  isso há "Enquadrar cena", "Enquadrar objeto" e "Resetar câmera" (decisão do
+  usuário). Aplicar um template restaura a vista salva nele.
 - **A câmera não se resolve nem se desenha**: fica fora da contagem de objetos
   carregados (`currentObjectIds`); contá-la deixava a cena para sempre "por
   assentar" e o aviso de template aplicado nunca saía.

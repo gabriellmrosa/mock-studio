@@ -1256,15 +1256,20 @@ function updateOrbitBoundary(controls: CameraControlsImpl) {
   const camera = controls.camera;
 
   if (scene && camera instanceof THREE.PerspectiveCamera) {
-    controls.setBoundary(
-      getOrbitBoundary(
-        scene.box,
-        controls.distance,
-        camera.fov,
-        camera.aspect,
-        scene.visible,
-      ),
+    const boundary = getOrbitBoundary(
+      scene.box,
+      controls.distance,
+      camera.fov,
+      camera.aspect,
+      scene.visible,
     );
+
+    // A folga inclui o alvo de agora: o `setBoundary` puxa o alvo para dentro
+    // na hora, e um alvo que veio de um keyframe, de um template ou de objetos
+    // que saíram de lugar daria um pulo sozinho no começo do gesto. Assim a
+    // trava só impede ir mais longe — voltar para os objetos continua livre.
+    boundary.expandByPoint(controls.getTarget(new THREE.Vector3()));
+    controls.setBoundary(boundary);
   }
 }
 
@@ -1349,6 +1354,11 @@ function BoundsResetController({
   // (que está nas deps do effect) dispararia um auto-fit logo depois de
   // restaurar a câmera, desfazendo a restauração.
   const restoredPoseKeyRef = useRef<string | null>(null);
+  // A câmera já tem uma vista: o enquadramento inicial (quando a cena abriu e
+  // assentou), a de um template ou modo, ou a dos keyframes. Daí em diante ela
+  // só se mexe por ação do usuário — entrar, sair ou carregar um objeto, ou
+  // mudar o tamanho do vídeo, não reenquadra mais.
+  const hasViewRef = useRef(false);
   // O callback vem do page em cada render. Se entrasse nas dependências do
   // effect abaixo, ele reiniciaria a cada render e o cleanup cancelaria o
   // requestAnimationFrame antes de o quadro chegar — nem o enquadramento
@@ -1462,6 +1472,7 @@ function BoundsResetController({
         // Uma câmera animada é a do playhead, não a pose que o template trazia
         // (a de quando foi salvo): só se libera o aviso de template aplicado.
         restoredPoseKeyRef.current = sceneFitKey;
+        hasViewRef.current = true;
 
         if (isSceneSettled) {
           onTemplateAppliedRef.current();
@@ -1475,6 +1486,7 @@ function BoundsResetController({
         const [tx, ty, tz] = pendingCameraPose.target;
 
         restoredPoseKeyRef.current = sceneFitKey;
+        hasViewRef.current = true;
 
         void controls.setLookAt(px, py, pz, tx, ty, tz, false).then(() => {
           controls.saveState();
@@ -1495,6 +1507,14 @@ function BoundsResetController({
 
       // Uma câmera animada é de quem a animou: entrar um objeto não a reenquadra.
       if (hasCameraMotion) {
+        hasViewRef.current = true;
+        return;
+      }
+
+      // Só o enquadramento inicial é automático. Enquanto a cena abre, os
+      // objetos resolvem um a um e ele acompanha; quando ela assenta, a vista
+      // fica, e reenquadrar passa a ser só pelo "Enquadrar cena".
+      if (hasViewRef.current) {
         return;
       }
 
@@ -1505,6 +1525,10 @@ function BoundsResetController({
       ).then(() => {
         controls.saveState();
       });
+
+      if (isSceneSettled) {
+        hasViewRef.current = true;
+      }
     });
 
     return () => {
