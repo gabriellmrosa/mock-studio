@@ -15,6 +15,7 @@ import type {
   SpawnOverrides,
 } from "./components/MockupCanvas/MockupCanvas";
 import AlertDialog from "./components/AlertDialog/AlertDialog";
+import { applyPendingVideo, withoutPending } from "./lib/screen-memory";
 import AnalyticsConsent from "./components/AnalyticsConsent/AnalyticsConsent";
 import InspectorPanel from "./components/InspectorPanel/InspectorPanel";
 import LayersPanel from "./components/LayersPanel/LayersPanel";
@@ -357,21 +358,32 @@ export default function Home() {
     try {
       await probeImageFile(file);
       const nextImage = await readFileAsDataUrl(file);
-      // Imagem nova, enquadramento novo: o anterior foi feito para outra.
-      updateSceneObject(
-        selectedDevice.id,
-        screen === "outer"
-          ? {
-              outerImageFit: { ...DEFAULT_SCREEN_FIT },
-              outerImageName: file.name,
-              outerImageUrl: nextImage,
-            }
-          : {
-              imageFit: { ...DEFAULT_SCREEN_FIT },
-              imageName: file.name,
-              imageUrl: nextImage,
-            },
-      );
+      // Imagem nova, enquadramento novo: o anterior foi feito para outra. A
+      // exceção é a que um template pediu de volta: o enquadramento salvo é
+      // para ela, mesmo que o arquivo tenha outro nome.
+      updateSceneObject(selectedDevice.id, (object) => {
+        if (screen === "outer") {
+          const restoring = Boolean(object.pendingOuterScreen?.imageName);
+
+          return {
+            outerImageFit: restoring
+              ? object.outerImageFit
+              : { ...DEFAULT_SCREEN_FIT },
+            outerImageName: file.name,
+            outerImageUrl: nextImage,
+            pendingOuterScreen: withoutPending(object.pendingOuterScreen, "image"),
+          };
+        }
+
+        const restoring = Boolean(object.pendingScreen?.imageName);
+
+        return {
+          imageFit: restoring ? object.imageFit : { ...DEFAULT_SCREEN_FIT },
+          imageName: file.name,
+          imageUrl: nextImage,
+          pendingScreen: withoutPending(object.pendingScreen, "image"),
+        };
+      });
       setUploadError("");
     } catch (error) {
       console.error(error);
@@ -408,11 +420,23 @@ export default function Home() {
         url,
       };
 
-      updateSceneObject(
-        target.id,
+      // O vídeo que um template pediu de volta recebe o enquadramento e o
+      // tempo do clipe salvos.
+      updateSceneObject(target.id, (object) =>
         screen === "outer"
-          ? { outerScreenSource: "video", outerScreenVideo: screenVideo }
-          : { screenSource: "video", screenVideo },
+          ? {
+              outerScreenSource: "video",
+              outerScreenVideo: applyPendingVideo(
+                screenVideo,
+                object.pendingOuterScreen?.video,
+              ),
+              pendingOuterScreen: withoutPending(object.pendingOuterScreen, "video"),
+            }
+          : {
+              pendingScreen: withoutPending(object.pendingScreen, "video"),
+              screenSource: "video",
+              screenVideo: applyPendingVideo(screenVideo, object.pendingScreen?.video),
+            },
       );
       setUploadError("");
     } catch (error) {
@@ -1721,11 +1745,16 @@ export default function Home() {
             imageFit: { ...DEFAULT_SCREEN_FIT },
             imageName: null,
             imageUrl: getPlaceholderImageUrl(object.modelId),
+            // Tirar a imagem também esquece a que o template pedia.
+            pendingScreen: withoutPending(object.pendingScreen, "image"),
           }))
         }
         onRemoveVideo={() =>
           selectedDevice &&
-          updateSceneObject(selectedDevice.id, { screenVideo: null })
+          updateSceneObject(selectedDevice.id, (object) => ({
+            pendingScreen: withoutPending(object.pendingScreen, "video"),
+            screenVideo: null,
+          }))
         }
         onUpdateScreenFit={(patch) => {
           if (!selectedDevice) return;
@@ -1794,7 +1823,10 @@ export default function Home() {
         onOuterVideoUpload={(event) => handleVideoUpload(event, "outer")}
         onRemoveOuterVideo={() =>
           selectedDevice &&
-          updateSceneObject(selectedDevice.id, { outerScreenVideo: null })
+          updateSceneObject(selectedDevice.id, (object) => ({
+            outerScreenVideo: null,
+            pendingOuterScreen: withoutPending(object.pendingOuterScreen, "video"),
+          }))
         }
         onOuterScreenSourceChange={(outerScreenSource) => {
           if (!selectedDevice) return;
@@ -1804,11 +1836,12 @@ export default function Home() {
         }}
         onRemoveOuterImage={() =>
           selectedDevice &&
-          updateSceneObject(selectedDevice.id, {
+          updateSceneObject(selectedDevice.id, (object) => ({
             outerImageFit: { ...DEFAULT_SCREEN_FIT },
             outerImageName: null,
             outerImageUrl: null,
-          })
+            pendingOuterScreen: withoutPending(object.pendingOuterScreen, "image"),
+          }))
         }
         onUpdateOuterScreenFit={(patch) =>
           selectedDevice &&

@@ -8,7 +8,11 @@ import {
   DEFAULT_OBJECT_TRANSFORM,
   OBJECT_POSITION_MULTIPLIER,
 } from "./scene-presets";
-import { createPlaceholderDataUrl } from "./placeholder-image";
+import {
+  createMissingScreenDataUrl,
+  createPlaceholderDataUrl,
+} from "./placeholder-image";
+import type { PendingScreen } from "./screen-memory";
 import {
   cloneKeyframes,
   type Keyframe,
@@ -266,6 +270,13 @@ export type DeviceObject = {
    */
   screenSource: "image" | "video";
   screenVideo: ScreenVideo | null;
+  /**
+   * O que um template guardou de cada tela e ainda espera o arquivo (ver
+   * `screen-memory.ts`): a tela pede o arquivo de novo pelo nome e, quando ele
+   * chega, aplica o enquadramento e o tempo salvos. Ausente = nada pendente.
+   */
+  pendingScreen?: PendingScreen | null;
+  pendingOuterScreen?: PendingScreen | null;
   /** Vazio = objeto estático. Ver [scene-motion.ts](app/lib/scene-motion.ts). */
   keyframes: Keyframe[];
   modelId: DeviceModelId;
@@ -451,6 +462,41 @@ export function getDuoOuterPlaceholderImageUrl() {
     `${PLACEHOLDER_URL_PREFIX}duo-outer`;
 
   return duoOuterPlaceholderUrl;
+}
+
+const missingScreenUrlCache = new Map<string, string>();
+
+/**
+ * A tela que pede o arquivo de volta (ver `createMissingScreenDataUrl`), no
+ * tamanho da tela do modelo — ou da de fora do Duo. Guardada por texto: a
+ * mesma URL a cada render, para a textura não ser refeita.
+ */
+export function getMissingScreenImageUrl(
+  screen: DeviceModelId | "duo-outer",
+  title: string,
+  hint: string,
+) {
+  const key = `${screen}\n${title}\n${hint}`;
+  const cached = missingScreenUrlCache.get(key);
+
+  if (cached) {
+    return cached;
+  }
+
+  const [width, height] =
+    screen === "duo-outer" ? DUO_OUTER_SCREEN_SIZE : MODEL_PLACEHOLDER_SIZES[screen];
+  const fontScale =
+    screen === "duo-outer"
+      ? 0.05
+      : (MODEL_PLACEHOLDER_FONT_SCALE[screen] ?? DEFAULT_PLACEHOLDER_FONT_SCALE);
+  const url =
+    createMissingScreenDataUrl(width, height, fontScale, title, hint) ??
+    (screen === "duo-outer"
+      ? getDuoOuterPlaceholderImageUrl()
+      : getPlaceholderImageUrl(screen));
+
+  missingScreenUrlCache.set(key, url);
+  return url;
 }
 
 export function isPlaceholderImageUrl(imageUrl: string) {

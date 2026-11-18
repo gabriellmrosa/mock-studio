@@ -42,9 +42,13 @@ import {
   isCameraObject,
   isImageObject,
   isTextObject,
+  DEFAULT_SCREEN_FIT,
+  getMissingScreenImageUrl,
   type CameraObject,
+  type DeviceObject,
   type SceneObject,
 } from "../../lib/scene-objects";
+import { getMissingScreenFileName } from "../../lib/screen-memory";
 import {
   getScreenVideoElement,
   setScreenVideoShown,
@@ -806,7 +810,14 @@ function SceneBridge({
                     scale={model.modelScale.map((s) => s * (scaleOverrides[index] ?? 1)) as [number, number, number]}
                   >
                     <group position={model.pivotOffset}>
-                    {object.modelId === "duo" ? (
+                    {(() => {
+                    // Uma tela de template que espera o arquivo de volta mostra
+                    // o pedido, sem o enquadramento salvo (que é do arquivo e
+                    // cortaria o texto).
+                    const screen = getMissingScreen(object, "main", object.modelId, copy);
+                    const outer = getMissingScreen(object, "outer", "duo-outer", copy);
+
+                    return object.modelId === "duo" ? (
                       // O único com duas telas e dobra: recebe a tela de
                       // fora e a abertura, que os outros não têm.
                       <Duo
@@ -816,14 +827,14 @@ function SceneBridge({
                         }
                         foldAngle={displayed.foldAngle}
                         matteFinish={object.matteFinish}
-                        imageUrl={object.imageUrl}
-                        outerImageUrl={object.outerImageUrl}
-                        outerScreenFit={getActiveOuterScreenFit(object)}
+                        imageUrl={screen?.url ?? object.imageUrl}
+                        outerImageUrl={outer?.url ?? object.outerImageUrl}
+                        outerScreenFit={outer?.fit ?? getActiveOuterScreenFit(object)}
                         outerVideoKey={getScreenVideoKey(object.id, "outer")}
                         outerVideoUrl={getActiveOuterScreenVideo(object)?.url ?? null}
                         videoUrl={getActiveScreenVideo(object)?.url ?? null}
                         videoKey={object.id}
-                        screenFit={getActiveScreenFit(object)}
+                        screenFit={screen?.fit ?? getActiveScreenFit(object)}
                         showDeviceShell={object.showDeviceShell}
                         showTabletBezel={object.showTabletBezel}
                       />
@@ -833,10 +844,10 @@ function SceneBridge({
                       debugPartColors={
                         object.debugMode ? object.debugPartColors : undefined
                       }
-                      imageUrl={object.imageUrl}
+                      imageUrl={screen?.url ?? object.imageUrl}
                       videoUrl={getActiveScreenVideo(object)?.url ?? null}
                       videoKey={object.id}
-                      screenFit={getActiveScreenFit(object)}
+                      screenFit={screen?.fit ?? getActiveScreenFit(object)}
                       screenPosition={model.screenPosition}
                       screenSize={model.screenSize}
                       showDeviceShell={object.showDeviceShell}
@@ -848,7 +859,8 @@ function SceneBridge({
                         ? { matteFinish: object.matteFinish }
                         : {})}
                     />
-                    )}
+                    );
+                    })()}
                     </group>
                   </group>
                 </group>
@@ -1248,6 +1260,37 @@ function CameraMotion({
   });
 
   return null;
+}
+
+/**
+ * O pedido de arquivo de uma tela que veio de um template sem ele (ver
+ * `screen-memory.ts`): a imagem com "Envie de novo “nome”" e o enquadramento
+ * neutro, para o texto aparecer inteiro. `null` quando a tela tem o que mostrar.
+ */
+function getMissingScreen(
+  object: DeviceObject,
+  which: "main" | "outer",
+  size: DeviceObject["modelId"] | "duo-outer",
+  copy: AppCopy,
+) {
+  const source = which === "outer" ? object.outerScreenSource : object.screenSource;
+  const name = getMissingScreenFileName(
+    source,
+    which === "outer" ? object.pendingOuterScreen : object.pendingScreen,
+  );
+
+  if (!name) {
+    return null;
+  }
+
+  return {
+    fit: DEFAULT_SCREEN_FIT,
+    url: getMissingScreenImageUrl(
+      size,
+      copy.screenMissingTitle.replace("{name}", name),
+      source === "video" ? copy.screenMissingHintVideo : copy.screenMissingHint,
+    ),
+  };
 }
 
 /** Uma câmera sem keyframes: `sampleMotion` devolve `null` e nada se mexe. */

@@ -142,6 +142,10 @@ export type AppCopy = {
   /** Linha da tela ainda sem arquivo: convida a adicionar um. */
   screenAddImage: string;
   screenAddVideo: string;
+  screenReupload: string;
+  screenMissingTitle: string;
+  screenMissingHint: string;
+  screenMissingHintVideo: string;
   /** Nome da cor do aparelho quando alguma parte foi editada à mão. */
   themeCustomName: string;
   uploadVideoError: string;
@@ -439,6 +443,11 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     screenVideoHint: "MP4, MOV ou WebM",
     screenAddImage: "Adicionar imagem",
     screenAddVideo: "Adicionar vídeo",
+    screenReupload: "Reenviar “{name}”",
+    screenMissingTitle: "Envie de novo “{name}”",
+    screenMissingHint: "O enquadramento e o corte já estão salvos.",
+    screenMissingHintVideo:
+      "O enquadramento, o corte e o tempo do clipe já estão salvos.",
     themeCustomName: "Personalizada",
     screenTabsLabel: "Opções da tela",
     screenTabFit: "Ajuste",
@@ -805,6 +814,11 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     screenVideoHint: "MP4, MOV or WebM",
     screenAddImage: "Add image",
     screenAddVideo: "Add video",
+    screenReupload: "Upload “{name}” again",
+    screenMissingTitle: "Upload “{name}” again",
+    screenMissingHint: "The framing and the crop are already saved.",
+    screenMissingHintVideo:
+      "The framing, the crop and the clip timing are already saved.",
     themeCustomName: "Custom",
     screenTabsLabel: "Screen options",
     screenTabFit: "Fit",

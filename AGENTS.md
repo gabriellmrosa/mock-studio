@@ -336,6 +336,15 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - Guardam composição, fundo, câmera e, no Movimento, os keyframes — **nunca**
   as imagens ou vídeos das telas: são arquivos inteiros e estourariam os ~5 MB
   do `localStorage`.
+- **Mas guardam as configurações de cada tela** (`screen-memory.ts`, campos
+  `screen` e `outerScreen`, opcionais): a fonte (imagem ou vídeo), o nome de
+  cada arquivo, o enquadramento e o corte e, no vídeo, o tempo do clipe (início
+  e cortes). Ao aplicar, a tela fica com `pendingScreen` e mostra "Envie de novo
+  “nome”" no aparelho e "Reenviar “nome”" no Inspector; o arquivo que chegar —
+  qualquer um, mesmo com outro nome (decisão do usuário) — recebe essas
+  configurações, e os cortes encolhem se ele for mais curto. Enquanto pede o
+  arquivo, a tela é desenhada sem o enquadramento salvo, para o texto caber.
+  Sem arquivo, o clipe não aparece na timeline (o "fantasma" ficou de fora).
 - O schema fica na versão 1, com campos novos sempre opcionais. Subir a
   versão faria uma cópia antiga do app em cache (PWA) ler zero templates e
   sobrescrever a lista ao salvar.

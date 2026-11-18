@@ -1,5 +1,6 @@
 "use client";
 
+import { getMissingScreenFileName } from "../../lib/screen-memory";
 import { DEFAULT_FOLD_ANGLE } from "../../lib/scene-presets";
 import { FoldableIcon } from "../FoldableIcon/FoldableIcon";
 import { FolderTabPanel, FolderTabs } from "../FolderTabs/FolderTabs";
@@ -303,6 +304,7 @@ export default function InspectorPanel({
               fileName: object.imageName,
               fit: getActiveScreenFit(object),
               hasFile: !isPlaceholderImageUrl(object.imageUrl),
+              missingName: getMissingScreenFileName("image", object.pendingScreen),
               onFitChange: onUpdateScreenFit,
               onRemove: onRemoveImage,
               onUpload: onImageUpload,
@@ -317,6 +319,7 @@ export default function InspectorPanel({
             video={{
               data: object.screenVideo,
               fit: getActiveScreenFit(object),
+              missingName: getMissingScreenFileName("video", object.pendingScreen),
               onFitChange: onUpdateScreenFit,
               onRemove: onRemoveVideo,
               onUpload: onVideoUpload,
@@ -330,6 +333,10 @@ export default function InspectorPanel({
                 fileName: object.outerImageName,
                 fit: getActiveOuterScreenFit(object),
                 hasFile: object.outerImageUrl !== null,
+                missingName: getMissingScreenFileName(
+                  "image",
+                  object.pendingOuterScreen,
+                ),
                 onFitChange: onUpdateOuterScreenFit,
                 onRemove: onRemoveOuterImage,
                 onUpload: onOuterImageUpload,
@@ -347,6 +354,10 @@ export default function InspectorPanel({
               video={{
                 data: object.outerScreenVideo,
                 fit: getActiveOuterScreenFit(object),
+                missingName: getMissingScreenFileName(
+                  "video",
+                  object.pendingOuterScreen,
+                ),
                 onFitChange: onUpdateOuterScreenFit,
                 onRemove: onRemoveOuterVideo,
                 onUpload: onOuterVideoUpload,
@@ -909,6 +920,8 @@ type ScreenControlsProps = {
     fit: ScreenFit;
     /** Já tem arquivo, e não o placeholder. */
     hasFile: boolean;
+    /** O arquivo que um template pede de volta (ver `screen-memory.ts`). */
+    missingName: string | null;
     onFitChange: (patch: Partial<ScreenFit>) => void;
     onRemove: () => void;
     onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -935,6 +948,8 @@ type ScreenControlsProps = {
   video: {
     data: ScreenVideo | null;
     fit: ScreenFit;
+    /** O vídeo que um template pede de volta. */
+    missingName: string | null;
     onFitChange: (patch: Partial<ScreenFit>) => void;
     onRemove: () => void;
     onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -982,7 +997,9 @@ function ScreenControls({
             name={
               image.hasFile
                 ? (image.fileName ?? copy.screenSourceImage)
-                : copy.screenAddImage
+                : image.missingName
+                  ? copy.screenReupload.replace("{name}", image.missingName)
+                  : copy.screenAddImage
             }
           >
             {image.hasFile ? (
@@ -1019,7 +1036,13 @@ function ScreenControls({
                 ? `${(video.data.durationMs / 1000).toFixed(1)}s`
                 : undefined
             }
-            name={video.data ? video.data.name : copy.screenAddVideo}
+            name={
+              video.data
+                ? video.data.name
+                : video.missingName
+                  ? copy.screenReupload.replace("{name}", video.missingName)
+                  : copy.screenAddVideo
+            }
           >
             {video.data ? (
               <ScreenSettings

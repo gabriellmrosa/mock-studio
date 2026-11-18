@@ -14,6 +14,7 @@ import {
 } from "./scene-templates";
 import {
   createSceneObject,
+  DEFAULT_SCREEN_FIT,
   getPlaceholderImageUrl,
   isDeviceObject,
   isTextObject,
@@ -1150,5 +1151,33 @@ describe("the camera in templates", () => {
     expect(getTemplateSnapshot(scene, "static", null)).toBe(
       getTemplateSnapshot(moved, "static", null),
     );
+  });
+});
+
+describe("screen settings in templates", () => {
+  it("brings the framing back and asks for the file by name, without the file", () => {
+    const device = {
+      ...createSceneObject({ id: "phone", name: "Phone" }),
+      imageFit: { ...DEFAULT_SCREEN_FIT, cropTop: 0.1, zoom: 1.4 },
+      imageName: "home.png",
+      imageUrl: "data:image/png;base64,abc",
+    };
+    const template = createSceneTemplate({ name: "With screen", objects: [device] });
+    const [restored] = applySceneTemplate(template).filter(isDeviceObject);
+
+    expect(JSON.stringify(template)).not.toContain("data:image/png");
+    expect(restored.imageFit).toMatchObject({ cropTop: 0.1, zoom: 1.4 });
+    expect(restored.imageName).toBeNull();
+    expect(restored.imageUrl).toBe(getPlaceholderImageUrl(restored.modelId));
+    expect(restored.pendingScreen).toEqual({ imageName: "home.png", video: null });
+  });
+
+  it("leaves a screen that never got a file out of the template", () => {
+    const template = createSceneTemplate({
+      name: "Plain",
+      objects: [createSceneObject({ id: "phone", name: "Phone" })],
+    });
+
+    expect(template.objects[0]).not.toHaveProperty("screen");
   });
 });

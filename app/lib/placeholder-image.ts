@@ -60,3 +60,114 @@ export function createPlaceholderDataUrl(
     return null;
   }
 }
+
+/**
+ * A tela de um template que espera o arquivo de volta (ver `screen-memory.ts`):
+ * no lugar do xadrez com o tamanho, um fundo liso com o pedido — "Envie de
+ * novo “arquivo”" — e, embaixo, que as configurações já estão salvas. O nome
+ * pode ser longo: o título quebra em linhas pela largura, letra a letra se
+ * for preciso (um nome de arquivo não tem espaços para quebrar).
+ */
+export function createMissingScreenDataUrl(
+  width: number,
+  height: number,
+  fontScale: number,
+  title: string,
+  hint: string,
+): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return null;
+    }
+
+    context.fillStyle = CHECKER_DARK;
+    context.fillRect(0, 0, width, height);
+
+    const maxWidth = width * 0.8;
+    const titleSize = Math.round(height * fontScale);
+    const hintSize = Math.round(titleSize * 0.7);
+
+    context.textAlign = "center";
+    context.textBaseline = "middle";
+    context.font = `600 ${titleSize}px ${FONT_FAMILY}`;
+
+    const titleLines = wrapText(context, title, maxWidth);
+
+    context.font = `400 ${hintSize}px ${FONT_FAMILY}`;
+
+    const hintLines = wrapText(context, hint, maxWidth);
+    const titleLineHeight = titleSize * 1.25;
+    const hintLineHeight = hintSize * 1.35;
+    const gap = titleSize * 0.6;
+    const total =
+      titleLines.length * titleLineHeight + gap + hintLines.length * hintLineHeight;
+    let y = height / 2 - total / 2 + titleLineHeight / 2;
+
+    context.fillStyle = "#3c4043";
+    context.font = `600 ${titleSize}px ${FONT_FAMILY}`;
+    for (const line of titleLines) {
+      context.fillText(line, width / 2, y);
+      y += titleLineHeight;
+    }
+
+    y += gap - titleLineHeight / 2 + hintLineHeight / 2;
+    context.fillStyle = TEXT_COLOR;
+    context.font = `400 ${hintSize}px ${FONT_FAMILY}`;
+    for (const line of hintLines) {
+      context.fillText(line, width / 2, y);
+      y += hintLineHeight;
+    }
+
+    return canvas.toDataURL("image/png");
+  } catch {
+    return null;
+  }
+}
+
+/** Quebra pela largura: por palavras e, numa palavra maior que a linha, por letras. */
+function wrapText(context: CanvasRenderingContext2D, text: string, maxWidth: number) {
+  const lines: string[] = [];
+  let line = "";
+
+  for (const word of text.split(" ")) {
+    const candidate = line ? `${line} ${word}` : word;
+
+    if (context.measureText(candidate).width <= maxWidth) {
+      line = candidate;
+      continue;
+    }
+
+    if (line) {
+      lines.push(line);
+      line = "";
+    }
+
+    let piece = "";
+
+    for (const char of word) {
+      if (context.measureText(piece + char).width > maxWidth && piece) {
+        lines.push(piece);
+        piece = "";
+      }
+
+      piece += char;
+    }
+
+    line = piece;
+  }
+
+  if (line) {
+    lines.push(line);
+  }
+
+  return lines;
+}

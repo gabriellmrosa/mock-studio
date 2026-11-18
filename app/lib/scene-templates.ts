@@ -1,12 +1,17 @@
 "use client";
 
 import {
+  fromTemplateScreen,
+  normalizeTemplateScreen,
+  toTemplateScreen,
+  type TemplateScreen,
+} from "./screen-memory";
+import {
   DEVICE_MODELS,
   MODELS_WITH_FINISH,
   type DeviceModelId,
 } from "../models/device-models";
 import {
-  DEFAULT_SCREEN_FIT,
   getPlaceholderImageUrl,
   isCameraObject,
   isImageObject,
@@ -107,6 +112,13 @@ export type TemplateDeviceObject = {
   showDeviceShell: boolean;
   showNotebookKeyboard: boolean;
   showTabletBezel: boolean;
+  /**
+   * O que se lembra de cada tela sem o arquivo dela (ver `screen-memory.ts`):
+   * a fonte, os nomes, o enquadramento, o corte e o tempo do clipe. Ausente em
+   * templates de antes, e numa tela que nunca recebeu arquivo.
+   */
+  screen?: TemplateScreen;
+  outerScreen?: TemplateScreen;
 };
 
 /** Um texto da cena: leve (bytes), então entra no template, ao contrário das imagens. */
@@ -329,7 +341,32 @@ function toTemplateObject(
     showDeviceShell: object.showDeviceShell,
     showNotebookKeyboard: object.showNotebookKeyboard,
     showTabletBezel: object.showTabletBezel,
+    ...withScreen(
+      "screen",
+      toTemplateScreen({
+        imageFit: object.imageFit,
+        imageName: object.imageName,
+        pending: object.pendingScreen ?? null,
+        source: object.screenSource,
+        video: object.screenVideo,
+      }),
+    ),
+    ...withScreen(
+      "outerScreen",
+      toTemplateScreen({
+        imageFit: object.outerImageFit,
+        imageName: object.outerImageName,
+        pending: object.pendingOuterScreen ?? null,
+        source: object.outerScreenSource,
+        video: object.outerScreenVideo,
+      }),
+    ),
   };
+}
+
+/** Só põe a tela no template quando há o que lembrar dela. */
+function withScreen(key: "screen" | "outerScreen", screen: TemplateScreen | undefined) {
+  return screen ? { [key]: screen } : {};
 }
 
 export function createSceneTemplate({
@@ -461,6 +498,10 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
     }
 
     const model = DEVICE_MODELS[object.modelId];
+    // A tela volta com as configurações e o nome do arquivo que falta; o
+    // arquivo em si não vem no template.
+    const main = fromTemplateScreen(normalizeTemplateScreen(object.screen));
+    const outer = fromTemplateScreen(normalizeTemplateScreen(object.outerScreen));
 
     return {
       kind: "device",
@@ -471,17 +512,19 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       keyframes: fromTemplateKeyframes(object.keyframes),
       deviceTheme: object.deviceTheme,
       id: crypto.randomUUID(),
-      imageFit: { ...DEFAULT_SCREEN_FIT },
+      imageFit: main.imageFit,
       imageName: null,
       imageUrl: getPlaceholderImageUrl(object.modelId),
-      outerImageFit: { ...DEFAULT_SCREEN_FIT },
+      outerImageFit: outer.imageFit,
       outerImageName: null,
       outerImageUrl: null,
-      outerScreenSource: "image",
+      outerScreenSource: outer.source,
       outerScreenVideo: null,
+      pendingOuterScreen: outer.pending,
+      pendingScreen: main.pending,
       isVisible: object.isVisible,
       modelId: object.modelId,
-      screenSource: "image",
+      screenSource: main.source,
       screenVideo: null,
       name: object.name,
       positionX: object.positionX,
