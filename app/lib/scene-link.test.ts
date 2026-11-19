@@ -6,6 +6,7 @@ import {
   createSceneLink,
   decodeSceneLink,
   extractSceneLink,
+  MAX_DECODED_LINK_BYTES,
   readSceneLinkHash,
 } from "./scene-link";
 import { createSceneObject } from "./scene-objects";
@@ -106,6 +107,21 @@ describe("scene link", () => {
 
     expect(await decodeSceneLink(encoded.slice(0, encoded.length / 2))).toBeNull();
     expect(await decodeSceneLink("not-a-scene")).toBeNull();
+  });
+
+  it("rejects a payload whose decompressed size exceeds the byte cap", async () => {
+    const oversized = new Uint8Array(MAX_DECODED_LINK_BYTES + 1024);
+    const compressed = new Uint8Array(
+      await new Response(
+        new Blob([oversized])
+          .stream()
+          .pipeThrough(new CompressionStream("deflate-raw")),
+      ).arrayBuffer(),
+    );
+    const base64Url = Buffer.from(compressed).toString("base64url");
+
+    expect(base64Url.length).toBeLessThan(4000);
+    expect(await decodeSceneLink(base64Url)).toBeNull();
   });
 });
 

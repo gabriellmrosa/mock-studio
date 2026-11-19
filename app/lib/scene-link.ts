@@ -19,6 +19,12 @@ import {
 const HASH_PREFIX = "#scene=";
 /** Versão do formato do link, independente da dos templates salvos. */
 const LINK_VERSION = 1;
+/**
+ * Teto em bytes para o JSON descomprimido de um link ou código colado. Uma
+ * cena real fica em poucos KB; limitar a leitura impede que um payload
+ * adulterado (bomba de descompressão) consuma memória e trave a aba.
+ */
+export const MAX_DECODED_LINK_BYTES = 1_000_000;
 
 type LinkPayload = {
   template: Omit<SceneTemplate, "createdAt" | "id">;
@@ -45,10 +51,48 @@ function fromBase64Url(text: string) {
 async function transform(
   bytes: Uint8Array,
   stream: CompressionStream | DecompressionStream,
+  maxBytes?: number,
 ) {
   const output = new Blob([bytes as BlobPart]).stream().pipeThrough(stream);
 
-  return new Uint8Array(await new Response(output).arrayBuffer());
+  if (maxBytes === undefined) {
+    return new Uint8Array(await new Response(output).arrayBuffer());
+  }
+
+  const reader = output.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) {
+        break;
+      }
+
+      total += value.byteLength;
+
+      if (total > maxBytes) {
+        await reader.cancel();
+        throw new Error("O conteúdo do link ultrapassa o tamanho máximo.");
+      }
+
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const merged = new Uint8Array(total);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return merged;
 }
 
 /**
@@ -147,6 +191,7 @@ export async function decodeSceneLink(
     const json = await transform(
       fromBase64Url(encoded),
       new DecompressionStream("deflate-raw"),
+      MAX_DECODED_LINK_BYTES,
     );
     const payload = JSON.parse(new TextDecoder().decode(json)) as Partial<LinkPayload>;
     const template = {
