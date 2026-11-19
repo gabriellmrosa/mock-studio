@@ -375,6 +375,20 @@ export function copyNeighborPose(
   });
 }
 
+/**
+ * O instante da cena durante o play: o relógio desde o começo, preso no fim.
+ * O play só para um pouco depois do fim (um temporizador com folga), e nesse
+ * resto o relógio passa da cena: um clipe que termina junto com ela já
+ * contava como acabado, e a tela piscava o fundo antes de parar.
+ */
+export function getPlaybackTimeMs(
+  startedAt: number,
+  now: number,
+  sceneDurationMs: number,
+) {
+  return Math.min(Math.max(0, now - startedAt), sceneDurationMs);
+}
+
 /** Mesmos keyframes com ids novos — para duplicar um objeto sem compartilhar ids. */
 export function cloneKeyframes(keyframes: Keyframe[]): Keyframe[] {
   return keyframes.map((keyframe) => ({

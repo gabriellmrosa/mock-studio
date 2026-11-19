@@ -7,6 +7,7 @@ import {
   trimVideoClip,
 } from "./scene-objects";
 import {
+  getPlaybackTimeMs,
   copyNeighborPose,
   findNeighborKeyframe,
   DEFAULT_BEZIER,
@@ -475,6 +476,33 @@ describe("copying the pose of a neighbor keyframe", () => {
 
   it("changes nothing without a neighbor on that side", () => {
     expect(copyNeighborPose(keyframes, "a", "previous")).toBe(keyframes);
+  });
+});
+
+describe("getPlaybackTimeMs", () => {
+  it("holds the clock at the end of the scene while the play is still stopping", () => {
+    // O play para 80 ms depois do fim; até lá, o instante é o do fim.
+    expect(getPlaybackTimeMs(1_000, 1_000 + 14_680, 14_600)).toBe(14_600);
+  });
+
+  it("is the time since the start until then", () => {
+    expect(getPlaybackTimeMs(1_000, 3_500, 14_600)).toBe(2_500);
+  });
+
+  it("keeps a clip that ends with the scene on screen at its last instant", () => {
+    const video = {
+      durationMs: 17_308,
+      fit: { ...DEFAULT_SCREEN_FIT },
+      name: "recording.mov",
+      startMs: 0,
+      trimEndMs: 0,
+      trimStartMs: 2_708,
+      url: "blob:x",
+    };
+
+    // Sem o fim preso, 80 ms depois o clipe já contava como acabado (o fundo).
+    expect(getScreenVideoTime(video, 14_680)).toBeNull();
+    expect(getScreenVideoTime(video, getPlaybackTimeMs(0, 14_680, 14_600))).toBe(17_308);
   });
 });
 

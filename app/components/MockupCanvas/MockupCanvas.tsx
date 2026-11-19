@@ -7,6 +7,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -60,6 +61,7 @@ import {
   OBJECT_POSITION_MULTIPLIER_Z,
 } from "../../lib/scene-presets";
 import {
+  getPlaybackTimeMs,
   getSceneMotionDuration,
   hasMotion,
   sampleDisplayedMotion,
@@ -959,6 +961,8 @@ function ScreenVideoController({
   motionStartedAt: number | null;
   objects: SceneObject[];
 }) {
+  const sceneDurationMs = useMemo(() => getSceneMotionDuration(objects), [objects]);
+
   useFrame(() => {
     if (isPausedRef.current) {
       return;
@@ -983,7 +987,7 @@ function ScreenVideoController({
       // Vídeo só existe no Movimento, onde sempre há um instante: o do
       // relógio tocando ou o do playhead.
       const sceneTimeMs = isPlaying
-        ? Date.now() - motionStartedAt
+        ? getPlaybackTimeMs(motionStartedAt, Date.now(), sceneDurationMs)
         : (motionPlayheadMs ?? 0);
       const targetMs = getScreenVideoTime(video, sceneTimeMs);
 

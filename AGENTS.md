@@ -405,7 +405,10 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   invisível: fora dele o Chrome para de entregar quadros.
 - Um shader próprio que lê `VideoTexture` decodifica sRGB ele mesmo.
 - O tempo do vídeo pertence à timeline (o clipe tem trilha própria); fora do
-  clipe, a tela mostra só o fundo.
+  clipe, a tela mostra só o fundo. No play, o relógio da cena é preso no fim
+  (`getPlaybackTimeMs`): o play para com folga (80 ms) depois do fim, e um clipe
+  que termina junto com a cena contava como acabado nesse resto — a tela
+  piscava o fundo antes de parar.
 - **Ímã da timeline** (`timeline-snap.ts`): ao arrastar um keyframe, a trilha,
   o clipe ou as bordas dele (e o playhead), a borda gruda exatamente num
   keyframe, na ponta de um clipe, no playhead ou no zero quando passa a até 8 px
