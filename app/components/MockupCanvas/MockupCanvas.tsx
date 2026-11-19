@@ -53,9 +53,15 @@ import {
 } from "../../lib/scene-objects";
 import { getMissingScreenFileName } from "../../lib/screen-memory";
 import {
+  clearScreenFitOverrides,
   getScreenVideoElement,
+  setScreenFitOverride,
   setScreenVideoShown,
 } from "../../lib/screen-texture";
+import {
+  sampleAnimatedScreenFit,
+  sampleScreenFit,
+} from "../../lib/screen-fit-motion";
 import type { CameraPose } from "../../lib/scene-templates";
 import {
   AUTO_OBJECT_POSITIONS,
@@ -356,6 +362,43 @@ function getResolvedObjectPosition(
  * faz a cada quadro e o que a exportação de vídeo faz por quadro — a mesma
  * conta, para o arquivo não divergir do editor. Sem keyframes, não mexe.
  */
+/**
+ * O enquadramento que a tela mostra parada: o do arquivo e, no Vídeo, com o
+ * zoom, a posição e o fundo do playhead.
+ */
+function getDisplayedScreenFit(
+  object: DeviceObject,
+  screen: "main" | "outer",
+  playheadMs: number | null,
+) {
+  const base =
+    screen === "outer" ? getActiveOuterScreenFit(object) : getActiveScreenFit(object);
+
+  return playheadMs === null
+    ? base
+    : sampleScreenFit(object.keyframes, playheadMs, screen, base);
+}
+
+/** O enquadramento animado de cada tela do aparelho num instante, ou nada. */
+function applyScreenFits(object: DeviceObject, timeMs: number) {
+  setScreenFitOverride(
+    getScreenVideoKey(object.id, "main"),
+    sampleAnimatedScreenFit(object.keyframes, timeMs, "main", getActiveScreenFit(object)),
+  );
+
+  if (object.modelId === "duo") {
+    setScreenFitOverride(
+      getScreenVideoKey(object.id, "outer"),
+      sampleAnimatedScreenFit(
+        object.keyframes,
+        timeMs,
+        "outer",
+        getActiveOuterScreenFit(object),
+      ),
+    );
+  }
+}
+
 function applyMotionPose(
   group: THREE.Group,
   object: SceneObject,
@@ -370,6 +413,12 @@ function applyMotionPose(
       group,
       Math.max(0, timeMs - (object.keyframes[0]?.timeMs ?? 0)),
     );
+  }
+
+  // Zoom, posição e fundo de cada tela que anima, para o compositor ler no
+  // mesmo quadro (ele roda antes do render da cena).
+  if (isDeviceObject(object)) {
+    applyScreenFits(object, timeMs);
   }
 
   const sampled = sampleDisplayedMotion(object, timeMs);
@@ -601,7 +650,11 @@ function SceneBridge({
           objects: () => exported.objects,
           // Volta ao instante que o editor mostrava; os vídeos das telas o
           // controlador reposiciona sozinho no próximo quadro.
-          restore: () => applyPoses(latestSceneRef.current.motionPlayheadMs ?? 0),
+          restore: () => {
+            void applyPoses(latestSceneRef.current.motionPlayheadMs ?? 0);
+            // Parada, a tela é a das props: o enquadramento por quadro sai.
+            clearScreenFitOverrides();
+          },
           scene,
         },
         request.size,
@@ -907,12 +960,17 @@ function SceneBridge({
                         matteFinish={object.matteFinish}
                         imageUrl={screen?.url ?? object.imageUrl}
                         outerImageUrl={outer?.url ?? object.outerImageUrl}
-                        outerScreenFit={outer?.fit ?? getActiveOuterScreenFit(object)}
+                        outerScreenFit={
+                          outer?.fit ??
+                          getDisplayedScreenFit(object, "outer", motionPlayheadMs)
+                        }
                         outerVideoKey={getScreenVideoKey(object.id, "outer")}
                         outerVideoUrl={getActiveOuterScreenVideo(object)?.url ?? null}
                         videoUrl={getActiveScreenVideo(object)?.url ?? null}
                         videoKey={object.id}
-                        screenFit={screen?.fit ?? getActiveScreenFit(object)}
+                        screenFit={
+                          screen?.fit ?? getDisplayedScreenFit(object, "main", motionPlayheadMs)
+                        }
                         showDeviceShell={object.showDeviceShell}
                         showTabletBezel={object.showTabletBezel}
                       />
@@ -925,7 +983,9 @@ function SceneBridge({
                       imageUrl={screen?.url ?? object.imageUrl}
                       videoUrl={getActiveScreenVideo(object)?.url ?? null}
                       videoKey={object.id}
-                      screenFit={screen?.fit ?? getActiveScreenFit(object)}
+                      screenFit={
+                        screen?.fit ?? getDisplayedScreenFit(object, "main", motionPlayheadMs)
+                      }
                       screenPosition={model.screenPosition}
                       screenSize={model.screenSize}
                       showDeviceShell={object.showDeviceShell}
@@ -1198,6 +1258,15 @@ function MotionDriver({
       );
     }
   });
+
+  // Fim do play: as telas voltam ao enquadramento das props (o do playhead).
+  useEffect(
+    () => () => {
+      setScreenFitOverride(getScreenVideoKey(object.id, "main"), null);
+      setScreenFitOverride(getScreenVideoKey(object.id, "outer"), null);
+    },
+    [object.id],
+  );
 
   return null;
 }

@@ -176,6 +176,8 @@ export type AppCopy = {
   motionVideoTrimStart: string;
   motionVideoTrimEnd: string;
   motionVideoHold: string;
+  screenFitKeyframeNote: string;
+  screenCropKeyframeNote: string;
   timelineResizeLabel: string;
   timelineResizeHint: string;
   motionFrameLabel: string;
@@ -485,6 +487,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionVideoTrimStart: "Arraste para cortar o começo do vídeo",
     motionVideoTrimEnd: "Arraste para cortar o fim do vídeo",
     motionVideoHold: "Congelado",
+    screenFitKeyframeNote: "Zoom, posição e fundo valem para o keyframe de {time}.",
+    screenCropKeyframeNote: "O corte vale para o arquivo inteiro; o fundo, para o keyframe de {time}.",
     timelineResizeLabel: "Altura da linha do tempo",
     timelineResizeHint: "Arraste para mudar a altura. Clique duplo volta ao padrão.",
     motionFrameLabel: "Tamanho do vídeo",
@@ -864,6 +868,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionVideoTrimStart: "Drag to trim the start of the video",
     motionVideoTrimEnd: "Drag to trim the end of the video",
     motionVideoHold: "Frozen",
+    screenFitKeyframeNote: "Zoom, position and background apply to the {time} keyframe.",
+    screenCropKeyframeNote: "The crop applies to the whole file; the background, to the {time} keyframe.",
     timelineResizeLabel: "Timeline height",
     timelineResizeHint: "Drag to change the height. Double-click resets it.",
     motionFrameLabel: "Video size",

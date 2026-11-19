@@ -66,7 +66,9 @@ import {
   changeSceneObjectModel,
   DEFAULT_SCREEN_FIT,
   createSceneObject,
+  getActiveOuterScreenFit,
   getActiveOuterScreenVideo,
+  getActiveScreenFit,
   getActiveScreenVideo,
   getPlaceholderImageUrl,
   duplicateSceneObject,
@@ -79,6 +81,7 @@ import {
   resetSceneObject,
   type DeviceObject,
   type PosePatch,
+  type ScreenFit,
   type SceneObject,
   type ScreenId,
 } from "./lib/scene-objects";
@@ -130,6 +133,11 @@ import {
   findBackgroundObject,
 } from "./lib/background-objects";
 import type { BackgroundEditor } from "./components/BackgroundFields/BackgroundFields";
+import {
+  splitScreenFitPatch,
+  withCapturedScreenFits,
+  withKeyframeScreenFit,
+} from "./lib/screen-fit-motion";
 import { isSameOrbit, normalizeOrbit, type CameraOrbit } from "./lib/camera-orbit";
 import { DEVICE_MODELS } from "./models/device-models";
 
@@ -371,6 +379,59 @@ export default function Home() {
           : object,
       ),
     );
+  }
+
+  /**
+   * O painel da tela mudou o enquadramento. Com um keyframe do aparelho
+   * selecionado no Vídeo, zoom, posição e fundo vão para ele (animam); o
+   * corte, que é do arquivo, vai sempre para o arquivo. Sem keyframe
+   * selecionado, tudo vai para o arquivo — e aparece em todo keyframe que não
+   * tem enquadramento próprio.
+   */
+  function handleUpdateScreenFit(screen: ScreenId, patch: Partial<ScreenFit>) {
+    if (!selectedDevice) return;
+
+    const keyframeId =
+      motionTab === "motion" &&
+      selectedDevice.keyframes.some((keyframe) => keyframe.id === selectedKeyframeId)
+        ? selectedKeyframeId
+        : null;
+    const { animated, file } = keyframeId
+      ? splitScreenFitPatch(patch)
+      : { animated: {}, file: patch };
+
+    updateSceneObject(selectedDevice.id, (object) => {
+      // O enquadramento da fonte que está nesta tela (imagem ou vídeo).
+      const video =
+        screen === "outer" ? getActiveOuterScreenVideo(object) : getActiveScreenVideo(object);
+      const filePatch: Partial<DeviceObject> =
+        Object.keys(file).length === 0
+          ? {}
+          : video
+            ? screen === "outer"
+              ? { outerScreenVideo: { ...video, fit: { ...video.fit, ...file } } }
+              : { screenVideo: { ...video, fit: { ...video.fit, ...file } } }
+            : screen === "outer"
+              ? { outerImageFit: { ...object.outerImageFit, ...file } }
+              : { imageFit: { ...object.imageFit, ...file } };
+
+      if (!keyframeId || Object.keys(animated).length === 0) {
+        return filePatch;
+      }
+
+      const updated = { ...object, ...filePatch };
+      const base =
+        screen === "outer" ? getActiveOuterScreenFit(updated) : getActiveScreenFit(updated);
+
+      return {
+        ...filePatch,
+        keyframes: object.keyframes.map((keyframe) =>
+          keyframe.id === keyframeId
+            ? withKeyframeScreenFit(keyframe, screen, base, animated)
+            : keyframe,
+        ),
+      };
+    });
   }
 
   /** `screen`: a tela do aparelho ou, no dobrável, a de fora. */
@@ -1298,7 +1359,19 @@ export default function Home() {
       return;
     }
 
-    const { id, keyframes } = insertKeyframe(target, playheadMs);
+    const { id, keyframes: inserted } = insertKeyframe(target, playheadMs);
+    // No meio de um trecho, a tela de um aparelho nasce com o enquadramento
+    // daquele instante (a pose interpolada não o traz).
+    const keyframes = isDeviceObject(target)
+      ? inserted.map((keyframe) =>
+          keyframe.id === id
+            ? withCapturedScreenFits(keyframe, target.keyframes, {
+                main: getActiveScreenFit(target),
+                outer: getActiveOuterScreenFit(target),
+              })
+            : keyframe,
+        )
+      : inserted;
     const created = keyframes.find((keyframe) => keyframe.id === id);
 
     updateShared(objectId, { keyframes });
@@ -1880,18 +1953,7 @@ export default function Home() {
             screenVideo: null,
           }))
         }
-        onUpdateScreenFit={(patch) => {
-          if (!selectedDevice) return;
-
-          // Grava no enquadramento da fonte que está na tela.
-          updateSceneObject(selectedDevice.id, (object) => {
-            const video = getActiveScreenVideo(object);
-
-            return video
-              ? { screenVideo: { ...video, fit: { ...video.fit, ...patch } } }
-              : { imageFit: { ...object.imageFit, ...patch } };
-          });
-        }}
+        onUpdateScreenFit={(patch) => handleUpdateScreenFit("main", patch)}
         onScreenSourceChange={(screenSource) => {
           if (!selectedDevice) return;
 
@@ -1967,17 +2029,7 @@ export default function Home() {
             pendingOuterScreen: withoutPending(object.pendingOuterScreen, "image"),
           }))
         }
-        onUpdateOuterScreenFit={(patch) =>
-          selectedDevice &&
-          // Grava no enquadramento da fonte que está na tela de fora.
-          updateSceneObject(selectedDevice.id, (object) => {
-            const video = getActiveOuterScreenVideo(object);
-
-            return video
-              ? { outerScreenVideo: { ...video, fit: { ...video.fit, ...patch } } }
-              : { outerImageFit: { ...object.outerImageFit, ...patch } };
-          })
-        }
+        onUpdateOuterScreenFit={(patch) => handleUpdateScreenFit("outer", patch)}
         motionTab={motionTab}
         selectedKeyframeId={selectedKeyframeId}
         uiTheme={uiTheme}

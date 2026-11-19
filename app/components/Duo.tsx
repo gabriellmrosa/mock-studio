@@ -520,7 +520,7 @@ function DuoImpl({
   const innerTexture = useScreenTexture(
     videoUrl
       ? { fit: screenFit, kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
-      : { fit: screenFit, kind: "image", url: effectiveImageUrl },
+      : { fit: screenFit, fitKey: videoKey, kind: "image", url: effectiveImageUrl },
     { cropWidth: 2670, cropHeight: 1878, flipY: true },
   );
   const outerTexture = useScreenTexture(
@@ -531,7 +531,7 @@ function DuoImpl({
           key: outerVideoKey ?? outerVideoUrl,
           url: outerVideoUrl,
         }
-      : { fit: outerScreenFit, kind: "image", url: effectiveOuterImageUrl },
+      : { fit: outerScreenFit, fitKey: outerVideoKey, kind: "image", url: effectiveOuterImageUrl },
     {
       cropWidth: DUO_OUTER_SCREEN_SIZE[0],
       cropHeight: DUO_OUTER_SCREEN_SIZE[1],

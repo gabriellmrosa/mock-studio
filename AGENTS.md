@@ -417,6 +417,20 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   `getScreenVideoTime` prende o tempo no último quadro; recolher a borda gasta
   primeiro o `holdEndMs` e só então corta. A borda gruda no fim real do arquivo
   antes de passar dele, e o trecho parado é marcado no clipe.
+- **Enquadramento da tela por keyframe** (`screen-fit-motion.ts`): zoom,
+  posição e cor de fundo animam (`screenFit`/`outerScreenFit` no
+  `MotionTransform`, opcionais); o **corte não** — é do arquivo (decisão do
+  usuário). O keyframe só ganha o campo quando editado com ele selecionado;
+  sem o campo, vale o enquadramento do arquivo, e é contra ele que o trecho
+  interpola (`sampleScreenFit`, que conhece o arquivo — o `lerpTransform` não).
+  O painel da tela, com um keyframe do aparelho selecionado no Vídeo, grava
+  zoom/posição/fundo nele e o corte no arquivo (`splitScreenFitPatch`), com um
+  `Callout` dizendo isso. Um keyframe novo no meio de um trecho captura o
+  enquadramento de então (`withCapturedScreenFits`). Parado, o enquadramento
+  do playhead chega pelas props; no play e na exportação, por quadro, pelo
+  registro `setScreenFitOverride` (chave `getScreenVideoKey`, também para
+  imagem), que o compositor lê no `useFrame` — esvaziado no fim do play e da
+  exportação, para a tela voltar às props.
 - O tempo do vídeo pertence à timeline (o clipe tem trilha própria); fora do
   clipe, a tela mostra só o fundo. No play, o relógio da cena é preso no fim
   (`getPlaybackTimeMs`): o play para com folga (80 ms) depois do fim, e um clipe

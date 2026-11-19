@@ -166,7 +166,7 @@ function SmartwatchImpl({
   const screenTexture = useScreenTexture(
     videoUrl
       ? { fit: screenFit, kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
-      : { fit: screenFit, kind: "image", url: effectiveImageUrl },
+      : { fit: screenFit, fitKey: videoKey, kind: "image", url: effectiveImageUrl },
     { cropWidth: screenSize[0], cropHeight: screenSize[1], flipY: false },
   );
 

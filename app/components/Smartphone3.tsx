@@ -187,7 +187,7 @@ function ScreenWithTexture({
   const texture = useScreenTexture(
     videoUrl
       ? { fit: screenFit, kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
-      : { fit: screenFit, kind: "image", url: imageUrl },
+      : { fit: screenFit, fitKey: videoKey, kind: "image", url: imageUrl },
     { cropWidth: SCREEN_WIDTH, cropHeight: SCREEN_HEIGHT, flipY: true },
   );
 

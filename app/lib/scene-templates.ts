@@ -27,6 +27,7 @@ import {
 import { isStickerId } from "./stickers";
 import { createCameraObject, withCameraObject } from "./camera-objects";
 import { createBackgroundObject, withBackgroundObject } from "./background-objects";
+import { normalizeAnimatedScreenFit } from "./screen-fit-motion";
 import { isOrbit, normalizeOrbit } from "./camera-orbit";
 import { normalizeSceneText, type SceneText } from "./text-objects";
 import {
@@ -450,8 +451,11 @@ function fromTemplateKeyframes(keyframes: TemplateKeyframe[] | undefined) {
     id: crypto.randomUUID(),
     transform: {
       ...withoutBackground(keyframe.transform),
-      // O fundo de um keyframe do Fundo vem de fora: só volta se for legível.
+      // O fundo de um keyframe do Fundo e o enquadramento das telas vêm de
+      // fora: só voltam se forem legíveis (e dentro dos limites).
       ...withBackgroundPose(keyframe.transform.background),
+      ...withScreenFitField("screenFit", keyframe.transform.screenFit),
+      ...withScreenFitField("outerScreenFit", keyframe.transform.outerScreenFit),
       // Keyframes salvos antes da opacidade não a têm: 100%.
       opacity: keyframe.transform.opacity ?? 1,
       // A órbita da câmera vem de fora: volta pelos limites.
@@ -462,12 +466,18 @@ function fromTemplateKeyframes(keyframes: TemplateKeyframe[] | undefined) {
   }));
 }
 
-/** O transform sem o fundo, que volta à parte (validado). */
+/** O transform sem o fundo e o enquadramento das telas, que voltam à parte (validados). */
 function withoutBackground(transform: MotionTransform): MotionTransform {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { background, ...rest } = transform;
+  const { background, outerScreenFit, screenFit, ...rest } = transform;
 
   return rest;
+}
+
+function withScreenFitField(key: "outerScreenFit" | "screenFit", value: unknown) {
+  const fit = normalizeAnimatedScreenFit(value);
+
+  return fit ? { [key]: fit } : {};
 }
 
 function withBackgroundPose(value: unknown) {

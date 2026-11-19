@@ -249,6 +249,8 @@ const copy: AppCopy = {
   motionVideoTrimStart: APP_COPY["en-US"].motionVideoTrimStart,
   motionVideoTrimEnd: APP_COPY["en-US"].motionVideoTrimEnd,
   motionVideoHold: "Frozen",
+  screenFitKeyframeNote: "Zoom, position and background apply to the {time} keyframe.",
+  screenCropKeyframeNote: "The crop applies to the whole file; the background, to the {time} keyframe.",
   timelineResizeLabel: APP_COPY["en-US"].timelineResizeLabel,
   timelineResizeHint: APP_COPY["en-US"].timelineResizeHint,
   motionFrameLabel: "Video size",

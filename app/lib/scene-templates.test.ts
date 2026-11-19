@@ -1280,3 +1280,33 @@ describe("the Background track in templates", () => {
     expect(rebuilt?.keyframes[0].transform.background).toBeUndefined();
   });
 });
+
+describe("screen framing in keyframes", () => {
+  it("keeps a keyframe's zoom, position and background, and clamps a stored one", () => {
+    const phone = createSceneObject({ id: "phone", name: "Phone", deletable: false });
+    const keyframe = createKeyframe(0, {
+      ...captureTransform(phone),
+      screenFit: { background: "#000000", panX: 0.5, panY: 0, zoom: 2 },
+    });
+    const template = createSceneTemplate({
+      mode: "motion",
+      name: "Template 1",
+      objects: [{ ...phone, keyframes: [keyframe] }],
+    });
+    const stored = JSON.parse(JSON.stringify(template));
+
+    stored.objects[0].keyframes[0].transform.outerScreenFit = { zoom: "big" };
+    stored.objects[0].keyframes[0].transform.screenFit.zoom = 50;
+    storeRaw([stored]);
+
+    const [rebuilt] = applySceneTemplate(loadTemplates()[0]);
+
+    expect(rebuilt.keyframes[0].transform.screenFit).toEqual({
+      background: "#000000",
+      panX: 0.5,
+      panY: 0,
+      zoom: 3,
+    });
+    expect(rebuilt.keyframes[0].transform).not.toHaveProperty("outerScreenFit");
+  });
+});

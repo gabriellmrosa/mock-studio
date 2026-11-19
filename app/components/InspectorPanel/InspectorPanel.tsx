@@ -14,6 +14,7 @@ import { getStickerLabel, getStickerThumbUrl } from "../../lib/stickers";
 import BackgroundFields, {
   type BackgroundEditor,
 } from "../BackgroundFields/BackgroundFields";
+import { sampleScreenFit } from "../../lib/screen-fit-motion";
 import ColorRow from "../ColorRow/ColorRow";
 import TextControls from "../TextControls/TextControls";
 import {
@@ -58,6 +59,7 @@ import {
   type DeviceThemeOption,
 } from "../../models/device-models";
 import {
+  Callout,
   IconButton,
   InspectorPanelHeader,
   PanelSection,
@@ -277,6 +279,16 @@ export default function InspectorPanel({
           ?.preview) ?? "transparent";
   // As seções que só um aparelho tem: modelo, tela e cor. O parâmetro leva o
   // nome `object` de propósito — o corpo é o de sempre, agora com o tipo certo.
+  // O enquadramento que o painel da tela mostra: o do arquivo e, com um
+  // keyframe selecionado, o zoom, a posição e o fundo dele.
+  const getEditedScreenFit = (object: DeviceObject, screen: "main" | "outer") => {
+    const base =
+      screen === "outer" ? getActiveOuterScreenFit(object) : getActiveScreenFit(object);
+
+    return editedKeyframe
+      ? sampleScreenFit(object.keyframes, editedKeyframe.timeMs, screen, base)
+      : base;
+  };
   const renderDeviceSections = (object: DeviceObject) => (
     <>
         <PanelSection
@@ -314,7 +326,7 @@ export default function InspectorPanel({
             copy={copy}
             image={{
               fileName: object.imageName,
-              fit: getActiveScreenFit(object),
+              fit: getEditedScreenFit(object, "main"),
               hasFile: !isPlaceholderImageUrl(object.imageUrl),
               missingName: getMissingScreenFileName("image", object.pendingScreen),
               onFitChange: onUpdateScreenFit,
@@ -323,6 +335,7 @@ export default function InspectorPanel({
               recommendation: uploadRecommendation,
             }}
             onSourceChange={onScreenSourceChange}
+            keyframeTimeMs={editedKeyframe?.timeMs ?? null}
             rowKey={object.id}
             source={motionTab === "motion" ? object.screenSource : "image"}
             suffix=""
@@ -330,7 +343,7 @@ export default function InspectorPanel({
             uiTheme={uiTheme}
             video={{
               data: object.screenVideo,
-              fit: getActiveScreenFit(object),
+              fit: getEditedScreenFit(object, "main"),
               missingName: getMissingScreenFileName("video", object.pendingScreen),
               onFitChange: onUpdateScreenFit,
               onRemove: onRemoveVideo,
@@ -343,7 +356,7 @@ export default function InspectorPanel({
               copy={copy}
               image={{
                 fileName: object.outerImageName,
-                fit: getActiveOuterScreenFit(object),
+                fit: getEditedScreenFit(object, "outer"),
                 hasFile: object.outerImageUrl !== null,
                 missingName: getMissingScreenFileName(
                   "image",
@@ -355,6 +368,7 @@ export default function InspectorPanel({
                 recommendation: DUO_OUTER_SCREEN_SIZE.join("x"),
               }}
               onSourceChange={onOuterScreenSourceChange}
+              keyframeTimeMs={editedKeyframe?.timeMs ?? null}
               rowKey={`${object.id}-outer`}
               source={
                 motionTab === "motion" ? object.outerScreenSource : "image"
@@ -365,7 +379,7 @@ export default function InspectorPanel({
               uiTheme={uiTheme}
               video={{
                 data: object.outerScreenVideo,
-                fit: getActiveOuterScreenFit(object),
+                fit: getEditedScreenFit(object, "outer"),
                 missingName: getMissingScreenFileName(
                   "video",
                   object.pendingOuterScreen,
@@ -953,6 +967,11 @@ function DeviceSettings({
 }
 
 type ScreenControlsProps = {
+  /**
+   * O instante do keyframe selecionado, quando zoom, posição e fundo editam
+   * ele (no Vídeo); `null`, quando editam o arquivo.
+   */
+  keyframeTimeMs: number | null;
   copy: AppCopy;
   image: {
     fileName: string | null;
@@ -1010,6 +1029,7 @@ type ScreenControlsProps = {
 function ScreenControls({
   copy,
   image,
+  keyframeTimeMs,
   onSourceChange,
   rowKey,
   source,
@@ -1043,6 +1063,7 @@ function ScreenControls({
           >
             {image.hasFile ? (
               <ScreenSettings
+                keyframeTimeMs={keyframeTimeMs}
                 accept={IMAGE_ACCEPT}
                 copy={copy}
                 fit={image.fit}
@@ -1085,6 +1106,7 @@ function ScreenControls({
           >
             {video.data ? (
               <ScreenSettings
+                keyframeTimeMs={keyframeTimeMs}
                 accept={VIDEO_ACCEPT}
                 copy={copy}
                 fit={video.fit}
@@ -1486,6 +1508,7 @@ function ScreenSettings({
   accept,
   copy,
   fit,
+  keyframeTimeMs,
   onFitChange,
   onRemove,
   onReplace,
@@ -1497,6 +1520,7 @@ function ScreenSettings({
   accept: string;
   copy: AppCopy;
   fit: ScreenFit;
+  keyframeTimeMs: number | null;
   onFitChange: (patch: Partial<ScreenFit>) => void;
   onRemove: () => void;
   onReplace: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -1527,6 +1551,16 @@ function ScreenSettings({
         onChange={setTab}
       />
       <SegmentedTabPanel activeId={tab} idPrefix="screen-options">
+          {/* Com um keyframe selecionado, parte do painel grava nele e parte
+              no arquivo: o aviso diz o que vai para onde. */}
+          {keyframeTimeMs !== null ? (
+            <Callout>
+              {(tab === "fit" ? copy.screenFitKeyframeNote : copy.screenCropKeyframeNote).replace(
+                "{time}",
+                `${(keyframeTimeMs / 1000).toFixed(2)}s`,
+              )}
+            </Callout>
+          ) : null}
           {tab === "fit" ? (
             <ScreenFitPanel
               copy={copy}

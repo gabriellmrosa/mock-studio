@@ -1,5 +1,6 @@
 "use client";
 
+import type { AnimatedScreenFit } from "./screen-fit-motion";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
@@ -33,7 +34,8 @@ import {
  */
 
 export type ScreenSource =
-  | { fit?: ScreenFit; kind: "image"; url: string }
+  /** `fitKey` identifica a tela, para o play achar o enquadramento dela. */
+  | { fit?: ScreenFit; fitKey?: string; kind: "image"; url: string }
   /** `key` identifica o objeto, para o controlador achar o vídeo dele. */
   | { fit?: ScreenFit; kind: "video"; key: string; url: string };
 
@@ -55,6 +57,27 @@ export function getScreenVideoElement(key: string) {
  * controlador do canvas, ou a exportação); o compositor só lê.
  */
 const hiddenScreenVideos = new Set<string>();
+
+/**
+ * Zoom, posição e fundo da tela num instante do play ou da exportação, por
+ * tela (a chave é a do vídeo, `getScreenVideoKey`, mesmo com imagem). Como a
+ * pose, vêm de fora a cada quadro sem passar pelo React; o compositor só lê.
+ * Parado, não há nada aqui: vale o enquadramento que chega pelas props.
+ */
+const screenFitOverrides = new Map<string, AnimatedScreenFit>();
+
+export function setScreenFitOverride(key: string, fit: AnimatedScreenFit | null) {
+  if (fit) {
+    screenFitOverrides.set(key, fit);
+  } else {
+    screenFitOverrides.delete(key);
+  }
+}
+
+/** Devolve todas as telas ao enquadramento das props (fim do play ou da exportação). */
+export function clearScreenFitOverrides() {
+  screenFitOverrides.clear();
+}
 
 export function setScreenVideoShown(key: string, shown: boolean) {
   if (shown) {
@@ -318,6 +341,8 @@ function useScreenComposition(
   videoKey: string | null,
   fit: ScreenFit | undefined,
   { cropHeight, cropWidth, flipY }: ScreenTextureOptions,
+  /** A chave da tela no registro de enquadramento do play. */
+  fitKey: string | null,
 ) {
   const renderer = useThree((three) => three.gl);
   const compositor = useMemo(
@@ -347,14 +372,34 @@ function useScreenComposition(
   // recompor — é o único momento em que uma imagem precisa ser redesenhada.
   const frame = useRef<{
     background: string;
+    /** O enquadramento das props, de onde o do play parte. */
+    baseFit: ScreenFit;
     dirty: boolean;
     input: CompositionInput | null;
     layout: ReturnType<typeof getScreenLayout> | null;
+    /** O enquadramento do play já aplicado (vazio: o das props). */
+    overrideKey: string;
     videoKey: string | null;
-  }>({ background, dirty: true, input: null, layout: null, videoKey });
+  }>({
+    background,
+    baseFit: resolvedFit,
+    dirty: true,
+    input: null,
+    layout: null,
+    overrideKey: "",
+    videoKey,
+  });
 
   useEffect(() => {
-    frame.current = { background, dirty: true, input, layout, videoKey };
+    frame.current = {
+      background,
+      baseFit: resolvedFit,
+      dirty: true,
+      input,
+      layout,
+      overrideKey: "",
+      videoKey,
+    };
     // `layout` é recriado a cada render; `layoutKey` é o que muda de verdade.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [background, compositor, input, layoutKey, videoKey]);
@@ -366,6 +411,29 @@ function useScreenComposition(
 
     if (!current.input || !current.layout) {
       return;
+    }
+
+    // O enquadramento do play (ou da exportação) muda a cada quadro: refaz o
+    // layout só quando ele mudou de fato, e volta ao das props quando sai.
+    const override = fitKey ? screenFitOverrides.get(fitKey) : undefined;
+    const overrideKey = override
+      ? `${override.zoom}|${override.panX}|${override.panY}|${override.background}`
+      : "";
+
+    if (overrideKey !== current.overrideKey) {
+      const fitNow = override ? { ...current.baseFit, ...override } : current.baseFit;
+
+      current.overrideKey = overrideKey;
+      current.background = fitNow.background;
+      current.layout = getScreenLayout(
+        current.input.size.width,
+        current.input.size.height,
+        cropWidth,
+        cropHeight,
+        fitNow,
+        flipY,
+      );
+      current.dirty = true;
     }
 
     if (!current.dirty && current.videoKey === null) {
@@ -425,5 +493,6 @@ export function useScreenTexture(
     source.kind === "video" ? source.key : null,
     source.fit,
     options,
+    source.kind === "video" ? source.key : (source.fitKey ?? null),
   );
 }

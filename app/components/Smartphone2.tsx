@@ -124,7 +124,7 @@ function Smartphone2Impl({
   const screenTexture = useScreenTexture(
     videoUrl
       ? { fit: screenFit, kind: "video", key: videoKey ?? videoUrl, url: videoUrl }
-      : { fit: screenFit, kind: "image", url: effectiveImageUrl },
+      : { fit: screenFit, fitKey: videoKey, kind: "image", url: effectiveImageUrl },
     { cropWidth: SCREEN_CROP_W, cropHeight: SCREEN_CROP_H, flipY: true },
   );
 

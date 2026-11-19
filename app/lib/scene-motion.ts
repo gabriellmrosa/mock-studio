@@ -9,6 +9,7 @@ import {
 import { DEFAULT_CAMERA_ORBIT, lerpOrbit, type CameraOrbit } from "./camera-orbit";
 import { DEFAULT_FOLD_ANGLE } from "./scene-presets";
 import type { BackgroundPose } from "./canvas-background";
+import type { AnimatedScreenFit } from "./screen-fit-motion";
 
 /**
  * Motion por objeto: uma lista de keyframes, cada um um retrato dos sete
@@ -106,6 +107,14 @@ export type MotionTransform = {
    * dissolução entre estilos não é um fundo que dê para guardar.
    */
   background?: BackgroundPose;
+  /**
+   * Zoom, posição e fundo da tela (e da tela de fora, no Duo), só depois de
+   * editados com o keyframe selecionado; sem eles, vale o do arquivo. Como o
+   * fundo, o que se vê entre dois keyframes sai de `sampleScreenFit`, que sabe
+   * o enquadramento do arquivo — a interpolação de pose não sabe.
+   */
+  outerScreenFit?: AnimatedScreenFit;
+  screenFit?: AnimatedScreenFit;
 };
 
 export type Keyframe = {
