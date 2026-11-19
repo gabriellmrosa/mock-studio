@@ -39,7 +39,7 @@ export function snapDelta({
   targetsMs: number[];
   thresholdMs: number;
 }): SnapResult {
-  let best: { distance: number; shift: number; target: number } | null = null;
+  let best: { distance: number; edge: number; target: number } | null = null;
 
   for (const edge of edgesMs) {
     const moved = edge + rawDeltaMs;
@@ -48,12 +48,17 @@ export function snapDelta({
       const distance = Math.abs(target - moved);
 
       if (distance <= thresholdMs && (!best || distance < best.distance)) {
-        best = { distance, shift: target - moved, target };
+        best = { distance, edge, target };
       }
     }
   }
 
+  // `alvo - borda`, e não `cru + (alvo - borda movida)`: o deslocamento cru
+  // vem de pixels e tem casas decimais, e somar e tirar de novo deixava um
+  // resto de ponto flutuante (30.000000000000004). Com a borda e o alvo em ms
+  // inteiros, a borda cai exatamente no alvo — e um keyframe grudado no fim da
+  // cena não fica um fio depois dele (o objeto sumiria no último quadro).
   return best
-    ? { deltaMs: rawDeltaMs + best.shift, guideMs: best.target }
+    ? { deltaMs: best.target - best.edge, guideMs: best.target }
     : { deltaMs: fallback(rawDeltaMs), guideMs: null };
 }

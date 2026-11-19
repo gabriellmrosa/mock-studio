@@ -17,6 +17,21 @@ describe("snapDelta", () => {
     expect(result.guideMs).toBe(14_600);
   });
 
+  it("lands exactly on the target, with no floating-point leftover", () => {
+    // O arrasto vem de pixels, então o deslocamento cru tem casas decimais:
+    // somar e subtrair deixava 30.000000000000004 em vez de 30, e um keyframe
+    // um fio depois (ou antes) do fim da cena.
+    const result = snapDelta({
+      edgesMs: [50],
+      fallback: step,
+      rawDeltaMs: -17.889999999994824,
+      targetsMs: [30],
+      thresholdMs: 20,
+    });
+
+    expect(50 + result.deltaMs).toBe(30);
+  });
+
   it("falls back to the usual step when nothing is near", () => {
     expect(
       snapDelta({
