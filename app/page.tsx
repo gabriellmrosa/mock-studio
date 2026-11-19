@@ -136,6 +136,7 @@ import {
 import type { BackgroundEditor } from "./components/BackgroundFields/BackgroundFields";
 import { useUndoHistory } from "./lib/use-undo-history";
 import { getUndoShortcut, isTextEditingTarget } from "./lib/undo-history";
+import { readStorageItem, writeStorageItem } from "./lib/storage";
 import {
   splitScreenFitPatch,
   withCapturedScreenFits,
@@ -309,7 +310,7 @@ export default function Home() {
     : selectedObject;
 
   useEffect(() => {
-    const storedLocale = window.localStorage.getItem("mock-photo-locale");
+    const storedLocale = readStorageItem("mock-photo-locale");
 
     setLocale(
       storedLocale === "pt-BR" || storedLocale === "en-US"
@@ -324,7 +325,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!isInitialized.current) return;
-    window.localStorage.setItem("mock-photo-locale", locale);
+    writeStorageItem("mock-photo-locale", locale);
     document.documentElement.lang = locale;
   }, [locale]);
 

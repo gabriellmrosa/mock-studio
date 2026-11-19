@@ -30,6 +30,11 @@ import {
 } from "@react-three/drei";
 import CameraControlsImpl from "camera-controls";
 import type { AppCopy, Locale, UiTheme } from "../../lib/i18n";
+import {
+  readStorageItem,
+  removeStorageItem,
+  writeStorageItem,
+} from "../../lib/storage";
 import type { MotionFrame } from "../../lib/motion-frame";
 import {
   getActiveOuterScreenFit,
@@ -2034,7 +2039,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   useEffect(() => {
     // Lida depois de montar: no servidor não há localStorage, e ler durante
     // o render quebraria a hidratação.
-    const stored = Number(window.localStorage.getItem(TIMELINE_HEIGHT_KEY));
+    const stored = Number(readStorageItem(TIMELINE_HEIGHT_KEY));
 
     if (stored > 0) {
       setTimelineHeight(clampTimelineHeight(stored));
@@ -2045,9 +2050,9 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     setTimelineHeight(height);
 
     if (height === null) {
-      window.localStorage.removeItem(TIMELINE_HEIGHT_KEY);
+      removeStorageItem(TIMELINE_HEIGHT_KEY);
     } else {
-      window.localStorage.setItem(TIMELINE_HEIGHT_KEY, String(height));
+      writeStorageItem(TIMELINE_HEIGHT_KEY, String(height));
     }
   }
   const videoExportHandlerRef = useRef<VideoExportHandler | null>(null);

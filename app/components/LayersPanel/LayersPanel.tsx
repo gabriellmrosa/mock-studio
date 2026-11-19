@@ -3,6 +3,7 @@
 import "./LayersPanel.css";
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { AppCopy, Locale } from "../../lib/i18n";
+import { readStorageItem, writeStorageItem } from "../../lib/storage";
 import {
   isBackgroundObject,
   isCameraObject,
@@ -107,13 +108,13 @@ export default function LayersPanel({
     // Sincronizar com um sistema externo no mount é justamente o uso previsto
     // para effects; a regra abaixo mira cascatas de render, que não é o caso.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsTemplatesOpen(window.localStorage.getItem(TEMPLATES_OPEN_KEY) === "1");
+    setIsTemplatesOpen(readStorageItem(TEMPLATES_OPEN_KEY) === "1");
   }, []);
 
   function toggleTemplatesOpen() {
     setIsTemplatesOpen((current) => {
       const next = !current;
-      window.localStorage.setItem(TEMPLATES_OPEN_KEY, next ? "1" : "0");
+      writeStorageItem(TEMPLATES_OPEN_KEY, next ? "1" : "0");
       return next;
     });
   }

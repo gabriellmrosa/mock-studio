@@ -10,6 +10,7 @@ import {
   type PointerEvent,
 } from "react";
 import type { AppCopy, UiTheme } from "../../lib/i18n";
+import { readStorageItem, writeStorageItem } from "../../lib/storage";
 import {
   ArrowDown,
   ArrowLeft,
@@ -160,36 +161,31 @@ export default function FloatingCanvasControls({
       : "1.5px solid rgba(0,0,0,0.18)";
 
   // Modo de fundo do export: false = transparente (padrão), true = com fundo.
-  const [exportWithBg, setExportWithBg] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return window.localStorage.getItem(EXPORT_BG_KEY) === "1";
-  });
+  const [exportWithBg, setExportWithBg] = useState<boolean>(
+    () => readStorageItem(EXPORT_BG_KEY) === "1",
+  );
 
   function chooseExportBg(value: boolean) {
     setExportWithBg(value);
-    window.localStorage.setItem(EXPORT_BG_KEY, value ? "1" : "0");
+    writeStorageItem(EXPORT_BG_KEY, value ? "1" : "0");
   }
 
   // Salvar a cena como template junto do export é uma ação paralela: não muda
   // o arquivo gerado, só guarda a composição para reutilizar depois. Vem
   // marcado, e a escolha fica lembrada como a do fundo.
   const [saveTemplateOnExport, setSaveTemplateOnExport] = useState<boolean>(
-    () => {
-      if (typeof window === "undefined") return true;
-      return window.localStorage.getItem(EXPORT_TEMPLATE_KEY) !== "0";
-    },
+    () => readStorageItem(EXPORT_TEMPLATE_KEY) !== "0",
   );
 
   function chooseSaveTemplate(value: boolean) {
     setSaveTemplateOnExport(value);
-    window.localStorage.setItem(EXPORT_TEMPLATE_KEY, value ? "1" : "0");
+    writeStorageItem(EXPORT_TEMPLATE_KEY, value ? "1" : "0");
   }
 
   // O tamanho da imagem também fica lembrado: quem exporta em 4K costuma
   // exportar sempre em 4K.
   const [photoSizeId, setPhotoSizeId] = useState<string>(() => {
-    if (typeof window === "undefined") return EXPORT_OPTIONS[0].id;
-    const stored = window.localStorage.getItem(EXPORT_SIZE_KEY);
+    const stored = readStorageItem(EXPORT_SIZE_KEY);
     return EXPORT_OPTIONS.some((option) => option.id === stored)
       ? stored!
       : EXPORT_OPTIONS[0].id;
@@ -197,7 +193,7 @@ export default function FloatingCanvasControls({
 
   function choosePhotoSize(id: string) {
     setPhotoSizeId(id);
-    window.localStorage.setItem(EXPORT_SIZE_KEY, id);
+    writeStorageItem(EXPORT_SIZE_KEY, id);
   }
 
   // As escolhas vivem aqui, e não no dialog: ele é desmontado ao fechar e
@@ -247,8 +243,7 @@ export default function FloatingCanvasControls({
   const hideUiLabel = isUiHidden ? copy.showUiButton : copy.hideUiButton;
 
   const [corner, setCorner] = useState<Corner>(() => {
-    if (typeof window === "undefined") return "bottom-right";
-    const stored = window.localStorage.getItem(HIDE_UI_CORNER_KEY);
+    const stored = readStorageItem(HIDE_UI_CORNER_KEY);
     return isCorner(stored) ? stored : "bottom-right";
   });
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
@@ -334,7 +329,7 @@ export default function FloatingCanvasControls({
     if (didDrag.current) {
       const nextCorner = nearestCorner(event.clientX, event.clientY);
       setCorner(nextCorner);
-      window.localStorage.setItem(HIDE_UI_CORNER_KEY, nextCorner);
+      writeStorageItem(HIDE_UI_CORNER_KEY, nextCorner);
     }
 
     dragStart.current = null;
