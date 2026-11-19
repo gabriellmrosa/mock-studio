@@ -288,6 +288,13 @@ export type AppCopy = {
   canvasInitialLoadingLabel: string;
   canvasObjectLoadingLabel: string;
   canvasExportLoadingLabel: string;
+  canvasWebglLostTitle: string;
+  canvasWebglLostBody: string;
+  canvasReloadViewer: string;
+  canvasErrorTitle: string;
+  canvasErrorBody: string;
+  canvasRetryViewer: string;
+  canvasReloadPage: string;
   photoExportSuccess: string;
   photoExportError: string;
   dismissSnackbar: string;
@@ -605,6 +612,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     canvasInitialLoadingLabel: "Preparando cena",
     canvasObjectLoadingLabel: "Atualizando visualização",
     canvasExportLoadingLabel: "Tirando a foto",
+    canvasWebglLostTitle: "O visualizador 3D foi interrompido",
+    canvasWebglLostBody:
+      "Isso costuma acontecer quando o computador suspende ou falta memória de vídeo. Sua cena continua aqui — recarregue o visualizador para voltar.",
+    canvasReloadViewer: "Recarregar visualizador",
+    canvasErrorTitle: "Algo deu errado na visualização 3D",
+    canvasErrorBody:
+      "Tente recarregar o visualizador. Se o problema continuar, recarregue a página.",
+    canvasRetryViewer: "Tentar novamente",
+    canvasReloadPage: "Recarregar página",
     photoExportSuccess:
       "Foto exportada com sucesso. Confira a pasta Downloads.",
     photoExportError: "Não foi possível exportar a foto. Tente novamente.",
@@ -986,6 +1002,15 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     canvasInitialLoadingLabel: "Preparing scene",
     canvasObjectLoadingLabel: "Refreshing preview",
     canvasExportLoadingLabel: "Taking photo",
+    canvasWebglLostTitle: "The 3D viewer was interrupted",
+    canvasWebglLostBody:
+      "This usually happens when the computer sleeps or runs low on graphics memory. Your scene is still here — reload the viewer to continue.",
+    canvasReloadViewer: "Reload viewer",
+    canvasErrorTitle: "Something went wrong in the 3D view",
+    canvasErrorBody:
+      "Try reloading the viewer. If the problem persists, reload the page.",
+    canvasRetryViewer: "Try again",
+    canvasReloadPage: "Reload page",
     photoExportSuccess:
       "Photo exported successfully. Check your Downloads folder.",
     photoExportError: "Could not export the photo. Please try again.",

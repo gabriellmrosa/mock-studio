@@ -1,0 +1,96 @@
+.canvas-recovery-backdrop {
+  align-items: center;
+  background: var(--background);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: var(--space-6);
+  position: absolute;
+  z-index: 25;
+}
+
+.canvas-recovery-card {
+  background: var(--sidebar-bg);
+  border: 1px solid var(--sidebar-border);
+  border-radius: var(--radius-md);
+  color: var(--foreground);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 24rem;
+  padding: var(--space-5);
+  width: 100%;
+}
+
+.canvas-recovery-header {
+  align-items: center;
+  display: flex;
+  gap: var(--space-2);
+}
+
+.canvas-recovery-icon {
+  color: var(--sidebar-muted);
+  flex-shrink: 0;
+}
+
+.canvas-recovery-title {
+  color: var(--foreground);
+  font-size: var(--font-size-300);
+  font-weight: var(--font-semibold);
+  margin: 0;
+}
+
+.canvas-recovery-body {
+  color: var(--sidebar-muted);
+  font-size: var(--font-size-200);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.canvas-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-top: var(--space-1);
+}
+
+.canvas-recovery-button {
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: var(--font-size-150);
+  letter-spacing: 0.04em;
+  padding: var(--space-2) var(--space-3);
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+  white-space: nowrap;
+}
+
+.canvas-recovery-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline-offset: 2px;
+}
+
+.canvas-recovery-button-primary {
+  background: var(--button-active-bg);
+  border-color: var(--button-active-bg);
+  color: var(--button-active-fg);
+}
+
+.canvas-recovery-button-primary:hover {
+  opacity: 0.9;
+}
+
+.canvas-recovery-button-secondary {
+  background: transparent;
+  border-color: var(--button-border);
+  color: var(--button-fg);
+}
+
+.canvas-recovery-button-secondary:hover {
+  background: var(--surface-hover);
+  border-color: var(--button-border-hover);
+}

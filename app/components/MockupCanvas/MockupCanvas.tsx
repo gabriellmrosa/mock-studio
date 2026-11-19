@@ -35,6 +35,10 @@ import {
   removeStorageItem,
   writeStorageItem,
 } from "../../lib/storage";
+import {
+  CanvasErrorBoundary,
+  CanvasRecoveryCard,
+} from "./CanvasErrorBoundary";
 import type { MotionFrame } from "../../lib/motion-frame";
 import {
   getActiveOuterScreenFit,
@@ -2063,6 +2067,42 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const [videoProgress, setVideoProgress] =
     useState<VideoExportProgress | null>(null);
   const videoAbortRef = useRef<AbortController | null>(null);
+  // Recuperação do visualizador 3D: trocar a `key` remonta apenas o <Canvas>,
+  // mantendo a cena, os keyframes e as telas em memória.
+  const [canvasRecoveryKey, setCanvasRecoveryKey] = useState(0);
+  const [isWebGlLost, setIsWebGlLost] = useState(false);
+  const webglCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => () => webglCleanupRef.current?.(), []);
+
+  const handleReloadViewer = useCallback(() => {
+    webglCleanupRef.current?.();
+    webglCleanupRef.current = null;
+    setIsWebGlLost(false);
+    setCanvasRecoveryKey((current) => current + 1);
+  }, []);
+
+  const attachWebGlListeners = useCallback((element: HTMLCanvasElement) => {
+    webglCleanupRef.current?.();
+
+    const handleContextLost = (event: Event) => {
+      // `preventDefault` autoriza o navegador a restaurar o contexto sozinho
+      // assim que a GPU voltar (ex.: ao acordar o Mac).
+      event.preventDefault();
+      setIsWebGlLost(true);
+    };
+    const handleContextRestored = () => {
+      setIsWebGlLost(false);
+    };
+
+    element.addEventListener("webglcontextlost", handleContextLost);
+    element.addEventListener("webglcontextrestored", handleContextRestored);
+
+    webglCleanupRef.current = () => {
+      element.removeEventListener("webglcontextlost", handleContextLost);
+      element.removeEventListener("webglcontextrestored", handleContextRestored);
+    };
+  }, []);
   // Estável: o Dialog reassina o teclado quando o callback muda.
   const cancelVideoExport = useCallback(() => videoAbortRef.current?.abort(), []);
   // Mesma conta da timeline: até o último keyframe ou o fim do último vídeo.
@@ -2395,12 +2435,21 @@ export default function MockupCanvas(props: MockupCanvasProps) {
             : undefined
         }
       >
+      <CanvasErrorBoundary
+        title={props.copy.canvasErrorTitle}
+        body={props.copy.canvasErrorBody}
+        retryLabel={props.copy.canvasRetryViewer}
+        reloadPageLabel={props.copy.canvasReloadPage}
+        onRetry={handleReloadViewer}
+      >
       <Canvas
+        key={canvasRecoveryKey}
         camera={{ fov: CAMERA_FOV, position: CAMERA_POSITION }}
         dpr={[1, 2]}
         gl={{ alpha: true, antialias: true, preserveDrawingBuffer: true }}
         onCreated={({ gl }) => {
           gl.localClippingEnabled = true;
+          attachWebGlListeners(gl.domElement);
         }}
       >
         <SceneBridge
@@ -2420,8 +2469,20 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           sceneFitKey={sceneFitKey}
         />
       </Canvas>
+      </CanvasErrorBoundary>
       </div>
       </div>
+
+      {isWebGlLost ? (
+        <CanvasRecoveryCard
+          title={props.copy.canvasWebglLostTitle}
+          body={props.copy.canvasWebglLostBody}
+          primaryLabel={props.copy.canvasReloadViewer}
+          reloadPageLabel={props.copy.canvasReloadPage}
+          onPrimaryAction={handleReloadViewer}
+          onReloadPage={() => window.location.reload()}
+        />
+      ) : null}
 
       {/* Não aparece: só marca o que fica visível do canvas no Estático, para
           o alinhamento medir (ver measureAlignmentArea). */}
