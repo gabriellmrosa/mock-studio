@@ -577,6 +577,7 @@ function SceneBridge({
     grid,
   );
   const visibleObjects = objects.filter((object) => object.isVisible);
+  const sceneDurationMs = useMemo(() => getSceneMotionDuration(objects), [objects]);
   // A posição de partida de um aparelho depende do índice entre os aparelhos
   // visíveis; o texto não entra na conta, ou criar um texto empurraria os
   // aparelhos para outro lugar.
@@ -627,6 +628,7 @@ function SceneBridge({
                       groupsRef={objectGroupsRef}
                       index={0}
                       object={object}
+                      sceneDurationMs={sceneDurationMs}
                       spawnOverrides={spawnOverrides}
                       startedAt={motionStartedAt}
                     />
@@ -698,6 +700,7 @@ function SceneBridge({
                       groupsRef={objectGroupsRef}
                       index={0}
                       object={object}
+                      sceneDurationMs={sceneDurationMs}
                       spawnOverrides={spawnOverrides}
                       startedAt={motionStartedAt}
                     />
@@ -780,6 +783,7 @@ function SceneBridge({
                     groupsRef={objectGroupsRef}
                     index={index}
                     object={object}
+                    sceneDurationMs={sceneDurationMs}
                     spawnOverrides={spawnOverrides}
                     startedAt={motionStartedAt}
                   />
@@ -1041,12 +1045,14 @@ function MotionDriver({
   groupsRef,
   index,
   object,
+  sceneDurationMs,
   spawnOverrides,
   startedAt,
 }: {
   groupsRef: { current: Map<string, THREE.Group> };
   index: number;
   object: SceneObject;
+  sceneDurationMs: number;
   spawnOverrides: SpawnOverrides;
   startedAt: number;
 }) {
@@ -1054,11 +1060,15 @@ function MotionDriver({
     const group = groupsRef.current.get(object.id);
 
     if (group) {
+      // Preso no fim da cena, como o vídeo: o play para 80 ms depois dele, e
+      // esses últimos quadros caíam depois da trilha de quem termina junto
+      // com a cena — o objeto saía de cena e, parado, o React não reaplicava
+      // a opacidade (o valor dele não mudou), deixando a cena vazia no fim.
       applyMotionPose(
         group,
         object,
         index,
-        Date.now() - startedAt,
+        getPlaybackTimeMs(startedAt, Date.now(), sceneDurationMs),
         spawnOverrides,
       );
     }
