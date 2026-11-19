@@ -56,8 +56,6 @@ type LayersPanelProps = {
   onToggleObjectVisibility: (id: string) => void;
   selectedObjectId: string;
   templates?: SceneTemplate[];
-  /** Texto do estado vazio; muda com o modo, já que cada um tem sua lista. */
-  templatesEmptyHint?: string;
 };
 
 const TEMPLATES_OPEN_KEY = "mock-photo-templates-open";
@@ -87,7 +85,6 @@ export default function LayersPanel({
   onToggleObjectVisibility,
   selectedObjectId,
   templates = [],
-  templatesEmptyHint,
 }: LayersPanelProps) {
   const [editingObjectId, setEditingObjectId] = useState<string | null>(null);
 
@@ -432,11 +429,6 @@ export default function LayersPanel({
               onToggleOpen={toggleTemplatesOpen}
             >
               <div className="templates-dock-body">
-              {templates.length === 0 ? (
-                <p className="editor-sidebar-muted templates-empty-hint">
-                  {templatesEmptyHint ?? copy.templatesEmptyHint}
-                </p>
-              ) : null}
               <div className="layers-stack">
                 {templates.map((template) => (
                   <div

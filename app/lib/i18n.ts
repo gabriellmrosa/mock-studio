@@ -97,8 +97,6 @@ export type AppCopy = {
   exportSizeLabel: string;
   dialogCancel: string;
   templatesSectionTitle: string;
-  templatesEmptyHint: string;
-  templatesEmptyHintMotion: string;
   modeSwitchTitle: string;
   modeSwitchBodyStatic: string;
   modeSwitchBodyMotion: string;
@@ -403,8 +401,6 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     exportSizeLabel: "Tamanho",
     dialogCancel: "Cancelar",
     templatesSectionTitle: "Templates",
-    templatesEmptyHint: "Salve a cena atual para reutilizar depois.",
-    templatesEmptyHintMotion: "Salve a animação atual para reutilizar depois.",
     modeSwitchTitle: "Sair sem salvar template?",
     modeSwitchBodyStatic: "A cena do modo Foto tem alterações que não estão salvas em nenhum template.",
     modeSwitchBodyMotion: "A animação tem alterações que não estão salvas em nenhum template.",
@@ -777,8 +773,6 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     exportSizeLabel: "Size",
     dialogCancel: "Cancel",
     templatesSectionTitle: "Templates",
-    templatesEmptyHint: "Save the current scene to reuse it later.",
-    templatesEmptyHintMotion: "Save the current animation to reuse it later.",
     modeSwitchTitle: "Leave without saving a template?",
     modeSwitchBodyStatic: "The Photo scene has changes that are not saved in any template.",
     modeSwitchBodyMotion: "The animation has changes that are not saved in any template.",

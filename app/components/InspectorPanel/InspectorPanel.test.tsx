@@ -249,8 +249,6 @@ const copy: AppCopy = {
   exportTransparent: "Transparent",
   saveAsTemplate: "Save as template",
   templatesSectionTitle: "Templates",
-  templatesEmptyHint: "Save the current scene to reuse it later.",
-  templatesEmptyHintMotion: "Save the current animation.",
   modeSwitchTitle: "Leave without saving a template?",
   modeSwitchBodyStatic: "Static has unsaved changes.",
   modeSwitchBodyMotion: "Motion has unsaved changes.",

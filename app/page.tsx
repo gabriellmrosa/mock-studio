@@ -1635,11 +1635,6 @@ export default function Home() {
           onSaveTemplate={handleRequestSaveTemplate}
           selectedObjectId={selectedObject?.id ?? ""}
           templates={modeTemplates}
-          templatesEmptyHint={
-            motionTab === "motion"
-              ? copy.templatesEmptyHintMotion
-              : copy.templatesEmptyHint
-          }
         />
       )}
 

@@ -225,12 +225,6 @@
   text-transform: uppercase;
 }
 
-/* Estado vazio da seção de templates */
-.templates-empty-hint {
-  line-height: 1.4;
-  margin: 0 0 var(--space-2);
-}
-
 /* Botão de salvar template: fica sempre no corpo da seção, inclusive com a
    lista cheia — se vivesse só no empty state não haveria como salvar o
    segundo template. O espaçamento vem do gap do grupo. */
@@ -266,10 +260,6 @@
 .templates-import-link:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
   outline-offset: 2px;
-}
-
-.templates-dock-body .templates-empty-hint {
-  text-align: center;
 }
 
 /* Com muitos templates a lista rola dentro da doca em vez de crescer sem fim. */
