@@ -622,4 +622,29 @@ describe("Home page layers and selection flow", () => {
       expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:1");
     });
   });
+
+  describe("space playback shortcut", () => {
+    it("does not intercept Space while a modal dialog is open", () => {
+      render(<Home />);
+
+      const modal = document.createElement("div");
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
+      const button = document.createElement("button");
+      modal.appendChild(button);
+      document.body.appendChild(modal);
+
+      const event = new KeyboardEvent("keydown", {
+        bubbles: true,
+        cancelable: true,
+        code: "Space",
+        key: " ",
+      });
+
+      button.dispatchEvent(event);
+      modal.remove();
+
+      expect(event.defaultPrevented).toBe(false);
+    });
+  });
 });

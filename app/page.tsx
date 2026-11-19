@@ -1580,7 +1580,8 @@ export default function Home() {
         !event.metaKey &&
         !event.ctrlKey &&
         !event.altKey &&
-        // Com um diálogo aberto o espaço é dos botões dele.
+        // Com um diálogo modal aberto o espaço é dos controles dele.
+        !document.querySelector('[aria-modal="true"]') &&
         !target?.closest(
           "input, textarea, select, [contenteditable='true'], [role='alertdialog']",
         )
