@@ -184,6 +184,13 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   Movimento escreve nelas. Não criar atalhos que liguem um ao outro: o
   primeiro keyframe já foi um alias da pose estática, e reordenar keyframes
   passou a reescrever o objeto.
+- **O objeto só está em cena enquanto a trilha dele está na régua**
+  (`sampleDisplayedMotion`): some antes do primeiro keyframe e depois do
+  último (limites inclusivos); com um keyframe só, fica dele até o fim; sem
+  keyframes, sempre. O clipe de vídeo não estende a trilha. É só exibição:
+  editar usa `sampleMotion`, que segura a primeira e a última pose, para um
+  keyframe novo fora da trilha não nascer invisível. Até a 2.5 o objeto
+  segurava a pose final depois do último keyframe (decisão do usuário mudar).
 - No Movimento o canvas mostra a cena no instante do playhead. É uma
   sobreposição de exibição: olhar um keyframe nunca muda o objeto.
 - Campos aninhados do objeto (enquadramento, vídeo) são atualizados a partir

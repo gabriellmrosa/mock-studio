@@ -539,22 +539,39 @@ export function sampleMotion(
 
 /**
  * A pose que a cena mostra num instante. Como um clipe num editor de vídeo,
- * um objeto animado só existe a partir do primeiro keyframe: antes dele fica
- * fora de cena (opacidade 0), e arrastar a trilha para frente deixa o espaço
- * de trás vazio. Depois do último keyframe ele continua na pose final — num
- * mockup, a composição final é o ponto de chegada, não uma saída de cena.
+ * um objeto animado só existe enquanto a trilha dele está na régua: antes do
+ * primeiro keyframe e depois do último fica fora de cena (opacidade 0). O que
+ * a timeline desenha é o que o vídeo mostra — arrastar a trilha para frente
+ * deixa o espaço de trás vazio, e uma trilha que acaba antes das outras tira o
+ * objeto de cena ali (decisão do usuário; até a 2.5 ele segurava a pose final).
+ * Os dois limites são inclusivos: o objeto que termina junto com a cena
+ * aparece no último quadro.
+ *
+ * Com um keyframe só a trilha não tem comprimento: o objeto entra nele e fica
+ * até o fim. Sem keyframes, não há o que amostrar (`null`), e ele fica sempre.
+ * O clipe de vídeo da tela não estende a trilha: depois do último keyframe o
+ * aparelho sai, com ou sem vídeo.
  *
  * Só para exibir: editar (criar keyframe no playhead) usa `sampleMotion`, que
- * segura a primeira pose — um keyframe novo antes do primeiro não pode nascer
- * invisível.
+ * segura a primeira e a última pose — um keyframe novo fora da trilha não pode
+ * nascer invisível.
  */
 export function sampleDisplayedMotion(
   object: SceneObject,
   timeMs: number,
 ): MotionTransform | null {
   const sampled = sampleMotion(object, timeMs);
+  const { keyframes } = object;
 
-  if (sampled && timeMs < object.keyframes[0].timeMs) {
+  if (!sampled) {
+    return null;
+  }
+
+  const isBeforeTrack = timeMs < keyframes[0].timeMs;
+  const isAfterTrack =
+    keyframes.length > 1 && timeMs > keyframes[keyframes.length - 1].timeMs;
+
+  if (isBeforeTrack || isAfterTrack) {
     return { ...sampled, opacity: 0 };
   }
 

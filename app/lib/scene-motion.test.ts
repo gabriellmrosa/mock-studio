@@ -215,11 +215,28 @@ describe("scene-motion", () => {
       expect(sampleDisplayedMotion(object, 1000)?.opacity).toBe(1);
     });
 
-    it("stays on its final pose after the last keyframe", () => {
-      expect(sampleDisplayedMotion(object, 99999)).toMatchObject({
-        opacity: 1,
+    it("leaves the scene after the last keyframe, on its final pose", () => {
+      const last = object.keyframes[object.keyframes.length - 1].timeMs;
+
+      // O último quadro da trilha ainda mostra o objeto (limite inclusivo).
+      expect(sampleDisplayedMotion(object, last)?.opacity).toBe(1);
+      expect(sampleDisplayedMotion(object, last + 1)).toMatchObject({
+        opacity: 0,
         positionX: 5,
       });
+    });
+
+    it("keeps an object with a single keyframe until the end of the scene", () => {
+      const single = withKeyframes([[1000, 2]]);
+
+      expect(sampleDisplayedMotion(single, 999)?.opacity).toBe(0);
+      expect(sampleDisplayedMotion(single, 99999)?.opacity).toBe(1);
+    });
+
+    it("leaves editing alone: a keyframe added after the last is visible", () => {
+      const { keyframes } = insertKeyframe(object, 99999);
+
+      expect(keyframes[keyframes.length - 1].transform.opacity).toBe(1);
     });
 
     it("leaves editing alone: a keyframe added before the first is visible", () => {
