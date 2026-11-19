@@ -38,6 +38,11 @@ import {
   normalizeCanvasGrid,
   type CanvasGrid,
 } from "./canvas-grid";
+import {
+  normalizeCanvasBackground,
+  toStoredCanvasBackground,
+  type CanvasBackground,
+} from "./canvas-background";
 import { normalizeMotionFrame, type MotionFrame } from "./motion-frame";
 import { DEFAULT_FOLD_ANGLE } from "./scene-presets";
 
@@ -209,6 +214,8 @@ export function isTemplateText(
 }
 
 export type SceneTemplate = {
+  /** O estilo do fundo; sem ele (templates de antes, ou o chão), o chão. */
+  background?: CanvasBackground;
   backgroundColor: string | null;
   camera: CameraPose | null;
   createdAt: number;
@@ -370,6 +377,7 @@ function withScreen(key: "screen" | "outerScreen", screen: TemplateScreen | unde
 }
 
 export function createSceneTemplate({
+  background = null,
   backgroundColor = null,
   camera = null,
   frame = null,
@@ -379,6 +387,7 @@ export function createSceneTemplate({
   name,
   objects,
 }: {
+  background?: CanvasBackground | null;
   backgroundColor?: string | null;
   camera?: CameraPose | null;
   frame?: MotionFrame | null;
@@ -388,7 +397,11 @@ export function createSceneTemplate({
   name: string;
   objects: SceneObject[];
 }): SceneTemplate {
+  const storedBackground = background ? toStoredCanvasBackground(background) : null;
+
   return {
+    // Como a grade: só o que difere do chão de sempre.
+    ...(storedBackground ? { background: storedBackground } : {}),
     backgroundColor,
     camera,
     createdAt: Date.now(),
@@ -558,8 +571,12 @@ export function getTemplateSnapshot(
   backgroundColor: string | null,
   frame: MotionFrame | null = null,
   grid: CanvasGrid | null = null,
+  background: CanvasBackground | null = null,
 ) {
+  const storedBackground = background ? toStoredCanvasBackground(background) : null;
+
   return JSON.stringify({
+    ...(storedBackground ? { background: storedBackground } : {}),
     backgroundColor,
     ...(mode === "motion" && frame ? { frame } : {}),
     ...(grid && !isDefaultCanvasGrid(grid) ? { grid } : {}),
@@ -666,12 +683,21 @@ function isValidKeyframe(value: unknown): value is TemplateKeyframe {
  */
 export function normalizeTemplate(template: SceneTemplate): SceneTemplate {
   const mode: TemplateMode = template.mode === "motion" ? "motion" : "static";
-  const { frame: storedFrame, grid: storedGrid, ...fields } = template;
+  const {
+    background: storedBackground,
+    frame: storedFrame,
+    grid: storedGrid,
+    ...fields
+  } = template;
   const frame = mode === "motion" ? normalizeMotionFrame(storedFrame) : null;
   const grid = storedGrid ? normalizeCanvasGrid(storedGrid) : null;
+  const background = storedBackground
+    ? toStoredCanvasBackground(normalizeCanvasBackground(storedBackground))
+    : null;
 
   return {
     ...fields,
+    ...(background ? { background } : {}),
     ...(frame ? { frame } : {}),
     ...(grid && !isDefaultCanvasGrid(grid) ? { grid } : {}),
     mode,

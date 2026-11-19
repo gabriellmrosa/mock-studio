@@ -19,12 +19,28 @@ import {
   Camera,
   Eye,
   EyeOff,
+  Grid3x3,
+  RotateCw,
   ScanSearch,
+  Square,
   Video,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { ResetButton, Tooltip } from "../EditorPrimitives/EditorPrimitives";
+import {
+  ResetButton,
+  SegmentedTabs,
+  Switch,
+  Tooltip,
+} from "../EditorPrimitives/EditorPrimitives";
+import {
+  DEFAULT_GRADIENT_ANGLE,
+  getCanvasBackgroundCss,
+  getDefaultGradientColor,
+  type CanvasBackground,
+  type CanvasBackgroundPatch,
+  type CanvasBackgroundStyle,
+} from "../../lib/canvas-background";
 import {
   DEFAULT_CANVAS_GRID,
   getGridLineColors,
@@ -42,6 +58,8 @@ import {
 } from "../../lib/video-export";
 
 type FloatingCanvasControlsProps = {
+  /** O estilo do fundo: chão 3D ou liso (com degradê ou não). */
+  background: CanvasBackground;
   bgColor: string | null;
   copy: AppCopy;
   /** As linhas do chão: a cor (ou automática) e a opacidade. */
@@ -50,6 +68,8 @@ type FloatingCanvasControlsProps = {
   onBgColorChange: (color: string) => void;
   /** Muda só o que veio no patch; o resto da grade fica como está. */
   onGridChange: (patch: Partial<CanvasGrid>) => void;
+  /** Muda só o que veio no patch, a partir do fundo de agora. */
+  onBackgroundChange: (patch: CanvasBackgroundPatch) => void;
   locale: Locale;
   onCreateProjectLink?: () => Promise<string>;
   onFitToScene: () => void;
@@ -111,6 +131,7 @@ function nearestCorner(x: number, y: number): Corner {
 }
 
 export default function FloatingCanvasControls({
+  background,
   bgColor,
   copy,
   grid,
@@ -118,6 +139,7 @@ export default function FloatingCanvasControls({
   locale,
   onBgColorChange,
   onGridChange,
+  onBackgroundChange,
   onCreateProjectLink,
   onFitToScene,
   onPanDown,
@@ -164,6 +186,9 @@ export default function FloatingCanvasControls({
   }, [isAppearanceOpen]);
 
   const displayColor = bgColor ?? DEFAULT_BG[uiTheme];
+  // O que os quadradinhos de fundo mostram (botão e Exportar): o degradê, se houver.
+  const displayBackground = getCanvasBackgroundCss(displayColor, background);
+  const gradient = background.style === "flat" ? background.gradient : null;
   // A cor que a grade tem quando é automática: é o que o seletor mostra.
   const autoGridColor = getGridLineColors(displayColor, DEFAULT_CANVAS_GRID).section;
   const circleBorder =
@@ -454,7 +479,7 @@ export default function FloatingCanvasControls({
             <div
               className="canvas-color-swatch"
               style={{
-                background: displayColor,
+                background: displayBackground,
                 border: circleBorder,
               }}
             />
@@ -471,6 +496,23 @@ export default function FloatingCanvasControls({
                 <h3 className="canvas-appearance-title">
                   {copy.canvasBackgroundSection}
                 </h3>
+                <SegmentedTabs<CanvasBackgroundStyle>
+                  ariaLabel={copy.canvasBackgroundStyleLabel}
+                  items={[
+                    {
+                      icon: <Grid3x3 size={14} />,
+                      id: "floor",
+                      label: copy.canvasBackgroundFloor,
+                    },
+                    {
+                      icon: <Square size={14} />,
+                      id: "flat",
+                      label: copy.canvasBackgroundFlat,
+                    },
+                  ]}
+                  value={background.style}
+                  onChange={(style) => onBackgroundChange({ style })}
+                />
                 <ColorRow
                   ariaLabel={copy.backgroundColorButton}
                   label=""
@@ -479,8 +521,49 @@ export default function FloatingCanvasControls({
                   value={displayColor}
                   onChange={onBgColorChange}
                 />
+                {background.style === "flat" ? (
+                  <Switch
+                    checked={gradient !== null}
+                    label={copy.canvasGradientLabel}
+                    onChange={(checked) =>
+                      onBackgroundChange({
+                        gradient: checked
+                          ? {
+                              angle: DEFAULT_GRADIENT_ANGLE,
+                              color: getDefaultGradientColor(displayColor),
+                            }
+                          : null,
+                      })
+                    }
+                  />
+                ) : null}
+                {gradient ? (
+                  <>
+                    <ColorRow
+                      ariaLabel={copy.canvasGradientColorLabel}
+                      label=""
+                      layout="field"
+                      uiTheme={uiTheme}
+                      value={gradient.color}
+                      onChange={(color) => onBackgroundChange({ gradient: { color } })}
+                    />
+                    <NumberField
+                      ariaLabel={copy.canvasGradientAngleLabel}
+                      icon={<RotateCw size={14} />}
+                      max={360}
+                      min={0}
+                      suffix="°"
+                      value={gradient.angle}
+                      onChange={(angle) => {
+                        if (angle !== null) onBackgroundChange({ gradient: { angle } });
+                      }}
+                    />
+                  </>
+                ) : null}
               </section>
 
+              {/* No fundo liso não há chão: a grade só existe no Chão 3D. */}
+              {background.style === "floor" ? (
               <section className="canvas-appearance-section">
                 <div className="canvas-appearance-heading">
                   <h3 className="canvas-appearance-title">
@@ -520,6 +603,7 @@ export default function FloatingCanvasControls({
                   }}
                 />
               </section>
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -541,7 +625,7 @@ export default function FloatingCanvasControls({
       )}
 
       <ExportDialog
-        backgroundSwatch={{ background: displayColor, border: circleBorder }}
+        backgroundSwatch={{ background: displayBackground, border: circleBorder }}
         copy={copy}
         exportWithBg={exportWithBg}
         isOpen={isExportOpen}

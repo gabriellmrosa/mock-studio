@@ -100,6 +100,12 @@ import {
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
 import { getGridLineColors, type CanvasGrid } from "../../lib/canvas-grid";
 import {
+  getCanvasBackgroundCss,
+  hasFloorGrid,
+  type CanvasBackground,
+  type CanvasBackgroundPatch,
+} from "../../lib/canvas-background";
+import {
   DEFAULT_CAMERA_FOV,
   lookAtToOrbit,
   orbitToLookAt,
@@ -125,8 +131,8 @@ import {
 
 /** Um pedido de exportação de vídeo, já com tudo decidido pelo modal. */
 export type VideoExportRequest = {
-  /** Cor de fundo, ou `null` para transparente. */
-  background: string | null;
+  /** O fundo (cor e estilo), ou `null` para transparente. */
+  background: { color: string; style: CanvasBackground } | null;
   frameTimes: number[];
   onProgress: (done: number, total: number) => void;
   settings: VideoExportSettings;
@@ -144,9 +150,13 @@ export type ExportPreset = {
   // Quando false/omitido, o fundo fica transparente (comportamento padrão).
   includeBackground?: boolean;
   backgroundColor?: string;
+  /** O estilo do fundo: um degradê sai pintado por baixo da cena. */
+  canvasBackground?: CanvasBackground;
 };
 
 type MockupCanvasProps = {
+  /** O estilo do fundo: chão 3D (com as linhas) ou liso, com degradê ou não. */
+  background: CanvasBackground;
   bgColor: string | null;
   copy: AppCopy;
   /** As linhas do chão: a cor (ou automática) e a opacidade. */
@@ -156,6 +166,7 @@ type MockupCanvasProps = {
   objects: SceneObject[];
   onBgColorChange: (color: string | null) => void;
   onGridChange: (patch: Partial<CanvasGrid>) => void;
+  onBackgroundChange: (patch: CanvasBackgroundPatch) => void;
   onCameraApiReady: (api: CameraApi | null) => void;
   /** A câmera parou depois de um gesto: quem mostra a órbita a lê de novo. */
   onCameraRest?: () => void;
@@ -419,6 +430,7 @@ function OpacityController({
 
 function SceneBridge({
   alignmentAreaRef,
+  background,
   copy,
   grid,
   modeFrameRef,
@@ -470,14 +482,8 @@ function SceneBridge({
   }
 
   useEffect(() => {
-    onExportReady(async ({ height, label, width, includeBackground, backgroundColor }) => {
-      await exportCanvasPhoto({
-        camera,
-        gl,
-        gridRef,
-        preset: { height, label, width, includeBackground, backgroundColor },
-        scene,
-      });
+    onExportReady(async (preset) => {
+      await exportCanvasPhoto({ camera, gl, gridRef, preset, scene });
     });
 
     return () => {
@@ -590,6 +596,8 @@ function SceneBridge({
       <Environment preset="studio" />
       <Grid
         ref={gridRef}
+        // No fundo liso não há chão. As exportações leem esta visibilidade.
+        visible={hasFloorGrid(background)}
         position={[0, -300, 0]}
         cellSize={50}
         cellThickness={0.5}
@@ -1922,8 +1930,14 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     flushSync(() => undefined);
     modeFrameRef.current?.(pendingCameraPose);
   }, [isFramed, pendingCameraPose]);
+  // O fundo escolhido, como CSS (cor ou degradê). Sem cor escolhida, o chão
+  // usa o palco do tema; o liso, a cor padrão: ele é sempre um fundo de fato.
+  const stageBackground =
+    canvasBgColor || props.background.style === "flat"
+      ? getCanvasBackgroundCss(canvasBgColor ?? DEFAULT_BG[props.uiTheme], props.background)
+      : null;
   const stageClass =
-    canvasBgColor && !isFramed
+    stageBackground && !isFramed
       ? "mockup-stage relative flex-1 h-screen"
       : `mockup-stage relative flex-1 h-screen ${props.uiTheme === "dark" ? "mockup-stage-dark" : "mockup-stage-light"}`;
   // A câmera não carrega nada e nunca se resolve: contá-la deixaria a cena
@@ -2047,7 +2061,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       const blob = await exportVideo({
         // O mesmo fundo do PNG: a cor do canvas, ou a padrão do tema.
         background: settings.background
-          ? (canvasBgColor ?? DEFAULT_BG[props.uiTheme])
+          ? { color: canvasBgColor ?? DEFAULT_BG[props.uiTheme], style: props.background }
           : null,
         frameTimes,
         onProgress: (done, total) =>
@@ -2107,6 +2121,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         height: resolution.height,
         includeBackground: resolution.includeBackground,
         backgroundColor,
+        canvasBackground: props.background,
         label: `mock-photo-${resolution.width}x${resolution.height}-${formatTimestampForFilename(new Date())}`,
       });
       props.onNotify?.("success", props.copy.photoExportSuccess);
@@ -2123,7 +2138,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       className={stageClass}
       style={
         {
-          ...(canvasBgColor && !isFramed ? { background: canvasBgColor } : {}),
+          ...(stageBackground && !isFramed ? { background: stageBackground } : {}),
           // A timeline, a barra flutuante acima dela e o quadro do vídeo leem
           // este token: mudar aqui move tudo junto. O 50vh segura a janela
           // que encolheu depois da escolha.
@@ -2146,7 +2161,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           motionFrame
             ? ({
                 "--canvas-frame-ratio": motionFrame.width / motionFrame.height,
-                background: canvasBgColor ?? undefined,
+                background: stageBackground ?? undefined,
               } as CSSProperties)
             : undefined
         }
@@ -2232,6 +2247,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         ) : null}
 
         <FloatingCanvasControls
+          background={props.background}
           bgColor={canvasBgColor}
           copy={props.copy}
           isUiHidden={props.isUiHidden}
@@ -2239,6 +2255,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           grid={props.grid}
           onBgColorChange={setCanvasBgColor}
           onGridChange={props.onGridChange}
+          onBackgroundChange={props.onBackgroundChange}
           onFitToScene={() => viewportControls?.fitToScene()}
           onPanDown={() => viewportControls?.panDown()}
           onPanLeft={() => viewportControls?.panLeft()}

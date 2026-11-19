@@ -111,12 +111,19 @@ import {
   normalizeCanvasGrid,
   type CanvasGrid,
 } from "./lib/canvas-grid";
+import {
+  DEFAULT_CANVAS_BACKGROUND,
+  mergeCanvasBackground,
+  normalizeCanvasBackground,
+  type CanvasBackground,
+} from "./lib/canvas-background";
 import { createCameraKeyframe, createCameraObject } from "./lib/camera-objects";
 import { isSameOrbit, normalizeOrbit, type CameraOrbit } from "./lib/camera-orbit";
 import { DEVICE_MODELS } from "./models/device-models";
 
 /** Cena de um modo guardada enquanto o outro está ativo. */
 type ModeScene = {
+  background: CanvasBackground;
   backgroundColor: string | null;
   grid: CanvasGrid;
   /**
@@ -204,6 +211,9 @@ export default function Home() {
   // capturada e restaurada junto com os templates.
   const [canvasBgColor, setCanvasBgColor] = useState<string | null>(null);
   const [canvasGrid, setCanvasGrid] = useState<CanvasGrid>(DEFAULT_CANVAS_GRID);
+  const [canvasBackground, setCanvasBackground] = useState<CanvasBackground>(
+    DEFAULT_CANVAS_BACKGROUND,
+  );
   // Tamanho do vídeo no Movimento. Não entra na troca de cenas: só o
   // Movimento o usa, então ele simplesmente fica aqui enquanto o Estático
   // está na tela.
@@ -872,11 +882,13 @@ export default function Home() {
     canvasBgColor,
     motionFrame,
     canvasGrid,
+    canvasBackground,
   );
   const hasUnsavedChanges = currentSnapshot !== savedSnapshot;
 
   function handleSaveTemplate() {
     const template = createSceneTemplate({
+      background: canvasBackground,
       backgroundColor: canvasBgColor,
       camera: cameraApiRef.current?.getPose() ?? null,
       frame: motionFrame,
@@ -930,6 +942,7 @@ export default function Home() {
 
     const template = {
       ...createSceneTemplate({
+        background: canvasBackground,
         backgroundColor: canvasBgColor,
         camera: cameraApiRef.current?.getPose() ?? null,
         frame: motionFrame,
@@ -969,6 +982,7 @@ export default function Home() {
     setParkedScenes((current) => ({
       ...current,
       [motionTab]: {
+        background: canvasBackground,
         backgroundColor: canvasBgColor,
         grid: canvasGrid,
         camera: cameraApiRef.current?.getPose() ?? null,
@@ -983,6 +997,7 @@ export default function Home() {
       setSelectedObjectId(target.selectedObjectId);
       setCanvasBgColor(target.backgroundColor);
       setCanvasGrid(target.grid);
+      setCanvasBackground(target.background);
       setSavedSnapshot(target.savedSnapshot);
       setPendingCamera(
         target.camera ? { pose: target.camera, source: "mode" } : null,
@@ -997,6 +1012,7 @@ export default function Home() {
           canvasBgColor,
           motionFrame,
           canvasGrid,
+          canvasBackground,
         ),
       );
     }
@@ -1038,6 +1054,9 @@ export default function Home() {
     const nextGrid = normalizeCanvasGrid(template.grid);
 
     setCanvasGrid(nextGrid);
+    const nextBackground = normalizeCanvasBackground(template.background);
+
+    setCanvasBackground(nextBackground);
 
     if (template.mode === "motion") {
       setMotionFrame(nextFrame);
@@ -1050,6 +1069,7 @@ export default function Home() {
         template.backgroundColor,
         nextFrame,
         nextGrid,
+        nextBackground,
       ),
     );
     // A câmera é o último passo: fica pendente até a cena assentar.
@@ -1102,6 +1122,7 @@ export default function Home() {
   /** O link desta cena, como está agora, para abrir em outro navegador. */
   function handleCreateProjectLink() {
     const template = createSceneTemplate({
+      background: canvasBackground,
       backgroundColor: canvasBgColor,
       camera: cameraApiRef.current?.getPose() ?? null,
       frame: motionFrame,
@@ -1644,6 +1665,11 @@ export default function Home() {
         isUiHidden={isUiHidden}
         objects={sceneObjects}
         grid={canvasGrid}
+        background={canvasBackground}
+        onBackgroundChange={(patch) =>
+          // A partir do estado atual, como a grade.
+          setCanvasBackground((current) => mergeCanvasBackground(current, patch))
+        }
         onBgColorChange={setCanvasBgColor}
         onGridChange={(patch) =>
           // A partir do estado atual: o seletor de cor (memoizado) chama de um

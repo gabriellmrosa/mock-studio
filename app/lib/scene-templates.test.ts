@@ -1181,3 +1181,48 @@ describe("screen settings in templates", () => {
     expect(template.objects[0]).not.toHaveProperty("screen");
   });
 });
+
+describe("the background style in templates", () => {
+  const objects = () => [createSceneObject({ id: "phone", name: "Phone", deletable: false })];
+  const flat = {
+    gradient: { angle: 135, color: "#112233" },
+    style: "flat" as const,
+  };
+
+  it("is left out for the floor, so the template stays as it was", () => {
+    const template = createSceneTemplate({
+      background: { gradient: { angle: 90, color: "#000000" }, style: "floor" },
+      name: "Template 1",
+      objects: objects(),
+    });
+
+    expect(template).not.toHaveProperty("background");
+  });
+
+  it("saves a flat background with its gradient, and reads it back", () => {
+    const template = createSceneTemplate({ background: flat, name: "Template 1", objects: objects() });
+
+    expect(template.background).toEqual(flat);
+
+    storeRaw([template]);
+    expect(loadTemplates()[0].background).toEqual(flat);
+  });
+
+  it("changes the unsaved-changes snapshot only when the background leaves the floor", () => {
+    const scene = objects();
+    const base = getTemplateSnapshot(scene, "static", null);
+
+    expect(
+      getTemplateSnapshot(scene, "static", null, null, null, { gradient: null, style: "floor" }),
+    ).toBe(base);
+    expect(getTemplateSnapshot(scene, "static", null, null, null, flat)).not.toBe(base);
+  });
+
+  it("drops a background it can't read, back to the floor", () => {
+    const template = createSceneTemplate({ name: "Template 1", objects: objects() });
+
+    storeRaw([{ ...template, background: { style: "wavy" } }]);
+
+    expect(loadTemplates()[0].background).toBeUndefined();
+  });
+});

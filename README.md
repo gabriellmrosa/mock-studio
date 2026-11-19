@@ -80,11 +80,11 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 - per-object transform controls for position, rotation and scale
 - device themes plus manual color customization by semantic part
 - an `Export` dialog in the middle of the screen, behind a dimmed backdrop: choose everything first — format, size, background — then export once; `Cancel`, `Escape` or a click outside closes it
-- PNG export in two modes: transparent, or with the canvas background color and floor grid baked in — the background button opens a panel with the background color and the grid's color and opacity (automatic by default, so it follows the background; a reset puts it back)
+- PNG export in two modes: transparent, or with the canvas background baked in — the background button opens a panel with the background style: `3D floor` (a color and the floor grid, with the grid's color and opacity — automatic by default, so it follows the background; a reset puts it back) or `Flat` (a solid color or a linear gradient to a second color at any angle, with no floor); the gradient comes out in the PNG and the video exactly as the editor shows it
 - image sizes `1920 × 1080`, `2560 × 1440` and `3840 × 2160`, remembered between exports
 - supersampled (SSAA) rendering for sharper, screenshot-grade exports
 - export feedback chip while the PNG is being prepared
-- scene templates stored in `localStorage`: composition, background color, floor grid (when it is not the automatic one) and camera pose — plus every keyframe when saved in `Motion` — saved from the `Templates` section or along with an export (the `Save as template` checkbox in the `Export` dialog, checked by default)
+- scene templates stored in `localStorage`: composition, background color and style (a flat or gradient background), floor grid (when it is not the automatic one) and camera pose — plus every keyframe when saved in `Motion` — saved from the `Templates` section or along with an export (the `Save as template` checkbox in the `Export` dialog, checked by default)
 - `Static` and `Motion` are separate environments: each keeps its own scene and its own template list, and the first visit to `Motion` starts from a copy of the static scene
 - switching environments or opening a template with unsaved changes asks first, offering to save a template before leaving
 - template management with inline rename, delete and `Restore framing`, which returns the camera to the pose saved with that template without touching the objects

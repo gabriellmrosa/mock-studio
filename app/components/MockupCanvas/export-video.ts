@@ -15,6 +15,11 @@ import {
   getVideoExportFormat,
   type VideoExportSettings,
 } from "../../lib/video-export";
+import {
+  getActiveGradient,
+  paintCanvasBackground,
+  type CanvasBackground,
+} from "../../lib/canvas-background";
 import { hideEditorOnlyObjects } from "./editor-only";
 import { flipPixelRows, getSupersampleScale } from "./export-photo";
 
@@ -81,7 +86,8 @@ async function seekVideo(element: HTMLVideoElement, seconds: number) {
 export function createVideoFrameRenderer(
   deps: VideoFrameRendererDeps,
   size: MotionFrame,
-  background: string | null,
+  /** O fundo do quadro, ou `null` para transparente. */
+  background: { color: string; style: CanvasBackground } | null,
 ): VideoFrameRenderer {
   const { advance, applyPoses, camera, gl, gridRef, objects, restore, scene } =
     deps;
@@ -157,17 +163,23 @@ export function createVideoFrameRenderer(
       const previousClearAlpha = gl.getClearAlpha();
       const previousTarget = gl.getRenderTarget();
 
-      if (background) {
-        gl.setClearColor(new THREE.Color(background), 1);
+      // Uma cor lisa é a de limpeza do próprio render; um degradê é pintado
+      // por baixo da cena (transparente) na hora de compor o quadro, como o
+      // editor faz com o CSS atrás do canvas.
+      const isGradient = background !== null && getActiveGradient(background.style) !== null;
+
+      if (background && !isGradient) {
+        gl.setClearColor(new THREE.Color(background.color), 1);
       } else {
         gl.setClearColor(previousClearColor, 0);
       }
 
       scene.background = null;
 
-      // Como no PNG: o grid do chão só entra com fundo.
+      // Como no PNG: o grid do chão só entra com fundo — e só se o editor o
+      // mostra (no fundo liso não há chão).
       if (gridRef.current) {
-        gridRef.current.visible = background !== null;
+        gridRef.current.visible = previousGridVisible && background !== null;
       }
 
       if (camera instanceof THREE.PerspectiveCamera) {
@@ -193,6 +205,17 @@ export function createVideoFrameRenderer(
       flipPixelRows(pixels, renderWidth, renderHeight, fullImage.data);
       fullContext.putImageData(fullImage, 0, 0);
       context.clearRect(0, 0, size.width, size.height);
+
+      if (background && isGradient) {
+        paintCanvasBackground(
+          context,
+          size.width,
+          size.height,
+          background.color,
+          background.style,
+        );
+      }
+
       context.drawImage(full, 0, 0, size.width, size.height);
     },
 

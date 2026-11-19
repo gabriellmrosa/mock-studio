@@ -1,18 +1,27 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { DEFAULT_CANVAS_GRID, type CanvasGrid } from "../../lib/canvas-grid";
+import {
+  DEFAULT_CANVAS_BACKGROUND,
+  type CanvasBackground,
+} from "../../lib/canvas-background";
 import { APP_COPY } from "../../lib/i18n";
 import FloatingCanvasControls from "./FloatingCanvasControls";
 
 const copy = APP_COPY["en-US"];
 
-function renderControls(grid: CanvasGrid = DEFAULT_CANVAS_GRID) {
+function renderControls(
+  grid: CanvasGrid = DEFAULT_CANVAS_GRID,
+  background: CanvasBackground = DEFAULT_CANVAS_BACKGROUND,
+) {
   const handlers = {
+    onBackgroundChange: jest.fn(),
     onBgColorChange: jest.fn(),
     onGridChange: jest.fn(),
   };
 
   render(
     <FloatingCanvasControls
+      background={background}
       bgColor={null}
       copy={copy}
       grid={grid}
@@ -122,5 +131,59 @@ describe("background and grid panel", () => {
     fireEvent.mouseDown(document.body);
 
     expect(screen.queryByRole("dialog", { name: copy.backgroundColorButton })).not.toBeInTheDocument();
+  });
+});
+
+describe("background style", () => {
+  it("switches to a flat background from the style tabs", () => {
+    const { onBackgroundChange } = renderControls();
+
+    openPanel();
+    fireEvent.click(screen.getByRole("tab", { name: copy.canvasBackgroundFlat }));
+
+    expect(onBackgroundChange).toHaveBeenCalledWith({ style: "flat" });
+  });
+
+  it("hides the floor grid on a flat background and offers the gradient", () => {
+    renderControls(DEFAULT_CANVAS_GRID, { gradient: null, style: "flat" });
+
+    openPanel();
+
+    expect(screen.queryByText(copy.canvasGridSection)).not.toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: copy.canvasGradientLabel })).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
+    expect(screen.queryByLabelText(copy.canvasGradientAngleLabel)).not.toBeInTheDocument();
+  });
+
+  it("turns the gradient on from the default background color, top to bottom", () => {
+    const { onBackgroundChange } = renderControls(DEFAULT_CANVAS_GRID, {
+      gradient: null,
+      style: "flat",
+    });
+
+    openPanel();
+    fireEvent.click(screen.getByRole("switch", { name: copy.canvasGradientLabel }));
+
+    expect(onBackgroundChange).toHaveBeenCalledWith({
+      gradient: { angle: 180, color: expect.stringMatching(/^#[0-9a-f]{6}$/) },
+    });
+  });
+
+  it("changes only the angle of the gradient", () => {
+    const { onBackgroundChange } = renderControls(DEFAULT_CANVAS_GRID, {
+      gradient: { angle: 180, color: "#000000" },
+      style: "flat",
+    });
+
+    openPanel();
+
+    const angle = screen.getByLabelText(copy.canvasGradientAngleLabel);
+
+    fireEvent.change(angle, { target: { value: "90" } });
+    fireEvent.blur(angle);
+
+    expect(onBackgroundChange).toHaveBeenCalledWith({ gradient: { angle: 90 } });
   });
 });

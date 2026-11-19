@@ -1,6 +1,10 @@
 "use client";
 
 import * as THREE from "three";
+import {
+  getActiveGradient,
+  paintCanvasBackground,
+} from "../../lib/canvas-background";
 import { hideEditorOnlyObjects } from "./editor-only";
 import type { ExportPreset } from "./MockupCanvas";
 
@@ -56,20 +60,29 @@ export async function exportCanvasPhoto({
   let blob: Blob | null = null;
   let showEditorOnly = () => {};
 
+  const backgroundColor = preset.backgroundColor ?? "#000000";
+  // Um degradê não é cor de limpeza: a cena sai transparente e ele é pintado
+  // por baixo na hora de montar o PNG, como o CSS atrás do canvas no editor.
+  const gradientStyle =
+    preset.includeBackground && preset.canvasBackground && getActiveGradient(preset.canvasBackground)
+      ? preset.canvasBackground
+      : null;
+
   try {
-    if (preset.includeBackground) {
+    if (preset.includeBackground && !gradientStyle) {
       // Preenche o fundo com a cor do canvas (alpha 1 → PNG opaco nessa área).
-      gl.setClearColor(new THREE.Color(preset.backgroundColor ?? "#000000"), 1);
+      gl.setClearColor(new THREE.Color(backgroundColor), 1);
     } else {
-      // Fundo transparente (padrão).
+      // Fundo transparente (padrão), ou o degradê, pintado depois.
       gl.setClearColor(previousClearColor, 0);
     }
     scene.background = null;
 
-    // O grid do chão entra apenas no export com fundo (cena completa).
-    // No modo transparente ele fica fora, para um recorte limpo.
+    // O grid do chão entra apenas no export com fundo (cena completa), e só
+    // se o editor o mostra (no fundo liso não há chão). No modo transparente
+    // ele fica fora, para um recorte limpo.
     if (gridRef.current) {
-      gridRef.current.visible = preset.includeBackground === true;
+      gridRef.current.visible = previousGridVisible && preset.includeBackground === true;
     }
 
     if (camera instanceof THREE.PerspectiveCamera) {
@@ -98,6 +111,10 @@ export async function exportCanvasPhoto({
       renderHeight,
       preset.width,
       preset.height,
+      gradientStyle
+        ? (context, width, height) =>
+            paintCanvasBackground(context, width, height, backgroundColor, gradientStyle)
+        : undefined,
     );
   } finally {
     showEditorOnly();
@@ -168,6 +185,8 @@ export async function renderTargetPixelsToBlob(
   height: number,
   targetWidth: number = width,
   targetHeight: number = height,
+  /** Pinta o fundo por baixo da cena (o degradê); sem ele, a cena como veio. */
+  paintBackground?: (context: CanvasRenderingContext2D, width: number, height: number) => void,
 ) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
@@ -186,7 +205,7 @@ export async function renderTargetPixelsToBlob(
   // smoothing so edges stay crisp.
   let outputCanvas = canvas;
 
-  if (width !== targetWidth || height !== targetHeight) {
+  if (width !== targetWidth || height !== targetHeight || paintBackground) {
     const scaledCanvas = document.createElement("canvas");
     scaledCanvas.width = targetWidth;
     scaledCanvas.height = targetHeight;
@@ -198,6 +217,7 @@ export async function renderTargetPixelsToBlob(
 
     scaledContext.imageSmoothingEnabled = true;
     scaledContext.imageSmoothingQuality = "high";
+    paintBackground?.(scaledContext, targetWidth, targetHeight);
     scaledContext.drawImage(canvas, 0, 0, targetWidth, targetHeight);
     outputCanvas = scaledCanvas;
   }

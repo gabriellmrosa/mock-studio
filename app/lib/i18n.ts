@@ -267,6 +267,12 @@ export type AppCopy = {
   cameraTargetZLabel: string;
   cameraFovLabel: string;
   canvasBackgroundSection: string;
+  canvasBackgroundStyleLabel: string;
+  canvasBackgroundFloor: string;
+  canvasBackgroundFlat: string;
+  canvasGradientLabel: string;
+  canvasGradientColorLabel: string;
+  canvasGradientAngleLabel: string;
   canvasGridSection: string;
   canvasGridColorLabel: string;
   canvasGridOpacityLabel: string;
@@ -575,6 +581,12 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     cameraTargetZLabel: "Alvo Z",
     cameraFovLabel: "Lente (campo de visão °)",
     canvasBackgroundSection: "Fundo",
+    canvasBackgroundStyleLabel: "Estilo do fundo",
+    canvasBackgroundFloor: "Chão 3D",
+    canvasBackgroundFlat: "Liso",
+    canvasGradientLabel: "Degradê",
+    canvasGradientColorLabel: "Segunda cor do degradê",
+    canvasGradientAngleLabel: "Ângulo do degradê",
     canvasGridSection: "Grade do chão",
     canvasGridColorLabel: "Cor da grade",
     canvasGridOpacityLabel: "Opacidade da grade",
@@ -947,6 +959,12 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     cameraTargetZLabel: "Target Z",
     cameraFovLabel: "Lens (field of view °)",
     canvasBackgroundSection: "Background",
+    canvasBackgroundStyleLabel: "Background style",
+    canvasBackgroundFloor: "3D floor",
+    canvasBackgroundFlat: "Flat",
+    canvasGradientLabel: "Gradient",
+    canvasGradientColorLabel: "Gradient second color",
+    canvasGradientAngleLabel: "Gradient angle",
     canvasGridSection: "Floor grid",
     canvasGridColorLabel: "Grid color",
     canvasGridOpacityLabel: "Grid opacity",

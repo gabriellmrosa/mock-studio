@@ -498,6 +498,20 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   superfície flutuante (`--sidebar-bg` sólida). A edição parte do estado atual
   (`setCanvasGrid` funcional): o `ColorRow` é memoizado e chama um `onChange` de
   um render antigo.
+- **Estilo do fundo** (`CanvasBackground`, `canvas-background.ts`): `floor`, o
+  de sempre (cor e linhas), ou `flat`, liso, sem linhas — a cor de fundo, ou um
+  degradê linear dela até uma segunda cor, num ângulo. A primeira cor é sempre
+  `backgroundColor`. No liso **não há grade** (decisão do usuário): a mistura
+  da opacidade só é exata sobre uma cor lisa. Vai no template e no link só
+  quando é liso (`toStoredCanvasBackground`), e o degradê se mescla campo a
+  campo a partir do estado atual (`mergeCanvasBackground`), pelo mesmo motivo
+  do `ColorRow`.
+- O degradê do editor é o CSS do palco e do quadro, como a cor; na
+  exportação, **não** é cor de limpeza do WebGL: a cena sai transparente e ele
+  é pintado por baixo na hora de compor o PNG ou o quadro do vídeo
+  (`paintCanvasBackground`), com a linha do degradê calculada como a do CSS
+  (`getGradientLine`) — por isso sai igual em qualquer proporção. A grade
+  entra na exportação com fundo só se o editor a mostra.
 
 **Exportação**
 
