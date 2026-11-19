@@ -22,9 +22,11 @@ const LINK_VERSION = 1;
 /**
  * Teto em bytes para o JSON descomprimido de um link ou código colado. Uma
  * cena real fica em poucos KB; limitar a leitura impede que um payload
- * adulterado (bomba de descompressão) consuma memória e trave a aba.
+ * adulterado (bomba de descompressão) consuma memória e trave a aba. 5 MB é o
+ * tamanho do `localStorage`: nenhum template que o próprio app guarda passa
+ * disso, então nenhum código que ele gera é recusado.
  */
-export const MAX_DECODED_LINK_BYTES = 1_000_000;
+export const MAX_DECODED_LINK_BYTES = 5_000_000;
 
 type LinkPayload = {
   template: Omit<SceneTemplate, "createdAt" | "id">;

@@ -1,5 +1,7 @@
 "use client";
 
+// Os botões são os do Dialog (primitiva do projeto), não uma cópia deles.
+import "../Dialog/Dialog.css";
 import "./CanvasErrorBoundary.css";
 import { Component, type ErrorInfo, type ReactNode } from "react";
 import { AlertTriangle } from "lucide-react";
@@ -41,14 +43,14 @@ export function CanvasRecoveryCard({
         <div className="canvas-recovery-actions">
           <button
             type="button"
-            className="canvas-recovery-button canvas-recovery-button-secondary"
+            className="dialog-button dialog-button-secondary"
             onClick={onReloadPage}
           >
             {reloadPageLabel}
           </button>
           <button
             type="button"
-            className="canvas-recovery-button canvas-recovery-button-primary"
+            className="dialog-button dialog-button-primary"
             onClick={onPrimaryAction}
           >
             {primaryLabel}

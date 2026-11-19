@@ -2091,8 +2091,11 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       event.preventDefault();
       setIsWebGlLost(true);
     };
+    // O contexto voltou, mas o que vivia nele não: as texturas compostas das
+    // telas e os alvos de render ficam vazios, e a tela do aparelho sai preta.
+    // Remontar o <Canvas> refaz tudo — é o mesmo "Recarregar visualizador".
     const handleContextRestored = () => {
-      setIsWebGlLost(false);
+      handleReloadViewer();
     };
 
     element.addEventListener("webglcontextlost", handleContextLost);
@@ -2102,7 +2105,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       element.removeEventListener("webglcontextlost", handleContextLost);
       element.removeEventListener("webglcontextrestored", handleContextRestored);
     };
-  }, []);
+  }, [handleReloadViewer]);
   // Estável: o Dialog reassina o teclado quando o callback muda.
   const cancelVideoExport = useCallback(() => videoAbortRef.current?.abort(), []);
   // Mesma conta da timeline: até o último keyframe ou o fim do último vídeo.

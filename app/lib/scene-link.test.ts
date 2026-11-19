@@ -120,7 +120,8 @@ describe("scene link", () => {
     );
     const base64Url = Buffer.from(compressed).toString("base64url");
 
-    expect(base64Url.length).toBeLessThan(4000);
+    // Um código pequeno (centenas de vezes menor que o teto) que explode.
+    expect(base64Url.length).toBeLessThan(MAX_DECODED_LINK_BYTES / 100);
     expect(await decodeSceneLink(base64Url)).toBeNull();
   });
 });

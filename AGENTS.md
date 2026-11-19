@@ -596,6 +596,30 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   template" fica no rodapé, à esquerda (decisão do usuário). O rótulo é
   "Exportar", não "Download", e não há seletor de pasta (decisões do usuário).
 
+**PWA, armazenamento e falhas**
+
+- **Service Worker** (`public/sw.js`, só em produção): só a própria origem em
+  http(s); *cache-first* só em `/_next/static/` (nome com hash, imutável);
+  tudo de URL fixa (modelos, stickers, fontes, ícones, manifest) é **rede
+  primeiro**, com o cache só para offline — senão o asset ficava preso na
+  versão antiga para sempre. Mudar a estratégia é mudar o `CACHE_NAME`, que
+  descarta o cache antigo no `activate`. O navegador do app não aceita SW:
+  para testar, um build de produção (`next start`) num Chrome de verdade.
+- **`localStorage` passa por `app/lib/storage.ts`** (`readStorageItem`,
+  `writeStorageItem`, `removeStorageItem`): com o armazenamento bloqueado ou
+  cheio, a chamada direta derruba a interface. Os templates e o analytics têm
+  o seu próprio `try/catch`.
+- **Link e código colado** (`decodeSceneLink`): a descompressão para em
+  `MAX_DECODED_LINK_BYTES` (5 MB, o tamanho do `localStorage`), contra bomba
+  de descompressão sem recusar nenhum template que o app gera.
+- **Falha do 3D** (`CanvasErrorBoundary`): um erro dentro do `<Canvas>` ou a
+  perda do contexto WebGL (Mac suspenso, falta de memória de vídeo) mostra um
+  cartão só sobre o palco — os painéis seguem usáveis, para salvar a cena. A
+  saída é remontar o `<Canvas>` pela `key` (a cena está no estado da página).
+  **Quando o contexto volta sozinho, remonta também**: o que vivia nele (as
+  texturas compostas das telas) não volta, e a tela do aparelho ficava preta.
+  O cartão usa os botões do `Dialog`.
+
 **Analytics**
 
 - Vercel Web Analytics e Microsoft Clarity ([analytics.ts](app/lib/analytics.ts)).
