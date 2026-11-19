@@ -177,6 +177,21 @@ export function getScreenVideoTime(
   );
 }
 
+/**
+ * Se a tela está no último quadro do arquivo — o trecho congelado
+ * (`holdEndMs`) ou o instante exato do fim. Ali o vídeo não pode tocar: o
+ * `play()` de um `<video>` no fim o faz voltar ao começo, e tocando, a tela
+ * piscava entre o primeiro e o último quadro.
+ */
+export function isScreenVideoAtFileEnd(
+  video: ScreenVideo,
+  sceneTimeMs: number,
+) {
+  const timeMs = getScreenVideoTime(video, sceneTimeMs);
+
+  return timeMs !== null && timeMs >= video.durationMs - (video.trimEndMs ?? 0);
+}
+
 /** Vídeo que a tela mostra de fato: o enviado, e só se for a fonte escolhida. */
 export function getActiveScreenVideo(object: DeviceObject) {
   return object.screenSource === "video" ? object.screenVideo : null;

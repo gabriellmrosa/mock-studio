@@ -39,6 +39,7 @@ import {
   getActiveScreenVideos,
   getScreenVideoKey,
   getScreenVideoTime,
+  isScreenVideoAtFileEnd,
   isDeviceObject,
   isCameraObject,
   isImageObject,
@@ -1006,7 +1007,9 @@ function ScreenVideoController({
       // navegadores mostram preto.
       const targetS = Math.min(targetMs, video.durationMs - 20) / 1000;
 
-      if (isPlaying) {
+      // No último quadro (o trecho congelado) o vídeo fica parado mesmo
+      // tocando: o `play()` ali o mandaria de volta ao começo.
+      if (isPlaying && !isScreenVideoAtFileEnd(video, sceneTimeMs)) {
         if (Math.abs(element.currentTime - targetS) > VIDEO_DRIFT_TOLERANCE_S) {
           element.currentTime = Math.max(0, targetS);
         }

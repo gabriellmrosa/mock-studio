@@ -4,6 +4,7 @@ import {
   duplicateSceneObject,
   getScreenVideoClipDuration,
   getScreenVideoTime,
+  isScreenVideoAtFileEnd,
   trimVideoClip,
 } from "./scene-objects";
 import {
@@ -377,6 +378,16 @@ describe("scene-motion", () => {
         expect(getScreenVideoTime(held, 6000)).toBe(4000);
         expect(getScreenVideoTime(held, 7000)).toBe(4000);
         expect(getScreenVideoTime(held, 7001)).toBeNull();
+      });
+
+      it("tells the held stretch apart, where the video must stay paused", () => {
+        const held = { ...video, holdEndMs: 2000 };
+
+        expect(isScreenVideoAtFileEnd(held, 4500)).toBe(false);
+        expect(isScreenVideoAtFileEnd(held, 5000)).toBe(true);
+        expect(isScreenVideoAtFileEnd(held, 6500)).toBe(true);
+        expect(isScreenVideoAtFileEnd(held, 7001)).toBe(false);
+        expect(isScreenVideoAtFileEnd({ ...held, trimEndMs: 1000 }, 4000)).toBe(true);
       });
     });
 
