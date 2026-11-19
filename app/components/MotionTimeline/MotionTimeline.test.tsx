@@ -230,10 +230,7 @@ describe("MotionTimeline", () => {
 
       renderTimeline([held]);
 
-      expect(screen.getByTestId("clip-hold")).toHaveAttribute(
-        "title",
-        "Last frame held",
-      );
+      expect(screen.getByTestId("clip-hold")).toHaveTextContent("Frozen");
     });
 
     it("lets go with Alt held, back to the usual step", () => {

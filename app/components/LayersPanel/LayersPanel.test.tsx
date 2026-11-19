@@ -243,7 +243,7 @@ const copy: AppCopy = {
   motionZoomOut: APP_COPY["en-US"].motionZoomOut,
   motionVideoTrimStart: APP_COPY["en-US"].motionVideoTrimStart,
   motionVideoTrimEnd: APP_COPY["en-US"].motionVideoTrimEnd,
-  motionVideoHold: "Last frame held",
+  motionVideoHold: "Frozen",
   timelineResizeLabel: APP_COPY["en-US"].timelineResizeLabel,
   timelineResizeHint: APP_COPY["en-US"].timelineResizeHint,
   motionFrameLabel: "Video size",

@@ -386,16 +386,29 @@
 }
 
 /* O último quadro congelado depois do fim do arquivo: um traço onde o vídeo
-   acaba e o resto do clipe mais claro. Não pega o clique: arrastar continua
-   sendo do clipe. */
+   acaba, o resto do clipe mais claro e o nome do trecho no meio, como o da
+   curva nos trechos entre keyframes. Não pega o clique: arrastar continua
+   sendo do clipe (por isso o nome é texto, e não um `title`, que nunca
+   apareceria). */
 .motion-timeline-clip-hold {
+  align-items: center;
   background: color-mix(in srgb, var(--foreground) 10%, transparent);
   border-left: 1px dashed color-mix(in srgb, var(--foreground) 45%, transparent);
   bottom: 0;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
   pointer-events: none;
   position: absolute;
   right: 0;
   top: 0;
+}
+
+.motion-timeline-clip-hold-label {
+  overflow: hidden;
+  padding: 0 var(--space-2);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .motion-timeline-clip-name {

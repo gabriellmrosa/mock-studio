@@ -624,9 +624,12 @@ export default function MotionTimeline({
             <span
               className="motion-timeline-clip-hold"
               data-testid="clip-hold"
-              title={copy.motionVideoHold}
               style={{ width: `${(video.holdEndMs / clipDuration) * 100}%` }}
-            />
+            >
+              <span className="motion-timeline-clip-hold-label">
+                {copy.motionVideoHold}
+              </span>
+            </span>
           ) : null}
           <Video size={11} aria-hidden />
           <span className="motion-timeline-clip-name">{video.name}</span>
