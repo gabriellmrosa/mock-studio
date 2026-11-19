@@ -576,4 +576,50 @@ describe("Home page layers and selection flow", () => {
       expect(savedTemplates()).toHaveLength(2);
     });
   });
+
+  describe("undo and redo", () => {
+    const press = (init: KeyboardEventInit, target: Element | Window = window) =>
+      fireEvent.keyDown(target, { key: "z", ...init });
+
+    it("undoes adding an object and redoes it, on Mac and Windows shortcuts", () => {
+      render(<Home />);
+
+      addFromMenu("Device");
+      expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
+
+      press({ metaKey: true });
+      expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:1");
+
+      press({ metaKey: true, shiftKey: true });
+      expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
+
+      press({ ctrlKey: true });
+      expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:1");
+
+      press({ ctrlKey: true, key: "y" });
+      expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
+    });
+
+    it("leaves the shortcut to a text field that has the focus", () => {
+      render(<Home />);
+
+      addFromMenu("Device");
+
+      const field = document.createElement("input");
+
+      document.body.appendChild(field);
+      press({ metaKey: true }, field);
+
+      expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:2");
+      field.remove();
+    });
+
+    it("has nothing to undo on a fresh scene", () => {
+      render(<Home />);
+
+      press({ metaKey: true });
+
+      expect(screen.getByTestId("mockup-canvas")).toHaveTextContent("visible:1");
+    });
+  });
 });

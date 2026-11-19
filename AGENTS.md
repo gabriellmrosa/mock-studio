@@ -369,6 +369,24 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   Exportar e o "Salvar e sair" da troca de modo salvam sempre um novo, para
   não interromper o fluxo deles (decisão do usuário).
 
+**Desfazer e refazer**
+
+- `useUndoHistory` (`use-undo-history.ts`, a lógica pura em `undo-history.ts`)
+  observa a cena — objetos e keyframes, cor, estilo e grade do fundo, tamanho
+  do vídeo: o que um template guarda — e grava o estado de antes de cada ação.
+  A câmera da vista, a seleção e o playhead **não** entram (nos editores,
+  desfazer não volta o olhar). Estado novo que deva ser desfeito entra no
+  `undoSnapshot` da página.
+- Mudanças a menos de `UNDO_BURST_MS` (500 ms) uma da outra são uma ação só:
+  um arrasto de slider ou keyframe se desfaz inteiro. Por isso o histórico
+  compara as partes por referência — o estado é imutável, e um setter que
+  devolve o mesmo valor não vira ação.
+- Um histórico por modo; a troca de modo não é ação. Num campo de texto
+  (`isTextEditingTarget`) o atalho é do campo; slider e cor não, porque o foco
+  fica neles depois do arrasto. Com um diálogo modal aberto, nada.
+- O arquivo de uma tela removida continua na memória (o blob nunca é
+  liberado), e é isso que deixa desfazer a remoção: não revogar esses blobs.
+
 **Canvas (React Three Fiber)**
 
 - **Callbacks que entram em efeitos dentro do `<Canvas>` precisam ser

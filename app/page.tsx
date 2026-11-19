@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useEffectEvent,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -133,6 +134,8 @@ import {
   findBackgroundObject,
 } from "./lib/background-objects";
 import type { BackgroundEditor } from "./components/BackgroundFields/BackgroundFields";
+import { useUndoHistory } from "./lib/use-undo-history";
+import { getUndoShortcut, isTextEditingTarget } from "./lib/undo-history";
 import {
   splitScreenFitPatch,
   withCapturedScreenFits,
@@ -1500,6 +1503,63 @@ export default function Home() {
     setSelectedKeyframeId("");
     setMotionStartedAt(Date.now() - from);
   }
+
+  // Desfazer e refazer da cena do modo atual (Cmd/Ctrl+Z, Cmd/Ctrl+Shift+Z,
+  // Ctrl+Y). O que conta como cena é o que um template guarda: objetos e
+  // keyframes, fundo, grade e tamanho do vídeo — não a vista da câmera, a
+  // seleção nem o playhead.
+  const undoSnapshot = useMemo(
+    () => ({
+      background: canvasBackground,
+      bgColor: canvasBgColor,
+      frame: motionFrame,
+      grid: canvasGrid,
+      objects: sceneObjects,
+    }),
+    [canvasBackground, canvasBgColor, canvasGrid, motionFrame, sceneObjects],
+  );
+  const restoreUndoSnapshot = useCallback((state: typeof undoSnapshot) => {
+    setCanvasBackground(state.background);
+    setCanvasBgColor(state.bgColor);
+    setMotionFrame(state.frame);
+    setCanvasGrid(state.grid);
+    setSceneObjects(state.objects);
+  }, []);
+  const { redo: redoScene, undo: undoScene } = useUndoHistory({
+    mode: motionTab,
+    restore: restoreUndoSnapshot,
+    snapshot: undoSnapshot,
+  });
+  const onUndoShortcut = useEffectEvent((shortcut: "redo" | "undo") => {
+    if (shortcut === "undo") {
+      undoScene();
+    } else {
+      redoScene();
+    }
+  });
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      const shortcut = getUndoShortcut(event);
+
+      // Num campo de texto o atalho é do campo; com um diálogo aberto (o
+      // Exportar, um aviso), a cena atrás dele não muda.
+      if (
+        !shortcut ||
+        isTextEditingTarget(event.target) ||
+        document.querySelector('[aria-modal="true"]')
+      ) {
+        return;
+      }
+
+      event.preventDefault();
+      onUndoShortcut(shortcut);
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   // A barra de espaço é reservada ao play do Movimento, como em editor de
   // vídeo: ela não aciona botões nem itens de lista em nenhum modo (Enter
