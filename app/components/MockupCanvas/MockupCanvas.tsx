@@ -1737,11 +1737,16 @@ function BoundsResetController({
       }
     }
 
-    // Depois do movimento a distância mudou: a folga do centro acompanha.
+    // Depois do movimento a distância mudou: a folga do centro acompanha. Os
+    // botões movem sem transição, e aí o camera-controls não avisa "rest": o
+    // aviso sai daqui, para os campos da câmera (e o keyframe selecionado)
+    // acompanharem a seta e o zoom como acompanham o gesto.
     const navigate = (move: () => void) => () => {
       refreshLimits();
       move();
       updateOrbitBoundary(controls);
+      controls.update(0);
+      handleRest();
     };
 
     // Durante o gesto, só a folga muda com o zoom; a caixa é a do início.
