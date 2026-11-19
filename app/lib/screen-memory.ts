@@ -147,6 +147,9 @@ export function normalizeTemplateScreen(value: unknown): TemplateScreen | undefi
             startMs: clamp(video.startMs, 0, Number.MAX_SAFE_INTEGER, 0),
             trimEndMs: clamp(video.trimEndMs, 0, Number.MAX_SAFE_INTEGER, 0),
             trimStartMs: clamp(video.trimStartMs, 0, Number.MAX_SAFE_INTEGER, 0),
+            ...(typeof video.holdEndMs === "number" && video.holdEndMs > 0
+              ? { holdEndMs: clamp(video.holdEndMs, 0, Number.MAX_SAFE_INTEGER, 0) }
+              : {}),
           },
         }
       : {}),
@@ -174,6 +177,9 @@ export function applyPendingVideo(
   return {
     ...video,
     fit: { ...pending.fit },
+    // O quadro congelado depois do fim vale para qualquer arquivo: o clipe
+    // continua até onde estava na cena.
+    holdEndMs: pending.holdEndMs ?? 0,
     startMs: pending.startMs,
     trimEndMs,
     trimStartMs,

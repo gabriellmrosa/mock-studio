@@ -404,6 +404,12 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - Vídeos ficam como blob URL, nunca base64. O `<video>` fica no documento,
   invisível: fora dele o Chrome para de entregar quadros.
 - Um shader próprio que lê `VideoTexture` decodifica sRGB ele mesmo.
+- **Último quadro parado:** esticar a borda final do clipe além do fim do
+  arquivo guarda o excesso em `holdEndMs` (o padrão dos editores: o quadro
+  congela, a tela não some). `getScreenVideoClipDuration` o soma e
+  `getScreenVideoTime` prende o tempo no último quadro; recolher a borda gasta
+  primeiro o `holdEndMs` e só então corta. A borda gruda no fim real do arquivo
+  antes de passar dele, e o trecho parado é marcado no clipe.
 - O tempo do vídeo pertence à timeline (o clipe tem trilha própria); fora do
   clipe, a tela mostra só o fundo. No play, o relógio da cena é preso no fim
   (`getPlaybackTimeMs`): o play para com folga (80 ms) depois do fim, e um clipe

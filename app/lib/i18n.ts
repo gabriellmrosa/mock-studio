@@ -177,6 +177,7 @@ export type AppCopy = {
   motionZoomOut: string;
   motionVideoTrimStart: string;
   motionVideoTrimEnd: string;
+  motionVideoHold: string;
   timelineResizeLabel: string;
   timelineResizeHint: string;
   motionFrameLabel: string;
@@ -480,6 +481,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionZoomOut: "Afastar (ou faça pinça no trackpad)",
     motionVideoTrimStart: "Arraste para cortar o começo do vídeo",
     motionVideoTrimEnd: "Arraste para cortar o fim do vídeo",
+    motionVideoHold: "Último quadro parado",
     timelineResizeLabel: "Altura da linha do tempo",
     timelineResizeHint: "Arraste para mudar a altura. Clique duplo volta ao padrão.",
     motionFrameLabel: "Tamanho do vídeo",
@@ -853,6 +855,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     motionZoomOut: "Zoom out (or pinch on the trackpad)",
     motionVideoTrimStart: "Drag to trim the start of the video",
     motionVideoTrimEnd: "Drag to trim the end of the video",
+    motionVideoHold: "Last frame held",
     timelineResizeLabel: "Timeline height",
     timelineResizeHint: "Drag to change the height. Double-click resets it.",
     motionFrameLabel: "Video size",

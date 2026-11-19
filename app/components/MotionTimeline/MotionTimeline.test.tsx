@@ -197,15 +197,50 @@ describe("MotionTimeline", () => {
 
       // Fim em 4.637 → 4.600: 37 ms a mais de corte no fim.
       expect(handlers.onChangeVideo).toHaveBeenLastCalledWith("a", "main", {
+        holdEndMs: 0,
         trimEndMs: 37,
       });
       expect(container.querySelector(".motion-timeline-snap-guide")).not.toBeNull();
+    });
+
+    it("stops at the real end of the file before holding its last frame", () => {
+      // O arquivo de 3.637 s acaba em 4.637 s na cena; arrastar 3 px além
+      // gruda no fim do arquivo, sem congelar nada.
+      const { handlers } = dragEndEdge(467);
+
+      expect(handlers.onChangeVideo).toHaveBeenLastCalledWith("a", "main", {
+        holdEndMs: 0,
+        trimEndMs: 0,
+      });
+    });
+
+    it("holds the last frame when dragged well past the end, and marks it", () => {
+      const { handlers } = dragEndEdge(564, true);
+
+      expect(handlers.onChangeVideo).toHaveBeenLastCalledWith("a", "main", {
+        holdEndMs: 1000,
+        trimEndMs: 0,
+      });
+
+      const [object] = clipAndKeyframe();
+      const held = {
+        ...object,
+        screenVideo: { ...object.screenVideo!, holdEndMs: 1000 },
+      };
+
+      renderTimeline([held]);
+
+      expect(screen.getByTestId("clip-hold")).toHaveAttribute(
+        "title",
+        "Last frame held",
+      );
     });
 
     it("lets go with Alt held, back to the usual step", () => {
       const { container, handlers } = dragEndEdge(460, true);
 
       expect(handlers.onChangeVideo).toHaveBeenLastCalledWith("a", "main", {
+        holdEndMs: 0,
         trimEndMs: 50,
       });
       expect(container.querySelector(".motion-timeline-snap-guide")).toBeNull();

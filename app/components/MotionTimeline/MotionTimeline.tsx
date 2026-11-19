@@ -438,13 +438,19 @@ export default function MotionTimeline({
         drag.edge === "start"
           ? drag.video.startMs
           : drag.video.startMs + getScreenVideoClipDuration(drag.video);
-      const delta = snapDrag(
-        event,
-        [edge],
-        deltaMs,
-        getSnapTargets({ clip: { objectId: drag.objectId, screen: drag.screen } }),
-        snap,
-      );
+      const targets = getSnapTargets({
+        clip: { objectId: drag.objectId, screen: drag.screen },
+      });
+
+      // A borda final também gruda no fim real do arquivo: dá para parar no
+      // último quadro, e passar dele (congelar) é uma escolha, não um acidente.
+      if (drag.edge === "end") {
+        targets.push(
+          drag.video.startMs + drag.video.durationMs - (drag.video.trimStartMs ?? 0),
+        );
+      }
+
+      const delta = snapDrag(event, [edge], deltaMs, targets, snap);
 
       onChangeVideo(
         drag.objectId,
@@ -612,6 +618,16 @@ export default function MotionTimeline({
               onPointerCancel={endDrag}
             />
           ))}
+          {/* O trecho depois do fim do arquivo, em que o último quadro fica
+              parado: marcado para não se confundir com o vídeo tocando. */}
+          {video.holdEndMs ? (
+            <span
+              className="motion-timeline-clip-hold"
+              data-testid="clip-hold"
+              title={copy.motionVideoHold}
+              style={{ width: `${(video.holdEndMs / clipDuration) * 100}%` }}
+            />
+          ) : null}
           <Video size={11} aria-hidden />
           <span className="motion-timeline-clip-name">{video.name}</span>
         </div>

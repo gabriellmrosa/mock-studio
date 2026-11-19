@@ -352,6 +352,34 @@ describe("scene-motion", () => {
       expect(getScreenVideoTime(video, 5001)).toBeNull();
     });
 
+    describe("holding the last frame past the end of the file", () => {
+      it("stretches the clip when the end edge goes past the file", () => {
+        expect(trimVideoClip(video, "end", 1500)).toEqual({
+          holdEndMs: 1500,
+          trimEndMs: 0,
+        });
+      });
+
+      it("trims again when a held clip is pulled back inside the file", () => {
+        const held = { ...video, holdEndMs: 1000 };
+
+        expect(trimVideoClip(held, "end", -1500)).toEqual({
+          holdEndMs: 0,
+          trimEndMs: 500,
+        });
+      });
+
+      it("shows the last real frame for the whole held stretch", () => {
+        const held = { ...video, holdEndMs: 2000 };
+
+        expect(getScreenVideoClipDuration(held)).toBe(6000);
+        expect(getScreenVideoTime(held, 4500)).toBe(3500);
+        expect(getScreenVideoTime(held, 6000)).toBe(4000);
+        expect(getScreenVideoTime(held, 7000)).toBe(4000);
+        expect(getScreenVideoTime(held, 7001)).toBeNull();
+      });
+    });
+
     it("plays only the trimmed part of the file", () => {
       const trimmed = { ...video, trimEndMs: 1000, trimStartMs: 500 };
 
@@ -379,9 +407,8 @@ describe("scene-motion", () => {
     });
 
     it("trims the end, always leaving a minimal clip", () => {
-      expect(trimVideoClip(video, "end", -1000)).toEqual({ trimEndMs: 1000 });
-      expect(trimVideoClip(video, "end", 500)).toEqual({ trimEndMs: 0 });
-      expect(trimVideoClip(video, "end", -99999)).toEqual({ trimEndMs: 3900 });
+      expect(trimVideoClip(video, "end", -1000)).toEqual({ holdEndMs: 0, trimEndMs: 1000 });
+      expect(trimVideoClip(video, "end", -99999)).toEqual({ holdEndMs: 0, trimEndMs: 3900 });
     });
 
     it("extends the scene to the end of whichever screen's video ends last", () => {

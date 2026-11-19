@@ -88,22 +88,34 @@ export type ScreenVideo = {
    */
   trimEndMs: number;
   trimStartMs: number;
+  /**
+   * Quanto o clipe passa do fim do arquivo, em ms: a borda final arrastada além
+   * do último quadro, que fica parado nesse trecho (o "congelar quadro" dos
+   * editores de vídeo). Só existe com `trimEndMs` em 0. Ausente = 0.
+   */
+  holdEndMs?: number;
   url: string;
 };
 
 /** Menor clipe que o corte deixa sobrar: abaixo disso some da timeline. */
 export const MIN_SCREEN_VIDEO_CLIP_MS = 100;
 
-/** Quanto do vídeo toca na cena: o arquivo menos os cortes. */
+/**
+ * Quanto o clipe ocupa na cena: o arquivo menos os cortes, mais o último quadro
+ * congelado depois do fim (`holdEndMs`).
+ */
 export function getScreenVideoClipDuration(video: ScreenVideo) {
   return Math.max(
     MIN_SCREEN_VIDEO_CLIP_MS,
-    video.durationMs - (video.trimStartMs ?? 0) - (video.trimEndMs ?? 0),
+    video.durationMs -
+      (video.trimStartMs ?? 0) -
+      (video.trimEndMs ?? 0) +
+      (video.holdEndMs ?? 0),
   );
 }
 
 export type VideoClipPatch = Partial<
-  Pick<ScreenVideo, "startMs" | "trimEndMs" | "trimStartMs">
+  Pick<ScreenVideo, "holdEndMs" | "startMs" | "trimEndMs" | "trimStartMs">
 >;
 
 /**
@@ -111,7 +123,8 @@ export type VideoClipPatch = Partial<
  * estava no início do arrasto. Na borda do começo o resto do vídeo não sai do
  * lugar: o clipe começa depois na cena na mesma medida em que o arquivo é
  * cortado. Nenhum corte passa do arquivo nem deixa menos que o clipe mínimo,
- * e o começo não vai para antes do zero da cena.
+ * e o começo não vai para antes do zero da cena. A borda do fim pode passar do
+ * arquivo: aí o último quadro fica parado (`holdEndMs`).
  */
 export function trimVideoClip(
   video: ScreenVideo,
@@ -123,8 +136,12 @@ export function trimVideoClip(
 
   if (edge === "end") {
     const max = video.durationMs - trimStartMs - MIN_SCREEN_VIDEO_CLIP_MS;
+    // Uma medida só para a borda final: positiva é o corte do fim do arquivo,
+    // negativa é o último quadro congelado depois dele. Puxar para dentro
+    // corta; empurrar além do fim do arquivo congela, sem limite.
+    const end = Math.min(max, trimEndMs - (video.holdEndMs ?? 0) - deltaMs);
 
-    return { trimEndMs: Math.min(max, Math.max(0, trimEndMs - deltaMs)) };
+    return { holdEndMs: Math.max(0, -end), trimEndMs: Math.max(0, end) };
   }
 
   const min = Math.max(0, trimStartMs - video.startMs);
@@ -153,7 +170,11 @@ export function getScreenVideoTime(
     return null;
   }
 
-  return (video.trimStartMs ?? 0) + offset;
+  // No trecho congelado, o tempo fica no fim do arquivo: o último quadro.
+  return Math.min(
+    (video.trimStartMs ?? 0) + offset,
+    video.durationMs - (video.trimEndMs ?? 0),
+  );
 }
 
 /** Vídeo que a tela mostra de fato: o enviado, e só se for a fonte escolhida. */
