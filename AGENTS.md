@@ -604,7 +604,9 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   primeiro**, com o cache só para offline — senão o asset ficava preso na
   versão antiga para sempre. Mudar a estratégia é mudar o `CACHE_NAME`, que
   descarta o cache antigo no `activate`. O navegador do app não aceita SW:
-  para testar, um build de produção (`next start`) num Chrome de verdade.
+  para testar, um build de produção (`next start`) num Chrome de verdade — e
+  no fim desregistrar o SW e apagar os caches daquela origem no Chrome do
+  usuário.
 - **`localStorage` passa por `app/lib/storage.ts`** (`readStorageItem`,
   `writeStorageItem`, `removeStorageItem`): com o armazenamento bloqueado ou
   cheio, a chamada direta derruba a interface. Os templates e o analytics têm
@@ -651,6 +653,11 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   vazio. Conferir o chunk CSS servido e fazer uma segunda alteração no arquivo.
 - **Vídeo exportado:** interceptar o download na página e conferir com
   `ffprobe` (quadros, fps, canal alfa).
+- **Cache do Service Worker:** o `next start` só serve os arquivos de
+  `public/` que existiam no build. Para provar que um asset de URL fixa não
+  fica preso, ponha um arquivo de teste em `public/`, faça o build, peça pela
+  página, mude o conteúdo no disco e peça de novo (tem de vir o novo); com o
+  servidor desligado, tem de vir do cache.
 - Uma cena de exemplo mexida durante o teste é do usuário: dizer o que foi
   alterado.
 
