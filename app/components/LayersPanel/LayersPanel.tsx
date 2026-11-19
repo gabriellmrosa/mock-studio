@@ -3,7 +3,6 @@
 import "./LayersPanel.css";
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { AppCopy, Locale } from "../../lib/i18n";
-import { readStorageItem, writeStorageItem } from "../../lib/storage";
 import {
   isBackgroundObject,
   isCameraObject,
@@ -68,7 +67,6 @@ type LayersPanelProps = {
   templates?: SceneTemplate[];
 };
 
-const TEMPLATES_OPEN_KEY = "mock-photo-templates-open";
 
 export default function LayersPanel({
   appMeta,
@@ -98,25 +96,13 @@ export default function LayersPanel({
 }: LayersPanelProps) {
   const [editingObjectId, setEditingObjectId] = useState<string | null>(null);
 
-  // Começa fechado e só então adota a escolha salva do usuário. Ler o
-  // localStorage no inicializador do useState (como faz o FloatingCanvasControls,
-  // que não é renderizado no servidor) quebraria a hidratação aqui: o servidor
-  // emitiria aria-expanded="false" e o cliente "true".
+  // A seção de templates sempre começa fechada ao abrir o app (decisão do
+  // usuário). Ela lembrava o último estado no localStorage e às vezes abria
+  // aberta, sem que isso fosse esperado.
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
 
-  useEffect(() => {
-    // Sincronizar com um sistema externo no mount é justamente o uso previsto
-    // para effects; a regra abaixo mira cascatas de render, que não é o caso.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setIsTemplatesOpen(readStorageItem(TEMPLATES_OPEN_KEY) === "1");
-  }, []);
-
   function toggleTemplatesOpen() {
-    setIsTemplatesOpen((current) => {
-      const next = !current;
-      writeStorageItem(TEMPLATES_OPEN_KEY, next ? "1" : "0");
-      return next;
-    });
+    setIsTemplatesOpen((current) => !current);
   }
   const [draftName, setDraftName] = useState("");
   const [isCreditsOpen, setIsCreditsOpen] = useState(false);

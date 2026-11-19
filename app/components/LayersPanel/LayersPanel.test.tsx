@@ -631,6 +631,18 @@ describe("LayersPanel", () => {
       );
     }
 
+    it("always opens the app with the templates section closed", () => {
+      // Antes ela lembrava o último estado e às vezes abria aberta.
+      window.localStorage.setItem("mock-photo-templates-open", "1");
+      renderWithImport();
+
+      expect(screen.getByRole("button", { name: "Templates" })).toHaveAttribute(
+        "aria-expanded",
+        "false",
+      );
+      window.localStorage.clear();
+    });
+
     it("opens the import modal from a button in the templates section", () => {
       renderWithImport(jest.fn(() => Promise.resolve(true)));
 
