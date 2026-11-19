@@ -27,6 +27,96 @@ export type PatchNote = {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    date: "2026-11-18",
+    version: "3.0.0",
+    items: [
+      {
+        title: {
+          "pt-BR": "Cada objeto aparece só na sua faixa",
+          "en-US": "Each object shows only on its track",
+        },
+        description: {
+          "pt-BR":
+            "Um objeto animado entra no primeiro keyframe e sai depois do último, então a timeline mostra exatamente o que vai para o vídeo. Para manter um objeto até o fim, estenda a faixa dele.",
+          "en-US":
+            "An animated object enters at its first keyframe and leaves after its last one, so the timeline shows exactly what goes into the video. To keep an object until the end, extend its track.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Último quadro congelado",
+          "en-US": "Freeze the last frame",
+        },
+        description: {
+          "pt-BR":
+            "Estique o fim de um clipe de vídeo além do arquivo e a tela fica parada no último quadro. O trecho aparece como “Congelado” na timeline.",
+          "en-US":
+            "Stretch the end of a video clip past the file and the screen holds its last frame. That stretch shows as “Frozen” on the timeline.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Ímã na timeline",
+          "en-US": "Timeline snapping",
+        },
+        description: {
+          "pt-BR":
+            "Keyframes, clipes e as bordas deles grudam em outros keyframes, nas pontas dos clipes e no playhead. Segure Alt para arrastar livre.",
+          "en-US":
+            "Keyframes, clips and their edges snap to other keyframes, clip ends and the playhead. Hold Alt to drag freely.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Copie a pose do keyframe vizinho",
+          "en-US": "Copy a neighboring keyframe's pose",
+        },
+        description: {
+          "pt-BR":
+            "Clique com o botão direito num keyframe para copiar a pose do anterior ou do próximo.",
+          "en-US":
+            "Right-click a keyframe to copy the pose of the previous or the next one.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Templates lembram as telas",
+          "en-US": "Templates remember the screens",
+        },
+        description: {
+          "pt-BR":
+            "Enquadramento, corte e tempo do clipe ficam salvos, e o template pede cada arquivo de novo pelo nome.",
+          "en-US":
+            "Framing, crop and clip timing are saved, and the template asks for each file again by name.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Sobrepor ou salvar novo",
+          "en-US": "Overwrite or save new",
+        },
+        description: {
+          "pt-BR":
+            "Ao salvar uma cena que veio de um template, você escolhe sobrepor o template ou criar outro.",
+          "en-US":
+            "When saving a scene that came from a template, you choose to overwrite it or create a new one.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Câmera sob seu controle",
+          "en-US": "The camera follows you",
+        },
+        description: {
+          "pt-BR":
+            "A câmera não se reenquadra mais sozinha. Com um keyframe dela selecionado, o que você faz na vista fica gravado nele.",
+          "en-US":
+            "The camera no longer reframes on its own. With one of its keyframes selected, what you do in the view is saved to it.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-11-17",
     version: "2.5.0",
     items: [
