@@ -58,6 +58,7 @@ import {
   getSceneMotionDuration,
   insertKeyframe,
   removeKeyframe,
+  sampleMotion,
   updateKeyframe,
   type Keyframe,
 } from "./lib/scene-motion";
@@ -71,6 +72,7 @@ import {
   duplicateSceneObject,
   getSequentialSpawnTransform,
   isDeviceObject,
+  isBackgroundObject,
   isCameraObject,
   isImageObject,
   isTextObject,
@@ -113,11 +115,21 @@ import {
 } from "./lib/canvas-grid";
 import {
   DEFAULT_CANVAS_BACKGROUND,
+  DEFAULT_CANVAS_COLOR,
+  mergeBackgroundPose,
   mergeCanvasBackground,
   normalizeCanvasBackground,
+  type BackgroundPose,
+  type BackgroundPosePatch,
   type CanvasBackground,
 } from "./lib/canvas-background";
 import { createCameraKeyframe, createCameraObject } from "./lib/camera-objects";
+import {
+  createBackgroundKeyframe,
+  createBackgroundObject,
+  findBackgroundObject,
+} from "./lib/background-objects";
+import type { BackgroundEditor } from "./components/BackgroundFields/BackgroundFields";
 import { isSameOrbit, normalizeOrbit, type CameraOrbit } from "./lib/camera-orbit";
 import { DEVICE_MODELS } from "./models/device-models";
 
@@ -195,8 +207,9 @@ export default function Home() {
       id: "base-object",
       name: "Object 1",
     }),
-    // A câmera da cena: sempre na lista, o nome na tela vem do idioma.
+    // A câmera e o Fundo da cena: sempre na lista, o nome na tela vem do idioma.
     createCameraObject({ id: "camera", name: "Camera" }),
+    createBackgroundObject({ id: "background", name: "Background" }),
   ]);
   const [selectedObjectId, setSelectedObjectId] = useState("");
   const [motionTab, setMotionTab] = useState<TemplateMode>("static");
@@ -267,17 +280,22 @@ export default function Home() {
   // não tem tela, modelo nem cores de aparelho.
   const selectedDevice =
     selectedObject && isDeviceObject(selectedObject) ? selectedObject : null;
-  // A câmera se chama no idioma da interface (o nome guardado é só interno), e
-  // na timeline ela vem primeiro, como na lista.
+  // A câmera e o Fundo se chamam no idioma da interface (o nome guardado é só
+  // interno), e na timeline vêm primeiro, nessa ordem, como na lista.
+  const withDisplayName = (object: SceneObject): SceneObject =>
+    isCameraObject(object)
+      ? { ...object, name: copy.cameraObjectName }
+      : isBackgroundObject(object)
+        ? { ...object, name: copy.backgroundObjectName }
+        : object;
+  const listOrder = (object: SceneObject) =>
+    isCameraObject(object) ? 2 : isBackgroundObject(object) ? 1 : 0;
   const displayObjects = sceneObjects
-    .map((object) =>
-      isCameraObject(object) ? { ...object, name: copy.cameraObjectName } : object,
-    )
-    .sort((a, b) => Number(isCameraObject(b)) - Number(isCameraObject(a)));
-  const displaySelectedObject =
-    selectedObject && isCameraObject(selectedObject)
-      ? { ...selectedObject, name: copy.cameraObjectName }
-      : selectedObject;
+    .map(withDisplayName)
+    .sort((a, b) => listOrder(b) - listOrder(a));
+  const displaySelectedObject = selectedObject
+    ? withDisplayName(selectedObject)
+    : selectedObject;
 
   useEffect(() => {
     const storedLocale = window.localStorage.getItem("mock-photo-locale");
@@ -733,8 +751,8 @@ export default function Home() {
         return [...current, copied];
       }
 
-      // A câmera é única por cena: não se duplica.
-      if (isCameraObject(source)) {
+      // A câmera e o Fundo são únicos por cena: não se duplicam.
+      if (isCameraObject(source) || isBackgroundObject(source)) {
         return current;
       }
 
@@ -847,7 +865,7 @@ export default function Home() {
           return resetSceneObject(object);
         }
 
-        if (isCameraObject(object)) {
+        if (isCameraObject(object) || isBackgroundObject(object)) {
           return object;
         }
 
@@ -1262,6 +1280,24 @@ export default function Home() {
       return;
     }
 
+    // O keyframe do Fundo captura o fundo de agora: o do keyframe por onde o
+    // playhead passa, ou o da cena, se o Fundo ainda não anima.
+    if (isBackgroundObject(target)) {
+      const created = createBackgroundKeyframe(
+        playheadMs,
+        sampleMotion(target, playheadMs)?.background ?? sceneBackgroundPose,
+      );
+
+      updateShared(objectId, {
+        keyframes: [...target.keyframes, created].sort(
+          (a, b) => a.timeMs - b.timeMs,
+        ),
+      });
+      selectKeyframe(objectId, created);
+
+      return;
+    }
+
     const { id, keyframes } = insertKeyframe(target, playheadMs);
     const created = keyframes.find((keyframe) => keyframe.id === id);
 
@@ -1271,6 +1307,81 @@ export default function Home() {
       selectKeyframe(objectId, created);
     }
   }
+
+  /**
+   * O fundo da cena como um fundo inteiro: o que os campos editam sem o Fundo
+   * animado, e o ponto de partida do primeiro keyframe dele.
+   */
+  const sceneBackgroundPose: BackgroundPose = {
+    ...canvasBackground,
+    color: canvasBgColor ?? DEFAULT_CANVAS_COLOR[uiTheme],
+    grid: canvasGrid,
+  };
+
+  /** Um campo do fundo da cena: cada parte no seu estado, a partir do de agora. */
+  function handleSceneBackgroundChange(patch: BackgroundPosePatch) {
+    if (patch.color !== undefined) {
+      setCanvasBgColor(patch.color);
+    }
+
+    if (patch.grid) {
+      const gridPatch = patch.grid;
+
+      // A partir do estado atual: o seletor de cor (memoizado) chama de um
+      // render antigo.
+      setCanvasGrid((current) => normalizeCanvasGrid({ ...current, ...gridPatch }));
+    }
+
+    if (patch.style !== undefined || patch.gradient !== undefined) {
+      setCanvasBackground((current) =>
+        mergeCanvasBackground(current, { gradient: patch.gradient, style: patch.style }),
+      );
+    }
+  }
+
+  /** Um campo de um keyframe do Fundo, a partir do keyframe como está agora. */
+  function handleBackgroundKeyframeChange(keyframeId: string, patch: BackgroundPosePatch) {
+    setSceneObjects((current) =>
+      current.map((object) =>
+        isBackgroundObject(object)
+          ? {
+              ...object,
+              keyframes: object.keyframes.map((keyframe) =>
+                keyframe.id === keyframeId && keyframe.transform.background
+                  ? {
+                      ...keyframe,
+                      transform: {
+                        ...keyframe.transform,
+                        background: mergeBackgroundPose(keyframe.transform.background, patch),
+                      },
+                    }
+                  : keyframe,
+              ),
+            }
+          : object,
+      ),
+    );
+  }
+
+  // O que os campos do fundo editam (no botão Fundo e grade e no Inspector):
+  // um keyframe do Fundo selecionado; senão, com o Fundo animado no Vídeo,
+  // nada (o fundo é o de cada keyframe, e os campos mostram o aviso, como a
+  // câmera); senão, o fundo da cena.
+  const backgroundObject = findBackgroundObject(sceneObjects);
+  const backgroundKeyframe =
+    motionTab === "motion"
+      ? backgroundObject?.keyframes.find((keyframe) => keyframe.id === selectedKeyframeId)
+      : undefined;
+  const editedKeyframeBackground = backgroundKeyframe?.transform.background;
+  const backgroundEditor: BackgroundEditor | null =
+    backgroundKeyframe && editedKeyframeBackground
+      ? {
+          onChange: (patch) => handleBackgroundKeyframeChange(backgroundKeyframe.id, patch),
+          value: editedKeyframeBackground,
+        }
+      : motionTab === "motion" && (backgroundObject?.keyframes.length ?? 0) > 0
+        ? null
+        : { onChange: handleSceneBackgroundChange, value: sceneBackgroundPose };
 
   function handleRemoveKeyframe(objectId: string, keyframeId: string) {
     const target = findObject(objectId);
@@ -1666,16 +1777,7 @@ export default function Home() {
         objects={sceneObjects}
         grid={canvasGrid}
         background={canvasBackground}
-        onBackgroundChange={(patch) =>
-          // A partir do estado atual, como a grade.
-          setCanvasBackground((current) => mergeCanvasBackground(current, patch))
-        }
-        onBgColorChange={setCanvasBgColor}
-        onGridChange={(patch) =>
-          // A partir do estado atual: o seletor de cor (memoizado) chama de um
-          // render antigo.
-          setCanvasGrid((current) => normalizeCanvasGrid({ ...current, ...patch }))
-        }
+        backgroundEditor={backgroundEditor}
         onCameraApiReady={handleCameraApiReady}
         onCameraRest={refreshLiveCamera}
         onCameraViewEdited={handleCameraViewEdited}
@@ -1745,6 +1847,7 @@ export default function Home() {
 
       {!isUiHidden && (
       <InspectorPanel
+        backgroundEditor={backgroundEditor}
         copy={copy}
         object={displaySelectedObject}
         cameraOrbit={

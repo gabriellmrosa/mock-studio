@@ -1,0 +1,31 @@
+/* Os campos do fundo, no painel do botão Fundo e grade e no Inspector (Fundo
+   selecionado). Dois grupos: o fundo e, só no chão 3D, a grade. */
+.background-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.background-fields-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.background-fields-section + .background-fields-section {
+  border-top: 1px solid var(--panel-border);
+  padding-top: var(--space-4);
+}
+
+.background-fields-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.background-fields-title {
+  color: var(--sidebar-label);
+  font-size: var(--font-size-150);
+  font-weight: var(--font-medium);
+  margin: 0;
+}

@@ -1,4 +1,10 @@
-import { lerpHexColor } from "./scene-motion";
+import {
+  getGridLineColors,
+  normalizeCanvasGrid,
+  type CanvasGrid,
+} from "./canvas-grid";
+import type { UiTheme } from "./i18n";
+import { getMotionSegment, lerpHexColor, type Keyframe } from "./scene-motion";
 
 /**
  * O estilo do fundo do canvas. "floor" é o de sempre: uma cor e as linhas do
@@ -29,6 +35,15 @@ export type CanvasBackground = {
 export const DEFAULT_CANVAS_BACKGROUND: CanvasBackground = {
   gradient: null,
   style: "floor",
+};
+
+/**
+ * A cor de fundo quando a cena não escolheu uma: a do palco de cada tema. É a
+ * que o PNG e o vídeo levam e a que um keyframe do Fundo captura.
+ */
+export const DEFAULT_CANVAS_COLOR: Record<UiTheme, string> = {
+  dark: "#2e2b28",
+  light: "#f2ebe0",
 };
 
 /** De cima para baixo: o degradê que um fundo de cena costuma ter. */
@@ -171,18 +186,180 @@ export function paintCanvasBackground(
   color: string,
   background: CanvasBackground,
 ) {
-  const gradient = getActiveGradient(background);
+  // A grade não entra na pintura: ela é desenhada na cena.
+  paintBackgroundLook(
+    context,
+    width,
+    height,
+    getBackgroundLook({ ...background, color, grid: { color: null, opacity: 0 } }),
+  );
+}
 
-  if (gradient) {
-    const line = getGradientLine(width, height, gradient.angle);
+/**
+ * O fundo inteiro de um instante, como um keyframe do Fundo o guarda: o
+ * estilo, a cor, o degradê (só no liso) e a grade (só no chão). É o que o
+ * painel edita — a cor aqui é sempre uma cor de fato, nunca a automática.
+ */
+export type BackgroundPose = CanvasBackground & {
+  color: string;
+  grid: CanvasGrid;
+};
+
+/** Leitura defensiva de um keyframe do Fundo (template, link). */
+export function normalizeBackgroundPose(value: unknown): BackgroundPose | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const input = value as Partial<BackgroundPose>;
+
+  if (typeof input.color !== "string" || !HEX_COLOR.test(input.color)) {
+    return null;
+  }
+
+  return {
+    ...normalizeCanvasBackground(input),
+    color: input.color.toLowerCase(),
+    grid: normalizeCanvasGrid(input.grid),
+  };
+}
+
+export type BackgroundPosePatch = CanvasBackgroundPatch & {
+  color?: string;
+  grid?: Partial<CanvasGrid>;
+};
+
+/** O que um campo do painel muda num fundo inteiro (ver `mergeCanvasBackground`). */
+export function mergeBackgroundPose(
+  current: BackgroundPose,
+  patch: BackgroundPosePatch,
+): BackgroundPose {
+  return {
+    ...mergeCanvasBackground(current, patch),
+    color: patch.color ?? current.color,
+    grid: normalizeCanvasGrid({ ...current.grid, ...patch.grid }),
+  };
+}
+
+/**
+ * O que se vê de um fundo, em números que dá para misturar: a cor de cima, a
+ * de chegada (igual à de cima é cor lisa), o ângulo e as linhas do chão já
+ * misturadas com o fundo, com a opacidade (0 é sem chão). Um liso é um chão de
+ * linhas na cor do fundo, com opacidade 0 — por isso ir de um estilo ao outro
+ * vira uma dissolução, e não um corte: as linhas somem enquanto as cores
+ * deslizam (decisão do usuário).
+ */
+export type BackgroundLook = {
+  angle: number;
+  color: string;
+  endColor: string;
+  grid: { cell: string; opacity: number; section: string };
+};
+
+export function getBackgroundLook(pose: BackgroundPose): BackgroundLook {
+  const gradient = getActiveGradient(pose);
+  const lines =
+    pose.style === "floor"
+      ? { ...getGridLineColors(pose.color, pose.grid), opacity: pose.grid.opacity }
+      : { cell: pose.color, opacity: 0, section: pose.color };
+
+  return {
+    angle: gradient?.angle ?? DEFAULT_GRADIENT_ANGLE,
+    color: pose.color,
+    endColor: gradient?.color ?? pose.color,
+    grid: lines,
+  };
+}
+
+function isSolidLook(look: BackgroundLook) {
+  return look.endColor === look.color;
+}
+
+export function lerpBackgroundLook(
+  from: BackgroundLook,
+  to: BackgroundLook,
+  t: number,
+): BackgroundLook {
+  // De uma cor lisa para um degradê, o degradê já nasce no ângulo dele: girar
+  // o ângulo de um fundo liso não se vê, e só faria o degradê chegar girando.
+  const fromAngle = isSolidLook(from) ? to.angle : from.angle;
+  const toAngle = isSolidLook(to) ? from.angle : to.angle;
+  const mix = (a: number, b: number) => a + (b - a) * t;
+
+  return {
+    angle: mix(fromAngle, toAngle),
+    color: lerpHexColor(from.color, to.color, t),
+    endColor: lerpHexColor(from.endColor, to.endColor, t),
+    grid: {
+      cell: lerpHexColor(from.grid.cell, to.grid.cell, t),
+      opacity: mix(from.grid.opacity, to.grid.opacity),
+      section: lerpHexColor(from.grid.section, to.grid.section, t),
+    },
+  };
+}
+
+/**
+ * O fundo de um instante pelos keyframes do Fundo, com a curva de cada trecho.
+ * `null` sem keyframes (ou sem fundo neles): vale o fundo da cena.
+ */
+export function sampleBackgroundLook(
+  keyframes: Keyframe[],
+  timeMs: number,
+): BackgroundLook | null {
+  const segment = getMotionSegment(keyframes, timeMs);
+  const from = segment?.from.transform.background;
+  const to = segment?.to.transform.background;
+
+  if (!segment || !from || !to) {
+    return null;
+  }
+
+  return segment.from === segment.to
+    ? getBackgroundLook(to)
+    : lerpBackgroundLook(getBackgroundLook(from), getBackgroundLook(to), segment.progress);
+}
+
+/** O visual como CSS: a cor, ou o degradê. */
+export function getBackgroundLookCss(look: BackgroundLook) {
+  return isSolidLook(look)
+    ? look.color
+    : `linear-gradient(${look.angle}deg, ${look.color}, ${look.endColor})`;
+}
+
+/** Se o visual precisa ser pintado (degradê) em vez de ser a cor de limpeza. */
+export function isGradientLook(look: BackgroundLook) {
+  return !isSolidLook(look);
+}
+
+/** Pinta o visual num canvas 2D, para a exportação compor a cena por cima. */
+export function paintBackgroundLook(
+  context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
+  width: number,
+  height: number,
+  look: BackgroundLook,
+) {
+  if (isSolidLook(look)) {
+    context.fillStyle = look.color;
+  } else {
+    const line = getGradientLine(width, height, look.angle);
     const fill = context.createLinearGradient(line.x0, line.y0, line.x1, line.y1);
 
-    fill.addColorStop(0, color);
-    fill.addColorStop(1, gradient.color);
+    fill.addColorStop(0, look.color);
+    fill.addColorStop(1, look.endColor);
     context.fillStyle = fill;
-  } else {
-    context.fillStyle = color;
   }
 
   context.fillRect(0, 0, width, height);
+}
+
+/**
+ * O fundo que a cena mostra num instante: o dos keyframes do Fundo, se houver
+ * (só no Vídeo, com um instante), senão o fundo da cena.
+ */
+export function getSceneBackgroundLook(
+  keyframes: Keyframe[],
+  sceneLook: BackgroundLook,
+  timeMs: number | null,
+): BackgroundLook {
+  return (timeMs !== null ? sampleBackgroundLook(keyframes, timeMs) : null) ?? sceneLook;
 }

@@ -8,6 +8,7 @@ import {
 } from "./scene-objects";
 import { DEFAULT_CAMERA_ORBIT, lerpOrbit, type CameraOrbit } from "./camera-orbit";
 import { DEFAULT_FOLD_ANGLE } from "./scene-presets";
+import type { BackgroundPose } from "./canvas-background";
 
 /**
  * Motion por objeto: uma lista de keyframes, cada um um retrato dos sete
@@ -98,6 +99,13 @@ export type MotionTransform = {
    * zeros. Só a câmera o tem (ver `camera-orbit.ts`).
    */
   orbit?: CameraOrbit;
+  /**
+   * O fundo da cena num keyframe do Fundo (estilo, cores, degradê e grade);
+   * os campos de pose acima ficam nos zeros. Só o Fundo o tem. O que se vê
+   * entre dois keyframes não sai daqui, e sim de `sampleBackgroundLook`: a
+   * dissolução entre estilos não é um fundo que dê para guardar.
+   */
+  background?: BackgroundPose;
 };
 
 export type Keyframe = {
@@ -496,6 +504,16 @@ function lerpTransform(
           ),
         }
       : {}),
+    // O fundo como pose é o do keyframe mais perto: serve para capturar um
+    // keyframe novo no meio de um trecho. O que se vê é a dissolução de
+    // `sampleBackgroundLook`.
+    ...(from.background !== undefined || to.background !== undefined
+      ? {
+          background: (t < 0.5
+            ? (from.background ?? to.background)
+            : (to.background ?? from.background)) as BackgroundPose,
+        }
+      : {}),
   };
 }
 
@@ -508,14 +526,35 @@ export function sampleMotion(
   object: SceneObject,
   timeMs: number,
 ): MotionTransform | null {
-  const { keyframes } = object;
+  const segment = getMotionSegment(object.keyframes, timeMs);
 
+  if (!segment) {
+    return null;
+  }
+
+  // Antes do primeiro e depois do último, o keyframe como está.
+  return segment.from === segment.to
+    ? segment.to.transform
+    : lerpTransform(segment.from.transform, segment.to.transform, segment.progress);
+}
+
+/**
+ * Entre quais keyframes cai um instante, e quanto do trecho já andou (com a
+ * curva do keyframe de chegada aplicada). Antes do primeiro e depois do último,
+ * o trecho é o próprio keyframe (progresso 0). `null` sem keyframes. É a conta
+ * de `sampleMotion`, separada para quem interpola outra coisa que não a pose
+ * (o fundo, em `sampleBackgroundLook`).
+ */
+export function getMotionSegment(
+  keyframes: Keyframe[],
+  timeMs: number,
+): { from: Keyframe; progress: number; to: Keyframe } | null {
   if (keyframes.length === 0) {
     return null;
   }
 
   if (timeMs <= keyframes[0].timeMs) {
-    return keyframes[0].transform;
+    return { from: keyframes[0], progress: 0, to: keyframes[0] };
   }
 
   for (let index = 1; index < keyframes.length; index += 1) {
@@ -526,15 +565,13 @@ export function sampleMotion(
       const span = to.timeMs - from.timeMs;
       const progress = span === 0 ? 1 : (timeMs - from.timeMs) / span;
 
-      return lerpTransform(
-        from.transform,
-        to.transform,
-        applyEasing(to.easing, progress, to.bezier),
-      );
+      return { from, progress: applyEasing(to.easing, progress, to.bezier), to };
     }
   }
 
-  return keyframes[keyframes.length - 1].transform;
+  const last = keyframes[keyframes.length - 1];
+
+  return { from: last, progress: 0, to: last };
 }
 
 /**

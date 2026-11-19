@@ -49,30 +49,6 @@
   width: 15rem;
 }
 
-.canvas-appearance-section {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.canvas-appearance-section + .canvas-appearance-section {
-  border-top: 1px solid var(--panel-border);
-  padding-top: var(--space-4);
-}
-
-.canvas-appearance-heading {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.canvas-appearance-title {
-  color: var(--sidebar-label);
-  font-size: var(--font-size-150);
-  font-weight: var(--font-medium);
-  margin: 0;
-}
-
 /* .canvas-fab extends .editor-fab — no overrides needed at this size */
 
 .canvas-capture-button {

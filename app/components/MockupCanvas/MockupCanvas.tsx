@@ -41,6 +41,7 @@ import {
   getScreenVideoTime,
   isScreenVideoAtFileEnd,
   isDeviceObject,
+  isBackgroundObject,
   isCameraObject,
   isImageObject,
   isTextObject,
@@ -98,13 +99,20 @@ import {
   type ObjectAlignment,
 } from "./object-alignment";
 import { applyObjectOpacity, orderObjectGroups } from "./object-opacity";
-import { getGridLineColors, type CanvasGrid } from "../../lib/canvas-grid";
+import type { CanvasGrid } from "../../lib/canvas-grid";
 import {
+  DEFAULT_CANVAS_COLOR,
+  getBackgroundLook,
+  getBackgroundLookCss,
   getCanvasBackgroundCss,
-  hasFloorGrid,
+  getSceneBackgroundLook,
+  sampleBackgroundLook,
+  type BackgroundLook,
   type CanvasBackground,
-  type CanvasBackgroundPatch,
 } from "../../lib/canvas-background";
+import { findBackgroundObject } from "../../lib/background-objects";
+import type { Keyframe as MotionKeyframe } from "../../lib/scene-motion";
+import type { BackgroundEditor } from "../BackgroundFields/BackgroundFields";
 import {
   DEFAULT_CAMERA_FOV,
   lookAtToOrbit,
@@ -131,8 +139,8 @@ import {
 
 /** Um pedido de exportação de vídeo, já com tudo decidido pelo modal. */
 export type VideoExportRequest = {
-  /** O fundo (cor e estilo), ou `null` para transparente. */
-  background: { color: string; style: CanvasBackground } | null;
+  /** Com o fundo da cena (o do Fundo em cada quadro), ou transparente. */
+  background: boolean;
   frameTimes: number[];
   onProgress: (done: number, total: number) => void;
   settings: VideoExportSettings;
@@ -149,9 +157,8 @@ export type ExportPreset = {
   // Quando true, o PNG é exportado com a cor de fundo do canvas (backgroundColor).
   // Quando false/omitido, o fundo fica transparente (comportamento padrão).
   includeBackground?: boolean;
-  backgroundColor?: string;
-  /** O estilo do fundo: um degradê sai pintado por baixo da cena. */
-  canvasBackground?: CanvasBackground;
+  /** O fundo: uma cor lisa é a de limpeza; um degradê sai pintado por baixo. */
+  backgroundLook?: BackgroundLook;
 };
 
 type MockupCanvasProps = {
@@ -164,9 +171,12 @@ type MockupCanvasProps = {
   isUiHidden: boolean;
   locale: Locale;
   objects: SceneObject[];
-  onBgColorChange: (color: string | null) => void;
-  onGridChange: (patch: Partial<CanvasGrid>) => void;
-  onBackgroundChange: (patch: CanvasBackgroundPatch) => void;
+  /**
+   * O que os campos do fundo editam (o fundo da cena ou o keyframe do Fundo
+   * selecionado), ou `null` quando o Fundo anima e nenhum keyframe dele está
+   * selecionado.
+   */
+  backgroundEditor: BackgroundEditor | null;
   onCameraApiReady: (api: CameraApi | null) => void;
   /** A câmera parou depois de um gesto: quem mostra a órbita a lê de novo. */
   onCameraRest?: () => void;
@@ -250,7 +260,12 @@ type SceneBridgeProps = MockupCanvasProps & {
   modeFrameRef: { current: ((pose: CameraPose | null) => void) | null };
   /** A área de referência do alinhamento no Estático (ver `.canvas-align-area`). */
   alignmentAreaRef: { current: HTMLDivElement | null };
-  canvasBgColor: string | null;
+  /** O fundo que o editor mostra agora (no Vídeo, o do playhead). */
+  backgroundLook: BackgroundLook;
+  /** O fundo da cena, quando o Fundo não tem keyframes. */
+  sceneBackgroundLook: BackgroundLook;
+  /** O quadro do vídeo, cujo fundo o play escreve direto. */
+  frameRef: { current: HTMLDivElement | null };
   // true quando todos os objetos visíveis já resolveram — só então a pose
   // pendente é considerada aplicada em definitivo.
   isSceneSettled: boolean;
@@ -266,7 +281,6 @@ type SceneBridgeProps = MockupCanvasProps & {
   spawnOverrides: SpawnOverrides;
 };
 
-const DEFAULT_BG: Record<UiTheme, string> = { dark: "#2e2b28", light: "#f2ebe0" };
 
 const TIMELINE_HEIGHT_KEY = "mock-photo-timeline-height";
 
@@ -430,9 +444,11 @@ function OpacityController({
 
 function SceneBridge({
   alignmentAreaRef,
-  background,
+  backgroundLook,
   copy,
-  grid,
+  frameRef,
+  motionFrame,
+  sceneBackgroundLook,
   modeFrameRef,
   isSceneSettled,
   objects,
@@ -452,8 +468,6 @@ function SceneBridge({
   scaleOverrides,
   sceneFitKey,
   spawnOverrides,
-  uiTheme,
-  canvasBgColor,
 }: SceneBridgeProps) {
   const controlsRef = useRef<CameraControlsImpl | null>(null);
   const gridRef = useRef<THREE.Mesh | null>(null);
@@ -470,8 +484,29 @@ function SceneBridge({
   // controlador do editor não pode posicioná-los no playhead por cima.
   const isExportingVideoRef = useRef(false);
   // A exportação lê a cena de quando roda, não de quando foi registrada.
-  const latestSceneRef = useRef({ motionPlayheadMs, objects, spawnOverrides });
-  latestSceneRef.current = { motionPlayheadMs, objects, spawnOverrides };
+  const latestSceneRef = useRef({
+    motionPlayheadMs,
+    objects,
+    sceneBackgroundLook,
+    spawnOverrides,
+  });
+  latestSceneRef.current = {
+    motionPlayheadMs,
+    objects,
+    sceneBackgroundLook,
+    spawnOverrides,
+  };
+  const backgroundObject = motionFrame ? findBackgroundObject(objects) : null;
+  const isBackgroundAnimated = (backgroundObject?.keyframes.length ?? 0) > 0;
+
+  // Parado, a grade é a do fundo de agora. Vai direto aos uniformes (além das
+  // props): o play os escreve quadro a quadro, e uma prop que o React acha que
+  // não mudou não seria reposta quando ele para.
+  useLayoutEffect(() => {
+    if (motionStartedAt === null) {
+      applyBackgroundLook(gridRef.current, null, backgroundLook);
+    }
+  }, [backgroundLook, motionStartedAt]);
 
   function handleObjectDoubleClick(
     event: ThreeEvent<MouseEvent>,
@@ -494,8 +529,22 @@ function SceneBridge({
   useEffect(() => {
     function applyPoses(
       timeMs: number,
-      { objects: current, spawnOverrides: overrides } = latestSceneRef.current,
+      {
+        objects: current,
+        sceneBackgroundLook: sceneLook,
+        spawnOverrides: overrides,
+      } = latestSceneRef.current,
     ) {
+      // O fundo do instante: a grade sempre; o quadro, só com o Fundo
+      // animado (sem ele, o quadro é do React, que mostra o palco do tema).
+      const backgroundKeyframes = findBackgroundObject(current)?.keyframes ?? [];
+
+      applyBackgroundLook(
+        gridRef.current,
+        backgroundKeyframes.length > 0 ? frameRef.current : null,
+        getSceneBackgroundLook(backgroundKeyframes, sceneLook, timeMs),
+      );
+
       // Mesma contagem do render: a posição de spawn depende do índice entre
       // os aparelhos visíveis (o texto não entra na conta).
       let deviceIndex = 0;
@@ -556,7 +605,14 @@ function SceneBridge({
           scene,
         },
         request.size,
-        request.background,
+        request.background
+          ? (timeMs) =>
+              getSceneBackgroundLook(
+                findBackgroundObject(exported.objects)?.keyframes ?? [],
+                exported.sceneBackgroundLook,
+                timeMs,
+              )
+          : null,
       );
 
       try {
@@ -576,12 +632,8 @@ function SceneBridge({
     return () => {
       onVideoExportReady(null);
     };
-  }, [advance, camera, gl, onVideoExportReady, scene]);
+  }, [advance, camera, frameRef, gl, onVideoExportReady, scene]);
 
-  const gridColors = getGridLineColors(
-    canvasBgColor ?? DEFAULT_BG[uiTheme],
-    grid,
-  );
   const visibleObjects = objects.filter((object) => object.isVisible);
   const sceneDurationMs = useMemo(() => getSceneMotionDuration(objects), [objects]);
   // A posição de partida de um aparelho depende do índice entre os aparelhos
@@ -594,17 +646,27 @@ function SceneBridge({
   return (
     <>
       <Environment preset="studio" />
+      {motionStartedAt !== null && isBackgroundAnimated && backgroundObject ? (
+        <BackgroundMotion
+          frameRef={frameRef}
+          gridRef={gridRef}
+          keyframes={backgroundObject.keyframes}
+          sceneDurationMs={sceneDurationMs}
+          startedAt={motionStartedAt}
+        />
+      ) : null}
       <Grid
         ref={gridRef}
-        // No fundo liso não há chão. As exportações leem esta visibilidade.
-        visible={hasFloorGrid(background)}
+        // No fundo liso não há chão (opacidade 0). As exportações leem esta
+        // visibilidade.
+        visible={backgroundLook.grid.opacity > 0}
         position={[0, -300, 0]}
         cellSize={50}
         cellThickness={0.5}
-        cellColor={gridColors.cell}
+        cellColor={backgroundLook.grid.cell}
         sectionSize={200}
         sectionThickness={1}
-        sectionColor={gridColors.section}
+        sectionColor={backgroundLook.grid.section}
         fadeDistance={5500}
         fadeStrength={0.9}
         infiniteGrid
@@ -756,8 +818,9 @@ function SceneBridge({
             }
 
             // A câmera não se desenha: ela é o ponto de vista, não uma coisa na
-            // cena (ver `CameraMotion`).
-            if (isCameraObject(object)) {
+            // cena (ver `CameraMotion`). O Fundo também não: ele é o palco e a
+            // grade (ver `BackgroundMotion`).
+            if (isCameraObject(object) || isBackgroundObject(object)) {
               return null;
             }
 
@@ -1043,6 +1106,60 @@ function ScreenVideoController({
       ) {
         element.currentTime = Math.max(0, targetS);
       }
+    }
+  });
+
+  return null;
+}
+
+/**
+ * Escreve um fundo na cena: as cores e a visibilidade da grade (nos uniformes
+ * do material do drei) e, se vier o quadro, o CSS dele. Sem passar pelo React:
+ * o play e a exportação chamam por quadro.
+ */
+function applyBackgroundLook(
+  grid: THREE.Mesh | null,
+  frame: HTMLDivElement | null,
+  look: BackgroundLook,
+) {
+  if (grid) {
+    const { uniforms } = grid.material as THREE.ShaderMaterial;
+
+    (uniforms.cellColor.value as THREE.Color).set(look.grid.cell);
+    (uniforms.sectionColor.value as THREE.Color).set(look.grid.section);
+    grid.visible = look.grid.opacity > 0;
+  }
+
+  if (frame) {
+    frame.style.background = getBackgroundLookCss(look);
+  }
+}
+
+/**
+ * O Fundo tocando: o fundo de cada quadro, no relógio da cena (preso no fim,
+ * como as poses), escrito direto no quadro e na grade.
+ */
+function BackgroundMotion({
+  frameRef,
+  gridRef,
+  keyframes,
+  sceneDurationMs,
+  startedAt,
+}: {
+  frameRef: { current: HTMLDivElement | null };
+  gridRef: { current: THREE.Mesh | null };
+  keyframes: MotionKeyframe[];
+  sceneDurationMs: number;
+  startedAt: number;
+}) {
+  useFrame(() => {
+    const look = sampleBackgroundLook(
+      keyframes,
+      getPlaybackTimeMs(startedAt, Date.now(), sceneDurationMs),
+    );
+
+    if (look) {
+      applyBackgroundLook(gridRef.current, frameRef.current, look);
     }
   });
 
@@ -1831,7 +1948,8 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     useState<ViewportControlsApi | null>(null);
   // A cor de fundo é controlada pelo page para poder entrar nos templates.
   const canvasBgColor = props.bgColor;
-  const setCanvasBgColor = props.onBgColorChange;
+  // O quadro do vídeo: o fundo dele é escrito direto (ver `frameBackground`).
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const exportHandlerRef =
     useRef<((preset: ExportPreset) => Promise<void>) | null>(null);
   const [isExportReady, setIsExportReady] = useState(false);
@@ -1934,8 +2052,46 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   // usa o palco do tema; o liso, a cor padrão: ele é sempre um fundo de fato.
   const stageBackground =
     canvasBgColor || props.background.style === "flat"
-      ? getCanvasBackgroundCss(canvasBgColor ?? DEFAULT_BG[props.uiTheme], props.background)
+      ? getCanvasBackgroundCss(canvasBgColor ?? DEFAULT_CANVAS_COLOR[props.uiTheme], props.background)
       : null;
+  // O Fundo no Vídeo: com keyframes, o fundo de cada instante vem deles.
+  const backgroundKeyframes = isFramed
+    ? (findBackgroundObject(props.objects)?.keyframes ?? [])
+    : [];
+  const isBackgroundAnimated = backgroundKeyframes.length > 0;
+  const sceneBackgroundLook = useMemo(
+    () =>
+      getBackgroundLook({
+        ...props.background,
+        color: canvasBgColor ?? DEFAULT_CANVAS_COLOR[props.uiTheme],
+        grid: props.grid,
+      }),
+    [canvasBgColor, props.background, props.grid, props.uiTheme],
+  );
+  const displayedBackgroundLook = getSceneBackgroundLook(
+    backgroundKeyframes,
+    sceneBackgroundLook,
+    props.motionPlayheadMs,
+  );
+  // O fundo do quadro do vídeo. Com o Fundo animado ele é escrito direto (no
+  // play, quadro a quadro, por `BackgroundMotion`), então nunca passa pelo
+  // `style` do React: um valor que o React acha que não mudou não seria
+  // reposto depois do play.
+  const frameBackground = isBackgroundAnimated
+    ? getBackgroundLookCss(displayedBackgroundLook)
+    : (stageBackground ?? "");
+  const isPlaying = props.motionStartedAt !== null;
+
+  useLayoutEffect(() => {
+    const frame = frameRef.current;
+
+    if (!frame || (isPlaying && isBackgroundAnimated)) {
+      return;
+    }
+
+    frame.style.background = isFramed ? frameBackground : "";
+  }, [frameBackground, isBackgroundAnimated, isFramed, isPlaying]);
+
   const stageClass =
     stageBackground && !isFramed
       ? "mockup-stage relative flex-1 h-screen"
@@ -1944,7 +2100,10 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   // para sempre "por assentar".
   const currentObjectIds = new Set(
     props.objects
-      .filter((object) => object.isVisible && !isCameraObject(object))
+      .filter(
+        (object) =>
+          object.isVisible && !isCameraObject(object) && !isBackgroundObject(object),
+      )
       .map((object) => object.id),
   );
   const visibleObjectCount = currentObjectIds.size;
@@ -2059,10 +2218,8 @@ export default function MockupCanvas(props: MockupCanvasProps) {
 
     try {
       const blob = await exportVideo({
-        // O mesmo fundo do PNG: a cor do canvas, ou a padrão do tema.
-        background: settings.background
-          ? { color: canvasBgColor ?? DEFAULT_BG[props.uiTheme], style: props.background }
-          : null,
+        // O mesmo fundo do editor, quadro a quadro (o Fundo pode animar).
+        background: settings.background,
         frameTimes,
         onProgress: (done, total) =>
           setVideoProgress({
@@ -2111,8 +2268,6 @@ export default function MockupCanvas(props: MockupCanvasProps) {
       return;
     }
 
-    // Cor de fundo efetiva do canvas (a mesma exibida no editor).
-    const backgroundColor = canvasBgColor ?? DEFAULT_BG[props.uiTheme];
 
     try {
       setIsExporting(true);
@@ -2120,8 +2275,8 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         width: resolution.width,
         height: resolution.height,
         includeBackground: resolution.includeBackground,
-        backgroundColor,
-        canvasBackground: props.background,
+        // O fundo que o editor mostra agora (no Vídeo, o do playhead).
+        backgroundLook: displayedBackgroundLook,
         label: `mock-photo-${resolution.width}x${resolution.height}-${formatTimestampForFilename(new Date())}`,
       });
       props.onNotify?.("success", props.copy.photoExportSuccess);
@@ -2156,12 +2311,12 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         }`}
       >
       <div
+        ref={frameRef}
         className="canvas-frame"
         style={
           motionFrame
             ? ({
                 "--canvas-frame-ratio": motionFrame.width / motionFrame.height,
-                background: stageBackground ?? undefined,
               } as CSSProperties)
             : undefined
         }
@@ -2178,7 +2333,9 @@ export default function MockupCanvas(props: MockupCanvasProps) {
           {...props}
           alignmentAreaRef={alignmentAreaRef}
           modeFrameRef={modeFrameRef}
-          canvasBgColor={canvasBgColor}
+          backgroundLook={displayedBackgroundLook}
+          frameRef={frameRef}
+          sceneBackgroundLook={sceneBackgroundLook}
           isSceneSettled={isSceneSettled}
           onExportReady={handleExportReady}
           onObjectLoadStateChange={handleObjectLoadStateChange}
@@ -2247,15 +2404,11 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         ) : null}
 
         <FloatingCanvasControls
-          background={props.background}
-          bgColor={canvasBgColor}
+          backgroundEditor={props.backgroundEditor}
+          backgroundSwatch={getBackgroundLookCss(displayedBackgroundLook)}
           copy={props.copy}
           isUiHidden={props.isUiHidden}
           locale={props.locale}
-          grid={props.grid}
-          onBgColorChange={setCanvasBgColor}
-          onGridChange={props.onGridChange}
-          onBackgroundChange={props.onBackgroundChange}
           onFitToScene={() => viewportControls?.fitToScene()}
           onPanDown={() => viewportControls?.panDown()}
           onPanLeft={() => viewportControls?.panLeft()}

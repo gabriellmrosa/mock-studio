@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { DEFAULT_CANVAS_GRID, type CanvasGrid } from "../../lib/canvas-grid";
 import {
   DEFAULT_CANVAS_BACKGROUND,
+  DEFAULT_CANVAS_COLOR,
   type CanvasBackground,
 } from "../../lib/canvas-background";
 import { APP_COPY } from "../../lib/i18n";
@@ -12,19 +13,23 @@ const copy = APP_COPY["en-US"];
 function renderControls(
   grid: CanvasGrid = DEFAULT_CANVAS_GRID,
   background: CanvasBackground = DEFAULT_CANVAS_BACKGROUND,
+  { editable = true }: { editable?: boolean } = {},
 ) {
-  const handlers = {
-    onBackgroundChange: jest.fn(),
-    onBgColorChange: jest.fn(),
-    onGridChange: jest.fn(),
-  };
+  const onChange = jest.fn();
+  const handlers = { onChange };
 
   render(
     <FloatingCanvasControls
-      background={background}
-      bgColor={null}
+      backgroundEditor={
+        editable
+          ? {
+              onChange,
+              value: { ...background, color: DEFAULT_CANVAS_COLOR.dark, grid },
+            }
+          : null
+      }
+      backgroundSwatch={DEFAULT_CANVAS_COLOR.dark}
       copy={copy}
-      grid={grid}
       isUiHidden={false}
       locale="en-US"
       onFitToScene={jest.fn()}
@@ -38,7 +43,6 @@ function renderControls(
       onZoomOut={jest.fn()}
       takePhotoDisabled={false}
       uiTheme="dark"
-      {...handlers}
     />,
   );
 
@@ -67,7 +71,7 @@ describe("background and grid panel", () => {
   });
 
   it("changes the grid opacity as a fraction, leaving the color alone", () => {
-    const { onGridChange } = renderControls();
+    const { onChange } = renderControls();
 
     openPanel();
 
@@ -78,7 +82,7 @@ describe("background and grid panel", () => {
     fireEvent.change(opacity, { target: { value: "40" } });
     fireEvent.blur(opacity);
 
-    expect(onGridChange).toHaveBeenCalledWith({ opacity: 0.4 });
+    expect(onChange).toHaveBeenCalledWith({ grid: { opacity: 0.4 } });
   });
 
   it("shows the automatic grid color: the usual light one on the dark default background", () => {
@@ -98,7 +102,7 @@ describe("background and grid panel", () => {
   });
 
   it("can only go back to automatic once something was changed", () => {
-    const { onGridChange } = renderControls({ color: "#ff0000", opacity: 0.5 });
+    const { onChange } = renderControls({ color: "#ff0000", opacity: 0.5 });
 
     openPanel();
 
@@ -108,7 +112,7 @@ describe("background and grid panel", () => {
 
     fireEvent.click(reset);
 
-    expect(onGridChange).toHaveBeenCalledWith({ color: null, opacity: 1 });
+    expect(onChange).toHaveBeenCalledWith({ grid: { color: null, opacity: 1 } });
   });
 
   it("has nothing to reset while the grid is automatic", () => {
@@ -136,12 +140,12 @@ describe("background and grid panel", () => {
 
 describe("background style", () => {
   it("switches to a flat background from the style tabs", () => {
-    const { onBackgroundChange } = renderControls();
+    const { onChange } = renderControls();
 
     openPanel();
     fireEvent.click(screen.getByRole("tab", { name: copy.canvasBackgroundFlat }));
 
-    expect(onBackgroundChange).toHaveBeenCalledWith({ style: "flat" });
+    expect(onChange).toHaveBeenCalledWith({ style: "flat" });
   });
 
   it("hides the floor grid on a flat background and offers the gradient", () => {
@@ -158,7 +162,7 @@ describe("background style", () => {
   });
 
   it("turns the gradient on from the default background color, top to bottom", () => {
-    const { onBackgroundChange } = renderControls(DEFAULT_CANVAS_GRID, {
+    const { onChange } = renderControls(DEFAULT_CANVAS_GRID, {
       gradient: null,
       style: "flat",
     });
@@ -166,13 +170,13 @@ describe("background style", () => {
     openPanel();
     fireEvent.click(screen.getByRole("switch", { name: copy.canvasGradientLabel }));
 
-    expect(onBackgroundChange).toHaveBeenCalledWith({
+    expect(onChange).toHaveBeenCalledWith({
       gradient: { angle: 180, color: expect.stringMatching(/^#[0-9a-f]{6}$/) },
     });
   });
 
   it("changes only the angle of the gradient", () => {
-    const { onBackgroundChange } = renderControls(DEFAULT_CANVAS_GRID, {
+    const { onChange } = renderControls(DEFAULT_CANVAS_GRID, {
       gradient: { angle: 180, color: "#000000" },
       style: "flat",
     });
@@ -184,6 +188,15 @@ describe("background style", () => {
     fireEvent.change(angle, { target: { value: "90" } });
     fireEvent.blur(angle);
 
-    expect(onBackgroundChange).toHaveBeenCalledWith({ gradient: { angle: 90 } });
+    expect(onChange).toHaveBeenCalledWith({ gradient: { angle: 90 } });
   });
+});
+
+it("says how to reach a keyframe when the Background animates and none is selected", () => {
+  renderControls(DEFAULT_CANVAS_GRID, DEFAULT_CANVAS_BACKGROUND, { editable: false });
+
+  openPanel();
+
+  expect(screen.getByText(copy.motionEmptyHint)).toBeInTheDocument();
+  expect(screen.queryByRole("tab", { name: copy.canvasBackgroundFlat })).not.toBeInTheDocument();
 });

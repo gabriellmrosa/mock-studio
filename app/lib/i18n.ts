@@ -258,6 +258,7 @@ export type AppCopy = {
   zoomOutButton: string;
   backgroundColorButton: string;
   cameraObjectName: string;
+  backgroundObjectName: string;
   cameraSectionTitle: string;
   cameraAzimuthLabel: string;
   cameraElevationLabel: string;
@@ -572,6 +573,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     zoomOutButton: "Afastar",
     backgroundColorButton: "Fundo e grade",
     cameraObjectName: "Câmera",
+    backgroundObjectName: "Fundo",
     cameraSectionTitle: "Câmera",
     cameraAzimuthLabel: "Órbita horizontal (°)",
     cameraElevationLabel: "Órbita vertical (°)",
@@ -950,6 +952,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     zoomOutButton: "Zoom out",
     backgroundColorButton: "Background and grid",
     cameraObjectName: "Camera",
+    backgroundObjectName: "Background",
     cameraSectionTitle: "Camera",
     cameraAzimuthLabel: "Horizontal orbit (°)",
     cameraElevationLabel: "Vertical orbit (°)",

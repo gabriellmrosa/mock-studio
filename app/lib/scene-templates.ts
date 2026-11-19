@@ -13,6 +13,7 @@ import {
 } from "../models/device-models";
 import {
   getPlaceholderImageUrl,
+  isBackgroundObject,
   isCameraObject,
   isImageObject,
   isTextObject,
@@ -25,6 +26,7 @@ import {
 } from "./image-objects";
 import { isStickerId } from "./stickers";
 import { createCameraObject, withCameraObject } from "./camera-objects";
+import { createBackgroundObject, withBackgroundObject } from "./background-objects";
 import { isOrbit, normalizeOrbit } from "./camera-orbit";
 import { normalizeSceneText, type SceneText } from "./text-objects";
 import {
@@ -39,6 +41,7 @@ import {
   type CanvasGrid,
 } from "./canvas-grid";
 import {
+  normalizeBackgroundPose,
   normalizeCanvasBackground,
   toStoredCanvasBackground,
   type CanvasBackground,
@@ -189,16 +192,30 @@ export type TemplateCameraObject = {
   name: string;
 };
 
+/** O Fundo: como a câmera, só num template de Vídeo e só com keyframes. */
+export type TemplateBackgroundObject = {
+  kind: "background";
+  keyframes?: TemplateKeyframe[];
+  name: string;
+};
+
 export type TemplateObject =
   | TemplateDeviceObject
   | TemplateTextObject
   | TemplateImageObject
-  | TemplateCameraObject;
+  | TemplateCameraObject
+  | TemplateBackgroundObject;
 
 export function isTemplateCamera(
   object: TemplateObject,
 ): object is TemplateCameraObject {
   return object.kind === "camera";
+}
+
+export function isTemplateBackground(
+  object: TemplateObject,
+): object is TemplateBackgroundObject {
+  return object.kind === "background";
 }
 
 export function isTemplateImage(
@@ -253,8 +270,8 @@ function toTemplateKeyframes(
 }
 
 /**
- * Os objetos de um template: todos, menos a câmera quando ela não tem o que
- * guardar (no Foto, ou sem keyframes).
+ * Os objetos de um template: todos, menos a câmera e o Fundo quando não têm o
+ * que guardar (no Foto, ou sem keyframes — o fundo da cena já vai à parte).
  */
 function toTemplateObjects(
   objects: SceneObject[],
@@ -263,7 +280,7 @@ function toTemplateObjects(
   return objects
     .filter(
       (object) =>
-        !isCameraObject(object) ||
+        !(isCameraObject(object) || isBackgroundObject(object)) ||
         (mode === "motion" && object.keyframes.length > 0),
     )
     .map((object) => toTemplateObject(object, mode));
@@ -277,6 +294,14 @@ function toTemplateObject(
     return {
       ...toTemplateKeyframes(object, mode),
       kind: "camera",
+      name: object.name,
+    };
+  }
+
+  if (isBackgroundObject(object)) {
+    return {
+      ...toTemplateKeyframes(object, mode),
+      kind: "background",
       name: object.name,
     };
   }
@@ -424,7 +449,9 @@ function fromTemplateKeyframes(keyframes: TemplateKeyframe[] | undefined) {
     ...(keyframe.bezier ? { bezier: [...keyframe.bezier] as CubicBezier } : {}),
     id: crypto.randomUUID(),
     transform: {
-      ...keyframe.transform,
+      ...withoutBackground(keyframe.transform),
+      // O fundo de um keyframe do Fundo vem de fora: só volta se for legível.
+      ...withBackgroundPose(keyframe.transform.background),
       // Keyframes salvos antes da opacidade não a têm: 100%.
       opacity: keyframe.transform.opacity ?? 1,
       // A órbita da câmera vem de fora: volta pelos limites.
@@ -435,11 +462,32 @@ function fromTemplateKeyframes(keyframes: TemplateKeyframe[] | undefined) {
   }));
 }
 
+/** O transform sem o fundo, que volta à parte (validado). */
+function withoutBackground(transform: MotionTransform): MotionTransform {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { background, ...rest } = transform;
+
+  return rest;
+}
+
+function withBackgroundPose(value: unknown) {
+  const background = normalizeBackgroundPose(value);
+
+  return background ? { background } : {};
+}
+
 export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
   const objects = template.objects.map((object, index): SceneObject => {
     if (isTemplateCamera(object)) {
       return {
         ...createCameraObject({ name: object.name }),
+        keyframes: fromTemplateKeyframes(object.keyframes),
+      };
+    }
+
+    if (isTemplateBackground(object)) {
+      return {
+        ...createBackgroundObject({ name: object.name }),
         keyframes: fromTemplateKeyframes(object.keyframes),
       };
     }
@@ -557,7 +605,7 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
   });
 
   // A cena sempre tem a sua câmera; o nome na lista vem do idioma, não daqui.
-  return withCameraObject(objects, "Camera");
+  return withBackgroundObject(withCameraObject(objects, "Camera"), "Background");
 }
 
 /**
@@ -607,9 +655,9 @@ function isValidTemplateObject(value: unknown): value is TemplateObject {
 
   const object = value as Record<string, unknown>;
 
-  // A câmera não tem pose nem modelo: só o nome e os keyframes (validados à
-  // parte, um a um).
-  if (object.kind === "camera") {
+  // A câmera e o Fundo não têm pose nem modelo: só o nome e os keyframes
+  // (validados à parte, um a um).
+  if (object.kind === "camera" || object.kind === "background") {
     return typeof object.name === "string";
   }
 

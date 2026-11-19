@@ -3,7 +3,16 @@
 import "./LayersPanel.css";
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { AppCopy, Locale } from "../../lib/i18n";
-import { isCameraObject, type SceneObject } from "../../lib/scene-objects";
+import {
+  isBackgroundObject,
+  isCameraObject,
+  type SceneObject,
+} from "../../lib/scene-objects";
+
+/** O que toda cena tem e não se mexe como objeto: a câmera e o Fundo. */
+function isSceneFixture(object: SceneObject) {
+  return isCameraObject(object) || isBackgroundObject(object);
+}
 import type { SceneTemplate } from "../../lib/scene-templates";
 import {
   IconButton,
@@ -282,9 +291,10 @@ export default function LayersPanel({
             }
           >
             <div className="layers-stack">
-              {/* A câmera da cena: sempre a primeira, e a única que não tem o
-                  que esconder, duplicar, renomear nem apagar. */}
-              {objects.filter(isCameraObject).map((camera) => {
+              {/* A câmera e o Fundo da cena: sempre os primeiros, nessa ordem,
+                  e os únicos que não têm o que esconder, duplicar, renomear nem
+                  apagar. */}
+              {objects.filter(isSceneFixture).map((camera) => {
                 const isSelected = camera.id === selectedObjectId;
 
                 return (
@@ -310,7 +320,7 @@ export default function LayersPanel({
                   </div>
                 );
               })}
-              {objects.filter((object) => !isCameraObject(object)).map((object) => {
+              {objects.filter((object) => !isSceneFixture(object)).map((object) => {
                 const isSelected = object.id === selectedObjectId;
                 return (
                   <div

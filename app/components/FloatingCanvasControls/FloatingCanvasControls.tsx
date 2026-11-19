@@ -15,40 +15,18 @@ import {
   ArrowLeft,
   ArrowRight,
   ArrowUp,
-  Blend,
   Camera,
   Eye,
   EyeOff,
-  Grid3x3,
-  RotateCw,
   ScanSearch,
-  Square,
   Video,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import {
-  ResetButton,
-  SegmentedTabs,
-  Switch,
-  Tooltip,
-} from "../EditorPrimitives/EditorPrimitives";
-import {
-  DEFAULT_GRADIENT_ANGLE,
-  getCanvasBackgroundCss,
-  getDefaultGradientColor,
-  type CanvasBackground,
-  type CanvasBackgroundPatch,
-  type CanvasBackgroundStyle,
-} from "../../lib/canvas-background";
-import {
-  DEFAULT_CANVAS_GRID,
-  getGridLineColors,
-  isDefaultCanvasGrid,
-  type CanvasGrid,
-} from "../../lib/canvas-grid";
-import ColorRow from "../ColorRow/ColorRow";
-import NumberField from "../NumberField/NumberField";
+import { Tooltip } from "../EditorPrimitives/EditorPrimitives";
+import BackgroundFields, {
+  type BackgroundEditor,
+} from "../BackgroundFields/BackgroundFields";
 import ExportDialog, { type ExportKind } from "./ExportDialog";
 import type { Locale } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
@@ -59,17 +37,16 @@ import {
 
 type FloatingCanvasControlsProps = {
   /** O estilo do fundo: chão 3D ou liso (com degradê ou não). */
-  background: CanvasBackground;
-  bgColor: string | null;
+  /**
+   * O que os campos do fundo editam — o fundo da cena ou o keyframe do Fundo
+   * selecionado —, ou `null` quando o Fundo tem keyframes e nenhum está
+   * selecionado (o painel mostra o aviso).
+   */
+  backgroundEditor: BackgroundEditor | null;
+  /** O fundo de agora, como CSS, para os quadradinhos (botão e Exportar). */
+  backgroundSwatch: string;
   copy: AppCopy;
-  /** As linhas do chão: a cor (ou automática) e a opacidade. */
-  grid: CanvasGrid;
   isUiHidden: boolean;
-  onBgColorChange: (color: string) => void;
-  /** Muda só o que veio no patch; o resto da grade fica como está. */
-  onGridChange: (patch: Partial<CanvasGrid>) => void;
-  /** Muda só o que veio no patch, a partir do fundo de agora. */
-  onBackgroundChange: (patch: CanvasBackgroundPatch) => void;
   locale: Locale;
   onCreateProjectLink?: () => Promise<string>;
   onFitToScene: () => void;
@@ -102,10 +79,6 @@ const EXPORT_OPTIONS = [
   { badge: "4K", id: "ultra-hd", width: 3840, height: 2160 },
 ] as const;
 
-const DEFAULT_BG: Record<UiTheme, string> = {
-  dark: "#2e2b28",
-  light: "#f2ebe0",
-};
 
 type Corner = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
@@ -131,15 +104,11 @@ function nearestCorner(x: number, y: number): Corner {
 }
 
 export default function FloatingCanvasControls({
-  background,
-  bgColor,
+  backgroundEditor,
+  backgroundSwatch,
   copy,
-  grid,
   isUiHidden,
   locale,
-  onBgColorChange,
-  onGridChange,
-  onBackgroundChange,
   onCreateProjectLink,
   onFitToScene,
   onPanDown,
@@ -185,12 +154,6 @@ export default function FloatingCanvasControls({
     };
   }, [isAppearanceOpen]);
 
-  const displayColor = bgColor ?? DEFAULT_BG[uiTheme];
-  // O que os quadradinhos de fundo mostram (botão e Exportar): o degradê, se houver.
-  const displayBackground = getCanvasBackgroundCss(displayColor, background);
-  const gradient = background.style === "flat" ? background.gradient : null;
-  // A cor que a grade tem quando é automática: é o que o seletor mostra.
-  const autoGridColor = getGridLineColors(displayColor, DEFAULT_CANVAS_GRID).section;
   const circleBorder =
     uiTheme === "dark"
       ? "1.5px solid rgba(255,255,255,0.28)"
@@ -479,7 +442,7 @@ export default function FloatingCanvasControls({
             <div
               className="canvas-color-swatch"
               style={{
-                background: displayBackground,
+                background: backgroundSwatch,
                 border: circleBorder,
               }}
             />
@@ -492,118 +455,19 @@ export default function FloatingCanvasControls({
               role="dialog"
               aria-label={copy.backgroundColorButton}
             >
-              <section className="canvas-appearance-section">
-                <h3 className="canvas-appearance-title">
-                  {copy.canvasBackgroundSection}
-                </h3>
-                <SegmentedTabs<CanvasBackgroundStyle>
-                  ariaLabel={copy.canvasBackgroundStyleLabel}
-                  items={[
-                    {
-                      icon: <Grid3x3 size={14} />,
-                      id: "floor",
-                      label: copy.canvasBackgroundFloor,
-                    },
-                    {
-                      icon: <Square size={14} />,
-                      id: "flat",
-                      label: copy.canvasBackgroundFlat,
-                    },
-                  ]}
-                  value={background.style}
-                  onChange={(style) => onBackgroundChange({ style })}
-                />
-                <ColorRow
-                  ariaLabel={copy.backgroundColorButton}
-                  label=""
-                  layout="field"
+              {backgroundEditor ? (
+                <BackgroundFields
+                  copy={copy}
+                  title={copy.canvasBackgroundSection}
                   uiTheme={uiTheme}
-                  value={displayColor}
-                  onChange={onBgColorChange}
+                  value={backgroundEditor.value}
+                  onChange={backgroundEditor.onChange}
                 />
-                {background.style === "flat" ? (
-                  <Switch
-                    checked={gradient !== null}
-                    label={copy.canvasGradientLabel}
-                    onChange={(checked) =>
-                      onBackgroundChange({
-                        gradient: checked
-                          ? {
-                              angle: DEFAULT_GRADIENT_ANGLE,
-                              color: getDefaultGradientColor(displayColor),
-                            }
-                          : null,
-                      })
-                    }
-                  />
-                ) : null}
-                {gradient ? (
-                  <>
-                    <ColorRow
-                      ariaLabel={copy.canvasGradientColorLabel}
-                      label=""
-                      layout="field"
-                      uiTheme={uiTheme}
-                      value={gradient.color}
-                      onChange={(color) => onBackgroundChange({ gradient: { color } })}
-                    />
-                    <NumberField
-                      ariaLabel={copy.canvasGradientAngleLabel}
-                      icon={<RotateCw size={14} />}
-                      max={360}
-                      min={0}
-                      suffix="°"
-                      value={gradient.angle}
-                      onChange={(angle) => {
-                        if (angle !== null) onBackgroundChange({ gradient: { angle } });
-                      }}
-                    />
-                  </>
-                ) : null}
-              </section>
-
-              {/* No fundo liso não há chão: a grade só existe no Chão 3D. */}
-              {background.style === "floor" ? (
-              <section className="canvas-appearance-section">
-                <div className="canvas-appearance-heading">
-                  <h3 className="canvas-appearance-title">
-                    {copy.canvasGridSection}
-                  </h3>
-                  <ResetButton
-                    disabled={isDefaultCanvasGrid(grid)}
-                    label={copy.canvasGridResetLabel}
-                    size="small"
-                    onReset={() =>
-                      onGridChange({
-                        color: DEFAULT_CANVAS_GRID.color,
-                        opacity: DEFAULT_CANVAS_GRID.opacity,
-                      })
-                    }
-                  />
-                </div>
-                <ColorRow
-                  ariaLabel={copy.canvasGridColorLabel}
-                  label=""
-                  layout="field"
-                  uiTheme={uiTheme}
-                  value={grid.color ?? autoGridColor}
-                  onChange={(color) => onGridChange({ color })}
-                />
-                <NumberField
-                  ariaLabel={copy.canvasGridOpacityLabel}
-                  icon={<Blend size={14} />}
-                  max={1}
-                  min={0}
-                  scale={100}
-                  step={0.05}
-                  suffix="%"
-                  value={grid.opacity}
-                  onChange={(opacity) => {
-                    if (opacity !== null) onGridChange({ opacity });
-                  }}
-                />
-              </section>
-              ) : null}
+              ) : (
+                // O Fundo tem keyframes e nenhum está selecionado: o fundo é o de cada
+                // keyframe, e o painel diz como chegar a um (como a câmera).
+                <p className="editor-sidebar-muted">{copy.motionEmptyHint}</p>
+              )}
             </div>
           ) : null}
         </div>
@@ -625,7 +489,7 @@ export default function FloatingCanvasControls({
       )}
 
       <ExportDialog
-        backgroundSwatch={{ background: displayBackground, border: circleBorder }}
+        backgroundSwatch={{ background: backgroundSwatch, border: circleBorder }}
         copy={copy}
         exportWithBg={exportWithBg}
         isOpen={isExportOpen}

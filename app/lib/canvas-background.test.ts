@@ -1,13 +1,30 @@
 import {
   DEFAULT_CANVAS_BACKGROUND,
   getCanvasBackgroundCss,
+  getBackgroundLook,
+  getBackgroundLookCss,
   getDefaultGradientColor,
   getGradientLine,
   hasFloorGrid,
+  mergeBackgroundPose,
   mergeCanvasBackground,
+  normalizeBackgroundPose,
   normalizeCanvasBackground,
+  sampleBackgroundLook,
   toStoredCanvasBackground,
 } from "./canvas-background";
+import type { Keyframe } from "./scene-motion";
+
+const ZERO = {
+  opacity: 1,
+  positionX: 0,
+  positionY: 0,
+  positionZ: 0,
+  rotationX: 0,
+  rotationY: 0,
+  rotationZ: 0,
+  scale: 1,
+};
 
 describe("canvas background", () => {
   it("reads anything unknown as the floor, as scenes always were", () => {
@@ -92,5 +109,61 @@ describe("canvas background", () => {
       // 45° num quadrado de 100: comprimento 100·√2, de canto a canto.
       expect(close(getGradientLine(100, 100, 45))).toEqual({ x0: 0, x1: 100, y0: 100, y1: 0 });
     });
+  });
+});
+
+describe("background over time (the Background track)", () => {
+  const floor = {
+    color: "#000000",
+    gradient: null,
+    grid: { color: "#ffffff", opacity: 1 },
+    style: "floor" as const,
+  };
+  const flat = {
+    color: "#000000",
+    gradient: { angle: 90, color: "#ffffff" },
+    grid: { color: null, opacity: 1 },
+    style: "flat" as const,
+  };
+  const keyframes = [
+    { easing: "linear", id: "a", timeMs: 0, transform: { ...ZERO, background: floor } },
+    { easing: "linear", id: "b", timeMs: 1000, transform: { ...ZERO, background: flat } },
+  ] as Keyframe[];
+
+  it("reads a keyframe back as it was saved", () => {
+    expect(normalizeBackgroundPose(flat)).toEqual(flat);
+    expect(normalizeBackgroundPose({ ...flat, color: "nope" })).toBeNull();
+  });
+
+  it("shows a flat background as a floor whose lines vanish into it", () => {
+    expect(getBackgroundLook(flat).grid).toEqual({ cell: "#000000", opacity: 0, section: "#000000" });
+    expect(getBackgroundLook(floor).grid.opacity).toBe(1);
+  });
+
+  it("dissolves from the floor to a flat gradient: the lines fade as the colors slide", () => {
+    const middle = sampleBackgroundLook(keyframes, 500)!;
+
+    expect(middle.grid.opacity).toBeCloseTo(0.5);
+    expect(middle.endColor).toBe("#808080");
+    // O degradê chega no ângulo dele, sem girar a partir do liso.
+    expect(middle.angle).toBe(90);
+    expect(getBackgroundLookCss(middle)).toBe("linear-gradient(90deg, #000000, #808080)");
+  });
+
+  it("holds the first and the last keyframe outside the track", () => {
+    expect(getBackgroundLookCss(sampleBackgroundLook(keyframes, -100)!)).toBe("#000000");
+    expect(sampleBackgroundLook(keyframes, 5000)!.endColor).toBe("#ffffff");
+  });
+
+  it("has nothing to show without keyframes", () => {
+    expect(sampleBackgroundLook([], 0)).toBeNull();
+  });
+
+  it("merges a panel field into a whole background", () => {
+    expect(mergeBackgroundPose(floor, { grid: { opacity: 0.5 } }).grid).toEqual({
+      color: "#ffffff",
+      opacity: 0.5,
+    });
+    expect(mergeBackgroundPose(floor, { color: "#123456" }).color).toBe("#123456");
   });
 });

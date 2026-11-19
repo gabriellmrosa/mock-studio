@@ -1,10 +1,7 @@
 "use client";
 
 import * as THREE from "three";
-import {
-  getActiveGradient,
-  paintCanvasBackground,
-} from "../../lib/canvas-background";
+import { isGradientLook, paintBackgroundLook } from "../../lib/canvas-background";
 import { hideEditorOnlyObjects } from "./editor-only";
 import type { ExportPreset } from "./MockupCanvas";
 
@@ -60,18 +57,15 @@ export async function exportCanvasPhoto({
   let blob: Blob | null = null;
   let showEditorOnly = () => {};
 
-  const backgroundColor = preset.backgroundColor ?? "#000000";
+  const look = preset.includeBackground ? preset.backgroundLook : undefined;
   // Um degradê não é cor de limpeza: a cena sai transparente e ele é pintado
   // por baixo na hora de montar o PNG, como o CSS atrás do canvas no editor.
-  const gradientStyle =
-    preset.includeBackground && preset.canvasBackground && getActiveGradient(preset.canvasBackground)
-      ? preset.canvasBackground
-      : null;
+  const gradientLook = look && isGradientLook(look) ? look : null;
 
   try {
-    if (preset.includeBackground && !gradientStyle) {
+    if (preset.includeBackground && !gradientLook) {
       // Preenche o fundo com a cor do canvas (alpha 1 → PNG opaco nessa área).
-      gl.setClearColor(new THREE.Color(backgroundColor), 1);
+      gl.setClearColor(new THREE.Color(look?.color ?? "#000000"), 1);
     } else {
       // Fundo transparente (padrão), ou o degradê, pintado depois.
       gl.setClearColor(previousClearColor, 0);
@@ -111,9 +105,9 @@ export async function exportCanvasPhoto({
       renderHeight,
       preset.width,
       preset.height,
-      gradientStyle
+      gradientLook
         ? (context, width, height) =>
-            paintCanvasBackground(context, width, height, backgroundColor, gradientStyle)
+            paintBackgroundLook(context, width, height, gradientLook)
         : undefined,
     );
   } finally {

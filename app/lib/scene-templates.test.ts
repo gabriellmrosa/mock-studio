@@ -28,6 +28,11 @@ import {
   findCameraObject,
 } from "./camera-objects";
 import { DEFAULT_CAMERA_ORBIT } from "./camera-orbit";
+import {
+  createBackgroundKeyframe,
+  createBackgroundObject,
+  findBackgroundObject,
+} from "./background-objects";
 
 const STORAGE_KEY = "mock-photo-templates";
 
@@ -1224,5 +1229,54 @@ describe("the background style in templates", () => {
     storeRaw([{ ...template, background: { style: "wavy" } }]);
 
     expect(loadTemplates()[0].background).toBeUndefined();
+  });
+});
+
+describe("the Background track in templates", () => {
+  const pose = {
+    color: "#112233",
+    gradient: { angle: 45, color: "#445566" },
+    grid: { color: null, opacity: 1 },
+    style: "flat" as const,
+  };
+  const scene = () => {
+    const background = createBackgroundObject({ name: "Background" });
+
+    return [
+      createSceneObject({ id: "phone", name: "Phone", deletable: false }),
+      { ...background, keyframes: [createBackgroundKeyframe(500, pose)] },
+    ];
+  };
+
+  it("keeps the Background's keyframes in a Video template and gives them back", () => {
+    const template = createSceneTemplate({ mode: "motion", name: "Template 1", objects: scene() });
+
+    storeRaw([template]);
+
+    const rebuilt = findBackgroundObject(applySceneTemplate(loadTemplates()[0]));
+
+    expect(rebuilt?.keyframes).toHaveLength(1);
+    expect(rebuilt?.keyframes[0].transform.background).toEqual(pose);
+  });
+
+  it("leaves the Background out of a Photo template, and every scene gets one back", () => {
+    const template = createSceneTemplate({ name: "Template 1", objects: scene() });
+
+    expect(template.objects.some((object) => object.kind === "background")).toBe(false);
+    expect(findBackgroundObject(applySceneTemplate(template))?.keyframes).toEqual([]);
+  });
+
+  it("drops a keyframe background it can't read", () => {
+    const template = createSceneTemplate({ mode: "motion", name: "Template 1", objects: scene() });
+    const broken = JSON.parse(JSON.stringify(template));
+
+    broken.objects
+      .find((object: { kind: string }) => object.kind === "background")
+      .keyframes[0].transform.background = { color: "not-a-color" };
+    storeRaw([broken]);
+
+    const rebuilt = findBackgroundObject(applySceneTemplate(loadTemplates()[0]));
+
+    expect(rebuilt?.keyframes[0].transform.background).toBeUndefined();
   });
 });

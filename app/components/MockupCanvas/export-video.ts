@@ -16,9 +16,9 @@ import {
   type VideoExportSettings,
 } from "../../lib/video-export";
 import {
-  getActiveGradient,
-  paintCanvasBackground,
-  type CanvasBackground,
+  isGradientLook,
+  paintBackgroundLook,
+  type BackgroundLook,
 } from "../../lib/canvas-background";
 import { hideEditorOnlyObjects } from "./editor-only";
 import { flipPixelRows, getSupersampleScale } from "./export-photo";
@@ -86,8 +86,11 @@ async function seekVideo(element: HTMLVideoElement, seconds: number) {
 export function createVideoFrameRenderer(
   deps: VideoFrameRendererDeps,
   size: MotionFrame,
-  /** O fundo do quadro, ou `null` para transparente. */
-  background: { color: string; style: CanvasBackground } | null,
+  /**
+   * O fundo de cada instante (o Fundo pode animar), ou `null` para
+   * transparente. A grade de cada quadro já vem posta por `applyPoses`.
+   */
+  getBackground: ((timeMs: number) => BackgroundLook) | null,
 ): VideoFrameRenderer {
   const { advance, applyPoses, camera, gl, gridRef, objects, restore, scene } =
     deps;
@@ -166,20 +169,21 @@ export function createVideoFrameRenderer(
       // Uma cor lisa é a de limpeza do próprio render; um degradê é pintado
       // por baixo da cena (transparente) na hora de compor o quadro, como o
       // editor faz com o CSS atrás do canvas.
-      const isGradient = background !== null && getActiveGradient(background.style) !== null;
+      const look = getBackground?.(timeMs) ?? null;
+      const gradientLook = look && isGradientLook(look) ? look : null;
 
-      if (background && !isGradient) {
-        gl.setClearColor(new THREE.Color(background.color), 1);
+      if (look && !gradientLook) {
+        gl.setClearColor(new THREE.Color(look.color), 1);
       } else {
         gl.setClearColor(previousClearColor, 0);
       }
 
       scene.background = null;
 
-      // Como no PNG: o grid do chão só entra com fundo — e só se o editor o
-      // mostra (no fundo liso não há chão).
-      if (gridRef.current) {
-        gridRef.current.visible = previousGridVisible && background !== null;
+      // Como no PNG: o grid do chão só entra com fundo. Com fundo, ele já está
+      // como o instante pede (`applyPoses` o pôs: cores e visibilidade).
+      if (gridRef.current && !look) {
+        gridRef.current.visible = false;
       }
 
       if (camera instanceof THREE.PerspectiveCamera) {
@@ -206,14 +210,8 @@ export function createVideoFrameRenderer(
       fullContext.putImageData(fullImage, 0, 0);
       context.clearRect(0, 0, size.width, size.height);
 
-      if (background && isGradient) {
-        paintCanvasBackground(
-          context,
-          size.width,
-          size.height,
-          background.color,
-          background.style,
-        );
+      if (gradientLook) {
+        paintBackgroundLook(context, size.width, size.height, gradientLook);
       }
 
       context.drawImage(full, 0, 0, size.width, size.height);

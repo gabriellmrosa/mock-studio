@@ -401,7 +401,21 @@ export type CameraObject = {
   scale: number;
 };
 
-export type SceneObject = DeviceObject | TextObject | ImageObject | CameraObject;
+/**
+ * O fundo da cena, na lista como um objeto que não se apaga, logo abaixo da
+ * câmera. Como ela, não tem malha: o que tem são os keyframes (o fundo de cada
+ * instante em `transform.background`), e a pose abaixo fica sempre nos zeros.
+ * Sem keyframes, vale o fundo da cena (o do painel Fundo e grade). Ver
+ * `background-objects.ts`.
+ */
+export type BackgroundObject = Omit<CameraObject, "kind"> & { kind: "background" };
+
+export type SceneObject =
+  | DeviceObject
+  | TextObject
+  | ImageObject
+  | CameraObject
+  | BackgroundObject;
 
 /** A pose editável de um objeto: a do texto é a mesma, menos a abertura. */
 export type PosePatch = Partial<
@@ -435,6 +449,10 @@ export function isImageObject(object: SceneObject): object is ImageObject {
 
 export function isCameraObject(object: SceneObject): object is CameraObject {
   return object.kind === "camera";
+}
+
+export function isBackgroundObject(object: SceneObject): object is BackgroundObject {
+  return object.kind === "background";
 }
 
 // Placeholders são gerados em runtime (canvas) no tamanho de upload

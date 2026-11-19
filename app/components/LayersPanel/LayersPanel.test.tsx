@@ -93,6 +93,7 @@ const copy: AppCopy = {
   appearanceTabCustom: "Custom",
   backgroundColorButton: "Background color",
   cameraObjectName: "Camera",
+  backgroundObjectName: "Background",
   cameraSectionTitle: "Camera",
   cameraAzimuthLabel: "Horizontal orbit (°)",
   cameraElevationLabel: "Vertical orbit (°)",

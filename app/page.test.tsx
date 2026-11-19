@@ -72,8 +72,11 @@ jest.mock("./components/MockupCanvas/MockupCanvas", () => ({
     objects: Array<{ id: string; isVisible: boolean; kind: string; name: string }>;
     onSelectObject: (id: string) => void;
   }) => {
-    // A câmera não se desenha: o canvas de mentira só conta o que é desenhado.
-    const objects = allObjects.filter((object) => object.kind !== "camera");
+    // A câmera e o Fundo não se desenham: o canvas de mentira só conta o que
+    // é desenhado.
+    const objects = allObjects.filter(
+      (object) => object.kind !== "camera" && object.kind !== "background",
+    );
 
     return (
     <div data-testid="mockup-canvas">

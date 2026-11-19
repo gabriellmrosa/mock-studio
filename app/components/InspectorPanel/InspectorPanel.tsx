@@ -11,6 +11,9 @@ import {
   MIN_IMAGE_SPEED,
 } from "../../lib/image-objects";
 import { getStickerLabel, getStickerThumbUrl } from "../../lib/stickers";
+import BackgroundFields, {
+  type BackgroundEditor,
+} from "../BackgroundFields/BackgroundFields";
 import ColorRow from "../ColorRow/ColorRow";
 import TextControls from "../TextControls/TextControls";
 import {
@@ -38,6 +41,7 @@ import {
   getActiveScreenFit,
   isDefaultObjectTransform,
   isDeviceObject,
+  isBackgroundObject,
   isCameraObject,
   isImageObject,
   isTextObject,
@@ -103,6 +107,12 @@ const NOTEBOOK_SCREEN_ONLY_COLOR_KEYS = new Set([
 ]);
 
 type InspectorPanelProps = {
+  /**
+   * Com o Fundo selecionado, o que os campos dele editam (o fundo da cena ou
+   * o keyframe do Fundo selecionado), ou `null` quando ele anima e nenhum
+   * keyframe dele está selecionado.
+   */
+  backgroundEditor?: BackgroundEditor | null;
   copy: AppCopy;
   object: SceneObject | null;
   onImageUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -170,6 +180,7 @@ type InspectorPanelProps = {
 };
 
 export default function InspectorPanel({
+  backgroundEditor = null,
   copy,
   object,
   onImageUpload,
@@ -235,6 +246,7 @@ export default function InspectorPanel({
   const textObject = isTextObject(object) ? object : null;
   const imageObject = isImageObject(object) ? object : null;
   const cameraObject = isCameraObject(object) ? object : null;
+  const backgroundObject = isBackgroundObject(object) ? object : null;
   // O aparelho gira 180° em Y (o modelo olha para trás no arquivo) e o campo
   // mostra o desvio disso; o texto e a imagem já nascem de frente.
   const baseRotationY = device ? 180 : 0;
@@ -548,7 +560,34 @@ export default function InspectorPanel({
           </PanelSection>
         ) : null}
 
-        {cameraObject ? (
+        {backgroundObject ? (
+          <PanelSection
+            title={
+              editedKeyframe
+                ? `${copy.canvasBackgroundSection} · ${copy.motionKeyframeLabel} ${(
+                    editedKeyframe.timeMs / 1000
+                  ).toFixed(2)}s`
+                : copy.canvasBackgroundSection
+            }
+            className="transform-section"
+          >
+            {/* Os mesmos campos do botão Fundo e grade, editando a mesma
+                coisa; sem o que editar (o Fundo anima e nenhum keyframe dele
+                está selecionado), o aviso de sempre. */}
+            {backgroundEditor ? (
+              <BackgroundFields
+                copy={copy}
+                uiTheme={uiTheme}
+                value={backgroundEditor.value}
+                onChange={backgroundEditor.onChange}
+              />
+            ) : (
+              <p className="editor-sidebar-muted motion-empty-hint">
+                {copy.motionEmptyHint}
+              </p>
+            )}
+          </PanelSection>
+        ) : cameraObject ? (
           <PanelSection
             title={
               editedKeyframe

@@ -438,6 +438,31 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   quadrática: ela é mais quadrada e come o anel de espessura constante do
   modelo nos cantos.
 
+**Fundo**
+
+- O Fundo é um objeto da lista (`BackgroundObject`, `kind: "background"`,
+  `deletable: false`), um por cena, **logo abaixo da câmera** na lista e na
+  timeline; nome na tela vem do idioma, o guardado (`"Background"`) é interno.
+  Não se desenha nem se resolve (fora de `currentObjectIds`, como a câmera).
+- Sem keyframes, vale o fundo da cena (`backgroundColor`, `CanvasBackground`,
+  `CanvasGrid`). Com keyframes no Vídeo, cada keyframe guarda o fundo inteiro
+  em `transform.background` (`BackgroundPose`), e o que se vê vem de
+  `sampleBackgroundLook`: a interpolação é no **visual** (`BackgroundLook`:
+  cor de cima, de chegada, ângulo e as linhas já misturadas com o fundo) — um
+  liso é um chão de linhas na cor do fundo com opacidade 0, então ir de um
+  estilo ao outro **dissolve** (decisão do usuário), em vez de cortar. O
+  `lerpTransform` só guarda o keyframe mais perto, para capturar um novo.
+- O que os campos editam (`backgroundEditor` na página, os mesmos
+  `BackgroundFields` no botão Fundo e grade e no Inspector): o keyframe do
+  Fundo selecionado; senão, com o Fundo animado, nada (o aviso, como a
+  câmera); senão, o fundo da cena. O "+" captura o fundo de agora.
+- No play e na exportação o fundo é escrito direto (`applyBackgroundLook`):
+  os uniformes da grade do drei e o CSS do quadro do vídeo. **O fundo do
+  quadro nunca passa pelo `style` do React**, e a grade parada é reaplicada
+  num efeito: depois do play, um valor que o React acha que não mudou não
+  seria reposto (o mesmo bug da opacidade no fim do play). A exportação pede
+  o visual de cada quadro e pinta o degradê por baixo, como na etapa 1.
+
 **Câmera**
 
 - A câmera é um objeto da lista (`CameraObject`, `kind: "camera"`, `deletable:
