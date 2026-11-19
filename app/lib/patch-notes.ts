@@ -27,6 +27,72 @@ export type PatchNote = {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    date: "2026-11-19",
+    version: "3.1.0",
+    items: [
+      {
+        title: {
+          "pt-BR": "Fundo liso e degradê",
+          "en-US": "Flat and gradient backgrounds",
+        },
+        description: {
+          "pt-BR":
+            "No botão Fundo e grade, troque o chão 3D por um fundo liso: uma cor só ou um degradê entre duas cores, no ângulo que quiser. Ele sai igual no PNG e no vídeo.",
+          "en-US":
+            "In the Background and grid button, swap the 3D floor for a flat background: one color or a gradient between two, at any angle. It comes out the same in the PNG and the video.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "O fundo também anima",
+          "en-US": "The background animates too",
+        },
+        description: {
+          "pt-BR":
+            "O Fundo ganhou uma faixa na timeline: cada keyframe guarda cores, degradê e grade, e a cena desliza de um para o outro — até do chão 3D para o fundo liso.",
+          "en-US":
+            "The Background has its own timeline track: each keyframe keeps colors, gradient and grid, and the scene slides from one to the next — even from the 3D floor to a flat background.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Zoom e posição da tela animam",
+          "en-US": "Screen zoom and position animate",
+        },
+        description: {
+          "pt-BR":
+            "Com um keyframe do aparelho selecionado, o zoom, a posição e o fundo da tela ficam nele: role um print comprido ou aproxime um detalhe ao longo do vídeo.",
+          "en-US":
+            "With a device keyframe selected, the screen's zoom, position and background are saved to it: scroll a long screenshot or push in on a detail across the video.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Desfazer e refazer",
+          "en-US": "Undo and redo",
+        },
+        description: {
+          "pt-BR":
+            "Cmd+Z (ou Ctrl+Z) desfaz a última mudança da cena, e Cmd+Shift+Z (ou Ctrl+Y) refaz. Foto e Vídeo têm históricos separados.",
+          "en-US":
+            "Cmd+Z (or Ctrl+Z) undoes the last change to the scene, and Cmd+Shift+Z (or Ctrl+Y) redoes it. Photo and Video keep separate histories.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "O 3D se recupera sozinho",
+          "en-US": "The 3D view recovers on its own",
+        },
+        description: {
+          "pt-BR":
+            "Se a visualização 3D parar (ao suspender o computador, por exemplo), ela volta sem perder a cena, e você continua de onde estava.",
+          "en-US":
+            "If the 3D view stops (when the computer sleeps, for example), it comes back without losing the scene, and you pick up where you left off.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-11-18",
     version: "3.0.0",
     items: [
