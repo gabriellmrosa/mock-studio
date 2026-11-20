@@ -51,7 +51,11 @@ levar para a `main`, também `npm run build`.
   `docs/open-work.md`.
 - **Arquivos do usuário:** nunca commitar nem apagar o que ele deixou na
   pasta (ex.: `public/teste-video.mov`, vídeos de teste). `promo-studio/` é
-  um projeto dele, fora do git — não mexer.
+  um projeto dele, fora do git — não mexer. **`Marketing/`** é a pasta local
+  dele com os assets de marketing (logo, banners, exportações, prints de tela,
+  fundos, gravações), ignorada pelo git: asset novo de marketing vai para lá,
+  na subpasta certa, e a origem entra no `Marketing/README.md`. Nunca apagar
+  nada dela.
 - **Decisões de produto são do usuário.** Na dúvida sobre comportamento ou
   visual, propor e perguntar antes; ele costuma pedir "reflita e proponha".
 
