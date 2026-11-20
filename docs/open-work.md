@@ -128,3 +128,31 @@ real link.
 - The pasted text is not read back from the real clipboard in the test, only
   typed into the field.
 
+
+## Video export: "the screen video did not answer the seek" (not reproduced)
+
+A user export of a 23 s scene (template "Modo Seguro": one HEVC screen recording,
+810×1632, variable frame rate, plus image screens on two iPhones and the Duo) failed
+once with `O vídeo da tela não respondeu ao seek.` — `seekVideo` in
+`app/components/MockupCanvas/export-video.ts` gives each seek 5 s
+(`SEEK_TIMEOUT_MS`) before failing the whole export. It was the first export of
+the page session, right after importing the template and sending the files.
+
+Tried, all exported fine (1381 frames, average seek about 20 ms):
+
+- the page idle for 3 minutes before exporting (built-in browser);
+- the same template with the same files, exported right after sending them, twice
+  (the user's Chrome 157), and a simpler scene.
+
+Measured: the **first** seek after sending the video took 2.4 s (the hardware HEVC
+decoder starting); every other seek took about 20 ms. A busy machine could push
+that first seek past 5 s.
+
+Not tested yet: the tab **hidden** during the export. The export dialog says the
+user can switch tabs, and Chrome suspends muted video in hidden tabs; neither the
+built-in browser nor the extension can hide the tab, so this needs the user to
+switch away by hand.
+
+Possible fixes, none chosen: retry the seek (or a longer timeout for the first
+one); warm the decoder with a seek before the first frame; wait for the page to be
+visible again before failing; a clearer error message.
