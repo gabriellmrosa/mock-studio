@@ -27,6 +27,36 @@ export type PatchNote = {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    date: "2026-11-20",
+    version: "3.1.1",
+    items: [
+      {
+        title: {
+          "pt-BR": "Templates começam fechados",
+          "en-US": "Templates start closed",
+        },
+        description: {
+          "pt-BR":
+            "A seção de templates abre sempre fechada, deixando mais espaço para a lista de objetos. Um clique no título a abre.",
+          "en-US":
+            "The templates section always opens closed, leaving more room for the object list. One click on its title opens it.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Arquivos com o nome do app",
+          "en-US": "Files named after the app",
+        },
+        description: {
+          "pt-BR":
+            "PNGs e vídeos exportados agora saem como mock-studio-…, e não mais mock-photo-….",
+          "en-US":
+            "Exported PNGs and videos are now named mock-studio-… instead of mock-photo-….",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-11-19",
     version: "3.1.0",
     items: [
