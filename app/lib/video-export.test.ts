@@ -51,7 +51,7 @@ describe("video export", () => {
         { background: false, fps: 30, scale: 1 },
         "2026-09-30_10-00-00",
       ),
-    ).toBe("mock-photo-648x412-30fps-2026-09-30_10-00-00.webm");
+    ).toBe("mock-studio-648x412-30fps-2026-09-30_10-00-00.webm");
   });
 
   it("estimates the time left from the pace so far, once there is a pace", () => {

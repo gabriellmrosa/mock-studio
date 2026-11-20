@@ -101,7 +101,7 @@ describe("export-photo", () => {
       gridRef,
       preset: {
         height: 1080,
-        label: "mock-photo-2026-03-23_12-34-56",
+        label: "mock-studio-2026-03-23_12-34-56",
         width: 1920,
       },
       scene,
@@ -117,7 +117,7 @@ describe("export-photo", () => {
     expect(gridRef.current?.visible).toBe(true);
     expect(scene.background).toEqual(expect.any(THREE.Color));
     expect(clickSpy).toHaveBeenCalledTimes(1);
-    expect(createdLinks[0]?.download).toBe("mock-photo-2026-03-23_12-34-56.png");
+    expect(createdLinks[0]?.download).toBe("mock-studio-2026-03-23_12-34-56.png");
     expect(global.URL.createObjectURL).toHaveBeenCalledWith(blob);
     expect(global.URL.revokeObjectURL).toHaveBeenCalledWith("blob:mock-photo");
   });

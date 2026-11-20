@@ -614,7 +614,10 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - **`localStorage` passa por `app/lib/storage.ts`** (`readStorageItem`,
   `writeStorageItem`, `removeStorageItem`): com o armazenamento bloqueado ou
   cheio, a chamada direta derruba a interface. Os templates e o analytics têm
-  o seu próprio `try/catch`.
+  o seu próprio `try/catch`. **As chaves continuam `mock-photo-*`** (o nome
+  antigo do app): renomear faria o navegador de quem já usa esquecer os
+  templates e as preferências. Os arquivos exportados é que saem como
+  `mock-studio-*`.
 - **Link e código colado** (`decodeSceneLink`): a descompressão para em
   `MAX_DECODED_LINK_BYTES` (5 MB, o tamanho do `localStorage`), contra bomba
   de descompressão sem recusar nenhum template que o app gera.

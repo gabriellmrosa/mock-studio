@@ -2394,7 +2394,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         includeBackground: resolution.includeBackground,
         // O fundo que o editor mostra agora (no Vídeo, o do playhead).
         backgroundLook: displayedBackgroundLook,
-        label: `mock-photo-${resolution.width}x${resolution.height}-${formatTimestampForFilename(new Date())}`,
+        label: `mock-studio-${resolution.width}x${resolution.height}-${formatTimestampForFilename(new Date())}`,
       });
       props.onNotify?.("success", props.copy.photoExportSuccess);
     } catch (error) {

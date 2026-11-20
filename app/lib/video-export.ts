@@ -74,7 +74,7 @@ export function getVideoExportFilename(
   settings: VideoExportSettings,
   timestamp: string,
 ) {
-  return `mock-photo-${size.width}x${size.height}-${settings.fps}fps-${timestamp}.${getVideoExportFormat(settings)}`;
+  return `mock-studio-${size.width}x${size.height}-${settings.fps}fps-${timestamp}.${getVideoExportFormat(settings)}`;
 }
 
 /**
