@@ -28,6 +28,36 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-20",
+    version: "3.2.0",
+    items: [
+      {
+        title: {
+          "pt-BR": "Música no vídeo",
+          "en-US": "Music in your video",
+        },
+        description: {
+          "pt-BR":
+            "No Vídeo, “+ Música” põe uma trilha na cena. Corte o começo e ela toca dali; ajuste o volume e os fades. Ela toca no play e sai no MP4 e no WebM.",
+          "en-US":
+            "In Video mode, “+ Music” adds a soundtrack. Trim the start and it plays from there; set the volume and fades. It plays with the scene and goes into the MP4 and WebM.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Exportação de vídeo mais estável",
+          "en-US": "Steadier video export",
+        },
+        description: {
+          "pt-BR":
+            "Um vídeo de tela que demora a responder não interrompe mais a exportação.",
+          "en-US":
+            "A screen video that is slow to respond no longer stops the export.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-20",
     version: "3.1.1",
     items: [
       {
