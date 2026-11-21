@@ -17,6 +17,12 @@
   padding-bottom: var(--space-6);
 }
 
+/* Divisória sutil entre seções do painel de propriedades, derivada do texto
+   para não competir com os controles nem com a borda do painel. */
+.inspector-sidebar .panel-section + .panel-section {
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 8%, transparent);
+}
+
 /* --- Painel do aparelho --- */
 
 .device-option-list {
