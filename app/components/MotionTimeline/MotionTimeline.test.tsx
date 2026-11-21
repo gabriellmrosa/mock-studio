@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import MotionTimeline from "./MotionTimeline";
 import { APP_COPY } from "../../lib/i18n";
 import { DEFAULT_MOTION_FRAME, type MotionFrame } from "../../lib/motion-frame";
+import { createAudioObject, createSceneAudio } from "../../lib/audio-objects";
 import {
   DEFAULT_SCREEN_FIT,
   createSceneObject,
@@ -40,6 +41,7 @@ function renderTimeline(
   frame: MotionFrame = DEFAULT_MOTION_FRAME,
 ) {
   const handlers = {
+    onChangeAudio: jest.fn(),
     onChangeFrame: jest.fn(),
     onChangeKeyframes: jest.fn(),
     onChangeVideo: jest.fn(),
@@ -70,7 +72,90 @@ function renderTimeline(
   return { container, handlers };
 }
 
+function music(patch: Partial<ReturnType<typeof createSceneAudio>> = {}) {
+  return {
+    ...createAudioObject({
+      audio: {
+        ...createSceneAudio({ durationMs: 8000, name: "song.mp3", url: "blob:song" }),
+        ...patch,
+      },
+      name: "Music",
+    }),
+    id: "m",
+  };
+}
+
 describe("MotionTimeline", () => {
+  describe("music track", () => {
+    it("shows the music clip with no keyframe button, and stretches the axis to fit it", () => {
+      const { container } = renderTimeline([
+        createSceneObject({ id: "a", name: "Phone" }),
+        music({ startMs: 1000 }),
+      ]);
+      const clip = container.querySelector<HTMLElement>(".motion-timeline-clip-audio");
+
+      // A música vai até 9 s, além dos 5 s da cena: eixo de 10 s.
+      expect(clip?.style.left).toBe("10%");
+      expect(clip?.style.width).toBe("80%");
+      expect(screen.getByText("song.mp3")).toBeInTheDocument();
+      // Só o aparelho tem o botão de keyframe.
+      expect(container.querySelectorAll(".motion-timeline-add")).toHaveLength(1);
+    });
+
+    it("trims the start so the music plays from there", () => {
+      const { container, handlers } = renderTimeline([music()]);
+      const lanes = container.querySelector(".motion-timeline-lanes") as HTMLElement;
+      const handle = container.querySelector(
+        ".motion-timeline-clip-audio .motion-timeline-clip-trim.is-start",
+      ) as HTMLElement;
+
+      // Eixo de 9 s em 900 px: 100 px = 1 s.
+      lanes.getBoundingClientRect = () => ({ left: 0, width: 900 }) as DOMRect;
+      handle.setPointerCapture = jest.fn();
+      fireEvent.pointerDown(handle, { button: 0, clientX: 0, pointerId: 1 });
+      fireEvent.pointerMove(handle, { altKey: true, clientX: 230, pointerId: 1 });
+
+      expect(handlers.onChangeAudio).toHaveBeenLastCalledWith("m", {
+        startMs: 2300,
+        trimStartMs: 2300,
+      });
+    });
+
+    it("moves the clip on the scene axis", () => {
+      const { container, handlers } = renderTimeline([music()]);
+      const lanes = container.querySelector(".motion-timeline-lanes") as HTMLElement;
+      const clip = container.querySelector(".motion-timeline-clip-audio") as HTMLElement;
+
+      lanes.getBoundingClientRect = () => ({ left: 0, width: 900 }) as DOMRect;
+      clip.setPointerCapture = jest.fn();
+      fireEvent.pointerDown(clip, { button: 0, clientX: 100, pointerId: 1 });
+      fireEvent.pointerMove(clip, { altKey: true, clientX: 250, pointerId: 1 });
+
+      expect(handlers.onSelectObject).toHaveBeenCalledWith("m");
+      expect(handlers.onChangeAudio).toHaveBeenLastCalledWith("m", { startMs: 1500 });
+    });
+
+    it("draws the fades as ramps only when there are fades", () => {
+      const flat = renderTimeline([music()]);
+
+      expect(flat.container.querySelector("[data-testid='audio-fades']")).toBeNull();
+
+      // Fade-in de 2 s num clipe de 8 s: a rampa ocupa 25% da largura.
+      const faded = renderTimeline([music({ fadeInMs: 2000 })]);
+
+      expect(
+        faded.container.querySelector("[data-testid='audio-fades'] polygon"),
+      ).toHaveAttribute("points", "0,0 25,0 0,100");
+    });
+
+    it("has no clip while a template still waits for the file", () => {
+      const { container } = renderTimeline([{ ...music(), audio: null }]);
+
+      expect(container.querySelector(".motion-timeline-lane-audio")).not.toBeNull();
+      expect(container.querySelector(".motion-timeline-clip-audio")).toBeNull();
+    });
+  });
+
   it("gives the screen video its own track, like a clip in a video editor", () => {
     const { container } = renderTimeline([
       withVideo(createSceneObject({ id: "a", name: "Phone" })),

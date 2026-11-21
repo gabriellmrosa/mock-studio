@@ -54,6 +54,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 - **`Static` and `Motion`** are two independent environments; switching between them is instant. The switch at the top of the canvas labels them `Photo` and `Video` (the name of what each one exports).
 - **Keyframes on a timeline**, one track per object: drag them in time, pick an easing preset or draw a `cubic-bezier` curve with overshoot, fade objects in and out, and press `Space` to play.
 - **Screen recordings are clips** on the timeline: drag to set when they start, trim either edge, or stretch the end past the file to hold its last frame (it snaps to the real end first).
+- **Music** (`+` → `Music`, in `Video` mode, one per scene: MP3, M4A, AAC or WAV): a green clip with its waveform on the timeline. Drag it in time and trim either edge — trimming the start makes the music play from there. Volume, fade in and fade out live in the Inspector, and the fades show as ramps on the clip; the speaker next to it in the objects list mutes it. It plays with `Space`, in sync with the scene, and is cut where the scene ends (it doesn't make the video longer). Not in the exported video yet.
 
 ### Export
 
@@ -63,7 +64,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 
 ### Keep and share
 
-- **Templates** saved in your browser: composition, camera and keyframes, rebuilt in one click. Saving a scene that came from a template asks whether to overwrite that template or save a new one. Screen files aren't stored, but their settings are: applying the template asks for each file again by name ("Upload “home.png” again"), and whatever file you upload gets the saved framing, crop and, for a video, the clip timing.
+- **Templates** saved in your browser: composition, camera and keyframes, rebuilt in one click. Saving a scene that came from a template asks whether to overwrite that template or save a new one. Screen files aren't stored, but their settings are: applying the template asks for each file again by name ("Upload “home.png” again"), and whatever file you upload gets the saved framing, crop and, for a video, the clip timing. The music works the same way: its file stays out, and the one you upload again gets the saved position, trims, volume and fades.
 - **Project links and template codes**: the whole scene compressed into the URL hash, to open in another browser. It is never sent to a server. To send a scene to someone, `Share template`, in the `⋮` menu of each saved template, opens a modal that explains what travels and shows a code — only the compressed content, no address — to copy; the other person uses `Import template` in the templates section, pastes it and gets a template of their own, without touching the open scene.
 - `pt-BR` and `en-US`, a dark interface (the light theme is switched off for now and will come back) and a `Hide UI` mode for clean captures.
 
@@ -193,6 +194,7 @@ The `duo` is the only model that moves: its GLB keeps the two halves and the hin
 - [app/lib/screen-texture.ts](app/lib/screen-texture.ts): the shared screen texture hook, for images and videos, and the framing math (`getScreenLayout`)
 - [app/lib/screen-compositor.ts](app/lib/screen-compositor.ts): the pass that draws the final screen — framing, background and HDR conversion
 - [app/lib/hdr-video.ts](app/lib/hdr-video.ts): HDR detection and the PQ/HLG to SDR conversion
+- [app/lib/audio-objects.ts](app/lib/audio-objects.ts) and [app/lib/audio-files.ts](app/lib/audio-files.ts): the music — clip timing, volume and fades, and in the browser the decoding, waveform and playback
 - [app/components/EditorPrimitives/](app/components/EditorPrimitives/): shared panel, button and collapsible-section primitives
 - [app/components/FolderTabs/](app/components/FolderTabs/): Chrome-style folder tabs and the panel they join, used for the screen's `Image | Video` choice
 - [app/lib/3d-tokens/](app/lib/3d-tokens/): per-model themes and color tokens

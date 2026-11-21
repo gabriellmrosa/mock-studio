@@ -18,6 +18,21 @@ export type AppCopy = {
   imageObjectName: string;
   imageSectionTitle: string;
   imageObjectHint: string;
+  addMusicObject: string;
+  musicObjectName: string;
+  musicSectionTitle: string;
+  musicOptions: string;
+  uploadMusic: string;
+  screenUploadMusic: string;
+  musicFileHint: string;
+  musicVolumeLabel: string;
+  musicFadeInLabel: string;
+  musicFadeOutLabel: string;
+  uploadMusicError: string;
+  muteObject: string;
+  unmuteObject: string;
+  motionMusicTrimStart: string;
+  motionMusicTrimEnd: string;
   imageEmptyLabel: string;
   addStickerObject: string;
   stickerObjectName: string;
@@ -332,6 +347,21 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     imageObjectName: "Imagem",
     imageSectionTitle: "Imagem",
     imageObjectHint: "GIF, PNG ou SVG",
+    addMusicObject: "Música",
+    musicObjectName: "Música",
+    musicSectionTitle: "Música",
+    musicOptions: "Opções da música",
+    uploadMusic: "Substituir música",
+    screenUploadMusic: "Enviar música",
+    musicFileHint: "MP3, M4A, AAC ou WAV",
+    musicVolumeLabel: "Volume",
+    musicFadeInLabel: "Fade-in",
+    musicFadeOutLabel: "Fade-out",
+    uploadMusicError: "Não foi possível ler esse áudio. Use MP3, M4A, AAC ou WAV de até 100 MB.",
+    muteObject: "Silenciar",
+    unmuteObject: "Ativar som",
+    motionMusicTrimStart: "Arraste para cortar o começo da música",
+    motionMusicTrimEnd: "Arraste para cortar o fim da música",
     imageEmptyLabel: "Envie seu GIF, PNG ou SVG",
     addStickerObject: "Sticker",
     stickerObjectName: "Sticker",
@@ -722,6 +752,21 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     imageObjectName: "Image",
     imageSectionTitle: "Image",
     imageObjectHint: "GIF, PNG or SVG",
+    addMusicObject: "Music",
+    musicObjectName: "Music",
+    musicSectionTitle: "Music",
+    musicOptions: "Music options",
+    uploadMusic: "Replace music",
+    screenUploadMusic: "Upload music",
+    musicFileHint: "MP3, M4A, AAC or WAV",
+    musicVolumeLabel: "Volume",
+    musicFadeInLabel: "Fade in",
+    musicFadeOutLabel: "Fade out",
+    uploadMusicError: "Couldn't read that audio. Use MP3, M4A, AAC or WAV up to 100 MB.",
+    muteObject: "Mute",
+    unmuteObject: "Unmute",
+    motionMusicTrimStart: "Drag to trim the start of the music",
+    motionMusicTrimEnd: "Drag to trim the end of the music",
     imageEmptyLabel: "Upload your GIF, PNG or SVG",
     addStickerObject: "Sticker",
     stickerObjectName: "Sticker",

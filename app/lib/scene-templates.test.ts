@@ -16,12 +16,14 @@ import {
   createSceneObject,
   DEFAULT_SCREEN_FIT,
   getPlaceholderImageUrl,
+  isAudioObject,
   isDeviceObject,
   isTextObject,
 } from "./scene-objects";
 import { captureTransform, createKeyframe, insertKeyframe } from "./scene-motion";
 import { createTextObject } from "./text-objects";
 import { createImageObject, getStickerImage } from "./image-objects";
+import { createAudioObject, createSceneAudio } from "./audio-objects";
 import {
   createCameraKeyframe,
   createCameraObject,
@@ -1184,6 +1186,55 @@ describe("screen settings in templates", () => {
     });
 
     expect(template.objects[0]).not.toHaveProperty("screen");
+  });
+});
+
+describe("music in templates", () => {
+  const music = createAudioObject({
+    audio: {
+      ...createSceneAudio({ durationMs: 30_000, name: "song.mp3", url: "blob:song" }),
+      fadeOutMs: 2_000,
+      startMs: 1_000,
+      trimStartMs: 4_000,
+      volume: 0.6,
+    },
+    name: "Music",
+  });
+  const device = createSceneObject({ id: "phone", name: "Phone" });
+
+  it("keeps where it plays, trims, volume and fades, but never the file", () => {
+    const template = createSceneTemplate({
+      mode: "motion",
+      name: "With music",
+      objects: [device, music],
+    });
+    const restored = applySceneTemplate(template).find(isAudioObject);
+
+    expect(JSON.stringify(template)).not.toContain("blob:");
+    expect(restored?.audio).toBeNull();
+    expect(restored?.pendingAudio).toMatchObject({
+      fadeOutMs: 2_000,
+      name: "song.mp3",
+      startMs: 1_000,
+      trimStartMs: 4_000,
+      volume: 0.6,
+    });
+  });
+
+  it("survives saving to storage and reading back", () => {
+    const template = createSceneTemplate({
+      mode: "motion",
+      name: "With music",
+      objects: [device, music],
+    });
+
+    expect(isValidTemplate(JSON.parse(JSON.stringify(template)))).toBe(true);
+  });
+
+  it("is not part of a Photo template", () => {
+    const template = createSceneTemplate({ name: "Photo", objects: [device, music] });
+
+    expect(template.objects.some((object) => object.kind === "audio")).toBe(false);
   });
 });
 

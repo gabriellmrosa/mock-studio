@@ -50,10 +50,9 @@ import {
   getScreenVideoTime,
   isScreenVideoAtFileEnd,
   isDeviceObject,
-  isBackgroundObject,
-  isCameraObject,
   isImageObject,
   isTextObject,
+  isUndrawnObject,
   DEFAULT_SCREEN_FIT,
   getMissingScreenImageUrl,
   type CameraObject,
@@ -881,8 +880,8 @@ function SceneBridge({
 
             // A câmera não se desenha: ela é o ponto de vista, não uma coisa na
             // cena (ver `CameraMotion`). O Fundo também não: ele é o palco e a
-            // grade (ver `BackgroundMotion`).
-            if (isCameraObject(object) || isBackgroundObject(object)) {
+            // grade (ver `BackgroundMotion`). Nem a música, que só se ouve.
+            if (isUndrawnObject(object)) {
               return null;
             }
 
@@ -2213,14 +2212,11 @@ export default function MockupCanvas(props: MockupCanvasProps) {
     stageBackground && !isFramed
       ? "mockup-stage relative flex-1 h-screen"
       : `mockup-stage relative flex-1 h-screen ${props.uiTheme === "dark" ? "mockup-stage-dark" : "mockup-stage-light"}`;
-  // A câmera não carrega nada e nunca se resolve: contá-la deixaria a cena
-  // para sempre "por assentar".
+  // A câmera (e o Fundo e a música) não carrega nada e nunca se resolve:
+  // contá-la deixaria a cena para sempre "por assentar".
   const currentObjectIds = new Set(
     props.objects
-      .filter(
-        (object) =>
-          object.isVisible && !isCameraObject(object) && !isBackgroundObject(object),
-      )
+      .filter((object) => object.isVisible && !isUndrawnObject(object))
       .map((object) => object.id),
   );
   const visibleObjectCount = currentObjectIds.size;

@@ -342,6 +342,37 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - A grade mostra o emoji parado (`getStickerThumbUrl`), não a animação: tocar 46
   ao mesmo tempo não é o que ela faz.
 
+**Música**
+
+- `AudioObject` (`kind: "audio"`) é o quarto tipo da união: só no Vídeo ("+
+  Música", que abre direto o seletor de arquivos, como o "+ Imagem"), **uma por
+  cena** (a opção fica desligada quando já há uma). Não se desenha (`isUndrawnObject`,
+  com a câmera e o Fundo), não tem keyframes nem pose, não se duplica nem se
+  enquadra; o olho dela é o som (`isVisible` falso = muda), e muda ela continua
+  na timeline, apagada.
+- O clipe é posto e cortado com as contas do vídeo das telas (`TimelineClip`,
+  `trimVideoClip`), menos o último quadro parado: a borda final não passa do
+  arquivo. **Cortar o começo faz a música tocar dali** (`trimStartMs`) — o que o
+  usuário pediu acima de tudo. Volume (0 a 100%) e fades (em ms, 0 = desligado,
+  cada um até o clipe inteiro) ficam no Inspector; os fades são rampas
+  desenhadas no clipe.
+- **Não dá duração à cena** (decisão do usuário): o vídeo dura o que os
+  keyframes e os clipes de vídeo mandam, e a música é cortada no fim. O eixo da
+  timeline cresce até o fim dela, para o clipe caber inteiro.
+- O arquivo é decodificado uma vez (`readAudioFile`, contexto offline) para a
+  duração exata e a forma de onda; os picos e o `<audio>` ficam em
+  `audio-files.ts`, guardados pelo blob URL, fora do estado e do template.
+  Limite de 100 MB: a decodificação vai inteira para a memória.
+- O play toca pelo relógio da cena (`useAudioPlayback`, rAF próprio só tocando,
+  fora do canvas) e só corrige a posição quando escorrega mais de 200 ms — um
+  seek por quadro picotaria o som. Parada e arrastando o playhead, muda.
+- No template e no link: o nome, o lugar, os cortes, o volume e os fades, nunca o
+  arquivo. Volta como `pendingAudio` ("Reenviar “nome”", sem clipe), e o arquivo
+  que chegar recebe tudo, com os cortes encolhendo se for mais curto
+  (`applyAudioFile`).
+- A cor da faixa é `--timeline-audio` (verde-azulado, o áudio dos editores). O
+  nome no clipe tem fundo sólido: sobre um pico da onda ele cairia a 2,7:1.
+
 **Templates**
 
 - Guardam composição, fundo, câmera e, no Movimento, os keyframes — **nunca**

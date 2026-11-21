@@ -4,6 +4,7 @@ import "./LayersPanel.css";
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
 import type { AppCopy, Locale } from "../../lib/i18n";
 import {
+  isAudioObject,
   isBackgroundObject,
   isCameraObject,
   type SceneObject,
@@ -27,6 +28,8 @@ import {
   Import,
   MoreVertical,
   Plus,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import ContextMenu from "../ContextMenu/ContextMenu";
 import CreditsModal from "../CreditsModal/CreditsModal";
@@ -46,6 +49,8 @@ type LayersPanelProps = {
   objects: SceneObject[];
   onAddObject: () => void;
   onAddImage: () => void;
+  /** Só no Vídeo: sem ele, o menu não oferece música. */
+  onAddMusic?: () => void;
   onAddSticker: () => void;
   onAddText: () => void;
   onApplyTemplate?: (id: string) => void;
@@ -75,6 +80,7 @@ export default function LayersPanel({
   objects,
   onAddObject,
   onAddImage,
+  onAddMusic,
   onAddSticker,
   onAddText,
   onApplyTemplate,
@@ -269,6 +275,18 @@ export default function LayersPanel({
                     label: copy.addStickerObject,
                     onClick: onAddSticker,
                   },
+                  // Uma música por cena: com ela já na lista, a opção fica
+                  // desligada em vez de sumir.
+                  ...(onAddMusic
+                    ? [
+                        {
+                          type: "action" as const,
+                          disabled: objects.some(isAudioObject),
+                          label: copy.addMusicObject,
+                          onClick: onAddMusic,
+                        },
+                      ]
+                    : []),
                 ]}
                 triggerAriaLabel={copy.addObject}
                 triggerClassName="editor-section-action"
@@ -309,6 +327,16 @@ export default function LayersPanel({
               })}
               {objects.filter((object) => !isSceneFixture(object)).map((object) => {
                 const isSelected = object.id === selectedObjectId;
+                // A música não se vê: o olho dela é o som, e ela não se
+                // enquadra nem se duplica (é uma por cena).
+                const isAudio = isAudioObject(object);
+                const visibilityLabel = isAudio
+                  ? object.isVisible
+                    ? copy.muteObject
+                    : copy.unmuteObject
+                  : object.isVisible
+                    ? copy.hideObject
+                    : copy.showObject;
                 return (
                   <div
                     key={object.id}
@@ -357,12 +385,8 @@ export default function LayersPanel({
                     </div>
                     <div className="layer-actions">
                       <IconButton
-                        aria-label={
-                          object.isVisible ? copy.hideObject : copy.showObject
-                        }
-                        title={
-                          object.isVisible ? copy.hideObject : copy.showObject
-                        }
+                        aria-label={visibilityLabel}
+                        title={visibilityLabel}
                         className="layer-inline-action editor-icon-button-no-hover-bg"
                         active={!object.isVisible}
                         onClick={(event) => {
@@ -370,7 +394,13 @@ export default function LayersPanel({
                           onToggleObjectVisibility(object.id);
                         }}
                       >
-                        {object.isVisible ? (
+                        {isAudio ? (
+                          object.isVisible ? (
+                            <Volume2 size={14} />
+                          ) : (
+                            <VolumeX size={14} />
+                          )
+                        ) : object.isVisible ? (
                           <Eye size={14} />
                         ) : (
                           <EyeOff size={14} />
@@ -378,16 +408,20 @@ export default function LayersPanel({
                       </IconButton>
                       <ContextMenu
                         items={[
-                          {
-                            type: "action",
-                            label: copy.fitObjectButton,
-                            onClick: () => onFitObject?.(object.id),
-                          },
-                          {
-                            type: "action",
-                            label: copy.duplicateObject,
-                            onClick: () => onDuplicateObject(object.id),
-                          },
+                          ...(isAudio
+                            ? []
+                            : [
+                                {
+                                  type: "action" as const,
+                                  label: copy.fitObjectButton,
+                                  onClick: () => onFitObject?.(object.id),
+                                },
+                                {
+                                  type: "action" as const,
+                                  label: copy.duplicateObject,
+                                  onClick: () => onDuplicateObject(object.id),
+                                },
+                              ]),
                           {
                             type: "action",
                             label: copy.renameObject,

@@ -13,6 +13,7 @@ import {
 } from "../models/device-models";
 import {
   getPlaceholderImageUrl,
+  isAudioObject,
   isBackgroundObject,
   isCameraObject,
   isImageObject,
@@ -25,6 +26,12 @@ import {
   normalizeImageSpeed,
 } from "./image-objects";
 import { isStickerId } from "./stickers";
+import {
+  createAudioObject,
+  normalizeAudioSettings,
+  toAudioSettings,
+} from "./audio-objects";
+import type { AudioSettings } from "./scene-objects";
 import { createCameraObject, withCameraObject } from "./camera-objects";
 import { createBackgroundObject, withBackgroundObject } from "./background-objects";
 import { normalizeAnimatedScreenFit } from "./screen-fit-motion";
@@ -200,12 +207,33 @@ export type TemplateBackgroundObject = {
   name: string;
 };
 
+/**
+ * A música (só no Vídeo): o arquivo não entra, como os vídeos das telas. O que
+ * fica é o nome, para pedi-lo de volta, e o lugar, os cortes, o volume e os
+ * fades, que valem para o arquivo que chegar.
+ */
+export type TemplateAudioObject = {
+  kind: "audio";
+  audio: AudioSettings;
+  isVisible: boolean;
+  /** Nunca vem preenchido (a música não anima); existe pela leitura comum. */
+  keyframes?: TemplateKeyframe[];
+  name: string;
+};
+
 export type TemplateObject =
   | TemplateDeviceObject
   | TemplateTextObject
   | TemplateImageObject
   | TemplateCameraObject
-  | TemplateBackgroundObject;
+  | TemplateBackgroundObject
+  | TemplateAudioObject;
+
+export function isTemplateAudio(
+  object: TemplateObject,
+): object is TemplateAudioObject {
+  return object.kind === "audio";
+}
 
 export function isTemplateCamera(
   object: TemplateObject,
@@ -284,6 +312,13 @@ function toTemplateObjects(
         !(isCameraObject(object) || isBackgroundObject(object)) ||
         (mode === "motion" && object.keyframes.length > 0),
     )
+    // A música só existe no Vídeo; sem arquivo nem o que pedir de volta, não
+    // há o que guardar.
+    .filter(
+      (object) =>
+        !isAudioObject(object) ||
+        (mode === "motion" && (object.audio ?? object.pendingAudio)),
+    )
     .map((object) => toTemplateObject(object, mode));
 }
 
@@ -303,6 +338,20 @@ function toTemplateObject(
     return {
       ...toTemplateKeyframes(object, mode),
       kind: "background",
+      name: object.name,
+    };
+  }
+
+  if (isAudioObject(object)) {
+    // O filtro de `toTemplateObjects` garante um dos dois.
+    const audio = object.audio
+      ? toAudioSettings(object.audio)
+      : (object.pendingAudio as AudioSettings);
+
+    return {
+      kind: "audio",
+      audio: { ...audio },
+      isVisible: object.isVisible,
       name: object.name,
     };
   }
@@ -502,6 +551,16 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
       };
     }
 
+    if (isTemplateAudio(object)) {
+      // A música volta esperando o arquivo: sem clipe na timeline até ele
+      // chegar, como o vídeo das telas.
+      return {
+        ...createAudioObject({ audio: null, name: object.name }),
+        isVisible: object.isVisible,
+        pendingAudio: normalizeAudioSettings(object.audio),
+      };
+    }
+
     if (isTemplateImage(object)) {
       const outline =
         typeof object.outline === "boolean"
@@ -669,6 +728,15 @@ function isValidTemplateObject(value: unknown): value is TemplateObject {
   // (validados à parte, um a um).
   if (object.kind === "camera" || object.kind === "background") {
     return typeof object.name === "string";
+  }
+
+  // A música: o nome do objeto e o que se lembra dela (lido de novo, nos
+  // limites, ao aplicar).
+  if (object.kind === "audio") {
+    return (
+      typeof object.name === "string" &&
+      normalizeAudioSettings(object.audio) !== null
+    );
   }
 
   // Um texto não tem modelo: o que vale é o `text` ser um objeto. O conteúdo

@@ -101,10 +101,20 @@ export type ScreenVideo = {
 export const MIN_SCREEN_VIDEO_CLIP_MS = 100;
 
 /**
+ * O que um clipe da timeline tem para ser posto e cortado no tempo: o vídeo de
+ * uma tela e a música (`SceneAudio`) usam as mesmas contas. Só o vídeo congela
+ * o último quadro (`holdEndMs`); a música nunca o tem.
+ */
+export type TimelineClip = Pick<
+  ScreenVideo,
+  "durationMs" | "holdEndMs" | "startMs" | "trimEndMs" | "trimStartMs"
+>;
+
+/**
  * Quanto o clipe ocupa na cena: o arquivo menos os cortes, mais o último quadro
  * congelado depois do fim (`holdEndMs`).
  */
-export function getScreenVideoClipDuration(video: ScreenVideo) {
+export function getScreenVideoClipDuration(video: TimelineClip) {
   return Math.max(
     MIN_SCREEN_VIDEO_CLIP_MS,
     video.durationMs -
@@ -127,7 +137,7 @@ export type VideoClipPatch = Partial<
  * arquivo: aí o último quadro fica parado (`holdEndMs`).
  */
 export function trimVideoClip(
-  video: ScreenVideo,
+  video: TimelineClip,
   edge: "start" | "end",
   deltaMs: number,
 ): VideoClipPatch {
@@ -161,7 +171,7 @@ export function trimVideoClip(
  * junto com o clipe acaba no último quadro dele, não numa tela vazia.
  */
 export function getScreenVideoTime(
-  video: ScreenVideo,
+  video: TimelineClip,
   sceneTimeMs: number,
 ): number | null {
   const offset = sceneTimeMs - video.startMs;
@@ -410,12 +420,63 @@ export type CameraObject = {
  */
 export type BackgroundObject = Omit<CameraObject, "kind"> & { kind: "background" };
 
+/**
+ * A música do Vídeo, um arquivo de áudio enviado. Como o vídeo das telas, fica
+ * como blob URL e não vai para o template; é um clipe na timeline, posto e
+ * cortado do mesmo jeito (`TimelineClip`). Cortar o começo faz a música tocar a
+ * partir dali. Ver `audio-objects.ts`.
+ */
+export type SceneAudio = {
+  durationMs: number;
+  /** Quanto o som leva para subir no começo do clipe e descer no fim, em ms. */
+  fadeInMs: number;
+  fadeOutMs: number;
+  name: string;
+  /** Instante da cena em que o clipe começa. */
+  startMs: number;
+  trimEndMs: number;
+  trimStartMs: number;
+  url: string;
+  /** 0 a 1. */
+  volume: number;
+};
+
+/** O que um template lembra da música: tudo, menos o arquivo. */
+export type AudioSettings = Omit<SceneAudio, "url">;
+
+/**
+ * A música da cena, na lista como um objeto (só no Vídeo, uma por cena). Não
+ * tem malha nem keyframes: a pose abaixo é só para caber onde o resto trata um
+ * objeto qualquer, e fica nos zeros. `isVisible` em falso é a música muda.
+ */
+export type AudioObject = {
+  kind: "audio";
+  /** `null` enquanto espera o arquivo que um template pediu (`pendingAudio`). */
+  audio: SceneAudio | null;
+  deletable: boolean;
+  id: string;
+  isVisible: boolean;
+  keyframes: Keyframe[];
+  name: string;
+  opacity: number;
+  /** O que veio de um template e espera o arquivo; ausente = nada pendente. */
+  pendingAudio?: AudioSettings | null;
+  positionX: number;
+  positionY: number;
+  positionZ: number;
+  rotationX: number;
+  rotationY: number;
+  rotationZ: number;
+  scale: number;
+};
+
 export type SceneObject =
   | DeviceObject
   | TextObject
   | ImageObject
   | CameraObject
-  | BackgroundObject;
+  | BackgroundObject
+  | AudioObject;
 
 /** A pose editável de um objeto: a do texto é a mesma, menos a abertura. */
 export type PosePatch = Partial<
@@ -453,6 +514,18 @@ export function isCameraObject(object: SceneObject): object is CameraObject {
 
 export function isBackgroundObject(object: SceneObject): object is BackgroundObject {
   return object.kind === "background";
+}
+
+export function isAudioObject(object: SceneObject): object is AudioObject {
+  return object.kind === "audio";
+}
+
+/**
+ * O que está na lista mas não se desenha: a câmera, o Fundo e a música. Não
+ * entram na cena 3D nem na conta dos objetos carregados.
+ */
+export function isUndrawnObject(object: SceneObject) {
+  return isCameraObject(object) || isBackgroundObject(object) || isAudioObject(object);
 }
 
 // Placeholders são gerados em runtime (canvas) no tamanho de upload

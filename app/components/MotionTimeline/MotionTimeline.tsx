@@ -13,12 +13,14 @@ import {
   Check,
   Diamond,
   MoreVertical,
+  Music,
   Play,
   Square,
   Video,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import AudioWaveform from "./AudioWaveform";
 import BezierEditor from "./BezierEditor";
 import MotionFrameControl from "./MotionFrameControl";
 import TimelineMenu from "./TimelineMenu";
@@ -34,11 +36,19 @@ import {
 import type { AppCopy, Locale } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
 import {
+  getAudioClipDuration,
+  getSceneAudios,
+  trimAudioClip,
+} from "../../lib/audio-objects";
+import {
   getActiveScreenVideos,
   getScreenVideoClipDuration,
+  isAudioObject,
   isDeviceObject,
   trimVideoClip,
   type ActiveScreenVideo,
+  type AudioObject,
+  type SceneAudio,
   type SceneObject,
   type ScreenId,
   type ScreenVideo,
@@ -77,6 +87,8 @@ type MotionTimelineProps = {
   onToggleKeyframeAtPlayhead: (objectId: string) => void;
   onChangeFrame: (frame: MotionFrame) => void;
   onChangeKeyframes: (objectId: string, keyframes: Keyframe[]) => void;
+  /** Move ou corta o clipe da música. */
+  onChangeAudio: (objectId: string, patch: Partial<SceneAudio>) => void;
   /** Move ou corta o clipe do vídeo de uma tela do objeto. */
   onChangeVideo: (
     objectId: string,
@@ -124,6 +136,22 @@ type DragState =
       video: ScreenVideo;
     }
   | {
+      kind: "audio";
+      moved: boolean;
+      objectId: string;
+      startMs: number;
+      startX: number;
+    }
+  | {
+      /** Uma borda do clipe da música: corta o começo ou o fim dela. */
+      audio: SceneAudio;
+      edge: "start" | "end";
+      kind: "audio-trim";
+      moved: boolean;
+      objectId: string;
+      startX: number;
+    }
+  | {
       keyframeId: string;
       kind: "keyframe";
       moved: boolean;
@@ -164,6 +192,7 @@ export default function MotionTimeline({
   isPlaying,
   locale,
   objects,
+  onChangeAudio,
   onChangeFrame,
   onChangeKeyframes,
   onChangeVideo,
@@ -194,11 +223,18 @@ export default function MotionTimeline({
   // play mostraria o instante em que o anterior terminou.
   const [livePlayhead, setLivePlayhead] = useState({ ms: 0, startedAt: 0 });
 
+  // A música não dá duração à cena, mas o eixo vai até o fim dela: um clipe
+  // mais longo que a cena tem de caber inteiro para ser cortado.
+  const audioEndMs = getSceneAudios(objects).reduce(
+    (end, { audio }) => Math.max(end, audio.startMs + getAudioClipDuration(audio)),
+    0,
+  );
   const axisMs =
     frozenAxisMs ??
     Math.max(
       MIN_AXIS_MS,
-      Math.ceil((sceneDurationMs + AXIS_TAIL_MS) / 1000) * 1000,
+      Math.ceil((Math.max(sceneDurationMs, audioEndMs) + AXIS_TAIL_MS) / 1000) *
+        1000,
     );
 
   // Durante o playback o playhead anda sozinho; é estado local para não
@@ -293,6 +329,7 @@ export default function MotionTimeline({
    * trilhas e as pontas de todos os clipes — menos o que está sendo arrastado.
    */
   function getSnapTargets(skip: {
+    audioObjectId?: string;
     clip?: { objectId: string; screen: ScreenId };
     keyframeId?: string;
     playhead?: boolean;
@@ -325,6 +362,12 @@ export default function MotionTimeline({
           entry.video.startMs,
           entry.video.startMs + getScreenVideoClipDuration(entry.video),
         );
+      }
+    }
+
+    for (const { audio, id } of getSceneAudios(objects)) {
+      if (id !== skip.audioObjectId) {
+        targets.push(audio.startMs, audio.startMs + getAudioClipDuration(audio));
       }
     }
 
@@ -456,6 +499,42 @@ export default function MotionTimeline({
         drag.objectId,
         drag.screen,
         trimVideoClip(drag.video, drag.edge, Math.round(delta)),
+      );
+      return;
+    }
+
+    if (drag.kind === "audio") {
+      // Como o clipe de vídeo: as duas pontas procuram onde grudar.
+      const object = objects.find((item) => item.id === drag.objectId);
+      const length =
+        object && isAudioObject(object) && object.audio
+          ? getAudioClipDuration(object.audio)
+          : 0;
+      const delta = snapDrag(
+        event,
+        [drag.startMs, drag.startMs + length],
+        deltaMs,
+        getSnapTargets({ audioObjectId: drag.objectId }),
+        (raw) => snap(drag.startMs + raw) - drag.startMs,
+      );
+
+      onChangeAudio(drag.objectId, {
+        startMs: Math.max(0, Math.round(drag.startMs + delta)),
+      });
+      return;
+    }
+
+    if (drag.kind === "audio-trim") {
+      const edge =
+        drag.edge === "start"
+          ? drag.audio.startMs
+          : drag.audio.startMs + getAudioClipDuration(drag.audio);
+      const targets = getSnapTargets({ audioObjectId: drag.objectId });
+      const delta = snapDrag(event, [edge], deltaMs, targets, snap);
+
+      onChangeAudio(
+        drag.objectId,
+        trimAudioClip(drag.audio, drag.edge, Math.round(delta)),
       );
       return;
     }
@@ -638,6 +717,110 @@ export default function MotionTimeline({
     );
   }
 
+  /**
+   * A trilha da música: no lugar dos keyframes (ela não anima), o clipe com a
+   * forma de onda do trecho que toca. Move e corta como o clipe de vídeo; os
+   * fades são rampas nas pontas. Muda, fica apagada.
+   */
+  function renderAudioLane(object: AudioObject) {
+    const { audio } = object;
+    const clipDuration = audio ? getAudioClipDuration(audio) : 0;
+
+    return (
+      <div
+        key={object.id}
+        className={`motion-timeline-lane motion-timeline-lane-audio${
+          object.id === selectedObjectId ? " is-active" : ""
+        }`}
+      >
+        {/* Voltando de um template sem o arquivo, ainda não há clipe. */}
+        {audio ? (
+          <div
+            className={`motion-timeline-clip motion-timeline-clip-audio${
+              object.isVisible ? "" : " is-muted"
+            }`}
+            title={`${audio.name} · ${formatSeconds(clipDuration)}`}
+            style={{
+              left: toPercent(audio.startMs),
+              width: toPercent(clipDuration),
+            }}
+            onPointerDown={(event) => {
+              if (event.button !== 0) {
+                return;
+              }
+
+              onSelectObject(object.id);
+              beginDrag(event, {
+                kind: "audio",
+                moved: false,
+                objectId: object.id,
+                startMs: audio.startMs,
+                startX: event.clientX,
+              });
+            }}
+            onPointerMove={handleDragMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+          >
+            <AudioWaveform audio={audio} />
+            {audio.fadeInMs > 0 || audio.fadeOutMs > 0 ? (
+              <svg
+                aria-hidden
+                className="motion-timeline-clip-fades"
+                data-testid="audio-fades"
+                preserveAspectRatio="none"
+                viewBox="0 0 100 100"
+              >
+                {audio.fadeInMs > 0 ? (
+                  <polygon
+                    points={`0,0 ${(audio.fadeInMs / clipDuration) * 100},0 0,100`}
+                  />
+                ) : null}
+                {audio.fadeOutMs > 0 ? (
+                  <polygon
+                    points={`100,0 ${100 - (audio.fadeOutMs / clipDuration) * 100},0 100,100`}
+                  />
+                ) : null}
+              </svg>
+            ) : null}
+            {(["start", "end"] as const).map((edge) => (
+              <span
+                key={edge}
+                aria-hidden
+                className={`motion-timeline-clip-trim is-${edge}`}
+                title={
+                  edge === "start"
+                    ? copy.motionMusicTrimStart
+                    : copy.motionMusicTrimEnd
+                }
+                onPointerDown={(event) => {
+                  if (event.button !== 0) {
+                    return;
+                  }
+
+                  onSelectObject(object.id);
+                  beginDrag(event, {
+                    audio,
+                    edge,
+                    kind: "audio-trim",
+                    moved: false,
+                    objectId: object.id,
+                    startX: event.clientX,
+                  });
+                }}
+                onPointerMove={handleDragMove}
+                onPointerUp={endDrag}
+                onPointerCancel={endDrag}
+              />
+            ))}
+            <Music size={11} aria-hidden />
+            <span className="motion-timeline-clip-name">{audio.name}</span>
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <section className="motion-timeline" aria-label={copy.motionTimeline}>
       <header className="motion-timeline-header">
@@ -692,6 +875,28 @@ export default function MotionTimeline({
           <div className="motion-timeline-labels">
             <span className="motion-timeline-ruler-spacer" />
             {objects.map((object) => {
+              // A música não tem keyframes: só o nome, com a nota à frente.
+              if (isAudioObject(object)) {
+                return (
+                  <div
+                    key={object.id}
+                    className={`motion-timeline-label motion-timeline-label-audio${
+                      object.id === selectedObjectId ? " is-active" : ""
+                    }`}
+                  >
+                    <button
+                      type="button"
+                      className="motion-timeline-label-name"
+                      title={object.name}
+                      onClick={() => onSelectObject(object.id)}
+                    >
+                      <Music size={11} aria-hidden />
+                      {object.name}
+                    </button>
+                  </div>
+                );
+              }
+
               const atPlayhead = findKeyframeAt(object.keyframes, playheadMs);
               const toggleLabel = atPlayhead
                 ? copy.motionRemoveKeyframe
@@ -781,7 +986,10 @@ export default function MotionTimeline({
               ))}
             </div>
 
-            {objects.map((object) => (
+            {objects.map((object) =>
+              isAudioObject(object) ? (
+                renderAudioLane(object)
+              ) : (
               <Fragment key={object.id}>
               <div
                 className={`motion-timeline-lane${
@@ -914,7 +1122,8 @@ export default function MotionTimeline({
                 renderVideoLane(object, entry),
               )}
               </Fragment>
-            ))}
+              ),
+            )}
 
             <div
               className="motion-timeline-playhead"

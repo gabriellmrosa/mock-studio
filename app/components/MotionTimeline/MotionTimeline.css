@@ -417,6 +417,60 @@
   white-space: nowrap;
 }
 
+/* A música: o clipe na cor do áudio, com a forma de onda por trás do nome.
+   Muda, fica apagada. */
+.motion-timeline-clip-audio {
+  background: color-mix(in srgb, var(--timeline-audio) 14%, transparent);
+  border-color: color-mix(in srgb, var(--timeline-audio) 50%, transparent);
+}
+
+.motion-timeline-lane-audio.is-active .motion-timeline-clip-audio {
+  background: color-mix(in srgb, var(--timeline-audio) 24%, transparent);
+  color: var(--foreground);
+}
+
+.motion-timeline-clip-audio.is-muted {
+  opacity: 0.45;
+}
+
+/* O nome e a nota ficam por cima da onda. O nome ganha um fundo sólido: sobre
+   um pico da onda ele cairia a 2,7:1, e com o fundo fica acima do AA. */
+.motion-timeline-clip-audio > .motion-timeline-clip-name,
+.motion-timeline-clip-audio > .lucide {
+  position: relative;
+}
+
+.motion-timeline-clip-audio > .motion-timeline-clip-name {
+  background: var(--sidebar-bg);
+  border-radius: var(--radius-xs);
+  padding: 0 var(--space-1);
+}
+
+.motion-timeline-waveform,
+.motion-timeline-clip-fades {
+  height: 100%;
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  width: 100%;
+}
+
+.motion-timeline-waveform {
+  fill: color-mix(in srgb, var(--timeline-audio) 80%, transparent);
+}
+
+/* Os fades: o trecho acima da rampa escurece, e o som sobe (ou desce) pela
+   diagonal, como nos editores. */
+.motion-timeline-clip-fades {
+  fill: color-mix(in srgb, var(--background) 60%, transparent);
+}
+
+.motion-timeline-label-audio .motion-timeline-label-name {
+  align-items: center;
+  display: flex;
+  gap: var(--space-1);
+}
+
 /* Rótulo da trilha de vídeo: recuado, subordinado ao nome do objeto. */
 .motion-timeline-label-video {
   color: var(--sidebar-muted);

@@ -79,7 +79,11 @@ import {
   isCameraObject,
   isImageObject,
   isTextObject,
+  isUndrawnObject,
+  isAudioObject,
   resetSceneObject,
+  type AudioObject,
+  type SceneAudio,
   type DeviceObject,
   type PosePatch,
   type ScreenFit,
@@ -135,6 +139,15 @@ import {
 } from "./lib/background-objects";
 import type { BackgroundEditor } from "./components/BackgroundFields/BackgroundFields";
 import { useUndoHistory } from "./lib/use-undo-history";
+import { useAudioPlayback } from "./lib/use-audio-playback";
+import { readAudioFile } from "./lib/audio-files";
+import {
+  AUDIO_ACCEPT,
+  applyAudioFile,
+  clampAudioFades,
+  createAudioObject,
+  createSceneAudio,
+} from "./lib/audio-objects";
 import { getUndoShortcut, isTextEditingTarget } from "./lib/undo-history";
 import { readStorageItem, writeStorageItem } from "./lib/storage";
 import {
@@ -203,6 +216,9 @@ const UI_THEME: UiTheme = "dark";
  */
 const NEW_FLAT_OBJECT_POSITION_Z = 0.25;
 
+/** Uma lista vazia estável: no Foto o play da música não tem o que ler. */
+const EMPTY_OBJECTS: SceneObject[] = [];
+
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("pt-BR");
   const uiTheme = UI_THEME;
@@ -211,6 +227,7 @@ export default function Home() {
   );
   const isInitialized = useRef(false);
   const addImageInputRef = useRef<HTMLInputElement>(null);
+  const addMusicInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState("");
   const [stickerPickerMode, setStickerPickerMode] = useState<"add" | "swap" | null>(null);
   const [sceneObjects, setSceneObjects] = useState<SceneObject[]>(() => [
@@ -621,6 +638,94 @@ export default function Home() {
   }
 
   /**
+   * "+ Música" (só no Vídeo), como o "+ Imagem": abre direto o seletor de
+   * arquivos, e o objeto só nasce com o arquivo. Uma música por cena.
+   */
+  function handleAddMusic() {
+    addMusicInputRef.current?.click();
+  }
+
+  async function handleAddMusicFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const music = createAudioObject({
+        audio: createSceneAudio(await readAudioFile(file)),
+        name: copy.musicObjectName,
+      });
+
+      setSceneObjects((current) =>
+        current.some(isAudioObject) ? current : [...current, music],
+      );
+      setSelectedObjectId(music.id);
+    } catch (error) {
+      console.error(error);
+      notify("error", copy.uploadMusicError);
+    }
+  }
+
+  /** A música selecionada, a partir do estado atual (edições rápidas não se desfazem). */
+  function updateAudioObject(
+    id: string,
+    patch: (object: AudioObject) => Partial<AudioObject>,
+  ) {
+    setSceneObjects((current) =>
+      current.map((object) =>
+        object.id === id && isAudioObject(object)
+          ? { ...object, ...patch(object) }
+          : object,
+      ),
+    );
+  }
+
+  /**
+   * Troca o arquivo da música, ou entrega o que um template pediu de volta: aí
+   * ele recebe o lugar, os cortes, o volume e os fades salvos.
+   */
+  async function handleMusicUpload(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    const id = selectedObject?.id;
+
+    event.target.value = "";
+
+    if (!file || !id) {
+      return;
+    }
+
+    try {
+      const arrived = await readAudioFile(file);
+
+      updateAudioObject(id, (object) => ({
+        audio: applyAudioFile(
+          arrived,
+          object.audio ?? object.pendingAudio,
+          !object.audio && Boolean(object.pendingAudio),
+        ),
+        pendingAudio: null,
+      }));
+      setUploadError("");
+    } catch (error) {
+      console.error(error);
+      setUploadError(copy.uploadMusicError);
+    }
+  }
+
+  /** Volume, fades ou o lugar do clipe na timeline; os fades ficam dentro do clipe. */
+  function handleUpdateAudio(id: string, patch: Partial<SceneAudio>) {
+    updateAudioObject(id, (object) =>
+      object.audio
+        ? { audio: clampAudioFades({ ...object.audio, ...patch }) }
+        : {},
+    );
+  }
+
+  /**
    * "+ Sticker" abre a grade para criar um objeto; "Trocar sticker" abre a mesma
    * para mudar o do objeto selecionado. `null` é fechada.
    */
@@ -816,8 +921,8 @@ export default function Home() {
         return [...current, copied];
       }
 
-      // A câmera e o Fundo são únicos por cena: não se duplicam.
-      if (isCameraObject(source) || isBackgroundObject(source)) {
+      // A câmera, o Fundo e a música são únicos por cena: não se duplicam.
+      if (isUndrawnObject(source)) {
         return current;
       }
 
@@ -930,7 +1035,7 @@ export default function Home() {
           return resetSceneObject(object);
         }
 
-        if (isCameraObject(object) || isBackgroundObject(object)) {
+        if (isUndrawnObject(object)) {
           return object;
         }
 
@@ -1278,6 +1383,13 @@ export default function Home() {
   const isMotionPlaying = motionStartedAt !== null;
 
   const sceneMotionDuration = getSceneMotionDuration(sceneObjects);
+
+  // A música só existe no Vídeo; no Foto não há o que tocar.
+  useAudioPlayback({
+    objects: motionTab === "motion" ? sceneObjects : EMPTY_OBJECTS,
+    sceneDurationMs: sceneMotionDuration,
+    startedAt: motionTab === "motion" ? motionStartedAt : null,
+  });
 
   // Em modo movimento a cena mostra o instante do playhead; fora dele, a pose
   // estática. Selecionar um keyframe move o playhead para o tempo dele, então
@@ -1884,6 +1996,7 @@ export default function Home() {
           objects={displayObjects}
           onAddObject={handleAddObject}
           onAddImage={handleAddImage}
+          onAddMusic={motionTab === "motion" ? handleAddMusic : undefined}
           onAddSticker={() => setStickerPickerMode("add")}
           onAddText={handleAddText}
           onDuplicateObject={handleDuplicateObject}
@@ -1945,7 +2058,12 @@ export default function Home() {
             frame={motionFrame}
             isPlaying={isMotionPlaying}
             locale={locale}
-            objects={displayObjects.filter((object) => object.isVisible)}
+            // A música muda continua na timeline (o clipe fica apagado): ela
+            // não some da cena, só se cala.
+            objects={displayObjects.filter(
+              (object) => object.isVisible || isAudioObject(object),
+            )}
+            onChangeAudio={handleUpdateAudio}
             onChangeFrame={setMotionFrame}
             onChangeKeyframes={handleChangeKeyframes}
             onChangeVideo={(objectId, screen, patch) =>
@@ -2039,6 +2157,10 @@ export default function Home() {
         }
         onUpdateText={handleUpdateText}
         onUploadObjectImage={handleObjectImageUpload}
+        onUploadMusic={handleMusicUpload}
+        onUpdateAudio={(patch) =>
+          selectedObject && handleUpdateAudio(selectedObject.id, patch)
+        }
         onAlignObject={handleAlignObject}
         onThemeColorChange={handleThemeColorChange}
         onThemeChange={handleThemeChange}
@@ -2108,6 +2230,16 @@ export default function Home() {
         tabIndex={-1}
         type="file"
         onChange={handleAddImageFile}
+      />
+      {/* O seletor de arquivos do "+ Música", pelo mesmo motivo. */}
+      <input
+        ref={addMusicInputRef}
+        accept={AUDIO_ACCEPT}
+        aria-hidden
+        hidden
+        tabIndex={-1}
+        type="file"
+        onChange={handleAddMusicFile}
       />
       {/* Montada só aberta: a busca e a categoria de uma vez não ficam para a
           próxima. */}

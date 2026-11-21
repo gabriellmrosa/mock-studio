@@ -389,9 +389,25 @@
   margin-bottom: calc(var(--space-1) * -1);
 }
 
-/* A velocidade de uma animação: o rótulo em cima e o campo, como os de texto. */
-.image-speed-field {
+/* Uma pilha de grupos de campos com respiro entre eles: o Texto e a Música. */
+.inspector-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Um rótulo pequeno em cima de um campo, ou de uma linha de campos: os
+   números do Texto, a velocidade de uma animação, o volume e os fades. */
+.inspector-field-group {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
+}
+
+/* Dois campos lado a lado, de larguras iguais (e os rótulos deles, em cima). */
+.inspector-field-row {
+  align-items: center;
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: 1fr 1fr;
 }

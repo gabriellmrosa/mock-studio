@@ -56,6 +56,11 @@
   /* Ações destrutivas (remover). 6.35:1 sobre --panel-bg; o #f87171 fixo que
      o menu de contexto usava dava 4.21:1 antes e 2.59:1 no tema claro. */
   --danger-fg: #ff8a80;
+  /* A música na timeline: verde-azulado, como o áudio nos editores de vídeo
+     (Premiere, Final Cut, DaVinci), para não se confundir com os clipes de
+     vídeo, que são neutros. Vale para os dois temas (o claro está desligado
+     e não recebe ajuste). */
+  --timeline-audio: #4fd1a5;
   /* O que flutua sobre o palco (cartão de aviso, barra): a cor dos painéis,
      sólida e sem opacidade — a cena 3D atrás não pode transparecer, e fica
      mais clara que o palco. */

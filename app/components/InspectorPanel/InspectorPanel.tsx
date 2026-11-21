@@ -11,6 +11,11 @@ import {
   MIN_IMAGE_SPEED,
 } from "../../lib/image-objects";
 import { getStickerLabel, getStickerThumbUrl } from "../../lib/stickers";
+import {
+  AUDIO_ACCEPT,
+  MAX_AUDIO_VOLUME,
+  getAudioClipDuration,
+} from "../../lib/audio-objects";
 import BackgroundFields, {
   type BackgroundEditor,
 } from "../BackgroundFields/BackgroundFields";
@@ -42,11 +47,14 @@ import {
   getActiveScreenFit,
   isDefaultObjectTransform,
   isDeviceObject,
+  isAudioObject,
   isBackgroundObject,
   isCameraObject,
   isImageObject,
   isTextObject,
   isPlaceholderImageUrl,
+  type AudioObject,
+  type SceneAudio,
   type DeviceObject,
   type SceneObject,
   type ScreenFit,
@@ -84,13 +92,17 @@ import {
   Image as ImageIcon,
   Laptop,
   MoreVertical,
+  Music,
   Pipette,
   Scaling,
   Smartphone,
   Tablet,
   Trash2,
+  TrendingDown,
+  TrendingUp,
   Upload,
   Video,
+  Volume2,
   Watch,
 } from "lucide-react";
 
@@ -148,6 +160,10 @@ type InspectorPanelProps = {
   /** O arquivo da imagem solta selecionada: enviar, e voltar ao espaço vazio. */
   onUploadObjectImage: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveObjectImage: () => void;
+  /** O arquivo da música: trocar, ou entregar o que um template pediu. */
+  onUploadMusic: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Volume e fades da música selecionada. */
+  onUpdateAudio: (patch: Partial<SceneAudio>) => void;
   /** Alinha o objeto ao quadro do canvas, na pose em edição. */
   onAlignObject: (alignment: ObjectAlignment) => void;
   onThemeColorChange: (part: string, hex: string) => void;
@@ -208,6 +224,8 @@ export default function InspectorPanel({
   onUpdateFoldAngle,
   onUploadObjectImage,
   onRemoveObjectImage,
+  onUploadMusic,
+  onUpdateAudio,
   onChangeSticker,
   cameraOrbit,
   cameraDistanceRange,
@@ -249,6 +267,7 @@ export default function InspectorPanel({
   const imageObject = isImageObject(object) ? object : null;
   const cameraObject = isCameraObject(object) ? object : null;
   const backgroundObject = isBackgroundObject(object) ? object : null;
+  const audioObject = isAudioObject(object) ? object : null;
   // O aparelho gira 180° em Y (o modelo olha para trás no arquivo) e o campo
   // mostra o desvio disso; o texto e a imagem já nascem de frente.
   const baseRotationY = device ? 180 : 0;
@@ -574,7 +593,17 @@ export default function InspectorPanel({
           </PanelSection>
         ) : null}
 
-        {backgroundObject ? (
+        {audioObject ? (
+          <MusicSection
+            copy={copy}
+            object={audioObject}
+            uploadError={uploadError}
+            onUpdate={onUpdateAudio}
+            onUpload={onUploadMusic}
+          />
+        ) : null}
+
+        {audioObject ? null : backgroundObject ? (
           <PanelSection
             title={
               editedKeyframe
@@ -1355,6 +1384,122 @@ function CameraFields({
 }
 
 /** A velocidade de uma animação, em %: 100 é a original. */
+/**
+ * A música selecionada: o arquivo numa faixa (que abre o painel para trocá-lo),
+ * o volume e os fades. Ela não tem pose nem keyframes, então é tudo o que o
+ * Inspector mostra dela.
+ */
+function MusicSection({
+  copy,
+  object,
+  onUpdate,
+  onUpload,
+  uploadError,
+}: {
+  copy: AppCopy;
+  object: AudioObject;
+  onUpdate: (patch: Partial<SceneAudio>) => void;
+  onUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  uploadError: string;
+}) {
+  const { audio, pendingAudio } = object;
+  // Voltando de um template, a faixa pede o arquivo pelo nome.
+  const fileName = audio
+    ? audio.name
+    : pendingAudio
+      ? copy.screenReupload.replace("{name}", pendingAudio.name)
+      : copy.screenUploadMusic;
+  const clipDuration = audio ? getAudioClipDuration(audio) : 0;
+
+  return (
+    <PanelSection title={copy.musicSectionTitle}>
+      {/* Como no painel de Texto: um respiro entre os grupos, e o rótulo
+          colado no campo dele. */}
+      <div className="inspector-fields">
+        <ScreenFileRow
+          key={object.id}
+          closeLabel={copy.closeLabel}
+          icon={<Music size={16} />}
+          menuLabel={copy.musicOptions}
+          name={fileName}
+        >
+          <UploadCard
+            accept={AUDIO_ACCEPT}
+            label={audio ? copy.uploadMusic : copy.screenUploadMusic}
+            meta={copy.musicFileHint}
+            onUpload={onUpload}
+          />
+        </ScreenFileRow>
+        {audio ? (
+          <>
+            <div className="inspector-field-group">
+              <span className="transform-control-label">
+                {copy.musicVolumeLabel}
+              </span>
+              <NumberField
+                ariaLabel={copy.musicVolumeLabel}
+                icon={<Volume2 size={14} />}
+                max={MAX_AUDIO_VOLUME}
+                min={0}
+                scale={100}
+                step={0.05}
+                suffix="%"
+                value={audio.volume}
+                onChange={(value) => {
+                  if (value !== null) onUpdate({ volume: value });
+                }}
+              />
+            </div>
+            {/* Como "Entrelinha | Espaço" no Texto: os rótulos numa linha e
+                os campos lado a lado embaixo. Guardados em ms, mostrados em
+                segundos; cada um vai até o clipe inteiro. Em 0, a música
+                começa e termina como foi cortada. */}
+            <div className="inspector-field-group">
+              <div className="inspector-field-row">
+                <span className="transform-control-label">
+                  {copy.musicFadeInLabel}
+                </span>
+                <span className="transform-control-label">
+                  {copy.musicFadeOutLabel}
+                </span>
+              </div>
+              <div className="inspector-field-row">
+                <NumberField
+                  ariaLabel={copy.musicFadeInLabel}
+                  icon={<TrendingUp size={14} />}
+                  max={clipDuration}
+                  min={0}
+                  scale={0.001}
+                  step={100}
+                  suffix="s"
+                  value={audio.fadeInMs}
+                  onChange={(value) => {
+                    if (value !== null) onUpdate({ fadeInMs: value });
+                  }}
+                />
+                <NumberField
+                  ariaLabel={copy.musicFadeOutLabel}
+                  icon={<TrendingDown size={14} />}
+                  max={clipDuration}
+                  min={0}
+                  scale={0.001}
+                  step={100}
+                  suffix="s"
+                  value={audio.fadeOutMs}
+                  onChange={(value) => {
+                    if (value !== null) onUpdate({ fadeOutMs: value });
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        ) : null}
+        {uploadError ? <p className="inspector-error-note">{uploadError}</p> : null}
+      </div>
+    </PanelSection>
+  );
+}
+
 function ImageSpeedField({
   copy,
   onChange,
@@ -1365,7 +1510,7 @@ function ImageSpeedField({
   speed: number;
 }) {
   return (
-    <div className="image-speed-field">
+    <div className="inspector-field-group">
       <span className="transform-control-label">{copy.imageSpeedLabel}</span>
       <NumberField
         ariaLabel={copy.imageSpeedLabel}

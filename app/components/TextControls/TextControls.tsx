@@ -89,7 +89,7 @@ export default function TextControls({
       title={copy.textSectionTitle}
       className="--without-border-bottom"
     >
-      <div className="text-controls">
+      <div className="inspector-fields">
         <div className="text-controls-field">
           <textarea
             aria-label={copy.textContentLabel}
@@ -118,7 +118,7 @@ export default function TextControls({
           }}
         />
 
-        <div className="text-controls-row">
+        <div className="inspector-field-row">
           {/* Só os pesos que a fonte escolhida tem. */}
           <CustomSelect
             ariaLabel={copy.textWeightLabel}
@@ -143,8 +143,8 @@ export default function TextControls({
           />
         </div>
 
-        <div className="text-controls-group">
-          <div className="text-controls-row">
+        <div className="inspector-field-group">
+          <div className="inspector-field-row">
             <span className="transform-control-label">
               {copy.textLineHeightLabel}
             </span>
@@ -152,7 +152,7 @@ export default function TextControls({
               {copy.textLetterSpacingLabel}
             </span>
           </div>
-          <div className="text-controls-row">
+          <div className="inspector-field-row">
             <NumberField
               ariaLabel={copy.textLineHeightLabel}
               icon={<ArrowUpDown size={ICON_SIZE} />}
@@ -181,8 +181,8 @@ export default function TextControls({
           </div>
         </div>
 
-        <div className="text-controls-group">
-          <div className="text-controls-row">
+        <div className="inspector-field-group">
+          <div className="inspector-field-row">
             <span className="transform-control-label">
               {copy.textAlignLabel}
             </span>
@@ -190,7 +190,7 @@ export default function TextControls({
               {copy.textMaxWidthLabel}
             </span>
           </div>
-          <div className="text-controls-row">
+          <div className="inspector-field-row">
             <SegmentedTabs
               ariaLabel={copy.textAlignLabel}
               className="text-controls-segmented"
@@ -214,7 +214,7 @@ export default function TextControls({
           </div>
         </div>
 
-        <div className="text-controls-group">
+        <div className="inspector-field-group">
           <span className="transform-control-label">{copy.textColorLabel}</span>
           <ColorRow
             ariaLabel={copy.textColorLabel}

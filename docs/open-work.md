@@ -158,3 +158,23 @@ now tries 3 times with the page visible, and with the page hidden it waits for t
 page to come back without spending an attempt. Still open: if the error shows up
 again, find out whether the page was hidden at the time; and the error the user
 sees is still the generic "Couldn't export the video."
+
+## Music: what is left
+
+Stage 1 is in: the `Music` object, its clip with waveform on the timeline
+(move, trim, ramps for the fades), volume and fades in the Inspector, mute,
+playback in sync with the scene, templates and links (without the file), undo.
+Left:
+
+- **Stage 2, the music in the exported video**: cut and placed by time (not
+  played in real time), with volume and fades, encoded with `mediabunny` as AAC
+  in MP4 and Opus in WebM, transparent WebM included. Safari's audio encoding
+  is uneven: check before exporting and warn, like the transparent WebM.
+- A short automatic fade out where the scene ends, when the music goes past it
+  (proposed with "the music doesn't define the length"); today it stops dry, in
+  the preview too.
+- Not checked: real music files (only a generated test tone), listening to it
+  (checked by the element's time and volume), browsers other than the
+  built-in one, and the light theme (`--timeline-audio` has a single value).
+- Later, if missed: volume keyframes, loop, the sound of the screen videos.
+
