@@ -27,6 +27,24 @@ export type PatchNote = {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    date: "2026-11-21",
+    version: "3.2.1",
+    items: [
+      {
+        title: {
+          "pt-BR": "Seções mais claras em Propriedades",
+          "en-US": "Clearer sections in Properties",
+        },
+        description: {
+          "pt-BR":
+            "Uma divisória sutil separa os grupos de ajustes no painel de Propriedades.",
+          "en-US":
+            "A subtle divider now separates the groups of settings in the Properties panel.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-11-20",
     version: "3.2.0",
     items: [
