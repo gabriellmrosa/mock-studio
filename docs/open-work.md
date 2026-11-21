@@ -129,7 +129,7 @@ real link.
   typed into the field.
 
 
-## Video export: "the screen video did not answer the seek" (not reproduced)
+## Video export: the seek timeout — cause not confirmed
 
 A user export of a 23 s scene (template "Modo Seguro": one HEVC screen recording,
 810×1632, variable frame rate, plus image screens on two iPhones and the Duo) failed
@@ -153,6 +153,8 @@ user can switch tabs, and Chrome suspends muted video in hidden tabs; neither th
 built-in browser nor the extension can hide the tab, so this needs the user to
 switch away by hand.
 
-Possible fixes, none chosen: retry the seek (or a longer timeout for the first
-one); warm the decoder with a seek before the first frame; wait for the page to be
-visible again before failing; a clearer error message.
+Fixed without knowing which cause it was: `seekVideo` (`app/lib/video-seek.ts`)
+now tries 3 times with the page visible, and with the page hidden it waits for the
+page to come back without spending an attempt. Still open: if the error shows up
+again, find out whether the page was hidden at the time; and the error the user
+sees is still the generic "Couldn't export the video."

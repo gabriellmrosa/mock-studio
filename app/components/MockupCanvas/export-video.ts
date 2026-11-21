@@ -20,6 +20,7 @@ import {
   paintBackgroundLook,
   type BackgroundLook,
 } from "../../lib/canvas-background";
+import { seekVideo } from "../../lib/video-seek";
 import { hideEditorOnlyObjects } from "./editor-only";
 import { flipPixelRows, getSupersampleScale } from "./export-photo";
 
@@ -27,11 +28,10 @@ import { flipPixelRows, getSupersampleScale } from "./export-photo";
  * Exportação de vídeo quadro a quadro. Nada aqui depende do relógio nem do
  * requestAnimationFrame: cada quadro posiciona a cena no seu instante, leva os
  * vídeos das telas ao quadro exato e só então renderiza. Um computador lento
- * demora mais, mas não perde quadros — e a aba pode ficar em segundo plano.
+ * demora mais, mas não perde quadros — e a aba pode ficar em segundo plano
+ * (se o navegador suspender o vídeo de uma tela, `seekVideo` espera a aba
+ * voltar em vez de falhar).
  */
-
-/** Um vídeo de tela que não termina o seek neste tempo trava a exportação. */
-const SEEK_TIMEOUT_MS = 5000;
 
 export type VideoFrameRendererDeps = {
   /** Um quadro do R3F sob demanda: roda os useFrame (compositor das telas). */
@@ -54,30 +54,6 @@ export type VideoFrameRenderer = {
   end: () => void;
   render: (timeMs: number) => Promise<void>;
 };
-
-async function seekVideo(element: HTMLVideoElement, seconds: number) {
-  const target = Math.max(0, seconds);
-
-  // Seek para onde já está não dispara `seeked`.
-  if (Math.abs(element.currentTime - target) < 0.0005 && !element.seeking) {
-    return;
-  }
-
-  await new Promise<void>((resolve, reject) => {
-    const timeout = window.setTimeout(() => {
-      element.removeEventListener("seeked", handleSeeked);
-      reject(new Error("O vídeo da tela não respondeu ao seek."));
-    }, SEEK_TIMEOUT_MS);
-
-    function handleSeeked() {
-      window.clearTimeout(timeout);
-      resolve();
-    }
-
-    element.addEventListener("seeked", handleSeeked, { once: true });
-    element.currentTime = target;
-  });
-}
 
 /**
  * Prepara a renderização: render target com superamostragem e buffers
