@@ -2,12 +2,14 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import ExportDialog, { type ExportKind } from "./ExportDialog";
 import { APP_COPY } from "../../lib/i18n";
+import { canExportAudio } from "../MockupCanvas/export-video";
 import {
   DEFAULT_VIDEO_EXPORT_SETTINGS,
   type VideoExportSettings,
 } from "../../lib/video-export";
 
 jest.mock("../MockupCanvas/export-video", () => ({
+  canExportAudio: jest.fn(() => Promise.resolve(true)),
   canExportVideo: jest.fn(() => Promise.resolve(true)),
 }));
 
@@ -23,6 +25,7 @@ const PHOTO_OPTIONS = [
  */
 function Harness({
   durationMs = 4000,
+  hasMusic = false,
   isMotion = true,
   onCancel = jest.fn(),
   onCreateProjectLink = jest.fn(() =>
@@ -31,6 +34,7 @@ function Harness({
   onExport = jest.fn(),
 }: {
   durationMs?: number;
+  hasMusic?: boolean;
   isMotion?: boolean;
   onCancel?: jest.Mock;
   onCreateProjectLink?: jest.Mock;
@@ -60,6 +64,7 @@ function Harness({
           ? {
               durationMs,
               frame: { height: 1080, width: 1920 },
+              hasMusic,
               onSettingsChange: setSettings,
               settings,
             }
@@ -187,6 +192,32 @@ describe("ExportDialog", () => {
         settings: { background: true, fps: 30, scale: 1 },
       }),
     );
+  });
+
+  describe("with music", () => {
+    it("says nothing when the browser can put the music in the video", async () => {
+      render(<Harness hasMusic />);
+      await chooseVideo();
+
+      expect(screen.queryByText(copy.videoExportNoAudio)).toBeNull();
+    });
+
+    it("warns that the video will have no sound, without blocking it", async () => {
+      jest.mocked(canExportAudio).mockResolvedValueOnce(false);
+      render(<Harness hasMusic />);
+      await chooseVideo();
+
+      expect(screen.getByText(copy.videoExportNoAudio)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Export" })).toBeEnabled();
+    });
+
+    it("does not check the audio when there is no music", async () => {
+      jest.mocked(canExportAudio).mockClear();
+      render(<Harness />);
+      await chooseVideo();
+
+      expect(canExportAudio).not.toHaveBeenCalled();
+    });
   });
 
   describe("in Safari", () => {

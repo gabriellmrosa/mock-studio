@@ -216,6 +216,7 @@ export type AppCopy = {
   videoExportHint: string;
   videoExportUnsupported: string;
   videoExportSafariTransparent: string;
+  videoExportNoAudio: string;
   projectLinkCopy: string;
   projectLinkCopied: string;
   projectLinkCopyError: string;
@@ -547,6 +548,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     videoExportHint:
       "Pode usar outra aba enquanto isso. Ao terminar, o vídeo vai para a sua pasta de downloads.",
     videoExportUnsupported: "Este navegador não exporta esse formato. Use o Chrome ou o Edge.",
+    videoExportNoAudio: "Este navegador não consegue pôr a música nesse formato: o vídeo vai sair sem som. No Chrome ou no Edge, sai com a música.",
     videoExportSafariTransparent:
       "O Safari ainda não mostra vídeos sem fundo. Para exportar com transparência, copie o link do projeto e abra no Chrome, Edge ou Firefox — as imagens e vídeos das telas não vão no link.",
     projectLinkCopy: "Copiar link do projeto",
@@ -952,6 +954,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     videoExportHint:
       "You can use another tab meanwhile. When it's done, the video goes to your downloads folder.",
     videoExportUnsupported: "This browser can't export this format. Use Chrome or Edge.",
+    videoExportNoAudio: "This browser can't add the music in this format: the video will have no sound. In Chrome or Edge, it comes with the music.",
     videoExportSafariTransparent:
       "Safari doesn't show transparent videos yet. To export with transparency, copy the project link and open it in Chrome, Edge or Firefox — screen images and videos don't travel in the link.",
     projectLinkCopy: "Copy project link",

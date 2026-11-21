@@ -1,10 +1,12 @@
 "use client";
 
 import {
+  getAudibleAudios,
   getAudioGain,
   getAudioTime,
+  mixSceneAudio,
 } from "./audio-objects";
-import type { AudioObject, SceneAudio } from "./scene-objects";
+import type { AudioObject, SceneAudio, SceneObject } from "./scene-objects";
 
 /**
  * O lado do navegador da música: ler o arquivo, guardar a forma de onda e tocar
@@ -116,6 +118,7 @@ function getAudioElement(url: string) {
 export function getAudioPlayback(
   object: AudioObject & { audio: SceneAudio },
   sceneTimeMs: number,
+  sceneDurationMs?: number,
 ): { gain: number; timeS: number } | null {
   const timeMs = getAudioTime(object.audio, sceneTimeMs);
 
@@ -124,7 +127,7 @@ export function getAudioPlayback(
   }
 
   return {
-    gain: getAudioGain(object.audio, sceneTimeMs),
+    gain: getAudioGain(object.audio, sceneTimeMs, sceneDurationMs),
     timeS: timeMs / 1000,
   };
 }
@@ -137,11 +140,12 @@ export function getAudioPlayback(
 export function syncAudioPlayback(
   objects: Array<AudioObject & { audio: SceneAudio }>,
   sceneTimeMs: number,
+  sceneDurationMs: number,
 ) {
   const playingUrls = new Set<string>();
 
   for (const object of objects) {
-    const playback = getAudioPlayback(object, sceneTimeMs);
+    const playback = getAudioPlayback(object, sceneTimeMs, sceneDurationMs);
 
     if (!playback) {
       continue;
@@ -176,4 +180,58 @@ export function stopAudioPlayback() {
       element.pause();
     }
   }
+}
+
+/** A taxa do áudio exportado: a do Opus (WebM), que o AAC (MP4) também aceita. */
+export const EXPORT_AUDIO_SAMPLE_RATE = 48_000;
+export const EXPORT_AUDIO_CHANNELS = 2;
+
+/**
+ * O áudio do vídeo exportado: as músicas que se ouvem, decodificadas de novo já
+ * na taxa da exportação (o navegador reamostra) e misturadas por tempo, sem
+ * tocar nada — sai igual por mais lenta que seja a exportação. `lengthMs` é o
+ * tamanho da trilha (o do vídeo, que vai um quadro além da cena); o fade do fim
+ * é o da cena. `null` quando não há o que se ouvir.
+ */
+export async function renderSceneAudio({
+  lengthMs,
+  objects,
+  sceneDurationMs,
+}: {
+  lengthMs: number;
+  objects: SceneObject[];
+  sceneDurationMs: number;
+}) {
+  const audibles = getAudibleAudios(objects, sceneDurationMs);
+
+  if (audibles.length === 0) {
+    return null;
+  }
+
+  const context = new OfflineAudioContext(
+    EXPORT_AUDIO_CHANNELS,
+    1,
+    EXPORT_AUDIO_SAMPLE_RATE,
+  );
+  const tracks = await Promise.all(
+    audibles.map(async ({ audio }) => {
+      const file = await (await fetch(audio.url)).arrayBuffer();
+      const decoded = await context.decodeAudioData(file);
+
+      return {
+        audio,
+        channels: Array.from({ length: decoded.numberOfChannels }, (_, index) =>
+          decoded.getChannelData(index),
+        ),
+      };
+    }),
+  );
+
+  return mixSceneAudio({
+    length: Math.ceil((lengthMs / 1000) * EXPORT_AUDIO_SAMPLE_RATE),
+    numberOfChannels: EXPORT_AUDIO_CHANNELS,
+    sampleRate: EXPORT_AUDIO_SAMPLE_RATE,
+    sceneDurationMs,
+    tracks,
+  });
 }

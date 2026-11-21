@@ -15,7 +15,7 @@ import {
   type VideoFps,
   type VideoScale,
 } from "../../lib/video-export";
-import { canExportVideo } from "../MockupCanvas/export-video";
+import { canExportAudio, canExportVideo } from "../MockupCanvas/export-video";
 
 export type ExportKind = "image" | "video";
 
@@ -30,6 +30,8 @@ export type PhotoExportOption = {
 export type VideoExportDialogProps = {
   durationMs: number;
   frame: MotionFrame;
+  /** Se há música que se ouve na cena (ver `getAudibleAudios`). */
+  hasMusic: boolean;
   onSettingsChange: (settings: VideoExportSettings) => void;
   settings: VideoExportSettings;
 };
@@ -84,6 +86,7 @@ export default function ExportDialog({
 }) {
   const activeKind = video ? kind : "image";
   const [isVideoSupported, setIsVideoSupported] = useState(true);
+  const [isAudioSupported, setIsAudioSupported] = useState(true);
   const hasMotion = (video?.durationMs ?? 0) > 0;
   const canExport =
     activeKind === "image" || (hasMotion && isVideoSupported);
@@ -92,6 +95,7 @@ export default function ExportDialog({
   // cada mudança, e o aviso só aparece quando não dá.
   const videoSettings = video?.settings;
   const videoFrame = video?.frame;
+  const hasMusic = video?.hasMusic ?? false;
 
   useEffect(() => {
     if (!isOpen || activeKind !== "video" || !videoSettings || !videoFrame) {
@@ -111,6 +115,24 @@ export default function ExportDialog({
       isCurrent = false;
     };
   }, [activeKind, isOpen, videoFrame, videoSettings]);
+
+  // A música depende só do formato (AAC no MP4, Opus no WebM). Sem ela o
+  // vídeo sai do mesmo jeito, sem som: é um aviso, não um bloqueio.
+  useEffect(() => {
+    if (!isOpen || activeKind !== "video" || !videoSettings || !hasMusic) {
+      return;
+    }
+
+    let isCurrent = true;
+
+    canExportAudio(videoSettings)
+      .then((supported) => isCurrent && setIsAudioSupported(supported))
+      .catch(() => isCurrent && setIsAudioSupported(false));
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [activeKind, hasMusic, isOpen, videoSettings]);
 
   const transparentSwatch = (
     <span className="export-swatch export-swatch-transparent" />
@@ -197,6 +219,7 @@ export default function ExportDialog({
           colorSwatch={colorSwatch}
           copy={copy}
           hasMotion={hasMotion}
+          isAudioMissing={hasMusic && !isAudioSupported}
           isSupported={isVideoSupported}
           onCreateProjectLink={onCreateProjectLink}
           locale={locale}
@@ -212,6 +235,7 @@ function VideoFields({
   colorSwatch,
   copy,
   hasMotion,
+  isAudioMissing,
   isSupported,
   locale,
   onCreateProjectLink,
@@ -221,6 +245,8 @@ function VideoFields({
   colorSwatch: ReactNode;
   copy: AppCopy;
   hasMotion: boolean;
+  /** Há música, mas este navegador não a codifica nesse formato. */
+  isAudioMissing: boolean;
   isSupported: boolean;
   locale: Locale;
   onCreateProjectLink?: () => Promise<string>;
@@ -302,6 +328,9 @@ function VideoFields({
           {copy.videoExportUnsupported}
         </p>
       )}
+      {isSupported && isAudioMissing ? (
+        <Callout>{copy.videoExportNoAudio}</Callout>
+      ) : null}
       {/* Só sem fundo: com fundo sai MP4, que o Safari mostra bem. */}
       {!settings.background && isSafari(navigator.userAgent) ? (
         <Callout

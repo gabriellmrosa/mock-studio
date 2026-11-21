@@ -161,20 +161,16 @@ sees is still the generic "Couldn't export the video."
 
 ## Music: what is left
 
-Stage 1 is in: the `Music` object, its clip with waveform on the timeline
-(move, trim, ramps for the fades), volume and fades in the Inspector, mute,
-playback in sync with the scene, templates and links (without the file), undo.
-Left:
+The music works end to end: the `Music` object, its clip with waveform (move,
+trim, fade ramps), volume and fades, mute, playback in sync with the scene, the
+automatic half-second fade where the scene ends, templates and links (without
+the file), undo, and the exported video (AAC in MP4, Opus in WebM, mixed by
+time). Left:
 
-- **Stage 2, the music in the exported video**: cut and placed by time (not
-  played in real time), with volume and fades, encoded with `mediabunny` as AAC
-  in MP4 and Opus in WebM, transparent WebM included. Safari's audio encoding
-  is uneven: check before exporting and warn, like the transparent WebM.
-- A short automatic fade out where the scene ends, when the music goes past it
-  (proposed with "the music doesn't define the length"); today it stops dry, in
-  the preview too.
-- Not checked: real music files (only a generated test tone), listening to it
-  (checked by the element's time and volume), browsers other than the
-  built-in one, and the light theme (`--timeline-audio` has a single value).
+- Not checked: real music files (only generated test tones), listening to it
+  (checked by the element's time and volume, and by the RMS of the exported
+  audio), Safari and Firefox (the "no sound" notice is only covered by a unit
+  test: Chrome encodes both codecs), and the light theme (`--timeline-audio`
+  has a single value).
+- The automatic fade at the end of the scene is not drawn on the clip.
 - Later, if missed: volume keyframes, loop, the sound of the screen videos.
-

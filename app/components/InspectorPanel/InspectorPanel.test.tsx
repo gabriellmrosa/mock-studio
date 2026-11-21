@@ -90,6 +90,7 @@ const copy: AppCopy = {
   imageObjectName: "Image",
   imageSectionTitle: "Image",
   imageObjectHint: "PNG or SVG",
+  videoExportNoAudio: "No audio",
   addMusicObject: "Music",
   musicObjectName: "Music",
   musicSectionTitle: "Music",

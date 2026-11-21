@@ -357,8 +357,17 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   cada um até o clipe inteiro) ficam no Inspector; os fades são rampas
   desenhadas no clipe.
 - **Não dá duração à cena** (decisão do usuário): o vídeo dura o que os
-  keyframes e os clipes de vídeo mandam, e a música é cortada no fim. O eixo da
-  timeline cresce até o fim dela, para o clipe caber inteiro.
+  keyframes e os clipes de vídeo mandam. Passando do fim, ela desce nos últimos
+  `SCENE_END_FADE_MS` (500 ms) em vez de parar seca. O eixo da timeline cresce
+  até o fim dela, para o clipe caber inteiro.
+- **Na exportação, a música é misturada por tempo**, não tocada: o arquivo é
+  decodificado de novo já a 48 kHz e cada amostra recebe `getAudioGain`, a
+  mesma conta do play (`mixSceneAudio`, `renderSceneAudio`) — o arquivo soa
+  como o preview, por mais lenta que seja a exportação. Vai em AAC no MP4 e
+  Opus no WebM, **um pedaço por quadro** (`sendAudioUntil`): a trilha inteira na
+  frente esperaria pelo vídeo no intercalador. Sem música que se ouça, não há
+  trilha de áudio. Se o navegador não codifica o áudio do formato
+  (`canExportAudio`), o dialog avisa e o vídeo sai sem som.
 - O arquivo é decodificado uma vez (`readAudioFile`, contexto offline) para a
   duração exata e a forma de onda; os picos e o `<audio>` ficam em
   `audio-files.ts`, guardados pelo blob URL, fora do estado e do template.

@@ -24,6 +24,12 @@ export const AUDIO_ACCEPT =
 
 export const MAX_AUDIO_VOLUME = 1;
 
+/**
+ * A música não estica a cena: passando do fim, ela desce nestes últimos ms em
+ * vez de parar seca (no preview e no vídeo exportado).
+ */
+export const SCENE_END_FADE_MS = 500;
+
 export function createAudioObject({
   audio,
   name,
@@ -83,19 +89,107 @@ export function getAudioTime(audio: SceneAudio, sceneTimeMs: number) {
 /**
  * O volume num instante da cena: o do clipe, subindo no fade-in e descendo no
  * fade-out, em linha reta. Fora do clipe, 0. Os fades nunca passam do clipe: se
- * os dois juntos não cabem, cada um vale até onde o outro deixa.
+ * os dois juntos não cabem, cada um vale até onde o outro deixa. Se o clipe
+ * passa do fim da cena, ele ainda desce nos últimos `SCENE_END_FADE_MS` dela.
+ * É a mesma conta no play e na exportação: o arquivo soa como o preview.
  */
-export function getAudioGain(audio: SceneAudio, sceneTimeMs: number) {
+export function getAudioGain(
+  audio: SceneAudio,
+  sceneTimeMs: number,
+  sceneDurationMs = Number.POSITIVE_INFINITY,
+) {
   if (getAudioTime(audio, sceneTimeMs) === null) {
     return 0;
   }
 
   const offset = sceneTimeMs - audio.startMs;
-  const remaining = getAudioClipDuration(audio) - offset;
+  const clipEnd = audio.startMs + getAudioClipDuration(audio);
+  const remaining = clipEnd - sceneTimeMs;
   const fadeIn = audio.fadeInMs > 0 ? offset / audio.fadeInMs : 1;
   const fadeOut = audio.fadeOutMs > 0 ? remaining / audio.fadeOutMs : 1;
+  const sceneEnd =
+    clipEnd > sceneDurationMs
+      ? (sceneDurationMs - sceneTimeMs) / SCENE_END_FADE_MS
+      : 1;
 
-  return audio.volume * Math.max(0, Math.min(1, fadeIn, fadeOut));
+  return audio.volume * Math.max(0, Math.min(1, fadeIn, fadeOut, sceneEnd));
+}
+
+/**
+ * As músicas que se ouvem numa cena desta duração: com arquivo, sem estar
+ * mudas, com volume e com o clipe dentro da cena. Sem nenhuma, o vídeo sai
+ * sem trilha de áudio, como sempre saiu.
+ */
+export function getAudibleAudios(objects: SceneObject[], sceneDurationMs: number) {
+  return getSceneAudios(objects).filter(
+    ({ audio, isVisible }) =>
+      isVisible && audio.volume > 0 && audio.startMs < sceneDurationMs,
+  );
+}
+
+/**
+ * Mistura as músicas num trecho de `length` amostras a partir do zero da
+ * cena, no volume de cada instante (`getAudioGain`). Cada música vem já
+ * decodificada na mesma taxa (`sampleRate`); um arquivo mono vai para os dois
+ * canais. A soma é limitada a ±1 para não estourar no codificador.
+ */
+export function mixSceneAudio({
+  length,
+  numberOfChannels,
+  sampleRate,
+  sceneDurationMs,
+  tracks,
+}: {
+  length: number;
+  numberOfChannels: number;
+  sampleRate: number;
+  sceneDurationMs: number;
+  tracks: Array<{ audio: SceneAudio; channels: Float32Array[] }>;
+}) {
+  const output = Array.from(
+    { length: numberOfChannels },
+    () => new Float32Array(length),
+  );
+
+  for (const { audio, channels } of tracks) {
+    if (channels.length === 0) {
+      continue;
+    }
+
+    const first = Math.max(0, Math.round((audio.startMs / 1000) * sampleRate));
+    const clipEnd = audio.startMs + getAudioClipDuration(audio);
+    const last = Math.min(length, Math.round((clipEnd / 1000) * sampleRate));
+    // A amostra do arquivo que toca no começo do clipe: a do corte.
+    const sourceOffset =
+      Math.round((audio.trimStartMs / 1000) * sampleRate) - first;
+
+    for (let index = first; index < last; index += 1) {
+      const sourceIndex = index + sourceOffset;
+
+      if (sourceIndex < 0 || sourceIndex >= channels[0].length) {
+        continue;
+      }
+
+      const gain = getAudioGain(audio, (index / sampleRate) * 1000, sceneDurationMs);
+
+      if (gain === 0) {
+        continue;
+      }
+
+      for (let channel = 0; channel < numberOfChannels; channel += 1) {
+        output[channel][index] +=
+          channels[channel % channels.length][sourceIndex] * gain;
+      }
+    }
+  }
+
+  for (const channel of output) {
+    for (let index = 0; index < channel.length; index += 1) {
+      channel[index] = Math.max(-1, Math.min(1, channel[index]));
+    }
+  }
+
+  return output;
 }
 
 export type AudioClipPatch = Partial<

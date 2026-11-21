@@ -70,6 +70,8 @@ type FloatingCanvasControlsProps = {
   video?: {
     durationMs: number;
     frame: MotionFrame;
+    /** Se há música que se ouve: o dialog confere se ela cabe no formato. */
+    hasMusic: boolean;
     onExport: (settings: VideoExportSettings) => void;
   };
 };

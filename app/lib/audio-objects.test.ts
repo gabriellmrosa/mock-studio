@@ -1,6 +1,10 @@
 import {
+  SCENE_END_FADE_MS,
   applyAudioFile,
   clampAudioFades,
+  createAudioObject,
+  getAudibleAudios,
+  mixSceneAudio,
   createSceneAudio,
   getAudioClipDuration,
   getAudioGain,
@@ -128,5 +132,83 @@ describe("normalizeAudioSettings", () => {
     expect(
       normalizeAudioSettings({ name: " a.mp3 ", startMs: -5, volume: 3 }),
     ).toMatchObject({ name: "a.mp3", startMs: 0, volume: 1 });
+  });
+});
+
+describe("the end of the scene", () => {
+  it("fades the music out in the last half second when it goes past the scene", () => {
+    // Música de 10 s numa cena de 6 s: desce entre 5,5 s e 6 s.
+    expect(SCENE_END_FADE_MS).toBe(500);
+    expect(getAudioGain(SONG, 5_000, 6_000)).toBe(1);
+    expect(getAudioGain(SONG, 5_750, 6_000)).toBeCloseTo(0.5);
+    expect(getAudioGain(SONG, 6_000, 6_000)).toBe(0);
+  });
+
+  it("leaves a music that ends inside the scene alone", () => {
+    expect(getAudioGain({ ...SONG, trimEndMs: 5_000 }, 4_900, 6_000)).toBe(1);
+  });
+});
+
+describe("getAudibleAudios", () => {
+  const music = (patch: Partial<SceneAudio>, isVisible = true) => ({
+    ...createAudioObject({ audio: { ...SONG, ...patch }, name: "Music" }),
+    isVisible,
+  });
+
+  it("keeps only the music that can be heard in the scene", () => {
+    const heard = music({});
+
+    expect(getAudibleAudios([heard], 5_000)).toEqual([heard]);
+    expect(getAudibleAudios([music({}, false)], 5_000)).toEqual([]);
+    expect(getAudibleAudios([music({ volume: 0 })], 5_000)).toEqual([]);
+    expect(getAudibleAudios([music({ startMs: 5_000 })], 5_000)).toEqual([]);
+    expect(
+      getAudibleAudios([{ ...music({}), audio: null }], 5_000),
+    ).toEqual([]);
+  });
+});
+
+describe("mixSceneAudio", () => {
+  // 10 amostras por segundo: uma amostra a cada 100 ms, fácil de ler.
+  const RATE = 10;
+  const ramp = Float32Array.from({ length: 100 }, (_, index) => index / 100);
+
+  it("places the trimmed file where the clip starts, at its volume", () => {
+    const [left, right] = mixSceneAudio({
+      length: 10,
+      numberOfChannels: 2,
+      sampleRate: RATE,
+      sceneDurationMs: 100_000,
+      tracks: [
+        {
+          // Cortada 2 s no começo, posta em 0,5 s, a meio volume.
+          audio: { ...SONG, durationMs: 10_000, startMs: 500, trimStartMs: 2_000, volume: 0.5 },
+          channels: [ramp],
+        },
+      ],
+    });
+
+    // Antes do clipe, silêncio; em 0,5 s toca a amostra de 2 s do arquivo (0,2).
+    expect(Array.from(left.slice(0, 5))).toEqual([0, 0, 0, 0, 0]);
+    expect(left[5]).toBeCloseTo(0.2 * 0.5);
+    expect(left[6]).toBeCloseTo(0.21 * 0.5);
+    // Mono vai para os dois canais.
+    expect(Array.from(right)).toEqual(Array.from(left));
+  });
+
+  it("adds tracks and keeps the sum inside ±1", () => {
+    const loud = new Float32Array(100).fill(0.8);
+    const [mixed] = mixSceneAudio({
+      length: 3,
+      numberOfChannels: 1,
+      sampleRate: RATE,
+      sceneDurationMs: 100_000,
+      tracks: [
+        { audio: SONG, channels: [loud] },
+        { audio: SONG, channels: [loud] },
+      ],
+    });
+
+    expect(Array.from(mixed)).toEqual([1, 1, 1]);
   });
 });

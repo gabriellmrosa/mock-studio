@@ -46,6 +46,7 @@ export function useAudioPlayback({
       syncAudioPlayback(
         getSceneAudios(objects),
         getPlaybackTimeMs(startedAt, Date.now(), sceneDurationMs),
+        sceneDurationMs,
       );
       frame = requestAnimationFrame(tick);
     };

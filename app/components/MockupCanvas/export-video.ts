@@ -21,6 +21,10 @@ import {
   type BackgroundLook,
 } from "../../lib/canvas-background";
 import { seekVideo } from "../../lib/video-seek";
+import {
+  EXPORT_AUDIO_CHANNELS,
+  EXPORT_AUDIO_SAMPLE_RATE,
+} from "../../lib/audio-files";
 import { hideEditorOnlyObjects } from "./editor-only";
 import { flipPixelRows, getSupersampleScale } from "./export-photo";
 
@@ -219,6 +223,25 @@ export class VideoExportCanceledError extends Error {
 }
 
 const CODECS = { mp4: "avc", webm: "vp9" } as const;
+/** O áudio de cada formato: AAC no MP4, Opus no WebM (inclusive transparente). */
+const AUDIO_CODECS = { mp4: "aac", webm: "opus" } as const;
+
+/**
+ * Se o navegador codifica a música nesse formato. Sem isso o vídeo sai mesmo
+ * assim, sem som — o dialog avisa antes.
+ */
+export async function canExportAudio(settings: VideoExportSettings) {
+  if (typeof window === "undefined" || !("AudioEncoder" in window)) {
+    return false;
+  }
+
+  const { canEncodeAudio } = await import("mediabunny");
+
+  return canEncodeAudio(AUDIO_CODECS[getVideoExportFormat(settings)], {
+    numberOfChannels: EXPORT_AUDIO_CHANNELS,
+    sampleRate: EXPORT_AUDIO_SAMPLE_RATE,
+  });
+}
 
 /** Se o navegador codifica esse formato nesse tamanho. */
 export async function canExportVideo(
@@ -242,12 +265,18 @@ export async function canExportVideo(
  * primeira exportação: quem não exporta vídeo não baixa o codificador.
  */
 export async function encodeVideo({
+  audio,
   frameTimes,
   onProgress,
   renderer,
   settings,
   signal,
 }: {
+  /**
+   * A música já misturada (`renderSceneAudio`), um canal por array, do zero da
+   * cena até o fim do último quadro; `null` = vídeo sem trilha de áudio.
+   */
+  audio: Float32Array<ArrayBuffer>[] | null;
   frameTimes: number[];
   onProgress: (done: number, total: number) => void;
   renderer: VideoFrameRenderer;
@@ -255,6 +284,7 @@ export async function encodeVideo({
   signal: AbortSignal;
 }) {
   const {
+    AudioBufferSource,
     BufferTarget,
     CanvasSource,
     Mp4OutputFormat,
@@ -280,9 +310,54 @@ export async function encodeVideo({
   });
 
   output.addVideoTrack(source, { frameRate: settings.fps });
+
+  const audioSource = audio
+    ? new AudioBufferSource({
+        codec: AUDIO_CODECS[format],
+        quality: QUALITY_HIGH,
+      })
+    : null;
+
+  if (audioSource) {
+    output.addAudioTrack(audioSource);
+  }
+
   await output.start();
 
   const frameDuration = 1 / settings.fps;
+  let audioSent = 0;
+
+  /**
+   * Manda a música até o fim do quadro `index`. Vai junto com os quadros, e não
+   * de uma vez no começo: o arquivo intercala áudio e vídeo pelo tempo, e uma
+   * trilha inteira na frente esperaria pelo vídeo.
+   */
+  async function sendAudioUntil(seconds: number) {
+    if (!audio || !audioSource) {
+      return;
+    }
+
+    const end = Math.min(
+      audio[0].length,
+      Math.round(seconds * EXPORT_AUDIO_SAMPLE_RATE),
+    );
+
+    if (end <= audioSent) {
+      return;
+    }
+
+    const chunk = new AudioBuffer({
+      length: end - audioSent,
+      numberOfChannels: audio.length,
+      sampleRate: EXPORT_AUDIO_SAMPLE_RATE,
+    });
+
+    audio.forEach((channel, index) =>
+      chunk.copyToChannel(channel.subarray(audioSent, end), index),
+    );
+    audioSent = end;
+    await audioSource.add(chunk);
+  }
 
   try {
     for (const [index, timeMs] of frameTimes.entries()) {
@@ -292,9 +367,11 @@ export async function encodeVideo({
 
       await renderer.render(timeMs);
       await source.add(index * frameDuration, frameDuration);
+      await sendAudioUntil((index + 1) * frameDuration);
       onProgress(index + 1, frameTimes.length);
     }
 
+    audioSource?.close();
     await output.finalize();
   } catch (error) {
     await output.cancel().catch(() => undefined);

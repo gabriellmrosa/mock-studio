@@ -1,5 +1,7 @@
 "use client";
 
+import { getAudibleAudios } from "../../lib/audio-objects";
+import { renderSceneAudio } from "../../lib/audio-files";
 import "./MockupCanvas.css";
 import {
   Fragment,
@@ -98,6 +100,7 @@ import ExportProgressDialog, {
 import {
   VideoExportCanceledError,
   createVideoFrameRenderer,
+  canExportAudio,
   encodeVideo,
 } from "./export-video";
 import {
@@ -677,7 +680,22 @@ function SceneBridge({
       );
 
       try {
+        // A música entra só se o navegador a codifica nesse formato; se não, o
+        // vídeo sai sem som (o dialog avisou). A trilha vai até o fim do último
+        // quadro, e o fade do fim é o da cena.
+        const sceneDurationMs = request.frameTimes.at(-1) ?? 0;
+        const audio =
+          getAudibleAudios(exported.objects, sceneDurationMs).length > 0 &&
+          (await canExportAudio(request.settings))
+            ? await renderSceneAudio({
+                lengthMs: (request.frameTimes.length * 1000) / request.settings.fps,
+                objects: exported.objects,
+                sceneDurationMs,
+              })
+            : null;
+
         return await encodeVideo({
+          audio,
           frameTimes: request.frameTimes,
           onProgress: request.onProgress,
           renderer,
@@ -2565,6 +2583,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
                   // mostra o aviso e não deixa exportar.
                   durationMs: isVideoExportReady ? sceneDurationMs : 0,
                   frame: props.motionFrame,
+                  hasMusic: getAudibleAudios(props.objects, sceneDurationMs).length > 0,
                   onExport: (settings) => void handleExportVideo(settings),
                 }
               : undefined
