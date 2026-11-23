@@ -2229,7 +2229,7 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const stageClass =
     stageBackground && !isFramed
       ? "mockup-stage relative flex-1 h-screen"
-      : `mockup-stage relative flex-1 h-screen ${props.uiTheme === "dark" ? "mockup-stage-dark" : "mockup-stage-light"}`;
+      : `mockup-stage relative flex-1 h-screen ${props.uiTheme === "light" ? "mockup-stage-light" : "mockup-stage-dark"}`;
   // A câmera (e o Fundo e a música) não carrega nada e nunca se resolve:
   // contá-la deixaria a cena para sempre "por assentar".
   const currentObjectIds = new Set(

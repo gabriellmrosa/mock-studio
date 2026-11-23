@@ -56,11 +56,34 @@
   /* Ações destrutivas (remover). 6.35:1 sobre --panel-bg; o #f87171 fixo que
      o menu de contexto usava dava 4.21:1 antes e 2.59:1 no tema claro. */
   --danger-fg: #ff8a80;
-  /* A música na timeline: verde-azulado, como o áudio nos editores de vídeo
-     (Premiere, Final Cut, DaVinci), para não se confundir com os clipes de
-     vídeo, que são neutros. Vale para os dois temas (o claro está desligado
-     e não recebe ajuste). */
+  /* Timeline de vídeo: no tema Default os trechos, keyframes e clipes de vídeo
+     seguem tons neutros de --foreground; só a música tem cor própria. */
+  --timeline-accent: var(--foreground);
+  --timeline-playhead: var(--foreground);
+  --timeline-video: var(--foreground);
   --timeline-audio: #4fd1a5;
+  --timeline-lane-bg: color-mix(in srgb, var(--foreground) 5%, transparent);
+  --timeline-lane-active-bg: color-mix(in srgb, var(--foreground) 9%, transparent);
+  --timeline-lane-video-bg: color-mix(in srgb, var(--foreground) 3%, transparent);
+  --timeline-segment-bg: color-mix(in srgb, var(--foreground) 18%, transparent);
+  --timeline-segment-active-bg: color-mix(in srgb, var(--foreground) 22%, transparent);
+  --timeline-segment-border: transparent;
+  --timeline-segment-active-border: transparent;
+  --timeline-marker-opacity: 0.6;
+  --timeline-marker-outline: color-mix(in srgb, var(--foreground) 45%, transparent);
+  --timeline-clip-bg: color-mix(in srgb, var(--foreground) 16%, transparent);
+  --timeline-clip-border: color-mix(in srgb, var(--foreground) 22%, transparent);
+  --timeline-clip-active-bg: color-mix(in srgb, var(--foreground) 26%, transparent);
+  --timeline-clip-active-border: color-mix(in srgb, var(--foreground) 22%, transparent);
+  --timeline-clip-fg: var(--sidebar-muted);
+  --timeline-clip-hold-bg: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --timeline-clip-hold-border: color-mix(in srgb, var(--foreground) 45%, transparent);
+  --timeline-add-hover-border: var(--button-border);
+  --timeline-add-active-bg: transparent;
+  --timeline-add-active-border: var(--button-border);
+  --timeline-resize-hover: color-mix(in srgb, var(--foreground) 40%, transparent);
+  --timeline-tick-border: var(--panel-border);
+  --timeline-bezier-arm: var(--sidebar-muted);
   /* O que flutua sobre o palco (cartão de aviso, barra): a cor dos painéis,
      sólida e sem opacidade — a cena 3D atrás não pode transparecer, e fica
      mais clara que o palco. */
@@ -74,6 +97,76 @@
   --control-reset-border: #6a655e;
   --icon-fg: var(--white-true);
   --editor-sidebar-width: 19rem;
+}
+
+/* =====================================================
+   SEMANTIC TOKENS — Dracula theme override
+   Paleta oficial (spec.draculatheme.com)
+   ===================================================== */
+[data-theme="dracula"] {
+  --background: var(--dracula-bg-darker);
+  --foreground: var(--dracula-fg);
+  --sidebar-bg: var(--dracula-bg-dark);
+  --sidebar-border: var(--dracula-bg-light);
+  --sidebar-muted: var(--dracula-muted);
+  --sidebar-value: var(--dracula-fg);
+  --sidebar-label: var(--dracula-label);
+  --sidebar-dot: var(--dracula-comment);
+  --panel-bg: var(--dracula-bg);
+  --panel-border: var(--dracula-selection);
+  --button-bg: var(--dracula-bg);
+  --button-border: var(--dracula-selection);
+  --button-border-hover: var(--dracula-comment);
+  --button-fg: var(--dracula-fg);
+  --button-muted-fg: var(--dracula-muted);
+  --button-active-bg: var(--dracula-purple);
+  --button-active-fg: var(--dracula-bg-darker);
+  --input-bg: var(--dracula-bg);
+  --input-border: var(--dracula-selection);
+  --input-border-hover: var(--dracula-purple);
+  --input-border-error: var(--dracula-red);
+  --input-fg: var(--dracula-fg);
+  --surface-hover: var(--dracula-bg-light);
+  --surface-active: var(--dracula-selection);
+  --surface-raised: var(--dracula-selection);
+  --surface-subtle: var(--dracula-bg);
+  --segmented-track: var(--dracula-bg-darker);
+  --canvas-toggle-thumb: var(--dracula-purple);
+  --canvas-toggle-active-fg: var(--dracula-bg-darker);
+  --switch-track-off: var(--dracula-comment);
+  --danger-fg: var(--dracula-red);
+  --timeline-accent: var(--dracula-purple);
+  --timeline-playhead: var(--dracula-pink);
+  --timeline-video: var(--dracula-cyan);
+  --timeline-audio: var(--dracula-green);
+  --timeline-lane-bg: color-mix(in srgb, var(--dracula-selection) 30%, transparent);
+  --timeline-lane-active-bg: color-mix(in srgb, var(--dracula-purple) 11%, transparent);
+  --timeline-lane-video-bg: color-mix(in srgb, var(--dracula-selection) 20%, transparent);
+  --timeline-segment-bg: color-mix(in srgb, var(--dracula-purple) 22%, transparent);
+  --timeline-segment-active-bg: color-mix(in srgb, var(--dracula-purple) 34%, transparent);
+  --timeline-segment-border: color-mix(in srgb, var(--dracula-purple) 25%, transparent);
+  --timeline-segment-active-border: color-mix(in srgb, var(--dracula-purple) 50%, transparent);
+  --timeline-marker-opacity: 0.92;
+  --timeline-marker-outline: color-mix(in srgb, var(--dracula-pink) 50%, transparent);
+  --timeline-clip-bg: color-mix(in srgb, var(--dracula-cyan) 14%, transparent);
+  --timeline-clip-border: color-mix(in srgb, var(--dracula-cyan) 42%, transparent);
+  --timeline-clip-active-bg: color-mix(in srgb, var(--dracula-cyan) 24%, transparent);
+  --timeline-clip-active-border: color-mix(in srgb, var(--dracula-cyan) 65%, transparent);
+  --timeline-clip-fg: var(--dracula-fg);
+  --timeline-clip-hold-bg: color-mix(in srgb, var(--dracula-cyan) 8%, transparent);
+  --timeline-clip-hold-border: color-mix(in srgb, var(--dracula-cyan) 50%, transparent);
+  --timeline-add-hover-border: var(--dracula-purple);
+  --timeline-add-active-bg: color-mix(in srgb, var(--dracula-purple) 14%, transparent);
+  --timeline-add-active-border: color-mix(in srgb, var(--dracula-purple) 55%, transparent);
+  --timeline-resize-hover: var(--dracula-purple);
+  --timeline-tick-border: var(--dracula-bg-light);
+  --timeline-bezier-arm: var(--dracula-comment);
+  --control-strong: var(--dracula-purple);
+  --control-track: var(--dracula-selection);
+  --control-input-bg: var(--dracula-bg);
+  --control-input-border: var(--dracula-selection);
+  --control-reset-border: var(--dracula-comment);
+  --icon-fg: var(--dracula-fg);
 }
 
 /* =====================================================

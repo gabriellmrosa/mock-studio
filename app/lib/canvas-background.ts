@@ -43,6 +43,7 @@ export const DEFAULT_CANVAS_BACKGROUND: CanvasBackground = {
  */
 export const DEFAULT_CANVAS_COLOR: Record<UiTheme, string> = {
   dark: "#2e2b28",
+  dracula: "#191a21",
   light: "#f2ebe0",
 };
 

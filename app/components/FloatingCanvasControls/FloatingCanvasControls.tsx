@@ -158,7 +158,7 @@ export default function FloatingCanvasControls({
   }, [isAppearanceOpen]);
 
   const circleBorder =
-    uiTheme === "dark"
+    uiTheme !== "light"
       ? "1.5px solid rgba(255,255,255,0.28)"
       : "1.5px solid rgba(0,0,0,0.18)";
 

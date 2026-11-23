@@ -203,12 +203,12 @@ function detectBrowserLocale(): Locale {
 }
 
 /**
- * O tema claro está desligado por enquanto: o app tem só o escuro, para todos,
- * qualquer que seja a preferência do navegador ou o que ficou guardado. Os
- * tokens do claro continuam em `globals.css` (`[data-theme="light"]`) para
- * quando ele voltar; o `<html>` já nasce com `data-theme="dark"`.
+ * O tema claro continua desligado por enquanto; os temas disponíveis no menu
+ * são Default (`"dark"`) e Drácula (`"dracula"`). Os tokens do claro seguem em
+ * `globals.css` (`[data-theme="light"]`) para quando ele voltar; o `<html>` já
+ * nasce com `data-theme="dark"`.
  */
-const UI_THEME: UiTheme = "dark";
+const DEFAULT_UI_THEME: UiTheme = "dark";
 
 /**
  * Texto, imagem e sticker novos nascem à frente dos aparelhos (em unidades de
@@ -222,7 +222,7 @@ const EMPTY_OBJECTS: SceneObject[] = [];
 
 export default function Home() {
   const [locale, setLocale] = useState<Locale>("pt-BR");
-  const uiTheme = UI_THEME;
+  const [uiTheme, setUiTheme] = useState<UiTheme>(DEFAULT_UI_THEME);
   const [notification, setNotification] = useState<SnackbarNotification | null>(
     null,
   );
@@ -336,6 +336,13 @@ export default function Home() {
 
     setLocale(initialLocale);
 
+    const storedUiTheme = readStorageItem("mock-photo-ui-theme");
+    const initialTheme: UiTheme =
+      storedUiTheme === "dracula" ? "dracula" : DEFAULT_UI_THEME;
+
+    setUiTheme(initialTheme);
+    document.documentElement.dataset.theme = initialTheme;
+
     setTemplates(loadTemplatesWithDefaults(initialLocale));
 
     isInitialized.current = true;
@@ -346,6 +353,12 @@ export default function Home() {
     writeStorageItem("mock-photo-locale", locale);
     document.documentElement.lang = locale;
   }, [locale]);
+
+  useEffect(() => {
+    if (!isInitialized.current) return;
+    writeStorageItem("mock-photo-ui-theme", uiTheme);
+    document.documentElement.dataset.theme = uiTheme;
+  }, [uiTheme]);
 
   useEffect(() => {
     if (!selectedObjectId && sceneObjects[0]) {
@@ -2006,6 +2019,7 @@ export default function Home() {
           onRemoveObject={handleRemoveObject}
           onSelectObject={setSelectedObjectId}
           onToggleObjectVisibility={handleToggleObjectVisibility}
+          onUiThemeChange={setUiTheme}
           onApplyTemplate={handleApplyTemplate}
           onFitObject={handleFitObject}
           onCreateTemplateCode={handleCreateTemplateCode}
@@ -2016,6 +2030,7 @@ export default function Home() {
           onSaveTemplate={handleRequestSaveTemplate}
           selectedObjectId={selectedObject?.id ?? ""}
           templates={modeTemplates}
+          uiTheme={uiTheme}
         />
       )}
 

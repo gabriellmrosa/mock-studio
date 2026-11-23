@@ -13,13 +13,18 @@ jest.mock("../CreditsModal/CreditsModal", () => ({
 
 jest.mock("../ContextMenu/ContextMenu", () => ({
   __esModule: true,
-  // Só os itens de ação, sempre à vista: o menu de verdade abre num portal.
+  // Itens de ação e opções de submenu sempre à vista: o menu de verdade abre num portal.
   default: ({
     items = [],
     triggerAriaLabel,
     triggerIcon,
   }: {
-    items?: { label?: string; onClick?: () => void; type: string }[];
+    items?: {
+      label?: string;
+      onClick?: () => void;
+      options?: { label: string; onClick: () => void; value: string }[];
+      type: string;
+    }[];
     triggerAriaLabel: string;
     triggerIcon: ReactNode;
   }) => (
@@ -41,6 +46,24 @@ jest.mock("../ContextMenu/ContextMenu", () => ({
           >
             {item.label}
           </button>
+        ))}
+      {items
+        .filter((item) => item.type === "submenu")
+        .map((item) => (
+          <div key={item.label} aria-label={item.label}>
+            {item.options?.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  option.onClick();
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         ))}
     </>
   ),
@@ -259,7 +282,9 @@ const copy: AppCopy = {
   templateAppliedMessage: "Template applied.",
   templateSaveError: "Could not save the template.",
   canvasTemplateLoadingLabel: "Applying template",
-  themeLabel: "Interface",
+  themeLabel: "Theme",
+  themeDefault: "Default",
+  themeDracula: "Dracula",
   themesSectionTitle: "Themes",
   transformSectionTitle: "Transform",
   canvasModePhoto: "Photo",
@@ -741,6 +766,41 @@ describe("LayersPanel", () => {
       fireEvent.doubleClick(screen.getByText("Camera"));
 
       expect(screen.queryByDisplayValue("Camera")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("theme menu", () => {
+    it("offers Default and Dracula options and calls onUiThemeChange", () => {
+      const onUiThemeChange = jest.fn();
+
+      render(
+        <LayersPanel
+          appMeta="v1.0.0"
+          copy={copy}
+          locale="en-US"
+          objects={[]}
+          onAddObject={jest.fn()}
+          onAddImage={jest.fn()}
+          onAddSticker={jest.fn()}
+          onAddText={jest.fn()}
+          onDuplicateObject={jest.fn()}
+          onLocaleChange={jest.fn()}
+          onRenameObject={jest.fn()}
+          onRemoveObject={jest.fn()}
+          onSelectObject={jest.fn()}
+          onToggleObjectVisibility={jest.fn()}
+          onUiThemeChange={onUiThemeChange}
+          selectedObjectId=""
+          uiTheme="dark"
+        />,
+      );
+
+      const themeGroup = screen.getByLabelText("Theme");
+      expect(themeGroup).toHaveTextContent("Default");
+      expect(themeGroup).toHaveTextContent("Dracula");
+
+      fireEvent.click(screen.getByRole("button", { name: "Dracula" }));
+      expect(onUiThemeChange).toHaveBeenCalledWith("dracula");
     });
   });
 });

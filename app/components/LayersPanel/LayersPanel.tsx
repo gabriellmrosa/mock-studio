@@ -2,7 +2,7 @@
 
 import "./LayersPanel.css";
 import { KeyboardEvent, useEffect, useRef, useState } from "react";
-import type { AppCopy, Locale } from "../../lib/i18n";
+import type { AppCopy, Locale, UiTheme } from "../../lib/i18n";
 import {
   isAudioObject,
   isBackgroundObject,
@@ -68,8 +68,10 @@ type LayersPanelProps = {
   onSaveTemplate?: () => void;
   onSelectObject: (id: string) => void;
   onToggleObjectVisibility: (id: string) => void;
+  onUiThemeChange?: (theme: UiTheme) => void;
   selectedObjectId: string;
   templates?: SceneTemplate[];
+  uiTheme?: UiTheme;
 };
 
 
@@ -97,8 +99,10 @@ export default function LayersPanel({
   onSaveTemplate,
   onSelectObject,
   onToggleObjectVisibility,
+  onUiThemeChange,
   selectedObjectId,
   templates = [],
+  uiTheme = "dark",
 }: LayersPanelProps) {
   const [editingObjectId, setEditingObjectId] = useState<string | null>(null);
 
@@ -213,6 +217,24 @@ export default function LayersPanel({
             action={
               <ContextMenu
                 items={[
+                  {
+                    type: "submenu",
+                    label: copy.themeLabel,
+                    options: [
+                      {
+                        label: copy.themeDefault,
+                        value: "dark",
+                        checked: uiTheme === "dark",
+                        onClick: () => onUiThemeChange?.("dark"),
+                      },
+                      {
+                        label: copy.themeDracula,
+                        value: "dracula",
+                        checked: uiTheme === "dracula",
+                        onClick: () => onUiThemeChange?.("dracula"),
+                      },
+                    ],
+                  },
                   {
                     type: "submenu",
                     label: copy.languageLabel,

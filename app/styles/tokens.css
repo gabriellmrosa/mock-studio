@@ -1,7 +1,7 @@
 :root {
   /* =====================
      COLOR PRIMITIVES
-     Warm scale: darkest (000) → lightest (980)
+     Warm scale (Default): darkest (000) → lightest (980)
      Os degraus escuros (000–500) partem do painel, --black-100 (#262422): cada
      um mantém a diferença de luminosidade (OKLab) que tinha para o painel
      antigo (#34312e) e o mesmo matiz (68°), com o croma reduzido a 70% — o
@@ -27,6 +27,22 @@
   --black-900: #efe6db;
   --black-950: #f5ede3;
   --black-980: #fbf7f2;
+
+  /* Dracula palette (spec.draculatheme.com) */
+  --dracula-bg-darker: #191a21;
+  --dracula-bg-dark: #21222c;
+  --dracula-bg: #282a36;
+  --dracula-bg-light: #343746;
+  --dracula-selection: #44475a;
+  --dracula-comment: #6272a4;
+  --dracula-muted: #93a2d0;
+  --dracula-label: #d6d9ec;
+  --dracula-fg: #f8f8f2;
+  --dracula-purple: #bd93f9;
+  --dracula-pink: #ff79c6;
+  --dracula-cyan: #8be9fd;
+  --dracula-green: #50fa7b;
+  --dracula-red: #ff5555;
 
   /* Neutral grays */
   --gray-400: #75706a;

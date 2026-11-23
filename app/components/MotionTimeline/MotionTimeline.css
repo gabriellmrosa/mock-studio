@@ -45,7 +45,7 @@
 
 .timeline-resize-handle:hover::after,
 .timeline-resize-handle:focus-visible::after {
-  background: color-mix(in srgb, var(--foreground) 40%, transparent);
+  background: var(--timeline-resize-hover);
 }
 
 .timeline-resize-handle:focus-visible {
@@ -247,11 +247,14 @@
 }
 
 .motion-timeline-add:hover:not(:disabled) {
-  color: var(--foreground);
+  border-color: var(--timeline-add-hover-border);
+  color: var(--timeline-accent);
 }
 
 .motion-timeline-add.is-on-keyframe {
-  color: var(--foreground);
+  background: var(--timeline-add-active-bg);
+  border-color: var(--timeline-add-active-border);
+  color: var(--timeline-accent);
 }
 
 .motion-timeline-add.is-on-keyframe svg {
@@ -298,7 +301,7 @@
 }
 
 .motion-timeline-tick {
-  border-left: 1px solid var(--panel-border);
+  border-left: 1px solid var(--timeline-tick-border);
   color: var(--sidebar-muted);
   font-size: var(--font-size-100);
   font-variant-numeric: tabular-nums;
@@ -311,7 +314,7 @@
 }
 
 .motion-timeline-lane {
-  background: color-mix(in srgb, var(--foreground) 5%, transparent);
+  background: var(--timeline-lane-bg);
   border-radius: var(--radius-xs);
   flex-shrink: 0;
   height: 1.5rem;
@@ -319,22 +322,22 @@
 }
 
 .motion-timeline-lane.is-active {
-  background: color-mix(in srgb, var(--foreground) 9%, transparent);
+  background: var(--timeline-lane-active-bg);
 }
 
 /* Trilha do vídeo da tela: um clipe, como num editor de vídeo. Fica logo
    abaixo da trilha de keyframes do mesmo objeto. */
 .motion-timeline-lane-video {
-  background: color-mix(in srgb, var(--foreground) 3%, transparent);
+  background: var(--timeline-lane-video-bg);
 }
 
 .motion-timeline-clip {
   align-items: center;
-  background: color-mix(in srgb, var(--foreground) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
+  background: var(--timeline-clip-bg);
+  border: 1px solid var(--timeline-clip-border);
   border-radius: var(--radius-xs);
   bottom: 2px;
-  color: var(--sidebar-muted);
+  color: var(--timeline-clip-fg);
   cursor: grab;
   display: flex;
   font-size: var(--font-size-100);
@@ -377,7 +380,8 @@
 }
 
 .motion-timeline-lane-video.is-active .motion-timeline-clip {
-  background: color-mix(in srgb, var(--foreground) 26%, transparent);
+  background: var(--timeline-clip-active-bg);
+  border-color: var(--timeline-clip-active-border);
   color: var(--foreground);
 }
 
@@ -392,8 +396,8 @@
    apareceria). */
 .motion-timeline-clip-hold {
   align-items: center;
-  background: color-mix(in srgb, var(--foreground) 10%, transparent);
-  border-left: 1px dashed color-mix(in srgb, var(--foreground) 45%, transparent);
+  background: var(--timeline-clip-hold-bg);
+  border-left: 1px dashed var(--timeline-clip-hold-border);
   bottom: 0;
   display: flex;
   justify-content: center;
@@ -487,7 +491,8 @@
    direito escolhe a transição (à la interpolação do Flash). */
 .motion-timeline-segment {
   align-items: center;
-  background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  background: var(--timeline-segment-bg);
+  box-shadow: inset 0 0 0 1px var(--timeline-segment-border);
   cursor: grab;
   display: flex;
   height: 100%;
@@ -501,15 +506,12 @@
   cursor: grabbing;
 }
 
-/* 22% e não 28%: com o texto em --foreground, o fundo mais forte deixava o
-   nome da transição a 4.00:1 no tema escuro, abaixo dos 4.5:1 do WCAG AA
-   para texto de 11px. Aqui ele fica a 4.63:1 (inativa: 5.61:1). */
 .motion-timeline-lane.is-active .motion-timeline-segment {
-  background: color-mix(in srgb, var(--foreground) 22%, transparent);
+  background: var(--timeline-segment-active-bg);
+  box-shadow: inset 0 0 0 1px var(--timeline-segment-active-border);
 }
 
-/* O nome da transição era --sidebar-muted, que dava de 2.3:1 a 3.2:1 sobre
-   o trecho: abaixo do AA. --foreground dá 4.6:1 ou mais nos dois temas. */
+/* O nome da transição em --foreground mantém contraste acima do WCAG AA. */
 .motion-timeline-segment-label {
   color: var(--foreground);
   font-size: var(--font-size-100);
@@ -529,11 +531,11 @@
 
 /* Keyframe: losango centrado no instante dele. */
 .motion-timeline-marker {
-  background: var(--foreground);
+  background: var(--timeline-accent);
   border: 1px solid var(--sidebar-bg);
   cursor: ew-resize;
   height: 0.6rem;
-  opacity: 0.6;
+  opacity: var(--timeline-marker-opacity);
   padding: 0;
   position: absolute;
   top: 50%;
@@ -544,12 +546,14 @@
 
 .motion-timeline-marker:hover,
 .motion-timeline-marker:focus-visible {
+  background: var(--timeline-playhead);
   opacity: 1;
 }
 
 .motion-timeline-marker.is-active {
+  background: var(--timeline-playhead);
   opacity: 1;
-  outline: 2px solid color-mix(in srgb, var(--foreground) 45%, transparent);
+  outline: 2px solid var(--timeline-marker-outline);
   outline-offset: 1px;
 }
 
@@ -565,7 +569,7 @@
    timeline-snap.ts), como a do snapping do Premiere: tracejada, para não se
    confundir com o playhead. */
 .motion-timeline-snap-guide {
-  border-left: 1px dashed var(--foreground);
+  border-left: 1px dashed var(--timeline-video);
   bottom: 0;
   pointer-events: none;
   position: absolute;
@@ -575,7 +579,7 @@
 }
 
 .motion-timeline-playhead {
-  background: var(--foreground);
+  background: var(--timeline-playhead);
   bottom: 0;
   pointer-events: none;
   position: absolute;
@@ -585,7 +589,7 @@
 }
 
 .motion-timeline-playhead::before {
-  background: var(--foreground);
+  background: var(--timeline-playhead);
   border-radius: 1px;
   content: "";
   height: 0.3rem;
@@ -643,13 +647,13 @@
 }
 
 .bezier-editor-arm {
-  stroke: var(--sidebar-muted);
+  stroke: var(--timeline-bezier-arm);
   stroke-width: 1;
 }
 
 .bezier-editor-curve {
   fill: none;
-  stroke: var(--foreground);
+  stroke: var(--timeline-accent);
   stroke-linecap: round;
   stroke-width: 2;
 }
@@ -658,7 +662,7 @@
   cursor: grab;
   /* A cor do painel: o ponto parece vazado sobre o gráfico. */
   fill: var(--sidebar-bg);
-  stroke: var(--foreground);
+  stroke: var(--timeline-playhead);
   stroke-width: 2;
 }
 

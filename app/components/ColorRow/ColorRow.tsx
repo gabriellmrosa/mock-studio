@@ -2,6 +2,7 @@
 
 import "./ColorRow.css";
 import { ChangeEvent, memo, useEffect, useRef, useState } from "react";
+import type { UiTheme } from "../../lib/i18n";
 
 type ColorRowProps = {
   /** Nome para leitores de tela, quando o rótulo visível fica fora da linha. */
@@ -18,7 +19,7 @@ type ColorRowProps = {
   layout?: "inline" | "field";
   label: string;
   onChange: (hex: string) => void;
-  uiTheme: "dark" | "light";
+  uiTheme: UiTheme;
   value: string;
 };
 
@@ -162,7 +163,7 @@ function ColorRowImpl({
               ? "color-row-input-compact"
               : "color-row-input-default"
         } ${
-          uiTheme === "dark" ? "color-row-input-dark" : "color-row-input-light"
+          uiTheme !== "light" ? "color-row-input-dark" : "color-row-input-light"
         }${isInvalid ? " color-row-input-error" : ""}`}
       />
     </div>

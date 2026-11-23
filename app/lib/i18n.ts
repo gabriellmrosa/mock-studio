@@ -5,7 +5,7 @@ import {
 } from "./stickers";
 
 export type Locale = "pt-BR" | "en-US";
-export type UiTheme = "dark" | "light";
+export type UiTheme = "dark" | "dracula" | "light";
 
 export type AppCopy = {
   appTitle: string;
@@ -75,6 +75,8 @@ export type AppCopy = {
   patchNotesTitle: string;
   patchNotesEyebrow: string;
   themeLabel: string;
+  themeDefault: string;
+  themeDracula: string;
   preferencesLabel: string;
   darkMode: string;
   lightMode: string;
@@ -404,7 +406,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     languageLabel: "Idioma",
     patchNotesTitle: "Novidades",
     patchNotesEyebrow: "Histórico de versões",
-    themeLabel: "Interface",
+    themeLabel: "Tema",
+    themeDefault: "Default",
+    themeDracula: "Drácula",
     preferencesLabel: "Preferências",
     darkMode: "Escuro",
     lightMode: "Claro",
@@ -810,7 +814,9 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     languageLabel: "Language",
     patchNotesTitle: "What's new",
     patchNotesEyebrow: "Version history",
-    themeLabel: "Interface",
+    themeLabel: "Theme",
+    themeDefault: "Default",
+    themeDracula: "Dracula",
     preferencesLabel: "Preferences",
     darkMode: "Dark",
     lightMode: "Light",
