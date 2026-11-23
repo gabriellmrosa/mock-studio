@@ -62,31 +62,33 @@ levar para a `main`, também `npm run build`.
 ### Versão e releases
 
 A versão vem do `package.json` e aparece no painel de objetos. Cada release
-publicado ganha uma tag (`v1.5.1`). Subir a versão é decisão de produto: o
-agente nota e pergunta, nunca sobe sozinho.
+publicado ganha uma tag (`v1.5.1`). **O próprio agente decide** se sobe a
+versão e qual nível usar ao commitar — não precisa perguntar nem esperar OK do
+usuário (até que ele mude de ideia no futuro).
+
+**Critério para o agente escolher o número** pelo que entrou desde a última tag
+(`git describe --tags --abbrev=0` e `git log <tag>..HEAD`):
+
+- **não subir:** só documentação interna, testes, refatoração ou ajuste sem
+  efeito para quem usa;
+- **`patch`:** correções de bug e refinos visuais ou de comportamento;
+- **`minor`:** funcionalidade nova sem quebrar nada (templates salvos continuam
+  abrindo);
+- **`major`:** algo deixa de funcionar ou muda de forma incompatível.
 
 **Novidades da versão:** o menu ⋮ → "Novidades" lê `app/lib/patch-notes.ts` (uma
 linha do tempo, a mais nova primeiro, nos dois idiomas, um título e uma descrição
-curtos por item). Ao propor o número da versão, propor também a entrada dela ali,
-curada dos commits (`git log vX..HEAD`): só o que muda para quem usa, em
-linguagem de quem usa — ajuste fino e passos de outro commit ficam de fora. O texto
-é de produto: o usuário aprova. A entrada vem **antes** do `npm version`; o
-`patch-notes.test.ts` falha se a nota mais nova ficar atrás do `package.json`.
-Nada avisa o usuário de que há versão nova: só vê quem abre o modal.
+curtos por item). Sempre que o agente decidir subir a versão, escreve e commita
+a entrada dela ali — curada dos commits, só o que muda para quem usa e em
+linguagem de quem usa (ajuste fino e passos de outro commit ficam de fora) —
+**antes** de rodar `npm version <patch|minor|major>` (que atualiza o
+`package.json`, commita e cria a tag). O `patch-notes.test.ts` falha se a nota
+mais nova ficar atrás do `package.json`. Nada avisa o usuário de que há versão
+nova: só vê quem abre o modal.
 
-Perguntar:
-
-- ao preparar um merge para a `main`;
-- ao começar uma sessão ou fazer um commit, se já houver 5 commits ou mais
-  desde a última tag (`git describe --tags --abbrev=0` e
-  `git rev-list --count <tag>..HEAD`).
-
-Sugerir o número pelo que entrou desde a última tag, resumindo em poucas
-linhas: **patch** só correções e refinos; **minor** funcionalidade nova sem
-quebrar nada (templates salvos continuam abrindo); **major** algo deixa de
-funcionar ou muda de forma incompatível. Se o usuário recusar, não perguntar
-de novo na mesma sessão. Depois do "sim": `npm version <patch|minor|major>`
-(atualiza o `package.json`, commita e cria a tag).
+**Publicação:** o usuário é quem decide quando documentar/commitar e executa os
+comandos ao redor do push (merge na `main`, `git push --follow-tags origin main`,
+etc.); ao terminar os commits, o agente passa os comandos prontos para ele.
 
 ## Antes de escrever código
 
