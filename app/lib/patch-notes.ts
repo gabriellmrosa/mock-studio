@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-23",
+    version: "3.4.0",
+    items: [
+      {
+        title: {
+          "pt-BR": "Tema Drácula",
+          "en-US": "Dracula theme",
+        },
+        description: {
+          "pt-BR":
+            "O menu ⋮ → Tema agora oferece as opções Default e Drácula, aplicando a paleta oficial do Dracula na interface e na timeline de vídeo.",
+          "en-US":
+            "The ⋮ → Theme menu now offers Default and Dracula, applying the official Dracula palette across the interface and video timeline.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-23",
     version: "3.3.1",
     items: [
       {
