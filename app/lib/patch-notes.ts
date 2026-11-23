@@ -28,6 +28,36 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-23",
+    version: "3.6.0",
+    items: [
+      {
+        title: {
+          "pt-BR": "Seleção múltipla de keyframes",
+          "en-US": "Multi-keyframe selection",
+        },
+        description: {
+          "pt-BR":
+            "Arraste na timeline para desenhar uma caixa de seleção (ou use Shift + clique) e mova ou apague vários keyframes juntos, mesmo entre trilhas diferentes.",
+          "en-US":
+            "Drag on the timeline to box-select keyframes (or Shift + click) and move or delete them together, even across different tracks.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Rolagem vertical da timeline corrigida",
+          "en-US": "Fixed vertical timeline scrolling",
+        },
+        description: {
+          "pt-BR":
+            "Com muitas camadas e a timeline baixa, rolar para baixo agora exibe todas as trilhas e clipes até o final sem cortar.",
+          "en-US":
+            "With many layers and a compact timeline, scrolling down now shows every track and clip all the way to the bottom without clipping.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-23",
     version: "3.5.0",
     items: [
       {
