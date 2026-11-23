@@ -32,8 +32,8 @@ export const PATCH_NOTES: PatchNote[] = [
     items: [
       {
         title: {
-          "pt-BR": "Refino no seletor Foto | Vídeo no tema Drácula",
-          "en-US": "Refined Photo | Video toggle in Dracula theme",
+          "pt-BR": "Seletor Foto | Vídeo no Drácula",
+          "en-US": "Photo | Video toggle in Dracula",
         },
         description: {
           "pt-BR":
