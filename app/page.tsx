@@ -109,6 +109,7 @@ import {
   type SceneTemplate,
   type TemplateMode,
 } from "./lib/scene-templates";
+import { loadTemplatesWithDefaults } from "./lib/default-templates";
 import {
   consumeSceneLinkFromUrl,
   createSceneCode,
@@ -328,14 +329,14 @@ export default function Home() {
 
   useEffect(() => {
     const storedLocale = readStorageItem("mock-photo-locale");
-
-    setLocale(
+    const initialLocale: Locale =
       storedLocale === "pt-BR" || storedLocale === "en-US"
         ? storedLocale
-        : detectBrowserLocale(),
-    );
+        : detectBrowserLocale();
 
-    setTemplates(loadTemplates());
+    setLocale(initialLocale);
+
+    setTemplates(loadTemplatesWithDefaults(initialLocale));
 
     isInitialized.current = true;
   }, []);
@@ -2294,18 +2295,15 @@ export default function Home() {
         onCancel={closeOverwriteDialog}
         actions={[
           {
+            label: copy.templateOverwrite,
+            onClick: handleOverwriteTemplate,
+          },
+          {
             label: copy.templateSaveAsNew,
             onClick: () => {
               setIsOverwriteOpen(false);
               handleSaveTemplate();
             },
-          },
-          {
-            label: copy.templateOverwrite.replace(
-              "{name}",
-              sourceTemplate?.name ?? "",
-            ),
-            onClick: handleOverwriteTemplate,
             variant: "primary",
           },
         ]}

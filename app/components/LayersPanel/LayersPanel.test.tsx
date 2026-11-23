@@ -207,7 +207,7 @@ const copy: AppCopy = {
   importTemplate: "Import template",
   templateOverwriteTitle: "Save template",
   templateOverwriteDescription: "This scene came from “{name}”.",
-  templateOverwrite: "Overwrite “{name}”",
+  templateOverwrite: "Overwrite",
   templateSaveAsNew: "Save as new",
   templateOverwrittenMessage: "Template “{name}” updated.",
   importTemplateIntro: "Paste the link.",

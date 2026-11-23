@@ -529,18 +529,20 @@ describe("Home page layers and selection flow", () => {
 
     it("saves a new template when the scene did not come from one", () => {
       render(<Home />);
+      const initialCount = savedTemplates().length;
 
       fireEvent.click(screen.getByRole("button", { name: "Save template" }));
 
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-      expect(savedTemplates()).toHaveLength(1);
+      expect(savedTemplates()).toHaveLength(initialCount + 1);
     });
 
     it("asks before saving again, and overwrites keeping the name and the place", () => {
       render(<Home />);
       fireEvent.click(screen.getByRole("button", { name: "Save template" }));
 
-      const [first] = savedTemplates();
+      const before = savedTemplates();
+      const first = before[before.length - 1];
 
       addFromMenu("Device");
       fireEvent.click(screen.getByRole("button", { name: "Save template" }));
@@ -549,14 +551,22 @@ describe("Home page layers and selection flow", () => {
 
       expect(dialog).toHaveTextContent(first.name);
 
-      fireEvent.click(
-        within(dialog).getByRole("button", { name: `Overwrite “${first.name}”` }),
-      );
+      const overwriteButton = within(dialog).getByRole("button", {
+        name: "Overwrite",
+      });
+      const saveAsNewButton = within(dialog).getByRole("button", {
+        name: "Save as new",
+      });
+
+      expect(saveAsNewButton).toHaveClass("dialog-button-primary");
+      expect(overwriteButton).not.toHaveClass("dialog-button-primary");
+
+      fireEvent.click(overwriteButton);
 
       const after = savedTemplates();
 
-      expect(after).toHaveLength(1);
-      expect(after[0]).toMatchObject({
+      expect(after).toHaveLength(before.length);
+      expect(after[after.length - 1]).toMatchObject({
         createdAt: first.createdAt,
         id: first.id,
         name: first.name,
@@ -565,6 +575,8 @@ describe("Home page layers and selection flow", () => {
 
     it("can still save a new one from the same question", () => {
       render(<Home />);
+      const initialCount = savedTemplates().length;
+
       fireEvent.click(screen.getByRole("button", { name: "Save template" }));
       fireEvent.click(screen.getByRole("button", { name: "Save template" }));
       fireEvent.click(
@@ -573,7 +585,7 @@ describe("Home page layers and selection flow", () => {
         }),
       );
 
-      expect(savedTemplates()).toHaveLength(2);
+      expect(savedTemplates()).toHaveLength(initialCount + 2);
     });
   });
 

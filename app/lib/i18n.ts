@@ -431,8 +431,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     importTemplate: "Importar template",
     templateOverwriteTitle: "Salvar template",
     templateOverwriteDescription:
-      "Esta cena veio do template “{name}”. Você pode atualizar esse template com as mudanças ou salvar como um template novo.",
-    templateOverwrite: "Sobrepor “{name}”",
+      "Esta cena veio do template “{name}”. Você pode sobrepor esse template com as mudanças ou salvar como um novo.",
+    templateOverwrite: "Sobrepor",
     templateSaveAsNew: "Salvar como novo",
     templateOverwrittenMessage: "Template “{name}” atualizado.",
     importTemplateIntro:
@@ -837,8 +837,8 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     importTemplate: "Import template",
     templateOverwriteTitle: "Save template",
     templateOverwriteDescription:
-      "This scene came from the template “{name}”. You can update that template with the changes or save a new one.",
-    templateOverwrite: "Overwrite “{name}”",
+      "This scene came from the template “{name}”. You can overwrite that template with your changes or save it as a new one.",
+    templateOverwrite: "Overwrite",
     templateSaveAsNew: "Save as new",
     templateOverwrittenMessage: "Template “{name}” updated.",
     importTemplateIntro:

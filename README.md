@@ -64,7 +64,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 
 ### Keep and share
 
-- **Templates** saved in your browser: composition, camera and keyframes, rebuilt in one click. Saving a scene that came from a template asks whether to overwrite that template or save a new one. Screen files aren't stored, but their settings are: applying the template asks for each file again by name ("Upload “home.png” again"), and whatever file you upload gets the saved framing, crop and, for a video, the clip timing. The music works the same way: its file stays out, and the one you upload again gets the saved position, trims, volume and fades.
+- **Templates** saved in your browser: composition, camera and keyframes, rebuilt in one click. Every browser starts with two editable, deletable starter templates — one for Photo (*Product Showcase*) and one for Video (*Product Launch*). Saving a scene that came from a template asks whether to save as a new template (primary) or overwrite the current one. Screen files aren't stored, but their settings are: applying the template asks for each file again by name ("Upload “home.png” again"), and whatever file you upload gets the saved framing, crop and, for a video, the clip timing. The music works the same way: its file stays out, and the one you upload again gets the saved position, trims, volume and fades.
 - **Project links and template codes**: the whole scene compressed into the URL hash, to open in another browser. It is never sent to a server. To send a scene to someone, `Share template`, in the `⋮` menu of each saved template, opens a modal that explains what travels and shows a code — only the compressed content, no address — to copy; the other person uses `Import template` in the templates section, pastes it and gets a template of their own, without touching the open scene.
 - `pt-BR` and `en-US`, a dark interface (the light theme is switched off for now and will come back) and a `Hide UI` mode for clean captures.
 
@@ -190,6 +190,7 @@ The `duo` is the only model that moves: its GLB keeps the two halves and the hin
 - [app/components/Duo.tsx](app/components/Duo.tsx) and [app/lib/duo-fold.ts](app/lib/duo-fold.ts): the foldable — the model, its screens and the fold math; [duo-fold-effect.ts](app/lib/duo-fold-effect.ts) and [duo-fold-material.ts](app/lib/duo-fold-material.ts) hold the blur and darkening of its screens while it folds
 - [app/lib/scene-objects.ts](app/lib/scene-objects.ts): object creation, reset and model switching
 - [app/lib/scene-templates.ts](app/lib/scene-templates.ts): template capture, rebuild and `localStorage` persistence
+- [app/lib/default-templates.ts](app/lib/default-templates.ts): starter Photo and Video templates seeded once per browser
 - [app/lib/scene-motion.ts](app/lib/scene-motion.ts): keyframes, easing curves and transform sampling over time
 - [app/lib/screen-texture.ts](app/lib/screen-texture.ts): the shared screen texture hook, for images and videos, and the framing math (`getScreenLayout`)
 - [app/lib/screen-compositor.ts](app/lib/screen-compositor.ts): the pass that draws the final screen — framing, background and HDR conversion
