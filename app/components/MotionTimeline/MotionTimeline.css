@@ -15,6 +15,7 @@
   pointer-events: auto;
   position: absolute;
   right: var(--editor-sidebar-width);
+  user-select: none;
   z-index: 3;
 }
 
@@ -274,7 +275,9 @@
    losango, com o contorno de selecionado); o eixo começa depois dela, e o
    zoom conta com isso (useTimelineZoom). */
 .motion-timeline-viewport {
+  align-self: flex-start;
   flex: 1;
+  min-height: 100%;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -282,19 +285,22 @@
 }
 
 /* A largura (zoom × janela) vem do componente; tudo dentro é posicionado em %
-   do eixo e escala junto. */
+   do eixo e escala junto. Arrastar no vazio desenha a caixa de seleção; a régua
+   no topo faz o scrub contínuo do playhead. */
 .motion-timeline-lanes {
-  cursor: col-resize;
+  cursor: default;
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
   min-width: 100%;
   position: relative;
   touch-action: none;
+  user-select: none;
 }
 
-/* Régua de segundos: faz parte da área de scrub. */
+/* Régua de segundos: arrastar aqui faz scrub contínuo do playhead. */
 .motion-timeline-ruler {
+  cursor: col-resize;
   flex-shrink: 0;
   height: 1rem;
   position: relative;
@@ -546,12 +552,12 @@
 
 .motion-timeline-marker:hover,
 .motion-timeline-marker:focus-visible {
-  background: var(--timeline-playhead);
+  background: var(--timeline-marker-active);
   opacity: 1;
 }
 
 .motion-timeline-marker.is-active {
-  background: var(--timeline-playhead);
+  background: var(--timeline-marker-active);
   opacity: 1;
   outline: 2px solid var(--timeline-marker-outline);
   outline-offset: 1px;
@@ -597,6 +603,17 @@
   position: absolute;
   top: 0;
   width: 0.4rem;
+}
+
+/* Caixa de seleção múltipla de keyframes (marquee): borda sólida e fundo
+   translúcido na cor de acento do tema atual. */
+.motion-timeline-marquee {
+  background: color-mix(in srgb, var(--timeline-accent) 16%, transparent);
+  border: 1px solid var(--timeline-accent);
+  border-radius: 2px;
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
 }
 
 /* =========================================

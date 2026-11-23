@@ -338,6 +338,31 @@ export function shiftKeyframes(
   }));
 }
 
+/**
+ * Desloca um subconjunto de keyframes (por id) pelo mesmo `deltaMs`, mantendo
+ * a ordem cronológica. O chamador já limita `deltaMs` pelo menor instante do
+ * grupo inteiro (entre todas as trilhas) para preservar as distâncias relativas.
+ */
+export function shiftSelectedKeyframes(
+  keyframes: Keyframe[],
+  selectedIds: ReadonlySet<string>,
+  deltaMs: number,
+): Keyframe[] {
+  const applied = Math.round(deltaMs);
+
+  if (applied === 0 || selectedIds.size === 0) {
+    return keyframes;
+  }
+
+  return sortByTime(
+    keyframes.map((keyframe) =>
+      selectedIds.has(keyframe.id)
+        ? { ...keyframe, timeMs: Math.max(0, keyframe.timeMs + applied) }
+        : keyframe,
+    ),
+  );
+}
+
 export function updateKeyframe(
   keyframes: Keyframe[],
   id: string,

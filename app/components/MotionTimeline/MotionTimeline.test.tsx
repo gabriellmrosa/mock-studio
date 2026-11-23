@@ -39,13 +39,16 @@ function withVideo(object: DeviceObject): DeviceObject {
 function renderTimeline(
   objects: SceneObject[],
   frame: MotionFrame = DEFAULT_MOTION_FRAME,
+  overrides: { sceneDurationMs?: number; selectedKeyframeId?: string } = {},
 ) {
   const handlers = {
     onChangeAudio: jest.fn(),
     onChangeFrame: jest.fn(),
     onChangeKeyframes: jest.fn(),
+    onChangeMultipleKeyframes: jest.fn(),
     onChangeVideo: jest.fn(),
     onRemoveKeyframe: jest.fn(),
+    onRemoveMultipleKeyframes: jest.fn(),
     onScrub: jest.fn(),
     onSelectKeyframe: jest.fn(),
     onSelectObject: jest.fn(),
@@ -62,8 +65,8 @@ function renderTimeline(
       objects={objects}
       playbackStartedAt={null}
       playheadMs={0}
-      sceneDurationMs={5000}
-      selectedKeyframeId=""
+      sceneDurationMs={overrides.sceneDurationMs ?? 5000}
+      selectedKeyframeId={overrides.selectedKeyframeId ?? ""}
       selectedObjectId=""
       {...handlers}
     />,
@@ -551,6 +554,155 @@ describe("MotionTimeline", () => {
 
       expect(objectId).toBe("a");
       expect(keyframes[0]).toMatchObject({ id: "k0", timeMs: 0, transform: { positionX: 1 } });
+    });
+  });
+
+  describe("multi-keyframe selection", () => {
+    function twoTracks() {
+      const pose = {
+        opacity: 1,
+        positionX: 0,
+        positionY: 0,
+        positionZ: 0,
+        rotationX: 0,
+        rotationY: 0,
+        rotationZ: 0,
+        scale: 1,
+      };
+      const first: SceneObject = {
+        ...createSceneObject({ deletable: false, name: "Phone" }),
+        id: "a",
+        keyframes: [
+          { easing: "ease-in-out", id: "a1", timeMs: 1000, transform: pose },
+          { easing: "ease-in-out", id: "a2", timeMs: 2500, transform: pose },
+        ],
+      };
+      const second: SceneObject = {
+        ...createSceneObject({ deletable: true, name: "Watch" }),
+        id: "b",
+        keyframes: [
+          { easing: "ease-in-out", id: "b1", timeMs: 1500, transform: pose },
+          { easing: "ease-in-out", id: "b2", timeMs: 3500, transform: pose },
+        ],
+      };
+      return [first, second];
+    }
+
+    it("selects keyframes across tracks with a marquee drag and moves them together", () => {
+      const objects = twoTracks();
+      const { container, handlers } = renderTimeline(
+        objects,
+        DEFAULT_MOTION_FRAME,
+        { sceneDurationMs: 4000 },
+      );
+
+      const timeline = container.querySelector(".motion-timeline") as HTMLElement;
+      timeline.getBoundingClientRect = () =>
+        ({ bottom: 240, height: 240, left: 0, right: 600, top: 0, width: 600 }) as DOMRect;
+      timeline.setPointerCapture = jest.fn();
+
+      const lanes = container.querySelector(".motion-timeline-lanes") as HTMLElement;
+      lanes.getBoundingClientRect = () =>
+        ({ bottom: 200, height: 200, left: 0, right: 500, top: 0, width: 500 }) as DOMRect;
+      lanes.setPointerCapture = jest.fn();
+
+      // Eixo de 5s em 500px (100px = 1s). Posiciona os marcadores no DOM mock.
+      const markerPositions: Record<string, { x: number; y: number }> = {
+        a1: { x: 100, y: 30 },
+        a2: { x: 250, y: 30 },
+        b1: { x: 150, y: 70 },
+        b2: { x: 350, y: 70 },
+      };
+      for (const [id, pos] of Object.entries(markerPositions)) {
+        const el = container.querySelector(
+          `[data-keyframe-id="${id}"]`,
+        ) as HTMLElement;
+        el.getBoundingClientRect = () =>
+          ({
+            bottom: pos.y + 5,
+            height: 10,
+            left: pos.x - 5,
+            right: pos.x + 5,
+            top: pos.y - 5,
+            width: 10,
+          }) as DOMRect;
+        el.setPointerCapture = jest.fn();
+      }
+
+      // Caixa de seleção pode começar em qualquer ponto vazio da section e cobrir a1 e b1.
+      fireEvent.pointerDown(timeline, { button: 0, clientX: 80, clientY: 20, pointerId: 1 });
+      fireEvent.pointerMove(timeline, { clientX: 180, clientY: 90, pointerId: 1 });
+
+      expect(screen.getByTestId("timeline-marquee")).toBeInTheDocument();
+      expect(container.querySelector('[data-keyframe-id="a1"]')).toHaveClass("is-active");
+      expect(container.querySelector('[data-keyframe-id="b1"]')).toHaveClass("is-active");
+      expect(container.querySelector('[data-keyframe-id="a2"]')).not.toHaveClass("is-active");
+      expect(container.querySelector('[data-keyframe-id="b2"]')).not.toHaveClass("is-active");
+
+      fireEvent.pointerUp(timeline, { clientX: 180, clientY: 90, pointerId: 1 });
+      expect(screen.queryByTestId("timeline-marquee")).not.toBeInTheDocument();
+
+      // Arrastar a1 +50px (+500ms) com Alt (sem snap) move a1 e b1 juntos.
+      const a1 = container.querySelector('[data-keyframe-id="a1"]') as HTMLElement;
+      fireEvent.pointerDown(a1, { button: 0, clientX: 100, pointerId: 2 });
+      fireEvent.pointerMove(a1, { altKey: true, clientX: 150, pointerId: 2 });
+
+      expect(handlers.onChangeMultipleKeyframes).toHaveBeenCalled();
+      const updates = handlers.onChangeMultipleKeyframes.mock.calls.at(-1)?.[0] as Array<{
+        keyframes: { id: string; timeMs: number }[];
+        objectId: string;
+      }>;
+
+      const updatedA = updates.find((u) => u.objectId === "a")?.keyframes;
+      const updatedB = updates.find((u) => u.objectId === "b")?.keyframes;
+
+      expect(updatedA?.find((k) => k.id === "a1")?.timeMs).toBe(1500);
+      expect(updatedA?.find((k) => k.id === "a2")?.timeMs).toBe(2500);
+      expect(updatedB?.find((k) => k.id === "b1")?.timeMs).toBe(2000);
+      expect(updatedB?.find((k) => k.id === "b2")?.timeMs).toBe(3500);
+    });
+
+    it("supports Shift+click multi-selection and batch delete with Backspace", () => {
+      const objects = twoTracks();
+      const { container, handlers } = renderTimeline(
+        objects,
+        DEFAULT_MOTION_FRAME,
+        { selectedKeyframeId: "a1" },
+      );
+
+      const b1 = container.querySelector('[data-keyframe-id="b1"]') as HTMLElement;
+      fireEvent.pointerDown(b1, { button: 0, shiftKey: true });
+
+      expect(container.querySelector('[data-keyframe-id="a1"]')).toHaveClass("is-active");
+      expect(b1).toHaveClass("is-active");
+
+      fireEvent.keyDown(b1, { key: "Backspace" });
+
+      expect(handlers.onRemoveMultipleKeyframes).toHaveBeenCalledWith([
+        { keyframeId: "a1", objectId: "a" },
+        { keyframeId: "b1", objectId: "b" },
+      ]);
+    });
+
+    it("scrubs on a simple click in empty lane space without dragging", () => {
+      const objects = twoTracks();
+      const { container, handlers } = renderTimeline(
+        objects,
+        DEFAULT_MOTION_FRAME,
+        { sceneDurationMs: 4000 },
+      );
+
+      const timeline = container.querySelector(".motion-timeline") as HTMLElement;
+      timeline.setPointerCapture = jest.fn();
+
+      const lanes = container.querySelector(".motion-timeline-lanes") as HTMLElement;
+      lanes.getBoundingClientRect = () =>
+        ({ bottom: 200, height: 200, left: 0, right: 500, top: 0, width: 500 }) as DOMRect;
+
+      fireEvent.pointerDown(lanes, { button: 0, clientX: 200, clientY: 30, pointerId: 1 });
+      fireEvent.pointerUp(lanes, { altKey: true, clientX: 200, clientY: 30, pointerId: 1 });
+
+      expect(handlers.onScrub).toHaveBeenCalledWith(2000);
     });
   });
 });

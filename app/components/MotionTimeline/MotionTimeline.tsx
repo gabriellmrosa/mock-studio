@@ -60,6 +60,7 @@ import {
   findKeyframeAt,
   moveKeyframeTo,
   shiftKeyframes,
+  shiftSelectedKeyframes,
   copyNeighborPose,
   findNeighborKeyframe,
   updateKeyframe,
@@ -87,6 +88,10 @@ type MotionTimelineProps = {
   onToggleKeyframeAtPlayhead: (objectId: string) => void;
   onChangeFrame: (frame: MotionFrame) => void;
   onChangeKeyframes: (objectId: string, keyframes: Keyframe[]) => void;
+  /** Atualiza keyframes de várias trilhas num único passo (arrasto em grupo). */
+  onChangeMultipleKeyframes?: (
+    updates: Array<{ keyframes: Keyframe[]; objectId: string }>,
+  ) => void;
   /** Move ou corta o clipe da música. */
   onChangeAudio: (objectId: string, patch: Partial<SceneAudio>) => void;
   /** Move ou corta o clipe do vídeo de uma tela do objeto. */
@@ -96,6 +101,10 @@ type MotionTimelineProps = {
     patch: VideoClipPatch,
   ) => void;
   onRemoveKeyframe: (objectId: string, keyframeId: string) => void;
+  /** Remove vários keyframes de uma ou mais trilhas num único passo. */
+  onRemoveMultipleKeyframes?: (
+    targets: Array<{ keyframeId: string; objectId: string }>,
+  ) => void;
   onScrub: (timeMs: number) => void;
   onSelectKeyframe: (objectId: string, keyframeId: string) => void;
   onSelectObject: (objectId: string) => void;
@@ -108,8 +117,44 @@ type MotionTimelineProps = {
   selectedObjectId: string;
 };
 
+type MarqueeMarkerBox = {
+  bottom: number;
+  keyframeId: string;
+  left: number;
+  objectId: string;
+  right: number;
+  top: number;
+};
+
+type MarqueeRect = {
+  height: number;
+  left: number;
+  top: number;
+  width: number;
+};
+
 type DragState =
   | { kind: "scrub" }
+  | {
+      additive: boolean;
+      baseSelection: Set<string>;
+      kind: "marquee";
+      markerBoxes: MarqueeMarkerBox[];
+      moved: boolean;
+      startX: number;
+      startY: number;
+    }
+  | {
+      anchorKeyframeId: string;
+      anchorObjectId: string;
+      kind: "keyframes-group";
+      minTimeMs: number;
+      moved: boolean;
+      selectedIds: Set<string>;
+      selectedTimes: number[];
+      startByObject: Map<string, Keyframe[]>;
+      startX: number;
+    }
   | {
       kind: "track";
       moved: boolean;
@@ -195,8 +240,10 @@ export default function MotionTimeline({
   onChangeAudio,
   onChangeFrame,
   onChangeKeyframes,
+  onChangeMultipleKeyframes,
   onChangeVideo,
   onRemoveKeyframe,
+  onRemoveMultipleKeyframes,
   onScrub,
   onSelectKeyframe,
   onSelectObject,
@@ -208,6 +255,7 @@ export default function MotionTimeline({
   selectedKeyframeId,
   selectedObjectId,
 }: MotionTimelineProps) {
+  const timelineRef = useRef<HTMLElement>(null);
   const lanesRef = useRef<HTMLDivElement>(null);
   const dragRef = useRef<DragState | null>(null);
   const { axisWidth, reveal, viewportRef, zoom, zoomTo } = useTimelineZoom(
@@ -219,6 +267,12 @@ export default function MotionTimeline({
   const [menu, setMenu] = useState<MenuState | null>(null);
   // Onde o arrasto grudou (ver timeline-snap.ts): a linha-guia vertical.
   const [snapGuideMs, setSnapGuideMs] = useState<number | null>(null);
+  // Seleção múltipla de keyframes (marquee ou Shift+clique).
+  const [selectedKeyframeIds, setSelectedKeyframeIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  // Retângulo da caixa de seleção durante um arrasto de marquee.
+  const [marqueeRect, setMarqueeRect] = useState<MarqueeRect | null>(null);
   // Guarda de qual play veio o valor: sem isso, o primeiro quadro de um novo
   // play mostraria o instante em que o anterior terminou.
   const [livePlayhead, setLivePlayhead] = useState({ ms: 0, startedAt: 0 });
@@ -332,6 +386,7 @@ export default function MotionTimeline({
     audioObjectId?: string;
     clip?: { objectId: string; screen: ScreenId };
     keyframeId?: string;
+    keyframeIds?: ReadonlySet<string>;
     playhead?: boolean;
     trackObjectId?: string;
   }) {
@@ -344,7 +399,10 @@ export default function MotionTimeline({
     for (const object of objects) {
       if (object.id !== skip.trackObjectId) {
         for (const keyframe of object.keyframes) {
-          if (keyframe.id !== skip.keyframeId) {
+          if (
+            keyframe.id !== skip.keyframeId &&
+            !skip.keyframeIds?.has(keyframe.id)
+          ) {
             targets.push(keyframe.timeMs);
           }
         }
@@ -435,6 +493,121 @@ export default function MotionTimeline({
     );
   }
 
+  /**
+   * Conjunto efetivo de keyframes selecionados (apenas os que ainda existem na
+   * cena): combina a seleção múltipla com o `selectedKeyframeId` único.
+   */
+  function getEffectiveSelectedIds() {
+    const existing = new Set<string>();
+    for (const object of objects) {
+      for (const keyframe of object.keyframes) {
+        existing.add(keyframe.id);
+      }
+    }
+
+    const result = new Set<string>();
+    for (const id of selectedKeyframeIds) {
+      if (existing.has(id)) {
+        result.add(id);
+      }
+    }
+    if (selectedKeyframeId && existing.has(selectedKeyframeId)) {
+      result.add(selectedKeyframeId);
+    }
+    return result;
+  }
+
+  function applyMultipleKeyframes(
+    updates: Array<{ keyframes: Keyframe[]; objectId: string }>,
+  ) {
+    if (onChangeMultipleKeyframes) {
+      onChangeMultipleKeyframes(updates);
+      return;
+    }
+
+    for (const { keyframes, objectId } of updates) {
+      onChangeKeyframes(objectId, keyframes);
+    }
+  }
+
+  function removeSelectedKeyframes(ids: ReadonlySet<string>) {
+    const targets: Array<{ keyframeId: string; objectId: string }> = [];
+    for (const object of objects) {
+      for (const keyframe of object.keyframes) {
+        if (ids.has(keyframe.id)) {
+          targets.push({ keyframeId: keyframe.id, objectId: object.id });
+        }
+      }
+    }
+
+    if (targets.length === 0) {
+      return;
+    }
+
+    if (onRemoveMultipleKeyframes) {
+      onRemoveMultipleKeyframes(targets);
+    } else {
+      for (const { keyframeId, objectId } of targets) {
+        onRemoveKeyframe(objectId, keyframeId);
+      }
+    }
+
+    setSelectedKeyframeIds(new Set());
+  }
+
+  function beginMarquee(event: ReactPointerEvent<HTMLElement>) {
+    if (event.button !== 0) {
+      return;
+    }
+
+    // Não rouba cliques de botões, inputs, régua, clipes, segmentos ou
+    // keyframes — qualquer outro espaço livre da timeline (inclusive a faixa
+    // do cabeçalho fora dos botões) inicia o marquee.
+    const target = event.target as HTMLElement | null;
+    if (
+      target?.closest(
+        "button, input, textarea, .motion-timeline-ruler, .motion-timeline-clip, .motion-timeline-segment, .motion-timeline-marker",
+      )
+    ) {
+      return;
+    }
+
+    const lanes = lanesRef.current;
+    const markerBoxes: MarqueeMarkerBox[] = [];
+
+    // Cacheia os rects dos marcadores uma única vez no pointerDown para evitar
+    // reflows a cada pointerMove durante a seleção.
+    if (lanes) {
+      const nodes = lanes.querySelectorAll<HTMLElement>(
+        ".motion-timeline-marker[data-keyframe-id]",
+      );
+      for (const node of nodes) {
+        const keyframeId = node.dataset.keyframeId;
+        const objectId = node.dataset.objectId;
+        if (!keyframeId || !objectId) continue;
+        const rect = node.getBoundingClientRect();
+        markerBoxes.push({
+          bottom: rect.bottom,
+          keyframeId,
+          left: rect.left,
+          objectId,
+          right: rect.right,
+          top: rect.top,
+        });
+      }
+    }
+
+    beginDrag(event, {
+      additive: event.shiftKey,
+      baseSelection: event.shiftKey ? getEffectiveSelectedIds() : new Set(),
+      kind: "marquee",
+      markerBoxes,
+      moved: false,
+      startX: event.clientX,
+      startY: event.clientY,
+    });
+  }
+
   function handleDragMove(event: ReactPointerEvent<HTMLElement>) {
     const drag = dragRef.current;
 
@@ -447,6 +620,54 @@ export default function MotionTimeline({
       return;
     }
 
+    if (drag.kind === "marquee") {
+      const dx = event.clientX - drag.startX;
+      const dy = event.clientY - drag.startY;
+
+      if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD_PX) {
+        return;
+      }
+
+      drag.moved = true;
+
+      const containerRect = timelineRef.current?.getBoundingClientRect();
+      if (!containerRect) {
+        return;
+      }
+
+      const clientLeft = Math.min(drag.startX, event.clientX);
+      const clientRight = Math.max(drag.startX, event.clientX);
+      const clientTop = Math.min(drag.startY, event.clientY);
+      const clientBottom = Math.max(drag.startY, event.clientY);
+
+      const left = Math.max(0, clientLeft - containerRect.left);
+      const top = Math.max(0, clientTop - containerRect.top);
+      const right = Math.min(containerRect.width, clientRight - containerRect.left);
+      const bottom = Math.min(containerRect.height, clientBottom - containerRect.top);
+
+      setMarqueeRect({
+        height: Math.max(0, bottom - top),
+        left,
+        top,
+        width: Math.max(0, right - left),
+      });
+
+      const nextSelected = new Set(drag.baseSelection);
+      for (const box of drag.markerBoxes) {
+        const intersects =
+          box.right >= clientLeft &&
+          box.left <= clientRight &&
+          box.bottom >= clientTop &&
+          box.top <= clientBottom;
+        if (intersects) {
+          nextSelected.add(box.keyframeId);
+        }
+      }
+
+      setSelectedKeyframeIds(nextSelected);
+      return;
+    }
+
     const deltaX = event.clientX - drag.startX;
 
     if (!drag.moved && Math.abs(deltaX) < DRAG_THRESHOLD_PX) {
@@ -456,6 +677,34 @@ export default function MotionTimeline({
     drag.moved = true;
 
     const deltaMs = msFromDeltaX(deltaX);
+
+    if (drag.kind === "keyframes-group") {
+      const snappedDelta = snapDrag(
+        event,
+        drag.selectedTimes,
+        deltaMs,
+        getSnapTargets({ keyframeIds: drag.selectedIds }),
+        snap,
+      );
+      // Limita pelo menor instante do grupo inteiro para preservar as distâncias
+      // relativas entre todos os keyframes selecionados (inclusive entre trilhas).
+      const clampedDelta = Math.max(-drag.minTimeMs, snappedDelta);
+      const updates: Array<{ keyframes: Keyframe[]; objectId: string }> = [];
+
+      for (const [objectId, startKeyframes] of drag.startByObject) {
+        updates.push({
+          keyframes: shiftSelectedKeyframes(
+            startKeyframes,
+            drag.selectedIds,
+            clampedDelta,
+          ),
+          objectId,
+        });
+      }
+
+      applyMultipleKeyframes(updates);
+      return;
+    }
 
     if (drag.kind === "video") {
       // As duas pontas do clipe procuram onde grudar.
@@ -570,10 +819,42 @@ export default function MotionTimeline({
     );
   }
 
-  function endDrag() {
+  function endDrag(event?: ReactPointerEvent<HTMLElement>) {
+    const drag = dragRef.current;
     dragRef.current = null;
     setFrozenAxisMs(null);
     setSnapGuideMs(null);
+    setMarqueeRect(null);
+
+    if (!drag) {
+      return;
+    }
+
+    // Clique simples (sem arrastar) no vazio: limpa seleção múltipla e, se o
+    // clique caiu na área das trilhas, move o playhead para lá.
+    if (drag.kind === "marquee" && !drag.moved && event) {
+      if (!drag.additive) {
+        setSelectedKeyframeIds(new Set());
+      }
+      const lanesRect = lanesRef.current?.getBoundingClientRect();
+      if (
+        lanesRect &&
+        event.clientX >= lanesRect.left &&
+        event.clientX <= lanesRect.right &&
+        event.clientY >= lanesRect.top &&
+        event.clientY <= lanesRect.bottom
+      ) {
+        scrubTo(event);
+      }
+      return;
+    }
+
+    // Clique simples (sem arrastar) num keyframe que estava em seleção múltipla
+    // foca apenas nele.
+    if (drag.kind === "keyframes-group" && !drag.moved) {
+      setSelectedKeyframeIds(new Set());
+      onSelectKeyframe(drag.anchorObjectId, drag.anchorKeyframeId);
+    }
   }
 
   function openMenu(
@@ -821,8 +1102,36 @@ export default function MotionTimeline({
     );
   }
 
+  const effectiveSelectedIds = getEffectiveSelectedIds();
+
   return (
-    <section className="motion-timeline" aria-label={copy.motionTimeline}>
+    <section
+      ref={timelineRef}
+      className="motion-timeline"
+      aria-label={copy.motionTimeline}
+      onPointerDown={beginMarquee}
+      onPointerMove={handleDragMove}
+      onPointerUp={endDrag}
+      onPointerCancel={() => endDrag()}
+      onKeyDown={(event) => {
+        if (event.key !== "Delete" && event.key !== "Backspace") {
+          return;
+        }
+        const target = event.target as HTMLElement | null;
+        if (
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
+        if (effectiveSelectedIds.size > 1) {
+          event.preventDefault();
+          removeSelectedKeyframes(effectiveSelectedIds);
+        }
+      }}
+    >
       <header className="motion-timeline-header">
         <button
           type="button"
@@ -969,12 +1278,18 @@ export default function MotionTimeline({
             className="motion-timeline-lanes"
             ref={lanesRef}
             style={{ width: `${zoom * 100}%` }}
-            onPointerDown={(event) => beginDrag(event, { kind: "scrub" })}
-            onPointerMove={handleDragMove}
-            onPointerUp={endDrag}
-            onPointerCancel={endDrag}
           >
-            <div className="motion-timeline-ruler" aria-hidden>
+            <div
+              className="motion-timeline-ruler"
+              aria-hidden
+              onPointerDown={(event) => {
+                setSelectedKeyframeIds(new Set());
+                beginDrag(event, { kind: "scrub" });
+              }}
+              onPointerMove={handleDragMove}
+              onPointerUp={endDrag}
+              onPointerCancel={() => endDrag()}
+            >
               {ticks.map((timeMs) => (
                 <span
                   key={timeMs}
@@ -1062,7 +1377,7 @@ export default function MotionTimeline({
                 })}
 
                 {object.keyframes.map((keyframe) => {
-                  const isSelected = keyframe.id === selectedKeyframeId;
+                  const isSelected = effectiveSelectedIds.has(keyframe.id);
                   const label = `${copy.motionKeyframeLabel} ${formatSeconds(
                     keyframe.timeMs,
                   )}`;
@@ -1071,6 +1386,8 @@ export default function MotionTimeline({
                     <button
                       key={keyframe.id}
                       type="button"
+                      data-keyframe-id={keyframe.id}
+                      data-object-id={object.id}
                       className={`motion-timeline-marker${
                         isSelected ? " is-active" : ""
                       }`}
@@ -1083,6 +1400,66 @@ export default function MotionTimeline({
                           return;
                         }
 
+                        if (event.shiftKey) {
+                          event.stopPropagation();
+                          const next = new Set(effectiveSelectedIds);
+                          if (next.has(keyframe.id)) {
+                            next.delete(keyframe.id);
+                          } else {
+                            next.add(keyframe.id);
+                          }
+                          setSelectedKeyframeIds(next);
+                          if (next.size === 1) {
+                            const [onlyId] = next;
+                            const owner = objects.find((item) =>
+                              item.keyframes.some((kf) => kf.id === onlyId),
+                            );
+                            if (owner) {
+                              onSelectKeyframe(owner.id, onlyId);
+                            }
+                          }
+                          return;
+                        }
+
+                        if (
+                          effectiveSelectedIds.size > 1 &&
+                          effectiveSelectedIds.has(keyframe.id)
+                        ) {
+                          const startByObject = new Map<string, Keyframe[]>();
+                          const selectedTimes: number[] = [];
+
+                          for (const item of objects) {
+                            const hasSelected = item.keyframes.some((kf) =>
+                              effectiveSelectedIds.has(kf.id),
+                            );
+                            if (hasSelected) {
+                              startByObject.set(item.id, item.keyframes);
+                              for (const kf of item.keyframes) {
+                                if (effectiveSelectedIds.has(kf.id)) {
+                                  selectedTimes.push(kf.timeMs);
+                                }
+                              }
+                            }
+                          }
+
+                          beginDrag(event, {
+                            anchorKeyframeId: keyframe.id,
+                            anchorObjectId: object.id,
+                            kind: "keyframes-group",
+                            minTimeMs:
+                              selectedTimes.length > 0
+                                ? Math.min(...selectedTimes)
+                                : 0,
+                            moved: false,
+                            selectedIds: new Set(effectiveSelectedIds),
+                            selectedTimes,
+                            startByObject,
+                            startX: event.clientX,
+                          });
+                          return;
+                        }
+
+                        setSelectedKeyframeIds(new Set());
                         onSelectKeyframe(object.id, keyframe.id);
                         beginDrag(event, {
                           keyframeId: keyframe.id,
@@ -1096,17 +1473,26 @@ export default function MotionTimeline({
                       }}
                       onPointerMove={handleDragMove}
                       onPointerUp={endDrag}
-                      onPointerCancel={endDrag}
+                      onPointerCancel={() => endDrag()}
                       onKeyDown={(event) => {
                         if (
                           event.key === "Delete" ||
                           event.key === "Backspace"
                         ) {
                           event.preventDefault();
-                          onRemoveKeyframe(object.id, keyframe.id);
+                          event.stopPropagation();
+                          if (
+                            effectiveSelectedIds.size > 1 &&
+                            effectiveSelectedIds.has(keyframe.id)
+                          ) {
+                            removeSelectedKeyframes(effectiveSelectedIds);
+                          } else {
+                            onRemoveKeyframe(object.id, keyframe.id);
+                          }
                         }
                       }}
                       onContextMenu={(event) => {
+                        setSelectedKeyframeIds(new Set());
                         onSelectKeyframe(object.id, keyframe.id);
                         openMenu(event, {
                           kind: "keyframe",
@@ -1141,6 +1527,15 @@ export default function MotionTimeline({
           </div>
         </div>
       )}
+
+      {marqueeRect ? (
+        <div
+          aria-hidden="true"
+          className="motion-timeline-marquee"
+          data-testid="timeline-marquee"
+          style={marqueeRect}
+        />
+      ) : null}
 
       {menu && menuKeyframe ? (
         <TimelineMenu

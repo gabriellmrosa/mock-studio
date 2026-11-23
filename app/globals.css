@@ -54,7 +54,8 @@
   --timeline-segment-border: color-mix(in srgb, var(--black-980) 18%, transparent);
   --timeline-segment-active-border: color-mix(in srgb, var(--black-980) 36%, transparent);
   --timeline-marker-opacity: 0.85;
-  --timeline-marker-outline: color-mix(in srgb, var(--black-980) 45%, transparent);
+  --timeline-marker-active: #38bdf8;
+  --timeline-marker-outline: color-mix(in srgb, #38bdf8 45%, transparent);
   --timeline-clip-bg: color-mix(in srgb, var(--black-980) 14%, transparent);
   --timeline-clip-border: color-mix(in srgb, var(--black-980) 26%, transparent);
   --timeline-clip-active-bg: color-mix(in srgb, var(--black-980) 22%, transparent);
@@ -131,6 +132,7 @@
   --timeline-segment-border: color-mix(in srgb, var(--dracula-purple) 25%, transparent);
   --timeline-segment-active-border: color-mix(in srgb, var(--dracula-purple) 50%, transparent);
   --timeline-marker-opacity: 0.92;
+  --timeline-marker-active: var(--dracula-pink);
   --timeline-marker-outline: color-mix(in srgb, var(--dracula-pink) 50%, transparent);
   --timeline-clip-bg: color-mix(in srgb, var(--dracula-cyan) 14%, transparent);
   --timeline-clip-border: color-mix(in srgb, var(--dracula-cyan) 42%, transparent);
@@ -201,7 +203,8 @@
   --timeline-segment-border: transparent;
   --timeline-segment-active-border: transparent;
   --timeline-marker-opacity: 0.6;
-  --timeline-marker-outline: color-mix(in srgb, var(--legacy-ink) 45%, transparent);
+  --timeline-marker-active: #fbbf24;
+  --timeline-marker-outline: color-mix(in srgb, #fbbf24 45%, transparent);
   --timeline-clip-bg: color-mix(in srgb, var(--legacy-ink) 16%, transparent);
   --timeline-clip-border: color-mix(in srgb, var(--legacy-ink) 22%, transparent);
   --timeline-clip-active-bg: color-mix(in srgb, var(--legacy-ink) 26%, transparent);

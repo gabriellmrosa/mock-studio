@@ -1621,6 +1621,37 @@ export default function Home() {
     }
   }
 
+  /** Remove vários keyframes de uma ou mais trilhas num único passo de Undo. */
+  function handleRemoveMultipleKeyframes(
+    targets: Array<{ keyframeId: string; objectId: string }>,
+  ) {
+    if (targets.length === 0) return;
+
+    const byObject = new Map<string, Set<string>>();
+    for (const { keyframeId, objectId } of targets) {
+      const set = byObject.get(objectId) ?? new Set<string>();
+      set.add(keyframeId);
+      byObject.set(objectId, set);
+    }
+
+    setSceneObjects((current) =>
+      current.map((object) => {
+        const idsToRemove = byObject.get(object.id);
+        if (!idsToRemove) return object;
+        return {
+          ...object,
+          keyframes: object.keyframes.filter(
+            (keyframe) => !idsToRemove.has(keyframe.id),
+          ),
+        };
+      }),
+    );
+
+    if (targets.some((item) => item.keyframeId === selectedKeyframeId)) {
+      setSelectedKeyframeId("");
+    }
+  }
+
   // Arrastos da timeline e troca de transição. Se o keyframe selecionado se
   // moveu, o playhead vai junto para a cena seguir mostrando a pose dele.
   function handleChangeKeyframes(objectId: string, keyframes: Keyframe[]) {
@@ -1632,6 +1663,34 @@ export default function Home() {
 
     if (moved) {
       setPlayheadMs(moved.timeMs);
+    }
+  }
+
+  /** Move keyframes de várias trilhas juntos numa única atualização de estado. */
+  function handleChangeMultipleKeyframes(
+    updates: Array<{ keyframes: Keyframe[]; objectId: string }>,
+  ) {
+    if (updates.length === 0) return;
+
+    const byObject = new Map(
+      updates.map((entry) => [entry.objectId, entry.keyframes]),
+    );
+
+    setSceneObjects((current) =>
+      current.map((object) => {
+        const nextKeyframes = byObject.get(object.id);
+        return nextKeyframes ? { ...object, keyframes: nextKeyframes } : object;
+      }),
+    );
+
+    for (const { keyframes } of updates) {
+      const moved = keyframes.find(
+        (keyframe) => keyframe.id === selectedKeyframeId,
+      );
+      if (moved) {
+        setPlayheadMs(moved.timeMs);
+        break;
+      }
     }
   }
 
@@ -2104,6 +2163,7 @@ export default function Home() {
             onChangeAudio={handleUpdateAudio}
             onChangeFrame={setMotionFrame}
             onChangeKeyframes={handleChangeKeyframes}
+            onChangeMultipleKeyframes={handleChangeMultipleKeyframes}
             onChangeVideo={(objectId, screen, patch) =>
               updateSceneObject(objectId, (object) => {
                 const video =
@@ -2119,6 +2179,7 @@ export default function Home() {
               })
             }
             onRemoveKeyframe={handleRemoveKeyframe}
+            onRemoveMultipleKeyframes={handleRemoveMultipleKeyframes}
             onScrub={handleScrub}
             onSelectKeyframe={handleSelectKeyframe}
             onSelectObject={setSelectedObjectId}
