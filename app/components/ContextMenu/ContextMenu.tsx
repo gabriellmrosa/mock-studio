@@ -31,6 +31,7 @@ export type ContextMenuSubmenuItem = {
     label: string;
     value: string;
     checked?: boolean;
+    hoverIcon?: ReactNode;
     onClick: () => void;
   }>;
 };
@@ -302,7 +303,17 @@ export default function ContextMenu({
                       handleOptionClick(opt.onClick);
                     }}
                   >
-                    <span className="context-menu-row-label">{opt.label}</span>
+                    <span className="context-menu-row-label">
+                      <span>{opt.label}</span>
+                      {opt.hoverIcon ? (
+                        <span
+                          className="context-menu-row-hover-icon"
+                          aria-hidden="true"
+                        >
+                          {opt.hoverIcon}
+                        </span>
+                      ) : null}
+                    </span>
                     {opt.checked && (
                       <Check size={12} className="context-menu-check" />
                     )}

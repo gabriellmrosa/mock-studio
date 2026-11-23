@@ -231,6 +231,49 @@ export default function LayersPanel({
                         label: copy.themeDracula,
                         value: "dracula",
                         checked: uiTheme === "dracula",
+                        hoverIcon: (
+                          <svg
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                          >
+                            {/* Capa / gola roxa */}
+                            <path
+                              d="M3.5 11.5L7 20.5H17L20.5 11.5L16.5 14L12 19L7.5 14L3.5 11.5Z"
+                              fill="#bd93f9"
+                            />
+                            {/* Rosto claro */}
+                            <path
+                              d="M7 10.5C7 7.4 9.2 5.2 12 5.2C14.8 5.2 17 7.4 17 10.5V13.4C17 16.3 14.8 18.6 12 18.6C9.2 18.6 7 16.3 7 13.4V10.5Z"
+                              fill="#f8f8f2"
+                            />
+                            {/* Cabelo em bico de viúva */}
+                            <path
+                              d="M6.6 10.5C6.4 6.6 8.8 4 12 4C15.2 4 17.6 6.6 17.4 10.5C16.2 8.7 14.7 7.8 13.4 8.2L12 10.3L10.6 8.2C9.3 7.8 7.8 8.7 6.6 10.5Z"
+                              fill="#282a36"
+                            />
+                            {/* Olhos */}
+                            <circle cx="9.8" cy="12" r="1.05" fill="#282a36" />
+                            <circle cx="14.2" cy="12" r="1.05" fill="#282a36" />
+                            {/* Boca + presas */}
+                            <path
+                              d="M9.7 14.8C10.5 15.5 13.5 15.5 14.3 14.8"
+                              stroke="#282a36"
+                              strokeWidth="1.15"
+                              strokeLinecap="round"
+                            />
+                            <path
+                              d="M10.2 15.1L10.7 16.5L11.3 15.3Z"
+                              fill="#ff79c6"
+                            />
+                            <path
+                              d="M13.8 15.1L13.3 16.5L12.7 15.3Z"
+                              fill="#ff79c6"
+                            />
+                          </svg>
+                        ),
                         onClick: () => onUiThemeChange?.("dracula"),
                       },
                     ],
@@ -270,218 +313,223 @@ export default function LayersPanel({
 
         <div className="layers-body">
           <div className="layers-body-top">
-          <PanelSection
-            title={copy.layersSectionTitle}
-            className="section-objects"
-            action={
-              // O que entra na cena: um aparelho, um texto, uma imagem ou um sticker.
-              <ContextMenu
-                items={[
-                  {
-                    type: "action",
-                    label: copy.addDeviceObject,
-                    onClick: onAddObject,
-                  },
-                  {
-                    type: "action",
-                    label: copy.addTextObject,
-                    onClick: onAddText,
-                  },
-                  {
-                    type: "action",
-                    label: copy.addImageObject,
-                    onClick: onAddImage,
-                  },
-                  {
-                    type: "action",
-                    label: copy.addStickerObject,
-                    onClick: onAddSticker,
-                  },
-                  // Uma música por cena: com ela já na lista, a opção fica
-                  // desligada em vez de sumir.
-                  ...(onAddMusic
-                    ? [
-                        {
-                          type: "action" as const,
-                          disabled: objects.some(isAudioObject),
-                          label: copy.addMusicObject,
-                          onClick: onAddMusic,
-                        },
-                      ]
-                    : []),
-                ]}
-                triggerAriaLabel={copy.addObject}
-                triggerClassName="editor-section-action"
-                triggerIcon={<Plus size={16} />}
-                triggerTitle={copy.addObject}
-              />
-            }
-          >
-            <div className="layers-stack">
-              {/* A câmera e o Fundo da cena: sempre os primeiros, nessa ordem,
+            <PanelSection
+              title={copy.layersSectionTitle}
+              className="section-objects"
+              action={
+                // O que entra na cena: um aparelho, um texto, uma imagem ou um sticker.
+                <ContextMenu
+                  items={[
+                    {
+                      type: "action",
+                      label: copy.addDeviceObject,
+                      onClick: onAddObject,
+                    },
+                    {
+                      type: "action",
+                      label: copy.addTextObject,
+                      onClick: onAddText,
+                    },
+                    {
+                      type: "action",
+                      label: copy.addImageObject,
+                      onClick: onAddImage,
+                    },
+                    {
+                      type: "action",
+                      label: copy.addStickerObject,
+                      onClick: onAddSticker,
+                    },
+                    // Uma música por cena: com ela já na lista, a opção fica
+                    // desligada em vez de sumir.
+                    ...(onAddMusic
+                      ? [
+                          {
+                            type: "action" as const,
+                            disabled: objects.some(isAudioObject),
+                            label: copy.addMusicObject,
+                            onClick: onAddMusic,
+                          },
+                        ]
+                      : []),
+                  ]}
+                  triggerAriaLabel={copy.addObject}
+                  triggerClassName="editor-section-action"
+                  triggerIcon={<Plus size={16} />}
+                  triggerTitle={copy.addObject}
+                />
+              }
+            >
+              <div className="layers-stack">
+                {/* A câmera e o Fundo da cena: sempre os primeiros, nessa ordem,
                   e os únicos que não têm o que esconder, duplicar, renomear nem
                   apagar. */}
-              {objects.filter(isSceneFixture).map((camera) => {
-                const isSelected = camera.id === selectedObjectId;
+                {objects.filter(isSceneFixture).map((camera) => {
+                  const isSelected = camera.id === selectedObjectId;
 
-                return (
-                  <div
-                    key={camera.id}
-                    onClick={() => onSelectObject(camera.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        onSelectObject(camera.id);
-                      }
-                    }}
-                    className={`layer-card ${isSelected ? "layer-card-active" : "layer-card-inactive"}`}
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={isSelected}
-                  >
-                    <div className="layer-card-main">
-                      <div className="layer-title-row">
-                        <p className="layer-card-title">{camera.name}</p>
+                  return (
+                    <div
+                      key={camera.id}
+                      onClick={() => onSelectObject(camera.id)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          onSelectObject(camera.id);
+                        }
+                      }}
+                      className={`layer-card ${isSelected ? "layer-card-active" : "layer-card-inactive"}`}
+                      role="button"
+                      tabIndex={0}
+                      aria-pressed={isSelected}
+                    >
+                      <div className="layer-card-main">
+                        <div className="layer-title-row">
+                          <p className="layer-card-title">{camera.name}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                );
-              })}
-              {objects.filter((object) => !isSceneFixture(object)).map((object) => {
-                const isSelected = object.id === selectedObjectId;
-                // A música não se vê: o olho dela é o som, e ela não se
-                // enquadra nem se duplica (é uma por cena).
-                const isAudio = isAudioObject(object);
-                const visibilityLabel = isAudio
-                  ? object.isVisible
-                    ? copy.muteObject
-                    : copy.unmuteObject
-                  : object.isVisible
-                    ? copy.hideObject
-                    : copy.showObject;
-                return (
-                  <div
-                    key={object.id}
-                    onClick={() => onSelectObject(object.id)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        onSelectObject(object.id);
-                      }
-                    }}
-                    className={`layer-card ${isSelected ? "layer-card-active" : "layer-card-inactive"}`}
-                    role="button"
-                    tabIndex={0}
-                    aria-pressed={isSelected}
-                  >
-                    <div className="layer-card-main">
-                      <div className="layer-title-row">
-                        {editingObjectId === object.id ? (
-                          <input
-                            autoFocus
-                            type="text"
-                            value={draftName}
-                            onBlur={() => commitEditing(object)}
-                            onChange={(event) =>
-                              setDraftName(event.target.value)
-                            }
-                            onClick={(event) => event.stopPropagation()}
-                            onDoubleClick={(event) => event.stopPropagation()}
-                            onKeyDown={(event) =>
-                              handleNameInputKeyDown(event, object)
-                            }
-                            className="editor-input layer-card-name-input"
-                          />
-                        ) : (
-                          <p
-                            className="layer-card-title"
-                            onDoubleClick={(event) => {
+                  );
+                })}
+                {objects
+                  .filter((object) => !isSceneFixture(object))
+                  .map((object) => {
+                    const isSelected = object.id === selectedObjectId;
+                    // A música não se vê: o olho dela é o som, e ela não se
+                    // enquadra nem se duplica (é uma por cena).
+                    const isAudio = isAudioObject(object);
+                    const visibilityLabel = isAudio
+                      ? object.isVisible
+                        ? copy.muteObject
+                        : copy.unmuteObject
+                      : object.isVisible
+                        ? copy.hideObject
+                        : copy.showObject;
+                    return (
+                      <div
+                        key={object.id}
+                        onClick={() => onSelectObject(object.id)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            onSelectObject(object.id);
+                          }
+                        }}
+                        className={`layer-card ${isSelected ? "layer-card-active" : "layer-card-inactive"}`}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSelected}
+                      >
+                        <div className="layer-card-main">
+                          <div className="layer-title-row">
+                            {editingObjectId === object.id ? (
+                              <input
+                                autoFocus
+                                type="text"
+                                value={draftName}
+                                onBlur={() => commitEditing(object)}
+                                onChange={(event) =>
+                                  setDraftName(event.target.value)
+                                }
+                                onClick={(event) => event.stopPropagation()}
+                                onDoubleClick={(event) =>
+                                  event.stopPropagation()
+                                }
+                                onKeyDown={(event) =>
+                                  handleNameInputKeyDown(event, object)
+                                }
+                                className="editor-input layer-card-name-input"
+                              />
+                            ) : (
+                              <p
+                                className="layer-card-title"
+                                onDoubleClick={(event) => {
+                                  event.stopPropagation();
+                                  startEditing(object);
+                                }}
+                              >
+                                {object.name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="layer-actions">
+                          <IconButton
+                            aria-label={visibilityLabel}
+                            title={visibilityLabel}
+                            className="layer-inline-action editor-icon-button-no-hover-bg"
+                            active={!object.isVisible}
+                            onClick={(event) => {
                               event.stopPropagation();
-                              startEditing(object);
+                              onToggleObjectVisibility(object.id);
                             }}
                           >
-                            {object.name}
-                          </p>
-                        )}
+                            {isAudio ? (
+                              object.isVisible ? (
+                                <Volume2 size={14} />
+                              ) : (
+                                <VolumeX size={14} />
+                              )
+                            ) : object.isVisible ? (
+                              <Eye size={14} />
+                            ) : (
+                              <EyeOff size={14} />
+                            )}
+                          </IconButton>
+                          <ContextMenu
+                            items={[
+                              ...(isAudio
+                                ? []
+                                : [
+                                    {
+                                      type: "action" as const,
+                                      label: copy.fitObjectButton,
+                                      onClick: () => onFitObject?.(object.id),
+                                    },
+                                    {
+                                      type: "action" as const,
+                                      label: copy.duplicateObject,
+                                      onClick: () =>
+                                        onDuplicateObject(object.id),
+                                    },
+                                  ]),
+                              {
+                                type: "action",
+                                label: copy.renameObject,
+                                onClick: () => startEditing(object),
+                              },
+                              ...(object.deletable
+                                ? [
+                                    {
+                                      type: "action" as const,
+                                      label: copy.deleteObject,
+                                      variant: "danger" as const,
+                                      onClick: () => onRemoveObject(object.id),
+                                    },
+                                  ]
+                                : []),
+                            ]}
+                            triggerAriaLabel={copy.objectOptionsLabel}
+                            triggerClassName="layer-menu-trigger context-menu-trigger-quiet editor-icon-button-no-hover-bg"
+                            triggerStopPropagation
+                            triggerTitle={copy.objectOptionsLabel}
+                            triggerIcon={<MoreVertical size={12} />}
+                          />
+                        </div>
                       </div>
-                    </div>
-                    <div className="layer-actions">
-                      <IconButton
-                        aria-label={visibilityLabel}
-                        title={visibilityLabel}
-                        className="layer-inline-action editor-icon-button-no-hover-bg"
-                        active={!object.isVisible}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onToggleObjectVisibility(object.id);
-                        }}
-                      >
-                        {isAudio ? (
-                          object.isVisible ? (
-                            <Volume2 size={14} />
-                          ) : (
-                            <VolumeX size={14} />
-                          )
-                        ) : object.isVisible ? (
-                          <Eye size={14} />
-                        ) : (
-                          <EyeOff size={14} />
-                        )}
-                      </IconButton>
-                      <ContextMenu
-                        items={[
-                          ...(isAudio
-                            ? []
-                            : [
-                                {
-                                  type: "action" as const,
-                                  label: copy.fitObjectButton,
-                                  onClick: () => onFitObject?.(object.id),
-                                },
-                                {
-                                  type: "action" as const,
-                                  label: copy.duplicateObject,
-                                  onClick: () => onDuplicateObject(object.id),
-                                },
-                              ]),
-                          {
-                            type: "action",
-                            label: copy.renameObject,
-                            onClick: () => startEditing(object),
-                          },
-                          ...(object.deletable
-                            ? [
-                                {
-                                  type: "action" as const,
-                                  label: copy.deleteObject,
-                                  variant: "danger" as const,
-                                  onClick: () => onRemoveObject(object.id),
-                                },
-                              ]
-                            : []),
-                        ]}
-                        triggerAriaLabel={copy.objectOptionsLabel}
-                        triggerClassName="layer-menu-trigger context-menu-trigger-quiet editor-icon-button-no-hover-bg"
-                        triggerStopPropagation
-                        triggerTitle={copy.objectOptionsLabel}
-                        triggerIcon={<MoreVertical size={12} />}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </PanelSection>
+                    );
+                  })}
+              </div>
+            </PanelSection>
           </div>
 
           <PanelSection
-              title={copy.templatesSectionTitle}
-              className={`layers-templates-dock${isTemplatesOpen ? " is-open" : ""}`}
-              collapsible
-              isOpen={isTemplatesOpen}
-              onToggleOpen={toggleTemplatesOpen}
-            >
-              <div className="templates-dock-body">
+            title={copy.templatesSectionTitle}
+            className={`layers-templates-dock${isTemplatesOpen ? " is-open" : ""}`}
+            collapsible
+            isOpen={isTemplatesOpen}
+            onToggleOpen={toggleTemplatesOpen}
+          >
+            <div className="templates-dock-body">
               <div className="layers-stack">
                 {templates.map((template) => (
                   <div
@@ -525,7 +573,10 @@ export default function LayersPanel({
                             onKeyDown={(event) => {
                               // O Enter subiria até o card, que o lê como
                               // "aplicar": confirmar o nome trocava a cena.
-                              if (event.key === "Enter" || event.key === "Escape") {
+                              if (
+                                event.key === "Enter" ||
+                                event.key === "Escape"
+                              ) {
                                 event.stopPropagation();
                               }
 
@@ -623,8 +674,8 @@ export default function LayersPanel({
                   {copy.importTemplate}
                 </button>
               ) : null}
-              </div>
-            </PanelSection>
+            </div>
+          </PanelSection>
         </div>
 
         <footer className="sidebar-footer">

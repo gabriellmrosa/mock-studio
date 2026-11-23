@@ -12,6 +12,7 @@ describe("CreditsModal", () => {
     expect(screen.getByText(copy.creditsEyebrow)).toBeInTheDocument();
     expect(screen.getByText("Stickers — Fluent Emoji (Color)")).toBeInTheDocument();
     expect(screen.getByText("Animated stickers — Noto Animated Emoji")).toBeInTheDocument();
+    expect(screen.getByText("Theme — Dracula")).toBeInTheDocument();
   });
 
   it("closes from the ✕", () => {

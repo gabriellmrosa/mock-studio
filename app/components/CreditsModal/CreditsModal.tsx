@@ -84,6 +84,14 @@ const ASSET_CREDITS: readonly AssetCredit[] = [
     licenseHref: "https://creativecommons.org/licenses/by/4.0/",
     licenseLabel: "CC BY 4.0",
   },
+  {
+    title: "Theme — Dracula",
+    author: "Dracula Theme (Zeno Rocha)",
+    sourceHref: "https://draculatheme.com",
+    sourceLabel: "draculatheme.com",
+    licenseHref: "https://github.com/dracula/dracula-theme/blob/main/LICENSE",
+    licenseLabel: "MIT",
+  },
 ];
 
 export default function CreditsModal({
