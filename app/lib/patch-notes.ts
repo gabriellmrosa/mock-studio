@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-23",
+    version: "3.5.0",
+    items: [
+      {
+        title: {
+          "pt-BR": "Novo tema padrão e tema Legacy",
+          "en-US": "New Default and Legacy themes",
+        },
+        description: {
+          "pt-BR":
+            "O visual cinza escuro neutro passou a ser o novo Default. O tema quente original continua disponível em ⋮ → Tema como Legacy, ao lado do Drácula.",
+          "en-US":
+            "The neutral dark gray palette is now the new Default theme. The original warm dark theme remains available under ⋮ → Theme as Legacy, alongside Dracula.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-23",
     version: "3.4.2",
     items: [
       {
