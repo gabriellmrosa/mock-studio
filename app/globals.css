@@ -131,8 +131,8 @@
   --surface-raised: var(--dracula-selection);
   --surface-subtle: var(--dracula-bg);
   --segmented-track: var(--dracula-bg-darker);
-  --canvas-toggle-thumb: var(--dracula-purple);
-  --canvas-toggle-active-fg: var(--dracula-bg-darker);
+  --canvas-toggle-thumb: var(--dracula-selection);
+  --canvas-toggle-active-fg: var(--dracula-fg);
   --switch-track-off: var(--dracula-comment);
   --danger-fg: var(--dracula-red);
   --timeline-accent: var(--dracula-purple);
