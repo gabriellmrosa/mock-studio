@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-23",
+    version: "3.4.2",
+    items: [
+      {
+        title: {
+          "pt-BR": "Refino no seletor Foto | Vídeo no tema Drácula",
+          "en-US": "Refined Photo | Video toggle in Dracula theme",
+        },
+        description: {
+          "pt-BR":
+            "No tema Drácula, a opção ativa de Foto | Vídeo agora usa superfície neutra de seleção com texto claro, deixando o roxo exclusivo para o botão Exportar.",
+          "en-US":
+            "In Dracula theme, the active Photo | Video option now uses the neutral selection surface with light text, keeping purple reserved for the Export CTA.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-23",
     version: "3.4.1",
     items: [
       {
