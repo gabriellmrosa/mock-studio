@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-23",
+    version: "3.3.1",
+    items: [
+      {
+        title: {
+          "pt-BR": "Nomes mais claros nos templates padrão",
+          "en-US": "Clearer names for starter templates",
+        },
+        description: {
+          "pt-BR":
+            "Os templates padrão agora se chamam “Exemplo de foto” e “Exemplo de vídeo” para deixar claro que vêm prontos do app.",
+          "en-US":
+            "The starter templates are now named “Photo example” and “Video example” so it is clear they come built into the app.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-23",
     version: "3.3.0",
     items: [
       {
