@@ -8,8 +8,8 @@ import type { Locale } from "./i18n";
  * outro commit ficam de fora; a história completa e o porquê estão nos commits.
  *
  * A mais nova primeiro. Versão nova: uma entrada aqui, nos dois idiomas
- * (`patch-notes.test.ts` falha sem ela). O texto é de produto: propor ao
- * usuário e esperar o ok, como a própria versão.
+ * (`patch-notes.test.ts` falha sem ela), escrita pelo agente antes do
+ * `npm version`.
  */
 type Text = Record<Locale, string>;
 
@@ -26,6 +26,36 @@ export type PatchNote = {
 };
 
 export const PATCH_NOTES: PatchNote[] = [
+  {
+    date: "2026-11-23",
+    version: "3.3.0",
+    items: [
+      {
+        title: {
+          "pt-BR": "Templates prontos para começar",
+          "en-US": "Starter templates included",
+        },
+        description: {
+          "pt-BR":
+            "O Mock Studio agora já vem com um template de Foto (“Vitrine de produto”) e um de Vídeo (“Lançamento de produto”). Você pode aplicar, editar, renomear ou apagar como qualquer outro.",
+          "en-US":
+            "Mock Studio now comes with a Photo template (“Product Showcase”) and a Video template (“Product Launch”). Apply, edit, rename, or delete them like any other.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Salvar template mais claro",
+          "en-US": "Clearer save template dialog",
+        },
+        description: {
+          "pt-BR":
+            "Ao salvar uma cena que veio de um template, “Salvar como novo” agora é a ação principal e “Sobrepor” fica como opção secundária.",
+          "en-US":
+            "When saving a scene that came from a template, “Save as new” is now the primary action and “Overwrite” is the secondary option.",
+        },
+      },
+    ],
+  },
   {
     date: "2026-11-21",
     version: "3.2.1",
