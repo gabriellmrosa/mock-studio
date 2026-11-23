@@ -111,6 +111,11 @@ import {
 } from "./lib/scene-templates";
 import { loadTemplatesWithDefaults } from "./lib/default-templates";
 import {
+  clearTemplateSessionMedia,
+  restoreTemplateSessionMedia,
+  saveTemplateSessionMedia,
+} from "./lib/template-session-media";
+import {
   consumeSceneLinkFromUrl,
   createSceneCode,
   createSceneLink,
@@ -1104,6 +1109,7 @@ export default function Home() {
       return false;
     }
 
+    saveTemplateSessionMedia(template.id, sceneObjects);
     setSavedSnapshot(currentSnapshot);
     setSourceTemplate(motionTab, template.id);
     notify("success", copy.templateSavedMessage);
@@ -1161,6 +1167,7 @@ export default function Home() {
       return;
     }
 
+    saveTemplateSessionMedia(sourceTemplate.id, sceneObjects);
     setSavedSnapshot(currentSnapshot);
     notify(
       "success",
@@ -1240,7 +1247,18 @@ export default function Home() {
     template: SceneTemplate,
     message = copy.templateAppliedMessage,
   ) {
-    const nextObjects = applySceneTemplate(template);
+    // Guarda em memória as mídias do template que estamos deixando, para que
+    // voltar a ele nesta aba traga telas, imagens e música de volta.
+    const leavingTemplateId = sourceTemplateIds[motionTab];
+    if (template.mode === motionTab && leavingTemplateId) {
+      saveTemplateSessionMedia(leavingTemplateId, sceneObjects);
+    }
+
+    const nextObjects = restoreTemplateSessionMedia(
+      template.id,
+      applySceneTemplate(template),
+      template.mode,
+    );
     const nextFrame = template.frame ?? DEFAULT_MOTION_FRAME;
 
     setSourceTemplate(template.mode, template.id);
@@ -1996,6 +2014,7 @@ export default function Home() {
   }
 
   function handleRemoveTemplate(id: string) {
+    clearTemplateSessionMedia(id);
     persistAndSetTemplates(removeTemplate(templates, id));
   }
 
