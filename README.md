@@ -66,7 +66,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 
 - **Templates** saved in your browser: composition, camera and keyframes, rebuilt in one click. Every browser starts with two editable, deletable starter templates — one for Photo (*Photo example*) and one for Video (*Video example*). Saving a scene that came from a template asks whether to save as a new template (primary) or overwrite the current one. Screen files aren't stored in `localStorage`, but their settings are — and while the browser tab stays open, each template remembers its own uploaded screens, loose images/GIFs and music in memory, so switching to preview another template and coming back restores everything without re-uploading. After reloading or opening a shared link, applying the template asks for each file again by name ("Upload “home.png” again"), and whatever file you upload gets the saved framing, crop and, for a video, the clip timing. The music works the same way: its file stays out of storage, and the one you upload again gets the saved position, trims, volume and fades.
 - **Project links and template codes**: the whole scene compressed into the URL hash, to open in another browser. It is never sent to a server. To send a scene to someone, `Share template`, in the `⋮` menu of each saved template, opens a modal that explains what travels and shows a code — only the compressed content, no address — to copy; the other person uses `Import template` in the templates section, pastes it and gets a template of their own, without touching the open scene.
-- `pt-BR` and `en-US`, **Default** and **Dracula** ([Dracula Theme](https://draculatheme.com), MIT) dark themes under `⋮ → Theme` (the light theme is switched off for now and will come back) and a `Hide UI` mode for clean captures.
+- `pt-BR` and `en-US`, **Default** (neutral Figma-inspired dark), **Dracula** ([Dracula Theme](https://draculatheme.com), MIT) and **Legacy** (the original warm dark) themes under `⋮ → Theme` (the light theme is switched off for now and will come back) and a `Hide UI` mode for clean captures.
 
 <details>
 <summary><strong>Every feature, in detail</strong></summary>
@@ -108,7 +108,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 - distraction-free `Hide UI` mode with a toggle you can drag to any canvas corner, animating between the toolbar and the corner it snaps to
 - layered selection flow via list and direct interaction in the 3D scene
 - `pt-BR` and `en-US` UI support
-- dark interface with `Default` and `Dracula` themes in the preferences menu (the light theme is switched off for now)
+- dark interface with `Default`, `Dracula` and `Legacy` themes in the preferences menu (the light theme is switched off for now)
 
 </details>
 

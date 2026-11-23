@@ -2,7 +2,7 @@
 @import "./styles/tokens.css";
 
 /* =====================================================
-   SEMANTIC TOKENS — dark theme (default)
+   SEMANTIC TOKENS — Default theme (neutral Figma-inspired dark)
    References color primitives from tokens.css
    ===================================================== */
 :root {
@@ -12,90 +12,74 @@
   --background: var(--black-000);
   --foreground: var(--ink-light);
   --sidebar-bg: var(--black-100);
-  --sidebar-border: #4c4844;
+  --sidebar-border: var(--black-border-subtle);
   --sidebar-muted: var(--black-700);
   --sidebar-value: var(--black-900);
   --sidebar-label: var(--black-800);
-  --sidebar-dot: #5b5752;
+  --sidebar-dot: var(--black-600);
   --panel-bg: var(--black-200);
-  --panel-border: #504c48;
+  --panel-border: var(--black-500);
   --button-bg: var(--black-300);
-  --button-border: #68635f;
-  --button-border-hover: #7b7671;
+  --button-border: var(--black-500);
+  --button-border-hover: var(--black-600);
   --button-fg: var(--black-980);
   --button-muted-fg: var(--black-700);
-  --button-active-bg: #f1e6da;
+  --button-active-bg: var(--black-980);
   --button-active-fg: var(--black-000);
   --input-bg: var(--black-300);
-  --input-border: #746d67;
-  --input-border-hover: #79736c;
-  --input-border-error: #b85252;
+  --input-border: var(--black-500);
+  --input-border-hover: var(--black-700);
+  --input-border-error: var(--black-danger);
   --input-fg: var(--black-980);
   --surface-hover: var(--black-400);
   --surface-active: var(--black-500);
-  --surface-raised: rgba(80, 76, 72, 0.9);
-  /* Fundo discreto de controles em repouso sobre o painel (sub-abas
-     fechadas, a linha do arquivo, avisos). Derivado do texto, vale nos dois
-     temas sem redefinir — o tema claro troca o --foreground no mesmo
-     elemento. */
-  --surface-subtle: color-mix(in srgb, var(--foreground) 6%, transparent);
-  /* Trilho do controle segmentado (Imagem | Vídeo, Ajuste | Corte, o
-     alinhamento): o mesmo tom de tudo que repousa sobre o painel, e a opção
-     selecionada (--surface-raised) fica um degrau acima dele: 1.52:1 contra o
-     trilho, e o texto fica a 8.7:1 sobre ela. O texto apagado, a 6.16:1. */
-  --segmented-track: var(--surface-subtle);
-  /* Seletor de modo do canvas (Foto | Vídeo), que flutua sobre a cena: a opção
-     selecionada é um brilho branco translúcido sobre o painel, com texto
-     branco, em vez da cor de ação principal. */
-  --canvas-toggle-thumb: color-mix(in srgb, var(--white-true) 20%, transparent);
-  --canvas-toggle-active-fg: var(--white-true);
-  /* Trilho do Switch desligado. WCAG 1.4.11 pede 3:1 para o estado ser
-     percebido: 3.44:1 contra o painel. Ligado, o
-     Switch usa o par --button-active-bg/-fg, o "selecionado" do app. */
-  --switch-track-off: #7b7671;
-  /* Ações destrutivas (remover). 6.35:1 sobre --panel-bg; o #f87171 fixo que
-     o menu de contexto usava dava 4.21:1 antes e 2.59:1 no tema claro. */
-  --danger-fg: #ff8a80;
-  /* Timeline de vídeo: no tema Default os trechos, keyframes e clipes de vídeo
-     seguem tons neutros de --foreground; só a música tem cor própria. */
-  --timeline-accent: var(--foreground);
-  --timeline-playhead: var(--foreground);
-  --timeline-video: var(--foreground);
+  --surface-raised: var(--black-500);
+  --surface-subtle: var(--black-300);
+  --segmented-track: var(--black-000);
+  --canvas-toggle-thumb: var(--black-500);
+  --canvas-toggle-active-fg: var(--black-980);
+  --switch-track-off: var(--black-600);
+  --danger-fg: var(--black-danger);
+  /* Timeline de vídeo: no Default segue escala neutra limpa; só a música tem
+     cor própria. */
+  --timeline-accent: var(--black-800);
+  --timeline-playhead: var(--black-980);
+  --timeline-video: var(--black-700);
   --timeline-audio: #4fd1a5;
-  --timeline-lane-bg: color-mix(in srgb, var(--foreground) 5%, transparent);
-  --timeline-lane-active-bg: color-mix(in srgb, var(--foreground) 9%, transparent);
-  --timeline-lane-video-bg: color-mix(in srgb, var(--foreground) 3%, transparent);
-  --timeline-segment-bg: color-mix(in srgb, var(--foreground) 18%, transparent);
-  --timeline-segment-active-bg: color-mix(in srgb, var(--foreground) 22%, transparent);
-  --timeline-segment-border: transparent;
-  --timeline-segment-active-border: transparent;
-  --timeline-marker-opacity: 0.6;
-  --timeline-marker-outline: color-mix(in srgb, var(--foreground) 45%, transparent);
-  --timeline-clip-bg: color-mix(in srgb, var(--foreground) 16%, transparent);
-  --timeline-clip-border: color-mix(in srgb, var(--foreground) 22%, transparent);
-  --timeline-clip-active-bg: color-mix(in srgb, var(--foreground) 26%, transparent);
-  --timeline-clip-active-border: color-mix(in srgb, var(--foreground) 22%, transparent);
-  --timeline-clip-fg: var(--sidebar-muted);
-  --timeline-clip-hold-bg: color-mix(in srgb, var(--foreground) 10%, transparent);
-  --timeline-clip-hold-border: color-mix(in srgb, var(--foreground) 45%, transparent);
-  --timeline-add-hover-border: var(--button-border);
-  --timeline-add-active-bg: transparent;
-  --timeline-add-active-border: var(--button-border);
-  --timeline-resize-hover: color-mix(in srgb, var(--foreground) 40%, transparent);
-  --timeline-tick-border: var(--panel-border);
-  --timeline-bezier-arm: var(--sidebar-muted);
+  --timeline-lane-bg: color-mix(in srgb, var(--black-500) 32%, transparent);
+  --timeline-lane-active-bg: color-mix(in srgb, var(--black-980) 9%, transparent);
+  --timeline-lane-video-bg: color-mix(in srgb, var(--black-500) 22%, transparent);
+  --timeline-segment-bg: color-mix(in srgb, var(--black-980) 16%, transparent);
+  --timeline-segment-active-bg: color-mix(in srgb, var(--black-980) 24%, transparent);
+  --timeline-segment-border: color-mix(in srgb, var(--black-980) 18%, transparent);
+  --timeline-segment-active-border: color-mix(in srgb, var(--black-980) 36%, transparent);
+  --timeline-marker-opacity: 0.85;
+  --timeline-marker-outline: color-mix(in srgb, var(--black-980) 45%, transparent);
+  --timeline-clip-bg: color-mix(in srgb, var(--black-980) 14%, transparent);
+  --timeline-clip-border: color-mix(in srgb, var(--black-980) 26%, transparent);
+  --timeline-clip-active-bg: color-mix(in srgb, var(--black-980) 22%, transparent);
+  --timeline-clip-active-border: color-mix(in srgb, var(--black-980) 42%, transparent);
+  --timeline-clip-fg: var(--black-980);
+  --timeline-clip-hold-bg: color-mix(in srgb, var(--black-980) 8%, transparent);
+  --timeline-clip-hold-border: color-mix(in srgb, var(--black-980) 42%, transparent);
+  --timeline-add-hover-border: var(--black-700);
+  --timeline-add-active-bg: color-mix(in srgb, var(--black-980) 12%, transparent);
+  --timeline-add-active-border: color-mix(in srgb, var(--black-980) 42%, transparent);
+  --timeline-resize-hover: var(--black-700);
+  --timeline-tick-border: var(--black-border-subtle);
+  --timeline-bezier-arm: var(--black-600);
   /* O que flutua sobre o palco (cartão de aviso, barra): a cor dos painéis,
      sólida e sem opacidade — a cena 3D atrás não pode transparecer, e fica
      mais clara que o palco. */
   --canvas-overlay: var(--sidebar-bg);
   --canvas-toolbar: var(--sidebar-bg);
   --canvas-shadow: 0 20px 50px rgba(0, 0, 0, 0.18);
-  --control-strong: var(--black-800);
-  --control-track: var(--black-600);
+  --control-strong: var(--black-980);
+  --control-track: var(--black-500);
   --control-input-bg: var(--black-300);
-  --control-input-border: #6a655e;
-  --control-reset-border: #6a655e;
-  --icon-fg: var(--white-true);
+  --control-input-border: var(--black-500);
+  --control-reset-border: var(--black-600);
+  --icon-fg: var(--black-980);
   --editor-sidebar-width: 19rem;
 }
 
@@ -167,6 +151,76 @@
   --control-input-border: var(--dracula-selection);
   --control-reset-border: var(--dracula-comment);
   --icon-fg: var(--dracula-fg);
+}
+
+/* =====================================================
+   SEMANTIC TOKENS — Legacy theme override
+   Escala quente original do Mock Studio (antigo Default)
+   ===================================================== */
+[data-theme="legacy"] {
+  --background: var(--legacy-000);
+  --foreground: var(--legacy-ink);
+  --sidebar-bg: var(--legacy-100);
+  --sidebar-border: #4c4844;
+  --sidebar-muted: var(--legacy-700);
+  --sidebar-value: var(--legacy-900);
+  --sidebar-label: var(--legacy-800);
+  --sidebar-dot: #5b5752;
+  --panel-bg: var(--legacy-200);
+  --panel-border: #504c48;
+  --button-bg: var(--legacy-300);
+  --button-border: #68635f;
+  --button-border-hover: #7b7671;
+  --button-fg: var(--legacy-980);
+  --button-muted-fg: var(--legacy-700);
+  --button-active-bg: #f1e6da;
+  --button-active-fg: var(--legacy-000);
+  --input-bg: var(--legacy-300);
+  --input-border: #746d67;
+  --input-border-hover: #79736c;
+  --input-border-error: #b85252;
+  --input-fg: var(--legacy-980);
+  --surface-hover: var(--legacy-400);
+  --surface-active: var(--legacy-500);
+  --surface-raised: rgba(80, 76, 72, 0.9);
+  --surface-subtle: color-mix(in srgb, var(--legacy-ink) 6%, transparent);
+  --segmented-track: var(--surface-subtle);
+  --canvas-toggle-thumb: color-mix(in srgb, var(--white-true) 20%, transparent);
+  --canvas-toggle-active-fg: var(--white-true);
+  --switch-track-off: #7b7671;
+  --danger-fg: #ff8a80;
+  --timeline-accent: var(--legacy-ink);
+  --timeline-playhead: var(--legacy-ink);
+  --timeline-video: var(--legacy-ink);
+  --timeline-audio: #4fd1a5;
+  --timeline-lane-bg: color-mix(in srgb, var(--legacy-ink) 5%, transparent);
+  --timeline-lane-active-bg: color-mix(in srgb, var(--legacy-ink) 9%, transparent);
+  --timeline-lane-video-bg: color-mix(in srgb, var(--legacy-ink) 3%, transparent);
+  --timeline-segment-bg: color-mix(in srgb, var(--legacy-ink) 18%, transparent);
+  --timeline-segment-active-bg: color-mix(in srgb, var(--legacy-ink) 22%, transparent);
+  --timeline-segment-border: transparent;
+  --timeline-segment-active-border: transparent;
+  --timeline-marker-opacity: 0.6;
+  --timeline-marker-outline: color-mix(in srgb, var(--legacy-ink) 45%, transparent);
+  --timeline-clip-bg: color-mix(in srgb, var(--legacy-ink) 16%, transparent);
+  --timeline-clip-border: color-mix(in srgb, var(--legacy-ink) 22%, transparent);
+  --timeline-clip-active-bg: color-mix(in srgb, var(--legacy-ink) 26%, transparent);
+  --timeline-clip-active-border: color-mix(in srgb, var(--legacy-ink) 22%, transparent);
+  --timeline-clip-fg: var(--legacy-700);
+  --timeline-clip-hold-bg: color-mix(in srgb, var(--legacy-ink) 10%, transparent);
+  --timeline-clip-hold-border: color-mix(in srgb, var(--legacy-ink) 45%, transparent);
+  --timeline-add-hover-border: #68635f;
+  --timeline-add-active-bg: transparent;
+  --timeline-add-active-border: #68635f;
+  --timeline-resize-hover: color-mix(in srgb, var(--legacy-ink) 40%, transparent);
+  --timeline-tick-border: #504c48;
+  --timeline-bezier-arm: var(--legacy-700);
+  --control-strong: var(--legacy-800);
+  --control-track: var(--legacy-600);
+  --control-input-bg: var(--legacy-300);
+  --control-input-border: #6a655e;
+  --control-reset-border: #6a655e;
+  --icon-fg: var(--white-true);
 }
 
 /* =====================================================

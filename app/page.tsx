@@ -209,7 +209,8 @@ function detectBrowserLocale(): Locale {
 
 /**
  * O tema claro continua desligado por enquanto; os temas disponíveis no menu
- * são Default (`"dark"`) e Drácula (`"dracula"`). Os tokens do claro seguem em
+ * são Default (`"dark"`, cinza escuro neutro), Drácula (`"dracula"`) e Legacy
+ * (`"legacy"`, a paleta quente original). Os tokens do claro seguem em
  * `globals.css` (`[data-theme="light"]`) para quando ele voltar; o `<html>` já
  * nasce com `data-theme="dark"`.
  */
@@ -343,7 +344,9 @@ export default function Home() {
 
     const storedUiTheme = readStorageItem("mock-photo-ui-theme");
     const initialTheme: UiTheme =
-      storedUiTheme === "dracula" ? "dracula" : DEFAULT_UI_THEME;
+      storedUiTheme === "dracula" || storedUiTheme === "legacy"
+        ? storedUiTheme
+        : DEFAULT_UI_THEME;
 
     setUiTheme(initialTheme);
     document.documentElement.dataset.theme = initialTheme;

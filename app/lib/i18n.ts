@@ -5,7 +5,7 @@ import {
 } from "./stickers";
 
 export type Locale = "pt-BR" | "en-US";
-export type UiTheme = "dark" | "dracula" | "light";
+export type UiTheme = "dark" | "dracula" | "legacy" | "light";
 
 export type AppCopy = {
   appTitle: string;
@@ -77,6 +77,7 @@ export type AppCopy = {
   themeLabel: string;
   themeDefault: string;
   themeDracula: string;
+  themeLegacy: string;
   preferencesLabel: string;
   darkMode: string;
   lightMode: string;
@@ -409,6 +410,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     themeLabel: "Tema",
     themeDefault: "Default",
     themeDracula: "Drácula",
+    themeLegacy: "Legacy",
     preferencesLabel: "Preferências",
     darkMode: "Escuro",
     lightMode: "Claro",
@@ -817,6 +819,7 @@ export const APP_COPY: Record<Locale, AppCopy> = {
     themeLabel: "Theme",
     themeDefault: "Default",
     themeDracula: "Dracula",
+    themeLegacy: "Legacy",
     preferencesLabel: "Preferences",
     darkMode: "Dark",
     lightMode: "Light",

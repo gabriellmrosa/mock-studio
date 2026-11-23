@@ -96,8 +96,8 @@
   background: var(--surface-hover);
 }
 
-:is([data-theme="dark"], [data-theme="dracula"]) .context-menu-row:hover,
-:is([data-theme="dark"], [data-theme="dracula"]) .context-menu-row-active {
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="legacy"]) .context-menu-row:hover,
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="legacy"]) .context-menu-row-active {
   background: color-mix(in srgb, var(--foreground) 12%, var(--sidebar-bg));
 }
 

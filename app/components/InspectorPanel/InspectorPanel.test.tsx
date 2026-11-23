@@ -297,6 +297,7 @@ const copy: AppCopy = {
   themeLabel: "Theme",
   themeDefault: "Default",
   themeDracula: "Dracula",
+  themeLegacy: "Legacy",
   themesSectionTitle: "Themes",
   transformSectionTitle: "Transform",
   canvasModePhoto: "Photo",

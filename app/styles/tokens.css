@@ -1,32 +1,29 @@
 :root {
   /* =====================
      COLOR PRIMITIVES
-     Warm scale (Default): darkest (000) → lightest (980)
-     Os degraus escuros (000–500) partem do painel, --black-100 (#262422): cada
-     um mantém a diferença de luminosidade (OKLab) que tinha para o painel
-     antigo (#34312e) e o mesmo matiz (68°), com o croma reduzido a 70% — o
-     mesmo croma num tom mais escuro parece mais saturado.
+     Neutral dark scale (Default — estilo Figma): darkest (000) → lightest (980)
 
      A regra do tema escuro é a do Figma: o fundo é o mais escuro e o que fica
-     por cima dele é mais claro. 000 é o fundo do palco; 100 o painel; 200 o
-     painel elevado (diálogos); 300 o que repousa sobre o painel (campos,
-     botões, linhas — o mesmo tom que o --surface-subtle dá sobre ele); 400 o
-     hover; 500 o selecionado.
+     por cima dele é mais claro. 000 é o fundo do palco (#121212); 100 o painel
+     (#1c1c1e); 200/300 o painel elevado e o que repousa sobre o painel
+     (#262629); 400 o hover (#303034); 500 o selecionado (#3e3e44).
      ===================== */
   --black-true: #000;
   --white-true: #fff;
-  --black-000: #1b1a19;
-  --black-100: #262422;
-  --black-200: #2b2926;
-  --black-300: #32302d;
-  --black-400: #403c38;
-  --black-500: #5c5651;
-  --black-600: #7f7972;
-  --black-700: #b8b0a6;
-  --black-800: #d7cec3;
-  --black-900: #efe6db;
+  --black-000: #121212;
+  --black-100: #1c1c1e;
+  --black-200: #262629;
+  --black-300: #262629;
+  --black-400: #303034;
+  --black-500: #3e3e44;
+  --black-600: #63636b;
+  --black-700: #9b9ba4;
+  --black-800: #d4d4da;
+  --black-900: #f4f4f6;
   --black-950: #f5ede3;
-  --black-980: #fbf7f2;
+  --black-980: #f4f4f6;
+  --black-border-subtle: #2c2c30;
+  --black-danger: #ff6b6b;
 
   /* Dracula palette (spec.draculatheme.com) */
   --dracula-bg-darker: #191a21;
@@ -44,6 +41,20 @@
   --dracula-green: #50fa7b;
   --dracula-red: #ff5555;
 
+  /* Legacy palette — escala quente original do Mock Studio */
+  --legacy-000: #1b1a19;
+  --legacy-100: #262422;
+  --legacy-200: #2b2926;
+  --legacy-300: #32302d;
+  --legacy-400: #403c38;
+  --legacy-500: #5c5651;
+  --legacy-600: #7f7972;
+  --legacy-700: #b8b0a6;
+  --legacy-800: #d7cec3;
+  --legacy-900: #efe6db;
+  --legacy-980: #fbf7f2;
+  --legacy-ink: #eee6db;
+
   /* Neutral grays */
   --gray-400: #75706a;
   --gray-500: #808080;
@@ -51,7 +62,7 @@
 
   /* Ink — text and high-contrast accents */
   --ink-dark: #383838;
-  --ink-light: #eee6db;
+  --ink-light: #f4f4f6;
 
   /* =====================
      FONT WEIGHT SCALE

@@ -276,6 +276,12 @@ export default function LayersPanel({
                         ),
                         onClick: () => onUiThemeChange?.("dracula"),
                       },
+                      {
+                        label: copy.themeLegacy,
+                        value: "legacy",
+                        checked: uiTheme === "legacy",
+                        onClick: () => onUiThemeChange?.("legacy"),
+                      },
                     ],
                   },
                   {

@@ -42,8 +42,9 @@ export const DEFAULT_CANVAS_BACKGROUND: CanvasBackground = {
  * que o PNG e o vídeo levam e a que um keyframe do Fundo captura.
  */
 export const DEFAULT_CANVAS_COLOR: Record<UiTheme, string> = {
-  dark: "#2e2b28",
+  dark: "#121212",
   dracula: "#191a21",
+  legacy: "#2e2b28",
   light: "#f2ebe0",
 };
 

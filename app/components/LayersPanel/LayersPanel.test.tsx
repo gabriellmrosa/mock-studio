@@ -285,6 +285,7 @@ const copy: AppCopy = {
   themeLabel: "Theme",
   themeDefault: "Default",
   themeDracula: "Dracula",
+  themeLegacy: "Legacy",
   themesSectionTitle: "Themes",
   transformSectionTitle: "Transform",
   canvasModePhoto: "Photo",
@@ -798,9 +799,13 @@ describe("LayersPanel", () => {
       const themeGroup = screen.getByLabelText("Theme");
       expect(themeGroup).toHaveTextContent("Default");
       expect(themeGroup).toHaveTextContent("Dracula");
+      expect(themeGroup).toHaveTextContent("Legacy");
 
       fireEvent.click(screen.getByRole("button", { name: "Dracula" }));
       expect(onUiThemeChange).toHaveBeenCalledWith("dracula");
+
+      fireEvent.click(screen.getByRole("button", { name: "Legacy" }));
+      expect(onUiThemeChange).toHaveBeenCalledWith("legacy");
     });
   });
 });

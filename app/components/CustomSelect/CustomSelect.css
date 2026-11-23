@@ -104,8 +104,8 @@
   background: var(--surface-hover);
 }
 
-:is([data-theme="dark"], [data-theme="dracula"]) .custom-select-option:hover,
-:is([data-theme="dark"], [data-theme="dracula"]) .custom-select-option[data-highlighted="true"] {
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="legacy"]) .custom-select-option:hover,
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="legacy"]) .custom-select-option[data-highlighted="true"] {
   background: color-mix(in srgb, var(--foreground) 12%, var(--sidebar-bg));
 }
 
@@ -113,7 +113,7 @@
   background: var(--surface-active);
 }
 
-:is([data-theme="dark"], [data-theme="dracula"]) .custom-select-option[data-selected="true"] {
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="legacy"]) .custom-select-option[data-selected="true"] {
   background: color-mix(in srgb, var(--foreground) 18%, var(--sidebar-bg));
 }
 

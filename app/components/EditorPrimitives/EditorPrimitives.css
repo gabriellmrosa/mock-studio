@@ -329,7 +329,7 @@
   border-color: var(--button-border-hover);
 }
 
-:is([data-theme="dark"], [data-theme="dracula"]) .editor-button-outline:hover {
+:is([data-theme="dark"], [data-theme="dracula"], [data-theme="legacy"]) .editor-button-outline:hover {
   background: color-mix(in srgb, var(--foreground) 8%, transparent);
 }
 
