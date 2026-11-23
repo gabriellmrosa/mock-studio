@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-23",
+    version: "3.4.1",
+    items: [
+      {
+        title: {
+          "pt-BR": "Telas preservadas ao trocar de template",
+          "en-US": "Screens kept when switching templates",
+        },
+        description: {
+          "pt-BR":
+            "Enquanto a aba estiver aberta, cada template lembra as telas, imagens e música que você enviou nele — olhar outro template e voltar não faz mais você subir tudo de novo.",
+          "en-US":
+            "While the browser tab stays open, each template remembers the screens, images, and music you uploaded to it — previewing another template and coming back no longer requires re-uploading.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-23",
     version: "3.4.0",
     items: [
       {
