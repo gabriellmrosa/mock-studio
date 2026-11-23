@@ -36,8 +36,8 @@ describe("default templates", () => {
     const ptTemplates = loadTemplatesWithDefaults("pt-BR");
 
     expect(ptTemplates.map((template) => template.name)).toEqual([
-      "Vitrine de produto",
-      "Lançamento de produto",
+      "Exemplo de foto",
+      "Exemplo de vídeo",
     ]);
 
     window.localStorage.clear();
@@ -45,8 +45,28 @@ describe("default templates", () => {
     const enTemplates = loadTemplatesWithDefaults("en-US");
 
     expect(enTemplates.map((template) => template.name)).toEqual([
-      "Product Showcase",
-      "Product Launch",
+      "Photo example",
+      "Video example",
+    ]);
+  });
+
+  it("migrates untouched legacy default names without touching user-renamed ones", () => {
+    const initial = loadTemplatesWithDefaults("pt-BR");
+    const [photoDefault, videoDefault] = initial;
+
+    // Simula um navegador que recebeu os nomes da 3.3.0 e renomeou só o de vídeo.
+    expect(
+      persistTemplates([
+        { ...photoDefault, name: "Vitrine de produto" },
+        { ...videoDefault, name: "Meu vídeo" },
+      ]),
+    ).toBe(true);
+
+    const reloaded = loadTemplatesWithDefaults("pt-BR");
+
+    expect(reloaded.map((template) => template.name)).toEqual([
+      "Exemplo de foto",
+      "Meu vídeo",
     ]);
   });
 

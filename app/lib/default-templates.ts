@@ -21,6 +21,8 @@ const SEEDED_TEMPLATES_STORAGE_KEY = "mock-photo-seeded-templates";
 
 export type DefaultTemplateEntry = {
   id: string;
+  /** Nomes anteriores deste default: se o usuário ainda não renomeou, atualiza. */
+  legacyNames?: readonly string[];
   names: Record<Locale, string>;
   template: Omit<SceneTemplate, "createdAt" | "id" | "name">;
 };
@@ -28,9 +30,10 @@ export type DefaultTemplateEntry = {
 export const DEFAULT_TEMPLATES: readonly DefaultTemplateEntry[] = [
   {
     id: "default-photo-product-showcase",
+    legacyNames: ["Product Showcase", "Vitrine de produto"],
     names: {
-      "en-US": "Product Showcase",
-      "pt-BR": "Vitrine de produto",
+      "en-US": "Photo example",
+      "pt-BR": "Exemplo de foto",
     },
     template: {
       "backgroundColor": null,
@@ -176,9 +179,10 @@ export const DEFAULT_TEMPLATES: readonly DefaultTemplateEntry[] = [
   },
   {
     id: "default-video-product-launch",
+    legacyNames: ["Product Launch", "Lançamento de produto"],
     names: {
-      "en-US": "Product Launch",
-      "pt-BR": "Lançamento de produto",
+      "en-US": "Video example",
+      "pt-BR": "Exemplo de vídeo",
     },
     template: {
       "backgroundColor": null,
@@ -718,13 +722,31 @@ export function loadTemplatesWithDefaults(locale: Locale): SceneTemplate[] {
   const seededIds = loadSeededTemplateIds();
   const seededSet = new Set(seededIds);
   const existingIds = new Set(existing.map((template) => template.id));
+  const defaultsById = new Map(
+    DEFAULT_TEMPLATES.map((entry) => [entry.id, entry]),
+  );
+
+  // Atualiza o nome de defaults entregues numa versão anterior só se o usuário
+  // nunca os renomeou (ainda estão com um dos nomes antigos exatos).
+  let renamedAny = false;
+  const migrated = existing.map((template) => {
+    const entry = defaultsById.get(template.id);
+    if (entry?.legacyNames?.includes(template.name)) {
+      renamedAny = true;
+      return { ...template, name: entry.names[locale] };
+    }
+    return template;
+  });
 
   const missing = DEFAULT_TEMPLATES.filter(
     (entry) => !seededSet.has(entry.id) && !existingIds.has(entry.id),
   );
 
   if (missing.length === 0) {
-    return existing;
+    if (renamedAny) {
+      persistTemplates(migrated);
+    }
+    return migrated;
   }
 
   const now = Date.now();
@@ -737,7 +759,7 @@ export function loadTemplatesWithDefaults(locale: Locale): SceneTemplate[] {
     }),
   );
 
-  const merged = [...existing, ...defaults];
+  const merged = [...migrated, ...defaults];
 
   if (persistTemplates(merged)) {
     persistSeededTemplateIds([
