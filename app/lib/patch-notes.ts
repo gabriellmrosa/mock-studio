@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-23",
+    version: "3.6.1",
+    items: [
+      {
+        title: {
+          "pt-BR": "Ajustes de contraste e alinhamento",
+          "en-US": "Contrast and alignment polish",
+        },
+        description: {
+          "pt-BR":
+            "Os botões de alinhamento e controles segmentados agora usam a superfície certa nos temas Default e Drácula, com melhor contraste no switch desligado e rótulo ALINHAMENTO padronizado.",
+          "en-US":
+            "Alignment buttons and segmented controls now use the proper surface in Default and Dracula themes, with improved off-switch contrast and a consistent uppercase ALIGNMENT label.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-23",
     version: "3.6.0",
     items: [
       {
