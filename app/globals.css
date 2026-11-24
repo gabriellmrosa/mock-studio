@@ -35,7 +35,7 @@
   --surface-active: var(--black-500);
   --surface-raised: var(--black-500);
   --surface-subtle: var(--black-300);
-  --segmented-track: var(--black-000);
+  --segmented-track: var(--surface-subtle);
   --canvas-toggle-thumb: var(--black-500);
   --canvas-toggle-active-fg: var(--black-980);
   --switch-track-off: var(--black-600);
@@ -115,7 +115,7 @@
   --surface-active: var(--dracula-selection);
   --surface-raised: var(--dracula-selection);
   --surface-subtle: var(--dracula-bg);
-  --segmented-track: var(--dracula-bg-darker);
+  --segmented-track: var(--surface-subtle);
   --canvas-toggle-thumb: var(--dracula-selection);
   --canvas-toggle-active-fg: var(--dracula-fg);
   --switch-track-off: var(--dracula-comment);

@@ -23,7 +23,7 @@
 }
 
 .snackbar-tone-success {
-  border-color: color-mix(in srgb, var(--button-border) 72%, var(--black-800));
+  border-color: color-mix(in srgb, var(--button-border) 72%, var(--sidebar-label));
 }
 
 .snackbar-tone-error {

@@ -878,7 +878,7 @@ function AlignmentControl({
 
   return (
     <div className="transform-group">
-      <span className="transform-reset-label">{copy.alignmentLabel}</span>
+      <span className="transform-control-label">{copy.alignmentLabel}</span>
       <div className="transform-align-row">
         {groups.map((group) => (
           <div
