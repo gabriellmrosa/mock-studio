@@ -73,6 +73,7 @@ import {
   getActiveScreenVideo,
   getPlaceholderImageUrl,
   duplicateSceneObject,
+  getNextSequentialName,
   getSequentialSpawnTransform,
   isDeviceObject,
   isBackgroundObject,
@@ -578,11 +579,7 @@ export default function Home() {
   }
 
   function handleAddObject() {
-    // O número conta os aparelhos: o texto, a imagem e a câmera não entram.
-    const devices = sceneObjects.filter(isDeviceObject).length;
-    const nextObject = createSceneObject({
-      name: `Object ${devices + 1}`,
-    });
+    const nextObject = createSceneObject({ name: "" });
 
     setSceneObjects((current) => {
       const spawnTransform = getSequentialSpawnTransform(
@@ -595,6 +592,7 @@ export default function Home() {
         {
           ...nextObject,
           ...spawnTransform,
+          name: getNextSequentialName(current, "Object"),
         },
       ];
     });
@@ -603,15 +601,18 @@ export default function Home() {
 
   /** Um texto novo, na frente dos aparelhos para não nascer dentro de um. */
   function handleAddText() {
-    const texts = sceneObjects.filter(isTextObject).length;
     const nextText = createTextObject({
       content: copy.textDefaultContent,
-      name: `${copy.textObjectName} ${texts + 1}`,
+      name: "",
     });
 
     setSceneObjects((current) => [
       ...current,
-      { ...nextText, positionZ: NEW_FLAT_OBJECT_POSITION_Z },
+      {
+        ...nextText,
+        name: getNextSequentialName(current, copy.textObjectName),
+        positionZ: NEW_FLAT_OBJECT_POSITION_Z,
+      },
     ]);
     setSelectedObjectId(nextText.id);
   }
@@ -637,17 +638,14 @@ export default function Home() {
 
     try {
       const image = await readImageFile(file);
-      const images = sceneObjects.filter(isImageObject).length;
-      const nextImage = createImageObject({
-        image,
-        name: `${copy.imageObjectName} ${images + 1}`,
-      });
+      const nextImage = createImageObject({ image, name: "" });
 
       setSceneObjects((current) => [
         ...current,
         {
           ...nextImage,
           ...getImageSpawnPosition(current),
+          name: getNextSequentialName(current, copy.imageObjectName),
           positionZ: NEW_FLAT_OBJECT_POSITION_Z,
         },
       ]);
@@ -776,12 +774,9 @@ export default function Home() {
       return;
     }
 
-    const stickers = sceneObjects.filter(
-      (object) => isImageObject(object) && object.image.stickerId,
-    ).length;
     const nextSticker = createImageObject({
       image: getStickerImage(stickerId),
-      name: `${copy.stickerObjectName} ${stickers + 1}`,
+      name: "",
     });
 
     setSceneObjects((current) => [
@@ -789,6 +784,7 @@ export default function Home() {
       {
         ...nextSticker,
         ...getImageSpawnPosition(current),
+        name: getNextSequentialName(current, copy.stickerObjectName),
         positionZ: NEW_FLAT_OBJECT_POSITION_Z,
       },
     ]);

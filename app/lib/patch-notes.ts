@@ -27,6 +27,24 @@ export type PatchNote = {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    date: "2026-11-24",
+    version: "3.6.3",
+    items: [
+      {
+        title: {
+          "pt-BR": "Contorno nos indicadores de cor",
+          "en-US": "Borders on color preview swatches",
+        },
+        description: {
+          "pt-BR":
+            "Os círculos e quadrados de prévia de cor (aparência, fundo do canvas e exportação) agora têm contorno interno suave para cores escuras não sumirem nos temas escuros, e novos objetos não repetem mais nomes ao serem adicionados ou recriados.",
+          "en-US":
+            "Color preview swatches (appearance, canvas background and export dialog) now have a subtle inset border so dark colors stay visible on dark themes, and newly added objects no longer repeat names after rapid clicks or deletions.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-11-23",
     version: "3.6.2",
     items: [

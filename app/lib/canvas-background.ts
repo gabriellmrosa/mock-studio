@@ -180,23 +180,6 @@ export function getGradientLine(width: number, height: number, angle: number) {
   };
 }
 
-/** Pinta o fundo num canvas 2D, para a exportação compor a cena por cima. */
-export function paintCanvasBackground(
-  context: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D,
-  width: number,
-  height: number,
-  color: string,
-  background: CanvasBackground,
-) {
-  // A grade não entra na pintura: ela é desenhada na cena.
-  paintBackgroundLook(
-    context,
-    width,
-    height,
-    getBackgroundLook({ ...background, color, grid: { color: null, opacity: 0 } }),
-  );
-}
-
 /**
  * O fundo inteiro de um instante, como um keyframe do Fundo o guarda: o
  * estilo, a cor, o degradê (só no liso) e a grade (só no chão). É o que o

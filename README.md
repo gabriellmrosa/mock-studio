@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./public/readme-header.png" alt="Mock Studio editor in Video mode with three smartphones in a 3D scene, motion timeline keyframes, screen video clips and the Properties panel" />
+  <img src="./public/readme-header.png" alt="Mock Studio editor in Video mode with three smartphones in a 3D scene, motion timeline keyframes and the Properties panel" />
 </p>
 
 <h1 align="center">Mock Studio</h1>

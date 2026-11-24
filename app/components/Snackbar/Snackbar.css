@@ -27,7 +27,7 @@
 }
 
 .snackbar-tone-error {
-  border-color: color-mix(in srgb, var(--button-border) 64%, #c04040);
+  border-color: color-mix(in srgb, var(--button-border) 64%, var(--danger-fg));
 }
 
 .snackbar-message {

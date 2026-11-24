@@ -5,6 +5,7 @@ import {
   duplicateSceneObject,
   getActiveOuterScreenFit,
   getActiveScreenVideos,
+  getNextSequentialName,
   getOffsetSpawnTransform,
   getPlaceholderImageUrl,
   getScreenVideoKey,
@@ -289,6 +290,21 @@ describe("scene-objects", () => {
     expect(spawn.positionX).toBeCloseTo(1.6471785714285714);
     expect(spawn.positionY).toBe(0);
     expect(spawn.positionZ).toBe(0);
+  });
+
+  describe("getNextSequentialName", () => {
+    it("starts at 1 and skips names that already exist after deletions", () => {
+      expect(getNextSequentialName([], "Object")).toBe("Object 1");
+      expect(
+        getNextSequentialName([{ name: "Object 1" }, { name: "Object 2" }], "Object"),
+      ).toBe("Object 3");
+      expect(
+        getNextSequentialName([{ name: "Object 2" }], "Object"),
+      ).toBe("Object 1");
+      expect(
+        getNextSequentialName([{ name: "Object 1" }, { name: "Object 3" }], "Object"),
+      ).toBe("Object 2");
+    });
   });
 
   describe("one video per screen", () => {

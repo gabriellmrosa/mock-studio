@@ -829,6 +829,26 @@ export function resetSceneObject(object: DeviceObject): DeviceObject {
   };
 }
 
+/**
+ * Próximo nome sequencial livre (`${prefix} 1`, `${prefix} 2`, ...) a partir
+ * dos objetos atuais da cena. Chamado dentro do updater funcional do estado,
+ * evita nomes repetidos tanto ao adicionar rápido quanto depois de apagar um
+ * objeto.
+ */
+export function getNextSequentialName(
+  objects: readonly Pick<SceneObject, "name">[],
+  prefix: string,
+): string {
+  const existing = new Set(objects.map((object) => object.name));
+  let index = 1;
+
+  while (existing.has(`${prefix} ${index}`)) {
+    index += 1;
+  }
+
+  return `${prefix} ${index}`;
+}
+
 export function changeSceneObjectModel(
   object: DeviceObject,
   modelId: DeviceModelId,

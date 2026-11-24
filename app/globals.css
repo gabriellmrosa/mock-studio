@@ -80,6 +80,10 @@
   --control-input-bg: var(--black-300);
   --control-input-border: var(--black-500);
   --control-reset-border: var(--black-600);
+  /* Contorno interno translúcido para amostras de cor: mantém cores escuras
+     (ex.: preto no seletor de aparência ou fundo escuro) visíveis sobre os
+     temas escuros sem engrossar cores claras. */
+  --swatch-border: rgb(255 255 255 / 0.24);
   --icon-fg: var(--black-980);
   --editor-sidebar-width: 19rem;
 }

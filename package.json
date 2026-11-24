@@ -15,7 +15,6 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@vercel/analytics": "^2.0.1",
-    "leva": "^0.10.1",
     "lottie-web": "^5.13.0",
     "lucide-react": "^0.577.0",
     "mediabunny": "^1.61.0",
