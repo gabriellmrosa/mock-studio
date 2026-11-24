@@ -2,7 +2,12 @@ import {
   DEFAULT_TEMPLATES,
   loadTemplatesWithDefaults,
 } from "./default-templates";
-import { createSceneObject } from "./scene-objects";
+import {
+  createSceneObject,
+  isAudioObject,
+  isDeviceObject,
+  isImageObject,
+} from "./scene-objects";
 import {
   applySceneTemplate,
   createSceneTemplate,
@@ -28,7 +33,28 @@ describe("default templates", () => {
 
     for (const template of seeded) {
       expect(isValidTemplate(template)).toBe(true);
-      expect(applySceneTemplate(template).length).toBeGreaterThan(0);
+      const objects = applySceneTemplate(template);
+      expect(objects.length).toBeGreaterThan(0);
+
+      // Nenhum default pode referenciar arquivos pessoais de tela ou música.
+      for (const object of objects) {
+        expect(isAudioObject(object)).toBe(false);
+        if (isDeviceObject(object)) {
+          expect(object.pendingScreen).toBeNull();
+          expect(object.pendingOuterScreen).toBeNull();
+        }
+      }
+    }
+
+    // O template de vídeo inclui o logo SVG embutido do Mock Studio.
+    const [videoTemplate] = getTemplatesForMode(seeded, "motion");
+    const logoObject = applySceneTemplate(videoTemplate).find(
+      (object) => isImageObject(object) && object.name === "Mock Studio",
+    );
+    expect(logoObject && isImageObject(logoObject)).toBe(true);
+    if (logoObject && isImageObject(logoObject)) {
+      expect(logoObject.image.url).toBe("/brand/logo-mockstudio.svg");
+      expect(logoObject.image.isVector).toBe(true);
     }
   });
 

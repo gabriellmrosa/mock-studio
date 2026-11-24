@@ -19,6 +19,42 @@ import { STICKER_ASPECT, getStickerUrl, isAnimatedSticker } from "./stickers";
 /** Como a imagem se mexe: `lottie` (um sticker animado) ou `gif` (um arquivo). */
 export type ImageAnimation = "gif" | "lottie";
 
+export const BUILTIN_IMAGE_ASSETS = {
+  "mock-studio-logo": {
+    aspect: 5324 / 661,
+    isVector: true,
+    name: "logo-mockstudio.svg",
+    url: "/brand/logo-mockstudio.svg",
+  },
+} as const;
+
+export type BuiltinImageAssetId = keyof typeof BUILTIN_IMAGE_ASSETS;
+
+export function isBuiltinImageAssetId(
+  value: unknown,
+): value is BuiltinImageAssetId {
+  return typeof value === "string" && value in BUILTIN_IMAGE_ASSETS;
+}
+
+export function getBuiltinAssetImage(
+  assetId: BuiltinImageAssetId,
+): Pick<
+  SceneImage,
+  "animation" | "aspect" | "assetId" | "isVector" | "name" | "speed" | "stickerId" | "url"
+> {
+  const asset = BUILTIN_IMAGE_ASSETS[assetId];
+  return {
+    animation: null,
+    aspect: asset.aspect,
+    assetId,
+    isVector: asset.isVector,
+    name: asset.name,
+    speed: 1,
+    stickerId: null,
+    url: asset.url,
+  };
+}
+
 export type SceneImage = {
   /**
    * `null` é uma imagem parada. Uma animada toca em loop no Vídeo; no Estático
@@ -27,6 +63,8 @@ export type SceneImage = {
   animation: ImageAnimation | null;
   /** Largura sobre altura. Com arquivo, é a dele; sem, a do espaço vazio. */
   aspect: number;
+  /** Asset embutido do próprio app (ex.: logo do Mock Studio em templates padrão). */
+  assetId?: BuiltinImageAssetId | null;
   /** Vetor (SVG): é desenhado na textura em tamanho máximo, não no natural. */
   isVector: boolean;
   name: string | null;

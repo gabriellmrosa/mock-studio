@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-23",
+    version: "3.6.2",
+    items: [
+      {
+        title: {
+          "pt-BR": "Novo template padrão de vídeo",
+          "en-US": "New default video template",
+        },
+        description: {
+          "pt-BR":
+            "O exemplo padrão do modo Vídeo agora traz uma sequência de 29s com três iPhones, Duo dobrando e logo do Mock Studio com sticker animado no fechamento — pronto para trocar as telas.",
+          "en-US":
+            "The default Video mode example now features a 29s showcase with three iPhones, a folding Duo, and the Mock Studio logo with an animated sticker outro — ready to swap in your screens.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-23",
     version: "3.6.1",
     items: [
       {

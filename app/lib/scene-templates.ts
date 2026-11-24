@@ -21,7 +21,9 @@ import {
   type SceneObject,
 } from "./scene-objects";
 import {
+  getBuiltinAssetImage,
   getStickerImage,
+  isBuiltinImageAssetId,
   normalizeImageAspect,
   normalizeImageSpeed,
 } from "./image-objects";
@@ -171,6 +173,8 @@ export type TemplateImageObject = {
    * template (é só o id) e volta com a arte.
    */
   sticker?: string;
+  /** Asset embutido do próprio app (ex.: logo do Mock Studio). */
+  asset?: string;
   /** A sombra; sem ela (templates de antes), a que o contorno tinha. */
   shadow?: boolean;
   /** Velocidade de uma animação; sem ela, 1. */
@@ -362,8 +366,9 @@ function toTemplateObject(
       kind: "image",
       aspect: object.image.aspect,
       isVisible: object.isVisible,
-      // Só o que o arquivo não decide sozinho: o sticker é o que se guarda dele.
+      // Só o que o arquivo não decide sozinho: sticker ou asset do app.
       ...(object.image.stickerId ? { sticker: object.image.stickerId } : {}),
+      ...(object.image.assetId ? { asset: object.image.assetId } : {}),
       outline: object.image.outline,
       shadow: object.image.shadow,
       // A velocidade é um ajuste do usuário, vale para o sticker animado e para
@@ -577,15 +582,18 @@ export function applySceneTemplate(template: SceneTemplate): SceneObject[] {
         image: {
           ...(isStickerId(object.sticker)
             ? getStickerImage(object.sticker)
-            : {
-                animation: null,
-                aspect: normalizeImageAspect(object.aspect),
-                isVector: false,
-                name: null,
-                speed: 1,
-                stickerId: null,
-                url: null,
-              }),
+            : isBuiltinImageAssetId(object.asset)
+              ? getBuiltinAssetImage(object.asset)
+              : {
+                  animation: null,
+                  aspect: normalizeImageAspect(object.aspect),
+                  assetId: null,
+                  isVector: false,
+                  name: null,
+                  speed: 1,
+                  stickerId: null,
+                  url: null,
+                }),
           speed: normalizeImageSpeed(object.speed),
           outline,
           // Antes da sombra própria, ela ia com o contorno: sem o campo, a
