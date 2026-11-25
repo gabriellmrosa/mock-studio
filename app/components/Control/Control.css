@@ -30,7 +30,7 @@
   display: flex;
   font-size: 0.875rem;
   font-weight: var(--font-regular);
-  gap: 0.125rem;
+  gap: var(--space-1);
   min-width: 0;
 }
 

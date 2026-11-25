@@ -77,6 +77,13 @@
   transform: translateX(0);
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .context-menu-row-hover-icon {
+    transform: none;
+    transition: none;
+  }
+}
+
 .context-menu-row-icon {
   align-items: center;
   color: currentColor;

@@ -23,6 +23,9 @@ export default function Control({
 }) {
   const resolvedDisplayValue = displayValue ?? value;
   const rangeProgress = ((resolvedDisplayValue - min) / (max - min)) * 100;
+  // O sufixo visual é aria-hidden; incluir a unidade no aria-label garante que
+  // leitores de tela ainda anunciem graus/porcentagem.
+  const accessibleLabel = suffix ? `${label} (${suffix})` : label;
 
   return (
     <div className="transform-control">
@@ -31,7 +34,7 @@ export default function Control({
       <div className="transform-control-row">
         <input
           type="range"
-          aria-label={label}
+          aria-label={accessibleLabel}
           min={min}
           max={max}
           step={step}
@@ -48,7 +51,7 @@ export default function Control({
         <div className="editor-input transform-value-field">
           <input
             type="number"
-            aria-label={label}
+            aria-label={accessibleLabel}
             className="transform-value-input"
             value={resolvedDisplayValue}
             step={step}

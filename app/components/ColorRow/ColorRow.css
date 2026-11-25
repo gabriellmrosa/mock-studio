@@ -24,16 +24,10 @@
 }
 
 .color-row-swatch {
-  border: 1px solid var(--input-border);
   cursor: pointer;
   flex-shrink: 0;
   overflow: hidden;
   position: relative;
-  transition: border-color 160ms ease;
-}
-
-.color-row-swatch:hover {
-  border-color: var(--input-border-hover);
 }
 
 .color-row-swatch-compact {
@@ -57,9 +51,18 @@
   width: 100%;
 }
 
+/* Contorno interno translúcido sobre o preenchimento: mantém cores escuras
+   visíveis nos temas escuros com o mesmo visual do ColorSwatch. */
 .color-row-swatch-fill {
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px var(--swatch-border);
   height: 100%;
+  transition: box-shadow 160ms ease;
   width: 100%;
+}
+
+.color-row-swatch:hover .color-row-swatch-fill {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--white-true) 45%, transparent);
 }
 
 .color-row-input {

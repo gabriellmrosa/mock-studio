@@ -819,3 +819,40 @@ export function Tooltip({
     </span>
   );
 }
+
+/**
+ * Amostra de cor agnóstica (círculo ou quadrado, com contorno interno branco
+ * translúcido `--swatch-border` para não sumir nos temas escuros). Usada nas
+ * prévias de aparência, no botão de fundo do canvas e no diálogo de exportação.
+ */
+export function ColorSwatch({
+  color,
+  shape = "circle",
+  size = "sm",
+  style,
+  transparent = false,
+}: {
+  /** Cor CSS sólida ou gradiente (`background`). */
+  color?: string;
+  shape?: "circle" | "square";
+  size?: "sm" | "md" | "lg";
+  style?: CSSProperties;
+  /** Grade quadriculada indicando fundo transparente. */
+  transparent?: boolean;
+}) {
+  const mergedStyle: CSSProperties | undefined = transparent
+    ? style
+    : color
+      ? { background: color, ...style }
+      : style;
+
+  return (
+    <span
+      aria-hidden
+      className={`color-swatch color-swatch-${shape} color-swatch-${size}${
+        transparent ? " color-swatch-transparent" : ""
+      }`}
+      style={mergedStyle}
+    />
+  );
+}

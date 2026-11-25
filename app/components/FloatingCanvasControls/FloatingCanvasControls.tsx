@@ -24,7 +24,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { Tooltip } from "../EditorPrimitives/EditorPrimitives";
+import { ColorSwatch, Tooltip } from "../EditorPrimitives/EditorPrimitives";
 import BackgroundFields, {
   type BackgroundEditor,
 } from "../BackgroundFields/BackgroundFields";
@@ -156,11 +156,6 @@ export default function FloatingCanvasControls({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isAppearanceOpen]);
-
-  const circleBorder =
-    uiTheme !== "light"
-      ? "1.5px solid rgba(255,255,255,0.28)"
-      : "1.5px solid rgba(0,0,0,0.18)";
 
   // Modo de fundo do export: false = transparente (padrão), true = com fundo.
   const [exportWithBg, setExportWithBg] = useState<boolean>(
@@ -436,13 +431,7 @@ export default function FloatingCanvasControls({
             aria-expanded={isAppearanceOpen}
             onClick={() => setIsAppearanceOpen((current) => !current)}
           >
-            <div
-              className="canvas-color-swatch"
-              style={{
-                background: backgroundSwatch,
-                border: circleBorder,
-              }}
-            />
+            <ColorSwatch color={backgroundSwatch} shape="square" size="sm" />
             {isAppearanceOpen ? null : <Tooltip label={copy.backgroundColorButton} />}
           </button>
 
@@ -486,7 +475,7 @@ export default function FloatingCanvasControls({
       )}
 
       <ExportDialog
-        backgroundSwatch={{ background: backgroundSwatch, border: circleBorder }}
+        backgroundSwatch={{ background: backgroundSwatch }}
         copy={copy}
         exportWithBg={exportWithBg}
         isOpen={isExportOpen}

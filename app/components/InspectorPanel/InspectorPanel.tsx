@@ -74,6 +74,7 @@ import {
   ResetButton,
   SegmentedTabPanel,
   SegmentedTabs,
+  ColorSwatch,
   SidePopover,
   SubTabPanel,
   SubTabs,
@@ -426,13 +427,7 @@ export default function InspectorPanel({
           <ScreenFileRow
             key={object.id}
             closeLabel={copy.closeLabel}
-            icon={
-              <span
-                aria-hidden
-                className="theme-preview screen-file-swatch"
-                style={{ backgroundColor: currentThemeSwatch }}
-              />
-            }
+            icon={<ColorSwatch color={currentThemeSwatch} size="sm" />}
             menuLabel={copy.appearanceTabsLabel}
             name={currentThemeName}
           >
@@ -1246,10 +1241,7 @@ function AppearanceSettings({
             title={copy.themeNames[theme.id]}
             className={`theme-card ${object.deviceTheme === theme.id ? "theme-card-active" : "theme-card-inactive"}`}
           >
-            <div
-              className="theme-preview"
-              style={{ backgroundColor: theme.preview }}
-            />
+            <ColorSwatch color={theme.preview} size="lg" />
             <span className="theme-card-label">
               {copy.themeNames[theme.id]}
             </span>

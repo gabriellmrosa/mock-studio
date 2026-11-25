@@ -59,6 +59,8 @@ jest.mock("../EditorPrimitives/EditorPrimitives", () => ({
     .SegmentedTabs,
   SegmentedTabPanel: jest.requireActual("../EditorPrimitives/EditorPrimitives")
     .SegmentedTabPanel,
+  ColorSwatch: jest.requireActual("../EditorPrimitives/EditorPrimitives")
+    .ColorSwatch,
   InspectorPanelHeader: ({
     title,
   }: {
@@ -915,6 +917,15 @@ describe("InspectorPanel", () => {
     fireEvent.click(screen.getByText("control:Opacity (%)"));
 
     expect(handlers.onUpdateOpacity).toHaveBeenCalledWith(0.12);
+  });
+
+  it("edits scale in percent and stores it as a multiplier", () => {
+    const handlers = renderInspector();
+
+    // O Control mockado sempre envia 12: 12% vira 0.12.
+    fireEvent.click(screen.getByText("control:Scale"));
+
+    expect(handlers.onUpdateScale).toHaveBeenCalledWith(0.12);
   });
 
   describe("Duo, the foldable", () => {

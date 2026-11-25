@@ -4,7 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Check, Link } from "lucide-react";
 import CustomSelect from "../CustomSelect/CustomSelect";
 import Dialog from "../Dialog/Dialog";
-import { Callout, Checkbox } from "../EditorPrimitives/EditorPrimitives";
+import { Callout, Checkbox, ColorSwatch } from "../EditorPrimitives/EditorPrimitives";
 import { copyPendingText, isSafari } from "../../lib/browser";
 import type { AppCopy, Locale } from "../../lib/i18n";
 import type { MotionFrame } from "../../lib/motion-frame";
@@ -64,7 +64,7 @@ export default function ExportDialog({
   video,
 }: {
   /** Cor e borda do quadradinho "Com fundo". */
-  backgroundSwatch: { background: string; border: string };
+  backgroundSwatch: { background: string; border?: string };
   copy: AppCopy;
   exportWithBg: boolean;
   isOpen: boolean;
@@ -135,9 +135,11 @@ export default function ExportDialog({
   }, [activeKind, hasMusic, isOpen, videoSettings]);
 
   const transparentSwatch = (
-    <span className="export-swatch export-swatch-transparent" />
+    <ColorSwatch transparent shape="square" size="sm" />
   );
-  const colorSwatch = <span className="export-swatch" style={backgroundSwatch} />;
+  const colorSwatch = (
+    <ColorSwatch shape="square" size="sm" style={backgroundSwatch} />
+  );
 
   return (
     <Dialog
