@@ -719,6 +719,7 @@ export default function InspectorPanel({
                   min={0}
                   max={180}
                   step={1}
+                  suffix="°"
                 />
               </div>
             ) : null}
@@ -781,6 +782,7 @@ export default function InspectorPanel({
                 }
                 min={-45}
                 max={45}
+                suffix="°"
               />
               <Control
                 label={copy.rotationY}
@@ -795,6 +797,7 @@ export default function InspectorPanel({
                 }
                 min={-45}
                 max={45}
+                suffix="°"
               />
               <Control
                 label={copy.rotationZ}
@@ -808,17 +811,19 @@ export default function InspectorPanel({
                 }
                 min={-360}
                 max={360}
+                suffix="°"
               />
             </div>
 
             <div className="transform-group transform-group-offset">
               <Control
                 label={copy.scale}
-                value={editedTransform.scale}
-                setValue={onUpdateScale}
-                min={0.1}
-                max={3}
-                step={0.01}
+                value={Math.round(editedTransform.scale * 100)}
+                setValue={(value) => onUpdateScale(value / 100)}
+                min={10}
+                max={300}
+                step={1}
+                suffix="%"
               />
               <Control
                 label={copy.opacity}
@@ -827,6 +832,7 @@ export default function InspectorPanel({
                 min={0}
                 max={100}
                 step={1}
+                suffix="%"
               />
             </div>
           </div>
@@ -1323,6 +1329,7 @@ function CameraFields({
           min={-azimuthLimit}
           max={azimuthLimit}
           step={1}
+          suffix="°"
         />
         <Control
           label={copy.cameraElevationLabel}
@@ -1331,6 +1338,7 @@ function CameraFields({
           min={-elevationLimit}
           max={elevationLimit}
           step={1}
+          suffix="°"
         />
         <Control
           label={copy.cameraDistanceLabel}
@@ -1377,6 +1385,7 @@ function CameraFields({
           min={MIN_CAMERA_FOV}
           max={MAX_CAMERA_FOV}
           step={1}
+          suffix="°"
         />
       </div>
     </div>
@@ -1797,6 +1806,7 @@ function ScreenFitPanel({
         setValue={(value) => onChange({ zoom: value / 100 })}
         min={MIN_SCREEN_ZOOM * 100}
         max={MAX_SCREEN_ZOOM * 100}
+        suffix="%"
       />
       <Control
         label={copy.screenFitX}
@@ -1804,6 +1814,7 @@ function ScreenFitPanel({
         setValue={(value) => onChange({ panX: value / 100 })}
         min={-MAX_SCREEN_PAN * 100}
         max={MAX_SCREEN_PAN * 100}
+        suffix="%"
       />
       <Control
         label={copy.screenFitY}
@@ -1811,6 +1822,7 @@ function ScreenFitPanel({
         setValue={(value) => onChange({ panY: value / 100 })}
         min={-MAX_SCREEN_PAN * 100}
         max={MAX_SCREEN_PAN * 100}
+        suffix="%"
       />
       <ColorRow
         compact
@@ -1866,6 +1878,7 @@ function ScreenCropPanel({
           min={0}
           max={MAX_SCREEN_CROP * 100}
           step={0.1}
+          suffix="%"
         />
       ))}
       {/* A faixa cortada mostra o fundo: a cor fica à mão aqui também. É o

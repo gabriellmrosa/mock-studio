@@ -22,12 +22,46 @@
   gap: 0.75rem;
 }
 
-.transform-value-input {
+.transform-value-field {
+  align-items: center;
   background: var(--control-input-bg);
   border-color: var(--control-input-border);
   border-radius: var(--radius-xs);
+  display: flex;
   font-size: 0.875rem;
   font-weight: var(--font-regular);
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.transform-value-field:focus-within {
+  border-color: var(--input-border-hover);
+}
+
+.transform-value-input {
+  appearance: textfield;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  flex: 1;
+  font: inherit;
+  min-width: 0;
+  outline: none;
+  padding: 0;
+  width: 100%;
+}
+
+.transform-value-input::-webkit-inner-spin-button,
+.transform-value-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.transform-value-suffix {
+  color: var(--sidebar-muted);
+  flex-shrink: 0;
+  font-size: var(--font-size-200);
+  user-select: none;
 }
 
 /* --- Range slider --- */
@@ -96,7 +130,7 @@
 }
 
 .editor-range:focus-visible,
-.transform-value-input:focus-visible {
+.transform-value-field:has(.transform-value-input:focus-visible) {
   outline: 2px solid color-mix(in srgb, var(--foreground) 24%, transparent);
   outline-offset: 2px;
 }

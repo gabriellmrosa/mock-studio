@@ -9,6 +9,7 @@ export default function Control({
   min,
   max,
   step = 1,
+  suffix,
 }: {
   displayValue?: number;
   label: string;
@@ -17,6 +18,8 @@ export default function Control({
   min: number;
   max: number;
   step?: number;
+  /** Unidade discreta exibida à direita do número (ex.: "%" ou "°"). */
+  suffix?: string;
 }) {
   const resolvedDisplayValue = displayValue ?? value;
   const rangeProgress = ((resolvedDisplayValue - min) / (max - min)) * 100;
@@ -42,16 +45,23 @@ export default function Control({
           }
         />
 
-        <input
-          type="number"
-          aria-label={label}
-          className="editor-input transform-value-input"
-          value={resolvedDisplayValue}
-          step={step}
-          min={min}
-          max={max}
-          onChange={(e) => setValue(Number(e.target.value))}
-        />
+        <div className="editor-input transform-value-field">
+          <input
+            type="number"
+            aria-label={label}
+            className="transform-value-input"
+            value={resolvedDisplayValue}
+            step={step}
+            min={min}
+            max={max}
+            onChange={(e) => setValue(Number(e.target.value))}
+          />
+          {suffix ? (
+            <span className="transform-value-suffix" aria-hidden>
+              {suffix}
+            </span>
+          ) : null}
+        </div>
       </div>
     </div>
   );

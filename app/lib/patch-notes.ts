@@ -27,6 +27,24 @@ export type PatchNote = {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    date: "2026-11-25",
+    version: "3.6.4",
+    items: [
+      {
+        title: {
+          "pt-BR": "Unidades nos controles e escala em %",
+          "en-US": "Unit suffixes and percentage scale",
+        },
+        description: {
+          "pt-BR":
+            "Escala agora aparece em porcentagem (10% a 300%, padrão 100%) e os controles de rotação, abertura, opacidade, câmera e enquadramento da tela exibem ° e % direto no campo.",
+          "en-US":
+            "Scale is now shown as a percentage (10% to 300%, default 100%), and rotation, fold angle, opacity, camera, and screen framing controls display ° and % right inside their fields.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-11-24",
     version: "3.6.3",
     items: [

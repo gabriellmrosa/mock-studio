@@ -146,13 +146,13 @@ const copy: AppCopy = {
   cameraObjectName: "Camera",
   backgroundObjectName: "Background",
   cameraSectionTitle: "Camera",
-  cameraAzimuthLabel: "Horizontal orbit (°)",
-  cameraElevationLabel: "Vertical orbit (°)",
+  cameraAzimuthLabel: "Horizontal orbit",
+  cameraElevationLabel: "Vertical orbit",
   cameraDistanceLabel: "Distance",
   cameraTargetXLabel: "Target X",
   cameraTargetYLabel: "Target Y",
   cameraTargetZLabel: "Target Z",
-  cameraFovLabel: "Lens (field of view °)",
+  cameraFovLabel: "Lens (field of view)",
   canvasBackgroundSection: "Background",
   canvasBackgroundStyleLabel: "Background style",
   canvasBackgroundFloor: "3D floor",
@@ -1277,8 +1277,8 @@ describe("InspectorPanel", () => {
       });
 
       // O Control de mentira muda o valor para 12 ao clicar.
-      fireEvent.click(screen.getByText("control:Horizontal orbit (°)"));
-      fireEvent.click(screen.getByText("control:Lens (field of view °)"));
+      fireEvent.click(screen.getByText("control:Horizontal orbit"));
+      fireEvent.click(screen.getByText("control:Lens (field of view)"));
 
       // Cada campo muda só o seu pedaço da órbita.
       expect(handlers.onUpdateCameraOrbit).toHaveBeenNthCalledWith(1, { azimuth: 12 });
