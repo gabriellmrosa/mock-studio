@@ -28,6 +28,7 @@ type DeviceSessionMedia = {
   imageName: string | null;
   imageUrl: string | null;
   modelId: DeviceModelId;
+  name: string;
   outerImageFit: ScreenFit;
   outerImageName: string | null;
   outerImageUrl: string | null;
@@ -42,6 +43,7 @@ type ImageSessionMedia = {
   aspect: number;
   isVector: boolean;
   name: string | null;
+  objectName: string;
   url: string;
 };
 
@@ -84,6 +86,7 @@ export function captureTemplateMedia(objects: SceneObject[]): TemplateSessionMed
               imageName: object.imageName,
               imageUrl: object.imageName !== null ? object.imageUrl : null,
               modelId: object.modelId,
+              name: object.name,
               outerImageFit: { ...object.outerImageFit },
               outerImageName: object.outerImageName,
               outerImageUrl:
@@ -107,6 +110,7 @@ export function captureTemplateMedia(objects: SceneObject[]): TemplateSessionMed
               aspect: object.image.aspect,
               isVector: object.image.isVector,
               name: object.image.name,
+              objectName: object.name,
               url: object.image.url,
             }
           : null,
@@ -159,15 +163,72 @@ export function restoreTemplateSessionMedia(
     return objects;
   }
 
+  // Casa primeiro por nome + modelo para que apagar, duplicar ou reordenar
+  // aparelhos sem salvar não troque as telas de lugar ao voltar ao template.
+  // Só cai na posição da lista quando a quantidade de aparelhos/imagens bate.
+  const targetDeviceCount = objects.filter(isDeviceObject).length;
+  const targetImageCount = objects.filter(isImageObject).length;
+  const usedDeviceIndices = new Set<number>();
+  const usedImageIndices = new Set<number>();
   let deviceIndex = 0;
   let imageIndex = 0;
   let restoredAudio = false;
 
+  const findDeviceMedia = (
+    name: string,
+    modelId: DeviceModelId,
+    index: number,
+  ): DeviceSessionMedia | null => {
+    const byNameIndex = media.devices.findIndex(
+      (entry, i) =>
+        !usedDeviceIndices.has(i) &&
+        entry !== null &&
+        entry.name === name &&
+        entry.modelId === modelId,
+    );
+    if (byNameIndex !== -1) {
+      usedDeviceIndices.add(byNameIndex);
+      return media.devices[byNameIndex];
+    }
+    if (media.devices.length === targetDeviceCount && !usedDeviceIndices.has(index)) {
+      const atIndex = media.devices[index] ?? null;
+      if (atIndex && atIndex.modelId === modelId) {
+        usedDeviceIndices.add(index);
+        return atIndex;
+      }
+    }
+    return null;
+  };
+
+  const findImageMedia = (
+    objectName: string,
+    index: number,
+  ): ImageSessionMedia | null => {
+    const byNameIndex = media.images.findIndex(
+      (entry, i) =>
+        !usedImageIndices.has(i) &&
+        entry !== null &&
+        entry.objectName === objectName,
+    );
+    if (byNameIndex !== -1) {
+      usedImageIndices.add(byNameIndex);
+      return media.images[byNameIndex];
+    }
+    if (media.images.length === targetImageCount && !usedImageIndices.has(index)) {
+      const atIndex = media.images[index] ?? null;
+      if (atIndex) {
+        usedImageIndices.add(index);
+        return atIndex;
+      }
+    }
+    return null;
+  };
+
   const nextObjects = objects.map((object): SceneObject => {
     if (isDeviceObject(object)) {
-      const saved = media.devices[deviceIndex++] ?? null;
+      const saved = findDeviceMedia(object.name, object.modelId, deviceIndex++);
 
-      if (!saved || saved.modelId !== object.modelId) {
+      if (!saved) {
         return object;
       }
 
@@ -240,7 +301,7 @@ export function restoreTemplateSessionMedia(
     }
 
     if (isImageObject(object)) {
-      const saved = media.images[imageIndex++] ?? null;
+      const saved = findImageMedia(object.name, imageIndex++);
 
       if (!saved || object.image.stickerId || object.image.url !== null) {
         return object;

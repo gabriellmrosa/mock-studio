@@ -134,4 +134,23 @@ describe("default templates", () => {
     });
     expect(loadTemplates()).toHaveLength(1);
   });
+
+  it("preserves an overwritten legacy video default even when the user kept its original name", () => {
+    const userWork = createSceneTemplate({
+      mode: "motion",
+      name: "Exemplo de vídeo",
+      objects: [createSceneObject({ deletable: false, name: "My Custom Phone" })],
+    });
+    // Simula quem sobrepôs o antigo default mantendo o mesmo id e nome.
+    const overwrittenLegacy = { ...userWork, id: "default-video-product-launch" };
+    expect(persistTemplates([overwrittenLegacy])).toBe(true);
+
+    const loaded = loadTemplatesWithDefaults("pt-BR");
+    const preserved = loaded.find((t) => t.id === "default-video-product-launch");
+    const newShowcase = loaded.find((t) => t.id === "default-video-showcase");
+
+    expect(preserved).toBeDefined();
+    expect(preserved?.objects[0].name).toBe("My Custom Phone");
+    expect(newShowcase).toBeDefined();
+  });
 });

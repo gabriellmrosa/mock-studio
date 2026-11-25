@@ -24,10 +24,59 @@ export type DefaultTemplateEntry = {
   /** Nomes anteriores deste default: se o usuário ainda não renomeou, atualiza. */
   legacyNames?: readonly string[];
   names: Record<Locale, string>;
-  /** Ids de defaults antigos substituídos por este quando o usuário não os renomeou. */
+  /**
+   * Fingerprints de conteúdo de defaults antigos que podem ser substituídos
+   * por este: só substitui se o usuário não tiver alterado a cena (mesmo que
+   * tenha mantido o nome ao usar "Sobrepor").
+   */
+  replacesFingerprints?: readonly string[];
+  /** Ids de defaults antigos substituídos por este quando o conteúdo continua intocado. */
   replacesIds?: readonly string[];
   template: Omit<SceneTemplate, "createdAt" | "id" | "name">;
 };
+
+function canonicalStringify(value: unknown): string {
+  if (value === null || typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+  if (Array.isArray(value)) {
+    return `[${value.map(canonicalStringify).join(",")}]`;
+  }
+  const record = value as Record<string, unknown>;
+  const entries = Object.keys(record)
+    .sort()
+    .filter((key) => record[key] !== undefined)
+    .map((key) => `${JSON.stringify(key)}:${canonicalStringify(record[key])}`);
+  return `{${entries.join(",")}}`;
+}
+
+/**
+ * Hash determinístico (FNV-1a 32-bit) do conteúdo de um template normalizado,
+ * ignorando `id`, `name` e `createdAt`. Usado para confirmar que um default
+ * antigo ainda está intocado antes de substituí-lo numa migração.
+ */
+export function getTemplateContentFingerprint(
+  template: Pick<
+    SceneTemplate,
+    "background" | "backgroundColor" | "camera" | "frame" | "grid" | "mode" | "objects"
+  >,
+): string {
+  const payload = canonicalStringify({
+    background: template.background ?? null,
+    backgroundColor: template.backgroundColor ?? null,
+    camera: template.camera ?? null,
+    frame: template.frame ?? null,
+    grid: template.grid ?? null,
+    mode: template.mode,
+    objects: template.objects,
+  });
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < payload.length; i += 1) {
+    hash ^= payload.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, "0");
+}
 
 export const DEFAULT_TEMPLATES: readonly DefaultTemplateEntry[] = [
   {
@@ -182,6 +231,10 @@ export const DEFAULT_TEMPLATES: readonly DefaultTemplateEntry[] = [
   {
     id: "default-video-showcase",
     replacesIds: ["default-video-product-launch"],
+    // Fingerprint do `default-video-product-launch` original normalizado:
+    // só substitui se o conteúdo bater, protegendo quem usou "Sobrepor"
+    // mantendo o mesmo nome.
+    replacesFingerprints: ["8d8c8dce"],
     legacyNames: ["Product Launch", "Lançamento de produto"],
     names: {
       "en-US": "Video example",
@@ -1047,7 +1100,12 @@ export function loadTemplatesWithDefaults(locale: Locale): SceneTemplate[] {
         ...Object.values(replacement.names),
         ...(replacement.legacyNames ?? []),
       ]);
-      if (untouchedNames.has(template.name)) {
+      const matchesContent =
+        !replacement.replacesFingerprints ||
+        replacement.replacesFingerprints.includes(
+          getTemplateContentFingerprint(template),
+        );
+      if (untouchedNames.has(template.name) && matchesContent) {
         changedExisting = true;
         replacedNewIds.add(replacement.id);
         return normalizeTemplate({

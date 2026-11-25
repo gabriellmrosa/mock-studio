@@ -293,17 +293,17 @@ describe("scene-objects", () => {
   });
 
   describe("getNextSequentialName", () => {
-    it("starts at 1 and skips names that already exist after deletions", () => {
+    it("starts at 1 and increments from the highest existing suffix without filling gaps", () => {
       expect(getNextSequentialName([], "Object")).toBe("Object 1");
       expect(
         getNextSequentialName([{ name: "Object 1" }, { name: "Object 2" }], "Object"),
       ).toBe("Object 3");
       expect(
         getNextSequentialName([{ name: "Object 2" }], "Object"),
-      ).toBe("Object 1");
+      ).toBe("Object 3");
       expect(
         getNextSequentialName([{ name: "Object 1" }, { name: "Object 3" }], "Object"),
-      ).toBe("Object 2");
+      ).toBe("Object 4");
     });
   });
 

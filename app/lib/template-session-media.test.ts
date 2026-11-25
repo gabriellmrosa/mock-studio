@@ -203,4 +203,35 @@ describe("template-session-media", () => {
     );
     expect(restored.find(isAudioObject)?.audio?.url).toBe("blob:bgm");
   });
+
+  it("matches devices by name and model so deleting one without saving does not swap screens", () => {
+    const phone1 = createSceneObject({ deletable: false, name: "iPhone 1" });
+    phone1.imageUrl = "blob:screen-1";
+    phone1.imageName = "one.png";
+
+    const phone2 = createSceneObject({ deletable: true, name: "iPhone 2" });
+    phone2.imageUrl = "blob:screen-2";
+    phone2.imageName = "two.png";
+
+    const template = createSceneTemplate({
+      mode: "static",
+      name: "Two phones",
+      objects: [phone1, phone2],
+    });
+
+    // Usuário apaga o primeiro aparelho sem salvar o template e troca de template.
+    saveTemplateSessionMedia(template.id, [phone2]);
+
+    const restored = restoreTemplateSessionMedia(
+      template.id,
+      applySceneTemplate(template),
+      "static",
+    );
+    const devices = restored.filter(isDeviceObject);
+    expect(devices[0].name).toBe("iPhone 1");
+    expect(devices[0].imageName).toBeNull();
+    expect(devices[1].name).toBe("iPhone 2");
+    expect(devices[1].imageName).toBe("two.png");
+    expect(devices[1].imageUrl).toBe("blob:screen-2");
+  });
 });

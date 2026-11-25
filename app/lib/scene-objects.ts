@@ -830,23 +830,31 @@ export function resetSceneObject(object: DeviceObject): DeviceObject {
 }
 
 /**
- * Próximo nome sequencial livre (`${prefix} 1`, `${prefix} 2`, ...) a partir
- * dos objetos atuais da cena. Chamado dentro do updater funcional do estado,
- * evita nomes repetidos tanto ao adicionar rápido quanto depois de apagar um
- * objeto.
+ * Próximo nome sequencial livre (`${prefix} 1`, `${prefix} 2`, ...) usando
+ * `max + 1` sobre os objetos atuais da cena (como Figma e After Effects).
+ * Chamado dentro do updater funcional do estado, evita nomes repetidos tanto ao
+ * adicionar rápido quanto depois de apagar um objeto, sem preencher lacunas no
+ * fim da lista.
  */
 export function getNextSequentialName(
   objects: readonly Pick<SceneObject, "name">[],
   prefix: string,
 ): string {
-  const existing = new Set(objects.map((object) => object.name));
-  let index = 1;
+  const escaped = prefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const pattern = new RegExp(`^${escaped} (\\d+)$`);
+  let max = 0;
 
-  while (existing.has(`${prefix} ${index}`)) {
-    index += 1;
+  for (const object of objects) {
+    const match = pattern.exec(object.name);
+    if (match) {
+      const n = Number(match[1]);
+      if (n > max) {
+        max = n;
+      }
+    }
   }
 
-  return `${prefix} ${index}`;
+  return `${prefix} ${max + 1}`;
 }
 
 export function changeSceneObjectModel(
