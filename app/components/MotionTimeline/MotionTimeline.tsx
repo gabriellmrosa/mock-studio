@@ -25,6 +25,7 @@ import BezierEditor from "./BezierEditor";
 import MotionFrameControl from "./MotionFrameControl";
 import TimelineMenu from "./TimelineMenu";
 import { SNAP_DISTANCE_PX, snapDelta } from "../../lib/timeline-snap";
+import { isTextEditingTarget } from "../../lib/undo-history";
 import {
   MAX_TIMELINE_ZOOM,
   MIN_TIMELINE_ZOOM,
@@ -830,6 +831,13 @@ export default function MotionTimeline({
       return;
     }
 
+    // Ao concluir uma seleção por laço, move o foco para a timeline para que
+    // Delete/Backspace funcione de imediato sem precisar clicar num marcador.
+    if (drag.kind === "marquee" && drag.moved) {
+      timelineRef.current?.focus({ preventScroll: true });
+      return;
+    }
+
     // Clique simples (sem arrastar) no vazio: limpa seleção múltipla e, se o
     // clique caiu na área das trilhas, move o playhead para lá.
     if (drag.kind === "marquee" && !drag.moved && event) {
@@ -1107,6 +1115,7 @@ export default function MotionTimeline({
   return (
     <section
       ref={timelineRef}
+      tabIndex={-1}
       className="motion-timeline"
       aria-label={copy.motionTimeline}
       onPointerDown={beginMarquee}
@@ -1117,13 +1126,7 @@ export default function MotionTimeline({
         if (event.key !== "Delete" && event.key !== "Backspace") {
           return;
         }
-        const target = event.target as HTMLElement | null;
-        if (
-          target &&
-          (target.tagName === "INPUT" ||
-            target.tagName === "TEXTAREA" ||
-            target.isContentEditable)
-        ) {
+        if (isTextEditingTarget(event.target)) {
           return;
         }
         if (effectiveSelectedIds.size > 1) {

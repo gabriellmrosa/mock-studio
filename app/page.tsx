@@ -1630,18 +1630,20 @@ export default function Home() {
       byObject.set(objectId, set);
     }
 
-    setSceneObjects((current) =>
-      current.map((object) => {
+    setSceneObjects((current) => {
+      let changed = false;
+      const next = current.map((object) => {
         const idsToRemove = byObject.get(object.id);
         if (!idsToRemove) return object;
-        return {
-          ...object,
-          keyframes: object.keyframes.filter(
-            (keyframe) => !idsToRemove.has(keyframe.id),
-          ),
-        };
-      }),
-    );
+        const filtered = object.keyframes.filter(
+          (keyframe) => !idsToRemove.has(keyframe.id),
+        );
+        if (filtered.length === object.keyframes.length) return object;
+        changed = true;
+        return { ...object, keyframes: filtered };
+      });
+      return changed ? next : current;
+    });
 
     if (targets.some((item) => item.keyframeId === selectedKeyframeId)) {
       setSelectedKeyframeId("");

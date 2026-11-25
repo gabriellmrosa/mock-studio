@@ -19,6 +19,12 @@
   z-index: 3;
 }
 
+/* A <section> recebe foco programático ao terminar a seleção por laço para
+   ouvir Delete/Backspace; não precisa de anel visual em volta da barra toda. */
+.motion-timeline:focus {
+  outline: none;
+}
+
 /* Alça de altura na borda de cima da timeline: uma faixa invisível de 7px
    centrada na borda, que vira uma linha ao passar o mouse ou focar. */
 .timeline-resize-handle {

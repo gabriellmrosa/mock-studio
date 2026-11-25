@@ -704,6 +704,45 @@ describe("MotionTimeline", () => {
 
       expect(handlers.onScrub).toHaveBeenCalledWith(2000);
     });
+
+    it("focuses the timeline after a marquee drag so Delete removes the selection right away", () => {
+      const objects = twoTracks();
+      const { container, handlers } = renderTimeline(
+        objects,
+        DEFAULT_MOTION_FRAME,
+        { sceneDurationMs: 4000 },
+      );
+
+      const timeline = container.querySelector(".motion-timeline") as HTMLElement;
+      timeline.setPointerCapture = jest.fn();
+      timeline.getBoundingClientRect = () =>
+        ({ bottom: 200, height: 200, left: 0, right: 500, top: 0, width: 500 }) as DOMRect;
+
+      const positions: Record<string, { x: number; y: number }> = {
+        a1: { x: 100, y: 30 },
+        a2: { x: 250, y: 30 },
+        b1: { x: 150, y: 70 },
+        b2: { x: 300, y: 70 },
+      };
+      for (const [id, pos] of Object.entries(positions)) {
+        const el = container.querySelector(`[data-keyframe-id="${id}"]`) as HTMLElement;
+        el.getBoundingClientRect = () =>
+          ({ bottom: pos.y + 8, height: 16, left: pos.x - 8, right: pos.x + 8, top: pos.y - 8, width: 16 }) as DOMRect;
+      }
+
+      fireEvent.pointerDown(timeline, { button: 0, clientX: 80, clientY: 20, pointerId: 1 });
+      fireEvent.pointerMove(timeline, { clientX: 180, clientY: 90, pointerId: 1 });
+      fireEvent.pointerUp(timeline, { clientX: 180, clientY: 90, pointerId: 1 });
+
+      expect(document.activeElement).toBe(timeline);
+
+      fireEvent.keyDown(document.activeElement as HTMLElement, { key: "Delete" });
+
+      expect(handlers.onRemoveMultipleKeyframes).toHaveBeenCalledWith([
+        { keyframeId: "a1", objectId: "a" },
+        { keyframeId: "b1", objectId: "b" },
+      ]);
+    });
   });
 });
 
