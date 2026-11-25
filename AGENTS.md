@@ -152,6 +152,7 @@ primeiro degrau que resolve:
 | trabalho longo que não pode ser interrompido por acidente | `Dialog` com `dismissible={false}` |
 | aviso que informa sem alarmar | `Callout` |
 | nome de um botão só de ícone, na barra do canvas | `Tooltip` |
+| amostra de cor (prévia de aparência, fundo do canvas, exportação) | `ColorSwatch` (`shape`: `circle` ou `square`, `size`: `sm`/`md`/`lg`, `transparent`) |
 | voltar ao padrão | `ResetButton` (`normal` ou `small`) |
 
 - **Hierarquia do escuro (a lógica do Figma):** o fundo é o mais escuro e o
@@ -270,7 +271,11 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
   para todos usa a união. Não tem tela, então `getActiveScreenVideos` devolve
   `[]`.
 - **O arquivo nunca entra em template nem em link** (blob URL, mesma razão das
-  telas). O que entra é a proporção (`aspect`): sem arquivo, o objeto é o
+  telas). A única exceção são os **assets embutidos do app**
+  (`BUILTIN_IMAGE_ASSETS` em `app/lib/image-objects.ts`, salvos pelo `assetId`,
+  como o logo do Mock Studio no template padrão de Vídeo — como os stickers,
+  pertencem ao app e voltam com a arte). Para arquivos enviados pelo usuário, o
+  que entra é a proporção (`aspect`): sem arquivo, o objeto é o
   **espaço vazio** — um círculo branco sólido, uma pílula se a proporção não é
   1:1 — do mesmo tamanho, no mesmo lugar. **Só existe para o que volta de um
   template ou link**: "+ Imagem" abre direto o seletor de arquivos do computador
@@ -412,10 +417,16 @@ Onde está cada coisa: [README › Project Structure](README.md#project-structur
 - **Sobrepor ou salvar novo:** a página guarda de qual template veio a cena de
   cada modo (`sourceTemplateIds`: aplicar um template ou salvar um novo marca).
   O "Salvar template" da barra lateral, com origem, pergunta num `AlertDialog`
-  ("Salvar como novo" ou "Sobrepor", o principal); sobrepor troca só o conteúdo
+  ("Salvar como novo", o principal, ou "Sobrepor"); sobrepor troca só o conteúdo
   e mantém id, nome, data e lugar na lista. O "Salvar como template" do
   Exportar e o "Salvar e sair" da troca de modo salvam sempre um novo, para
   não interromper o fluxo deles (decisão do usuário).
+- **Memória de mídia da sessão (`template-session-media.ts`):** enquanto a aba
+  fica aberta, sair de um template guarda em memória as telas, imagens/GIFs e
+  música da cena atual (mesmo sem salvar) e restaura ao voltar, casando primeiro
+  por nome + modelo (para não trocar telas de lugar se o usuário apagar ou
+  duplicar aparelhos sem salvar). Ao recarregar a aba, tudo some com os blob
+  URLs.
 
 **Desfazer e refazer**
 

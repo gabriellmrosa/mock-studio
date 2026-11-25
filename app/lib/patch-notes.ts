@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-25",
+    version: "3.6.5",
+    items: [
+      {
+        title: {
+          "pt-BR": "Ajustes em templates, timeline e cor",
+          "en-US": "Template, timeline, and swatch fixes",
+        },
+        description: {
+          "pt-BR":
+            "Templates padrão editados com o mesmo nome não são mais sobrescritos na migração, apagar keyframes selecionados pelo laço funciona direto com Delete/Backspace e todas as amostras de cor agora compartilham o mesmo contorno interno.",
+          "en-US":
+            "Overwritten default templates keeping their original name are preserved during migration, marquee-selected keyframes can now be deleted right away with Delete/Backspace, and all color swatches share the same inset border.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-25",
     version: "3.6.4",
     items: [
       {
