@@ -1,0 +1,28 @@
+export {
+  buildScene,
+  listCatalog,
+  SCREENS_UPLOAD_NOTE,
+  type McpBuildSceneResult,
+} from "./scene-builder";
+export {
+  MAX_MCP_DURATION_MS,
+  MAX_MCP_KEYFRAMES_PER_OBJECT,
+  MAX_MCP_OBJECTS,
+  MCP_ANIMATIONS,
+  MCP_FRAME_PRESETS,
+  MCP_LAYOUTS,
+  McpValidationError,
+  MIN_MCP_DURATION_MS,
+  validateBuildSceneInput,
+  type McpAnimation,
+  type McpBackgroundInput,
+  type McpBuildSceneInput,
+  type McpBuiltinImageInput,
+  type McpCameraInput,
+  type McpDeviceInput,
+  type McpFramePreset,
+  type McpKeyframeInput,
+  type McpLayout,
+  type McpStickerInput,
+  type McpTextInput,
+} from "./scene-schema";
