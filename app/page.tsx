@@ -478,6 +478,50 @@ export default function Home() {
     });
   }
 
+  async function applyImageFileToDevice(
+    deviceId: string,
+    file: File,
+    screen: "main" | "outer" = "main",
+  ) {
+    try {
+      await probeImageFile(file);
+      const nextImage = await readFileAsDataUrl(file);
+      const fileName = file.name || "pasted-image.png";
+      // Imagem nova, enquadramento novo: o anterior foi feito para outra. A
+      // exceção é a que um template pediu de volta: o enquadramento salvo é
+      // para ela, mesmo que o arquivo tenha outro nome.
+      updateSceneObject(deviceId, (object) => {
+        if (screen === "outer") {
+          const restoring = Boolean(object.pendingOuterScreen?.imageName);
+
+          return {
+            outerImageFit: restoring
+              ? object.outerImageFit
+              : { ...DEFAULT_SCREEN_FIT },
+            outerImageName: fileName,
+            outerImageUrl: nextImage,
+            outerScreenSource: "image",
+            pendingOuterScreen: withoutPending(object.pendingOuterScreen, "image"),
+          };
+        }
+
+        const restoring = Boolean(object.pendingScreen?.imageName);
+
+        return {
+          imageFit: restoring ? object.imageFit : { ...DEFAULT_SCREEN_FIT },
+          imageName: fileName,
+          imageUrl: nextImage,
+          pendingScreen: withoutPending(object.pendingScreen, "image"),
+          screenSource: "image",
+        };
+      });
+      setUploadError("");
+    } catch (error) {
+      console.error(error);
+      setUploadError(copy.uploadImageError);
+    }
+  }
+
   /** `screen`: a tela do aparelho ou, no dobrável, a de fora. */
   async function handleImageUpload(
     event: ChangeEvent<HTMLInputElement>,
@@ -489,38 +533,7 @@ export default function Home() {
     }
 
     try {
-      await probeImageFile(file);
-      const nextImage = await readFileAsDataUrl(file);
-      // Imagem nova, enquadramento novo: o anterior foi feito para outra. A
-      // exceção é a que um template pediu de volta: o enquadramento salvo é
-      // para ela, mesmo que o arquivo tenha outro nome.
-      updateSceneObject(selectedDevice.id, (object) => {
-        if (screen === "outer") {
-          const restoring = Boolean(object.pendingOuterScreen?.imageName);
-
-          return {
-            outerImageFit: restoring
-              ? object.outerImageFit
-              : { ...DEFAULT_SCREEN_FIT },
-            outerImageName: file.name,
-            outerImageUrl: nextImage,
-            pendingOuterScreen: withoutPending(object.pendingOuterScreen, "image"),
-          };
-        }
-
-        const restoring = Boolean(object.pendingScreen?.imageName);
-
-        return {
-          imageFit: restoring ? object.imageFit : { ...DEFAULT_SCREEN_FIT },
-          imageName: file.name,
-          imageUrl: nextImage,
-          pendingScreen: withoutPending(object.pendingScreen, "image"),
-        };
-      });
-      setUploadError("");
-    } catch (error) {
-      console.error(error);
-      setUploadError(copy.uploadImageError);
+      await applyImageFileToDevice(selectedDevice.id, file, screen);
     } finally {
       event.target.value = "";
     }
@@ -627,15 +640,7 @@ export default function Home() {
     addImageInputRef.current?.click();
   }
 
-  async function handleAddImageFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-
-    event.target.value = "";
-
-    if (!file) {
-      return;
-    }
-
+  async function addImageFileToScene(file: File) {
     try {
       const image = await readImageFile(file);
       const nextImage = createImageObject({ image, name: "" });
@@ -655,6 +660,18 @@ export default function Home() {
       console.error(error);
       notify("error", copy.uploadImageError);
     }
+  }
+
+  async function handleAddImageFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    await addImageFileToScene(file);
   }
 
   /**
@@ -802,6 +819,18 @@ export default function Home() {
     );
   }
 
+  async function applyImageFileToObject(id: string, file: File) {
+    try {
+      // A largura do objeto na cena é fixa: um arquivo de outra proporção
+      // muda a altura, e o objeto não "cresce" (ver IMAGE_BASE_WIDTH).
+      updateObjectImage(id, await readImageFile(file));
+      setUploadError("");
+    } catch (error) {
+      console.error(error);
+      setUploadError(copy.uploadImageError);
+    }
+  }
+
   async function handleObjectImageUpload(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     const id = selectedObject?.id;
@@ -812,15 +841,7 @@ export default function Home() {
       return;
     }
 
-    try {
-      // A largura do objeto na cena é fixa: um arquivo de outra proporção
-      // muda a altura, e o objeto não "cresce" (ver IMAGE_BASE_WIDTH).
-      updateObjectImage(id, await readImageFile(file));
-      setUploadError("");
-    } catch (error) {
-      console.error(error);
-      setUploadError(copy.uploadImageError);
-    }
+    await applyImageFileToObject(id, file);
   }
 
   /** Tira o arquivo e deixa o espaço vazio, na mesma proporção. */
@@ -1764,6 +1785,69 @@ export default function Home() {
     window.addEventListener("keydown", handleKeyDown);
 
     return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Colar imagem da área de transferência (Cmd+V / Ctrl+V): se um aparelho está
+  // selecionado, vai direto para a tela dele; se uma imagem solta está
+  // selecionada, substitui o arquivo; nos demais casos, cria uma imagem solta.
+  const onPasteImage = useEffectEvent((file: File) => {
+    if (selectedDevice) {
+      void applyImageFileToDevice(selectedDevice.id, file, "main");
+      return;
+    }
+
+    if (
+      selectedObject &&
+      isImageObject(selectedObject) &&
+      !selectedObject.image.stickerId
+    ) {
+      void applyImageFileToObject(selectedObject.id, file);
+      return;
+    }
+
+    void addImageFileToScene(file);
+  });
+
+  useEffect(() => {
+    function handlePaste(event: ClipboardEvent) {
+      if (
+        isTextEditingTarget(event.target) ||
+        document.querySelector('[aria-modal="true"]')
+      ) {
+        return;
+      }
+
+      const clipboard = event.clipboardData;
+      if (!clipboard) {
+        return;
+      }
+
+      let imageFile: File | null = null;
+      for (const item of Array.from(clipboard.items ?? [])) {
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          imageFile = item.getAsFile();
+          if (imageFile) break;
+        }
+      }
+
+      if (!imageFile) {
+        imageFile =
+          Array.from(clipboard.files ?? []).find((file) =>
+            file.type.startsWith("image/"),
+          ) ?? null;
+      }
+
+      if (!imageFile) {
+        return;
+      }
+
+      event.preventDefault();
+      onPasteImage(imageFile);
+    }
+
+    window.addEventListener("paste", handlePaste);
+
+    return () => window.removeEventListener("paste", handlePaste);
   }, []);
 
   // A barra de espaço é reservada ao play do Movimento, como em editor de

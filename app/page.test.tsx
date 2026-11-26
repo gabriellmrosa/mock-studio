@@ -659,4 +659,63 @@ describe("Home page layers and selection flow", () => {
       expect(event.defaultPrevented).toBe(false);
     });
   });
+
+  describe("clipboard image paste", () => {
+    function dispatchPaste(file: File, target: EventTarget = window) {
+      const event = new Event("paste", { bubbles: true, cancelable: true }) as ClipboardEvent;
+      Object.defineProperty(event, "clipboardData", {
+        value: {
+          files: [file],
+          items: [
+            {
+              getAsFile: () => file,
+              kind: "file",
+              type: file.type,
+            },
+          ],
+        },
+      });
+      target.dispatchEvent(event);
+      return event;
+    }
+
+    it("adds a loose image when pasting an image while a non-device is selected", async () => {
+      mockedReadImageFile.mockResolvedValue({
+        animation: null,
+        aspect: 1.5,
+        isVector: false,
+        name: "clip.png",
+        outline: false,
+        shadow: false,
+        speed: 1,
+        stickerId: null,
+        url: "blob:pasted-clip",
+      });
+
+      render(<Home />);
+      addFromMenu("Text");
+
+      const file = new File(["png"], "clip.png", { type: "image/png" });
+      const event = dispatchPaste(file);
+
+      expect(event.defaultPrevented).toBe(true);
+      await waitFor(() => {
+        expect(screen.getByTestId("inspector-panel")).toHaveTextContent("Image 1");
+      });
+    });
+
+    it("ignores clipboard paste while typing inside a text input", () => {
+      render(<Home />);
+      addFromMenu("Text");
+
+      const input = document.createElement("input");
+      document.body.appendChild(input);
+
+      const file = new File(["png"], "clip.png", { type: "image/png" });
+      const event = dispatchPaste(file, input);
+      input.remove();
+
+      expect(event.defaultPrevented).toBe(false);
+    });
+  });
 });
