@@ -28,6 +28,36 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-25",
+    version: "3.7.0",
+    items: [
+      {
+        title: {
+          "pt-BR": "Colar imagem direto com Cmd+V / Ctrl+V",
+          "en-US": "Paste images directly with Cmd+V",
+        },
+        description: {
+          "pt-BR":
+            "Copie um print ou frame do Figma e cole direto no editor: com um aparelho selecionado, vai para a tela dele; com uma imagem solta, substitui o arquivo; nos demais casos, cria uma nova imagem na cena.",
+          "en-US":
+            "Copy a screenshot or Figma frame and paste straight into the editor: with a device selected it goes onto its screen, with a loose image it replaces the file, and otherwise it adds a new image to the scene.",
+        },
+      },
+      {
+        title: {
+          "pt-BR": "Corte da tela até 100%",
+          "en-US": "Screen crop up to 100%",
+        },
+        description: {
+          "pt-BR":
+            "Os controles de corte da imagem e do vídeo na tela (Topo, Base, Esquerda e Direita) agora vão até 100% em qualquer direção.",
+          "en-US":
+            "Screen image and video crop controls (Top, Bottom, Left and Right) now go all the way to 100% in any direction.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-25",
     version: "3.6.5",
     items: [
       {
