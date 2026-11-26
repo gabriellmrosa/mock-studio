@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * Uma imagem que se mexe — um sticker animado (Lottie) ou um GIF enviado —
  * vista pela cena como uma só coisa: um canvas onde se desenha o quadro de um

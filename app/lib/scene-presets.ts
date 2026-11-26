@@ -1,5 +1,3 @@
-"use client";
-
 export const DEFAULT_OBJECT_TRANSFORM = {
   positionX: 0,
   positionY: 0,

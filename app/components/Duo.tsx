@@ -13,7 +13,7 @@ import {
   type ScreenFit,
 } from "../lib/scene-objects";
 import { DEFAULT_FOLD_ANGLE } from "../lib/scene-presets";
-import { getDuoFoldPose } from "../lib/duo-fold";
+import { DUO_HINGE_Z, getDuoFoldPose } from "../lib/duo-fold";
 import {
   applyDuoFoldFx,
   createFoldScreenMaterial,
@@ -78,7 +78,7 @@ export type { DuoColors };
 // Medidas em unidades do GLB (1 ≈ 212 mm), tiradas das malhas do arquivo.
 const HALF_WIDTH = 0.39;
 /** O eixo da dobra fica na face da tela, meia espessura à frente do centro. */
-export const DUO_HINGE_Z = 0.012;
+export { DUO_HINGE_Z };
 /** Os nós das metades ficam no topo do aparelho; o centro é meia altura abaixo. */
 const CENTER_Z = -0.273;
 const THICKNESS = 0.024;

@@ -1,73 +1,22 @@
 "use client";
 
+import { Smartphone } from "../components/Smartphone";
+import { Smartphone2 } from "../components/Smartphone2";
+import { Smartphone3 } from "../components/Smartphone3";
+import { Smartwatch } from "../components/Smartwatch";
+import { Notebook } from "../components/Notebook";
+import { Tablet } from "../components/Tablet";
+import { Duo } from "../components/Duo";
 import {
-  Smartphone,
-  type DebugPartKey,
-} from "../components/Smartphone";
-import { Smartphone2, type Smartphone2DebugPartKey } from "../components/Smartphone2";
-import { Smartphone3, type Smartphone3DebugPartKey } from "../components/Smartphone3";
-import {
-  SMARTPHONE2_DEFAULT_THEME,
-  SMARTPHONE2_THEMES,
-  buildSmartphone2ColorsFromPrimary,
-} from "../lib/3d-tokens/smartphone2";
-import {
-  SMARTPHONE3_DEFAULT_THEME,
-  SMARTPHONE3_THEMES,
-  buildSmartphone3ColorsFromPrimary,
-} from "../lib/3d-tokens/smartphone3";
-import { Smartwatch, type SmartwatchDebugPartKey } from "../components/Smartwatch";
-import { Notebook, type NotebookDebugPartKey } from "../components/Notebook";
-import { Tablet, type TabletDebugPartKey } from "../components/Tablet";
-import { Duo, DUO_HINGE_Z, type DuoDebugPartKey } from "../components/Duo";
-import {
-  DUO_DEFAULT_THEME,
-  DUO_THEMES,
-  buildDuoColorsFromPrimary,
-} from "../lib/3d-tokens/duo";
-import {
-  TABLET_DEFAULT_THEME,
-  TABLET_THEMES,
-  buildTabletColorsFromPrimary,
-} from "../lib/3d-tokens/tablet";
-import {
-  SMARTPHONE_DEFAULT_THEME,
-  SMARTPHONE_THEMES,
-  buildSmartphoneColorsFromPrimary,
+  DEVICE_MODEL_CATALOG,
+  MODELS_WITH_FINISH,
+  type DeviceModelId,
+  type DeviceModelMetadata,
+  type DeviceThemeOption,
   type SmartphoneThemeName,
-} from "../lib/3d-tokens/smartphone";
-import {
-  SMARTWATCH_DEFAULT_THEME,
-  SMARTWATCH_THEMES,
-  buildSmartwatchColorsFromPrimary,
-} from "../lib/3d-tokens/smartwatch";
-import {
-  NOTEBOOK_DEFAULT_THEME,
-  NOTEBOOK_THEMES,
-  buildNotebookColorsFromPrimary,
-} from "../lib/3d-tokens/notebook";
-export type DeviceModelId =
-  | "smartphone"
-  | "smartphone2"
-  | "smartphone3"
-  | "smartwatch"
-  | "notebook"
-  | "tablet"
-  | "duo";
+} from "./device-catalog";
 
-export type DeviceThemeOption = {
-  id: string;
-  label: string;
-  preview: string;
-};
-
-export type DeviceModelDefinition = {
-  // Chave do objeto colors que representa a cor primária — exibida no color picker do InspectorPanel.
-  // undefined = modelo ainda sem temas definidos, color picker não aparece.
-  customizableColorKeys: string[];
-  primaryColorKey?: string;
-  baseRotation: [number, number, number];
-  buildColorsFromPrimary: (hex: string) => Record<string, string>;
+export type DeviceModelDefinition = DeviceModelMetadata & {
   component:
     | typeof Smartphone
     | typeof Smartphone2
@@ -76,506 +25,46 @@ export type DeviceModelDefinition = {
     | typeof Notebook
     | typeof Tablet
     | typeof Duo;
-  defaultTheme: string;
-  id: DeviceModelId;
-  initialDebugColors: Record<string, string>;
-  modelScale: [number, number, number];
-  // Offset base em world units adicionado ao AUTO_OBJECT_POSITIONS de cada índice.
-  // Usado para centralizar visualmente modelos cujo pivot nativo não coincide com a origem.
-  modelSpawnOffset: [number, number, number];
-  name: string;
-  // Offset em unidades GLTF (antes do scale) para centralizar a geometria na origem do grupo,
-  // garantindo que o pivot de rotação coincida com o centro visual do modelo.
-  // Calcular como: negativo do centro do bounding box visível em espaço GLTF.
-  pivotOffset: [number, number, number];
-  recommendedUploadSize: string;
-  screenPosition: [number, number, number];
-  screenSize: [number, number];
-  // Largura visual efetiva no eixo X em world units, já considerando
-  // o tamanho do GLB, modelScale e baseRotation. Usado para spawn lado a lado.
-  spawnFootprintWidth: number;
-  themeOptions: DeviceThemeOption[];
-  themes: Record<string, Record<string, string>>;
 };
 
-// ---------------------------------------------------------------------------
-// Smartphone — variante sem notch (corte reto na tela). Modelo principal/default.
-// ---------------------------------------------------------------------------
-const SMARTPHONE_THEME_OPTIONS: DeviceThemeOption[] = [
-  { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
-  { id: "black",      label: "Preto",      preview: "#1C1C1E" },
-  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
-  { id: "blood",      label: "Red",        preview: "#6a2525" },
-];
-
-const SMARTPHONE_CUSTOMIZABLE_COLOR_KEYS = [
-  "body",
-  "sideCuts",
-  "topCutout",
-  "frame",
-  "rearInset",
-  "cameraMicroPart",
-  "cameraBlock",
-  "cameraBlockInner",
-  "cameraLensHighlight",
-  "cameraSideDetail",
-];
-
-const SMARTPHONE_DEBUG_COLORS: Record<DebugPartKey, string> = {
-  topCutout: "#ff6600",
-  frame: "#00ff99",
-  rearInset: "#ffcc00",
-  body: "#cc00ff",
-  sideCuts: "#00ffff",
-  cameraMicroPart: "#ff0099",
-  cameraBlock: "#66ff00",
-  cameraBlockInner: "#0066ff",
-  screen: "#ffffff",
-  cameraLensHighlight: "#ff3300",
-  cameraSideDetail: "#ffff99",
-};
-
-// ---------------------------------------------------------------------------
-// Smartphone2 — cores de debug para identificação visual das partes visíveis
-// ---------------------------------------------------------------------------
-const SMARTPHONE2_DEBUG_COLORS: Record<Smartphone2DebugPartKey, string> = {
-  topCutout: "#ff6600",
-  frame: "#00ff99",
-  rearInset: "#ffcc00",
-  body: "#cc00ff",
-  sideCuts: "#00ffff",
-  cameraMicroPart: "#ff0099",
-  cameraBlock: "#66ff00",
-  cameraBlockInner: "#0066ff",
-  screen: "#ffffff",
-  cameraLensHighlight: "#ff3300",
-  cameraSideDetail: "#ffff99",
-};
-
-const SMARTPHONE2_THEME_OPTIONS = [
-  { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
-  { id: "black",      label: "Preto",      preview: "#1C1C1E" },
-  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
-  { id: "blood",      label: "Red",        preview: "#6a2525" },
-];
-
-const SMARTPHONE2_CUSTOMIZABLE_COLOR_KEYS = [
-  "body",
-  "sideCuts",
-  "topCutout",
-  "frame",
-  "rearInset",
-  "cameraMicroPart",
-  "cameraBlock",
-  "cameraBlockInner",
-  "cameraLensHighlight",
-  "cameraSideDetail",
-];
-
-// ---------------------------------------------------------------------------
-// Smartphone 3 — modelo genérico (smartphone.glb), antigo "Smartphone".
-// ---------------------------------------------------------------------------
-const SMARTPHONE3_THEME_OPTIONS: DeviceThemeOption[] = [
-  { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
-  { id: "black",      label: "Preto",      preview: "#1C1C1E" },
-  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
-  { id: "blood",      label: "Red",        preview: "#6a2525" },
-];
-
-const SMARTPHONE3_CUSTOMIZABLE_COLOR_KEYS = [
-  "gradientSound",
-  "smartphoneBody",
-  "rightBigSideButton",
-  "leftSmallSideButton",
-  "CircleTopLeft",
-  "CircleTopLeftMiddle",
-  "CircleTopRight",
-  "CircleTopRightMiddle",
-];
-
-const SMARTPHONE3_DEBUG_COLORS: Record<Smartphone3DebugPartKey, string> = {
-  smartphoneBody: "#cc00ff",
-  estruturaFrontal: "#ff00cc",
-  gradientSound: "#000000",
-  rightBigSideButton: "#ff4400",
-  CircleTopLeft: "#000000",
-  CircleTopLeftMiddle: "#ccff99",
-  leftSmallSideButton: "#66ff66",
-  notchBolinha1: "#00ff00",
-  notchBolinha2: "#00ffff",
-  notchBolinha3: "#0099ff",
-  CircleTopRightMiddle: "#ff0066",
-  notchPill: "#33ccff",
-  moduloCameraAro: "#99ff00",
-  CircleTopRight: "#ff99cc",
-  lente1: "#0000ff",
-  lente2: "#ffff99",
-  lente3: "#00ff99",
-  behindOrHideElement1: "#ff0000",
-  behindOrHideElement2: "#ff3300",
-  behindOrHideElement3: "#ff5500",
-  behindOrHideElement4: "#ff7700",
-  behindOrHideElement5: "#ff9900",
-  behindOrHideElement6: "#ffbb00",
-  behindOrHideElement7: "#ffdd00",
-};
-
-// ---------------------------------------------------------------------------
-// Smartwatch — cores de debug para identificação visual das partes visíveis.
-// O miolo do casco é Object_11. A tela é um plano separado no componente.
-// ---------------------------------------------------------------------------
-const SMARTWATCH_DEBUG_COLORS: Record<SmartwatchDebugPartKey, string> = {
-  twoSideButtons: "#ff0066",
-  bandClasp:      "#00ff99",
-  oneSideButton:  "#ff6600",
-  body:           "#0066ff",
-  bandDetails:    "#ffcc00",
-  bandBottom:     "#cc00ff",
-  bandDetails2:   "#00ffff",
-  crownDetail:    "#ffffff",
-  bandTop:        "#66ff00",
-  bodyBackground: "#ff0099",
-};
-
-const SMARTWATCH_THEME_OPTIONS = [
-  { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
-  { id: "black",      label: "Preto",      preview: "#1C1C1E" },
-  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
-  { id: "blood",      label: "Red",        preview: "#6a2525" },
-];
-
-const SMARTWATCH_CUSTOMIZABLE_COLOR_KEYS = [
-  "body",
-  "twoSideButtons",
-  "oneSideButton",
-  "bandClasp",
-  "crownDetail",
-  "bandTop",
-  "bandBottom",
-  "bandDetails",
-  "bandDetails2",
-  "bodyBackground",
-];
-
-const NOTEBOOK_THEME_OPTIONS = [
-  { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
-  { id: "black",      label: "Preto",      preview: "#1C1C1E" },
-  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
-  { id: "blood",      label: "Red",        preview: "#6a2525" },
-];
-
-const NOTEBOOK_CUSTOMIZABLE_COLOR_KEYS = [
-  "keyboardBaseOuter",
-  "keyboardDeck",
-  "bodyBottom",
-  "screenBackCover",
-  "touchpad",
-  "touchpadBorder",
-  "powerButtonInner",
-  "speakerGrilles",
-  "keyboardKeys",
-  "keyboardBacklight",
-  "laptopOpenNotch",
-  "screenBezel",
-  "screenRubberSeal",
-  "lowerHingeBar",
-  "hingeRubberSeal",
-];
-
-const NOTEBOOK_DEBUG_COLORS: Record<NotebookDebugPartKey, string> = {
-  touchpadBorder: "#ffffff",
-  keyboardBaseOuter: "#ffffff",
-  laptopOpenNotch: "#ffffff",
-  DmUcWNXfiLPcftc: "#0066ff",
-  ELAWKPIQpGuqYuU: "#ffcc00",
-  FmsrGmNZGtSredn: "#cc00ff",
-  jbtMEbemwaBHRTw: "#00ffff",
-  jfSniDGKVWZvpyG: "#66ff00",
-  lZDBMTdjXPebUMa: "#ff0099",
-  ZroMGzfQtHrkgUh: "#ffffff",
-  bckGBpxpLXNHmCa: "#ff3300",
-  JXvTyELxHLGtnWp: "#33ccff",
-  keyboardBacklight: "#ffffff",
-  sIzFavpnYbDfLWk: "#00ff99",
-  sonZrhRIQDlQHcy: "#ff6600",
-  aBJxhjUzVIkBmJN: "#0066ff",
-  mTDvrHXNRqkIrBd: "#ffcc00",
-  fVNvUQeYMdbMNOA: "#cc00ff",
-  IJeReHnhQHJFtgB: "#00ffff",
-  lzNeOaWQWAReGok: "#66ff00",
-  WZqbfOdYdlPMpRs: "#ff0099",
-  speakerGrilles: "#ffffff",
-  bodyBottom: "#ffffff",
-  powerButtonInner: "#ffffff",
-  keyboardDeck: "#ffffff",
-  EBRhBFNqcMTaWWv: "#00ff99",
-  keyboardKeys: "#ffffff",
-  keyboardGlyphs: "#ffffff",
-  touchpad: "#ffffff",
-  rFquJMQWzuecHQa: "#cc00ff",
-  eFpSjyrDhTgtyuf: "#00ffff",
-  LBeBZdkKmrJVhJd: "#66ff00",
-  MwJmMcLbTBwQpxl: "#ff0099",
-  OCxZAMeEkQKexHA: "#ffffff",
-  XodVrcYKiUPGCmX: "#ff3300",
-  screenRubberSeal: "#ffffff",
-  screenBackCover: "#ffffff",
-  hingeRubberSeal: "#ffffff",
-  xiLiwJHfkqIwaTs: "#ff6600",
-  LQtuXuSGFKsUXjP: "#0066ff",
-  screenBezel: "#ffffff",
-  screen: "#ffffff",
-  lowerHingeBar: "#ffffff",
-  QSjoCOCzvxPnLpK: "#66ff00",
-};
-
-// ---------------------------------------------------------------------------
-// Tablet — modelo procedural (sem GLB), desenhado em Tablet.tsx.
-// ---------------------------------------------------------------------------
-const TABLET_THEME_OPTIONS: DeviceThemeOption[] = [
-  { id: "gray",       label: "Cinza",      preview: "#8A8A8E" },
-  { id: "black",      label: "Preto",      preview: "#1C1C1E" },
-  { id: "light-gray", label: "Light Gray", preview: "#d1d1d1" },
-  { id: "blood",      label: "Red",        preview: "#6a2525" },
-];
-
-const TABLET_CUSTOMIZABLE_COLOR_KEYS = ["body", "bezel"];
-
-const TABLET_DEBUG_COLORS: Record<TabletDebugPartKey, string> = {
-  body: "#cc00ff",
-  bezel: "#00ff99",
-  screen: "#ffffff",
-};
-
-// ---------------------------------------------------------------------------
-// Duo — dobrável tipo livro (GLB). Temas: as duas cores do aparelho e mais
-// algumas; o quadradinho de cada um é a cor do corpo.
-// ---------------------------------------------------------------------------
-const DUO_THEME_LABELS: Record<keyof typeof DUO_THEMES, string> = {
-  "star-white": "Star White",
-  "night-sky": "Night Sky",
-  black: "Black",
-  gray: "Gray",
-  blue: "Blue",
-  green: "Green",
-  blood: "Red",
-  pink: "Pink",
-};
-
-const DUO_THEME_OPTIONS: DeviceThemeOption[] = (
-  Object.keys(DUO_THEME_LABELS) as (keyof typeof DUO_THEMES)[]
-).map((id) => ({
-  id,
-  label: DUO_THEME_LABELS[id],
-  preview: DUO_THEMES[id].body,
-}));
-
-const DUO_CUSTOMIZABLE_COLOR_KEYS = [
-  "body",
-  "frame",
-  "frameHighlight",
-  "grooves",
-  "logo",
-  "bezel",
-  "lens",
-];
-
-const DUO_DEBUG_COLORS: Record<DuoDebugPartKey, string> = {
-  body: "#cc00ff",
-  frame: "#00ff99",
-  frameHighlight: "#ffcc00",
-  grooves: "#0066ff",
-  logo: "#ff3300",
-  bezel: "#00ffff",
-  lens: "#ff0099",
-};
-
-// ---------------------------------------------------------------------------
 export const DEVICE_MODELS: Record<DeviceModelId, DeviceModelDefinition> = {
-  // Modelo principal/default = variante SEM notch (GLB do iPhone).
   smartphone: {
-    customizableColorKeys: SMARTPHONE_CUSTOMIZABLE_COLOR_KEYS,
-    primaryColorKey: "body",
-    baseRotation: [0, (90.5 * Math.PI) / 180, 0],
-    buildColorsFromPrimary: buildSmartphoneColorsFromPrimary,
+    ...DEVICE_MODEL_CATALOG.smartphone,
     component: Smartphone,
-    defaultTheme: SMARTPHONE_DEFAULT_THEME,
-    id: "smartphone",
-    initialDebugColors: SMARTPHONE_DEBUG_COLORS,
-    modelScale: [122.9, 122.9, 122.9],
-    modelSpawnOffset: [0, 0, 0],
-    name: "Smartphone",
-    // Cancela o offset interno [1.5, 2.5, -1] do componente (GLB já é centrado),
-    // colocando o centro visual na origem do pivô — rotação gira no centro.
-    pivotOffset: [-1.5, -2.5, 1.0],
-    recommendedUploadSize: "1290x2748",
-    screenPosition: [0, 0, 0],
-    screenSize: [0, 0],
-    spawnFootprintWidth: 245.19,
-    themeOptions: SMARTPHONE_THEME_OPTIONS,
-    themes: SMARTPHONE_THEMES,
   },
   smartphone2: {
-    customizableColorKeys: SMARTPHONE2_CUSTOMIZABLE_COLOR_KEYS,
-    primaryColorKey: "body",
-    baseRotation: [0, (90.5 * Math.PI) / 180, 0],
-    buildColorsFromPrimary: buildSmartphone2ColorsFromPrimary,
+    ...DEVICE_MODEL_CATALOG.smartphone2,
     component: Smartphone2,
-    defaultTheme: SMARTPHONE2_DEFAULT_THEME,
-    id: "smartphone2",
-    initialDebugColors: SMARTPHONE2_DEBUG_COLORS,
-    modelScale: [122.9, 122.9, 122.9],
-    modelSpawnOffset: [0, 0, 0],
-    name: "Smartphone 2",
-    // Mesmo GLB/estrutura do smartphone — cancela o offset interno do componente.
-    pivotOffset: [-1.5, -2.5, 1.0],
-    recommendedUploadSize: "1290x2748",
-    screenPosition: [0, 0, 0],
-    screenSize: [0, 0],
-    spawnFootprintWidth: 245.19,
-    themeOptions: SMARTPHONE2_THEME_OPTIONS,
-    themes: SMARTPHONE2_THEMES,
   },
-  // Smartphone 3 = modelo genérico (smartphone.glb), antigo "Smartphone".
   smartphone3: {
-    customizableColorKeys: SMARTPHONE3_CUSTOMIZABLE_COLOR_KEYS,
-    primaryColorKey: "smartphoneBody",
-    baseRotation: [0, 0, 0],
-    buildColorsFromPrimary: buildSmartphone3ColorsFromPrimary,
+    ...DEVICE_MODEL_CATALOG.smartphone3,
     component: Smartphone3,
-    defaultTheme: SMARTPHONE3_DEFAULT_THEME,
-    id: "smartphone3",
-    initialDebugColors: SMARTPHONE3_DEBUG_COLORS,
-    modelScale: [1, 1, 1],
-    modelSpawnOffset: [0, 0, 0],
-    name: "Smartphone 3",
-    // Centro do bbox medido em runtime: (-125.09, 314.71, -180.11) GLTF units.
-    pivotOffset: [125.09, -314.71, 180.11],
-    recommendedUploadSize: "1290x2755",
-    screenPosition: [-125, 314.85, -195],
-    screenSize: [220, 470],
-    spawnFootprintWidth: 243.01,
-    themeOptions: SMARTPHONE3_THEME_OPTIONS,
-    themes: SMARTPHONE3_THEMES,
   },
   smartwatch: {
-    customizableColorKeys: SMARTWATCH_CUSTOMIZABLE_COLOR_KEYS,
-    primaryColorKey: "body",
-    // GLTF tem -PI/2 X baked. +PI/2 X cancela → modelo nativo deitado.
-    // Z -PI/2 ergue o relógio do chão; Y PI enfrenta a câmera.
-    baseRotation: [0, -Math.PI / 2, 0],
-    buildColorsFromPrimary: buildSmartwatchColorsFromPrimary,
+    ...DEVICE_MODEL_CATALOG.smartwatch,
     component: Smartwatch,
-    defaultTheme: SMARTWATCH_DEFAULT_THEME,
-    id: "smartwatch",
-    initialDebugColors: SMARTWATCH_DEBUG_COLORS,
-    // GLTF bounding box: [14.509, 8.231, 15.128]. Após -PI/2 X baked na cena:
-    // altura Three.js = 15.128. Scale alvo: ~490 / 15.128 ≈ 32.4
-    modelScale: [19.44, 19.44, 19.44],
-    modelSpawnOffset: [0, 0, 0],
-    name: "Smartwatch",
-    // Centro do bbox medido em runtime: (7.30, 14.48, -0.08) GLTF units.
-    pivotOffset: [-7.3, -14.48, 0.08],
-    recommendedUploadSize: "1290x1452",
-    // Calibrado a partir do bbox do scene graph do miolo frontal (Object_11),
-    // já com a rotação baked do GLB aplicada:
-    // center ≈ [6.575, 14.518, -0.097], size ≈ [12.992, 8.813, 8.057].
-    // O plano da tela fica ligeiramente à frente da face frontal para evitar
-    // z-fighting com o bodyBackground, centrado em Y/Z.
-    screenPosition: [0.02, 14.52, -0.1],
-    screenSize: [6.87, 7.73],
-    spawnFootprintWidth: 160.02,
-    themeOptions: SMARTWATCH_THEME_OPTIONS,
-    themes: SMARTWATCH_THEMES,
   },
   notebook: {
-    customizableColorKeys: NOTEBOOK_CUSTOMIZABLE_COLOR_KEYS,
-    primaryColorKey: "keyboardBaseOuter",
-    // Notebook está de costas com baseRotation=[0,0,0] — mesma correção do smartphone2.
-    baseRotation: [0, Math.PI, 0],
-    buildColorsFromPrimary: buildNotebookColorsFromPrimary,
+    ...DEVICE_MODEL_CATALOG.notebook,
     component: Notebook,
-    defaultTheme: NOTEBOOK_DEFAULT_THEME,
-    id: "notebook",
-    initialDebugColors: NOTEBOOK_DEBUG_COLORS,
-    // GLTF com scale=0.01 baked. Bounds efetivos: [0.312, 0.300, 0.212] world units.
-    // Após PI/2 X rotation: altura = 0.212. Scale alvo: ~490 / 0.212 ≈ 2311
-    modelScale: [2311, 2311, 2311],
-    modelSpawnOffset: [0, 0, 0],
-    name: "Notebook",
-    // Centro do bbox medido em runtime: (0, 0.0964, -0.0397) GLTF units.
-    pivotOffset: [0, -0.0964, 0.0397],
-    recommendedUploadSize: "2755x1684",
-    screenPosition: [0, 0, 0],
-    screenSize: [0, 0],
-    spawnFootprintWidth: 720.41,
-    themeOptions: NOTEBOOK_THEME_OPTIONS,
-    themes: NOTEBOOK_THEMES,
   },
   tablet: {
-    customizableColorKeys: TABLET_CUSTOMIZABLE_COLOR_KEYS,
-    primaryColorKey: "body",
-    // Geometria construída com a tela voltada para +Z; PI em Y compensa o
-    // rotationY=180 do transform padrão para nascer de frente para a câmera.
-    baseRotation: [0, Math.PI, 0],
-    buildColorsFromPrimary: buildTabletColorsFromPrimary,
+    ...DEVICE_MODEL_CATALOG.tablet,
     component: Tablet,
-    defaultTheme: TABLET_DEFAULT_THEME,
-    id: "tablet",
-    initialDebugColors: TABLET_DEBUG_COLORS,
-    // Procedural em world units diretas (altura ~500, como os smartphones).
-    modelScale: [1, 1, 1],
-    // Geometria já centrada na origem — com todos os modelos centrados via
-    // pivotOffset, o alinhamento entre eles dispensa offsets de spawn.
-    modelSpawnOffset: [0, 0, 0],
-    name: "Tablet",
-    pivotOffset: [0, 0, 0],
-    recommendedUploadSize: "1668x2388",
-    screenPosition: [0, 0, 0],
-    screenSize: [0, 0],
-    spawnFootprintWidth: 358,
-    themeOptions: TABLET_THEME_OPTIONS,
-    themes: TABLET_THEMES,
   },
   duo: {
-    customizableColorKeys: DUO_CUSTOMIZABLE_COLOR_KEYS,
-    primaryColorKey: "body",
-    // O GLB é preparado com a tela de dentro voltada para +Z, como o Tablet.
-    baseRotation: [0, Math.PI, 0],
-    buildColorsFromPrimary: buildDuoColorsFromPrimary,
+    ...DEVICE_MODEL_CATALOG.duo,
     component: Duo,
-    defaultTheme: DUO_DEFAULT_THEME,
-    id: "duo",
-    initialDebugColors: DUO_DEBUG_COLORS,
-    // 1 unidade do GLB ≈ 212 mm (altura de 0,556 para 117,8 mm). Na escala
-    // dos smartphones, ~3,4 por mm, o aparelho fica com ~400 de altura.
-    modelScale: [720, 720, 720],
-    modelSpawnOffset: [0, 0, 0],
-    name: "Duo",
-    // O pivô é a dobradiça, na face da tela: meia espessura à frente do
-    // centro do aparelho aberto. Ao fechar, o próprio modelo desliza para
-    // manter o centro visual nele (duo-fold.ts).
-    pivotOffset: [0, 0, DUO_HINGE_Z],
-    // A tela de dentro; a de fora tem o tamanho dela no Inspector.
-    recommendedUploadSize: "2670x1878",
-    screenPosition: [0, 0, 0],
-    screenSize: [0, 0],
-    // Aberto, que é como nasce.
-    spawnFootprintWidth: 562,
-    themeOptions: DUO_THEME_OPTIONS,
-    themes: DUO_THEMES,
   },
 };
-
-/**
- * Os modelos em que o acabamento fosco/polido muda o que se vê: os materiais
- * deles são físicos e reagem ao ambiente da cena. Nos outros a opção não
- * mudava nada (commit `d5c7086`) e não existe.
- */
-export const MODELS_WITH_FINISH: readonly DeviceModelId[] = ["duo", "smartwatch"];
 
 export const DEVICE_MODEL_LIST = Object.values(DEVICE_MODELS);
 export const DEFAULT_DEVICE_MODEL = DEVICE_MODELS.smartphone;
 
-// Re-export para compatibilidade com imports existentes
-export type { SmartphoneThemeName };
+export { MODELS_WITH_FINISH };
+export type {
+  DeviceModelId,
+  DeviceModelMetadata,
+  DeviceThemeOption,
+  SmartphoneThemeName,
+};

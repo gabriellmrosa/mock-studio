@@ -1,5 +1,3 @@
-"use client";
-
 import {
   fromTemplateScreen,
   normalizeTemplateScreen,
@@ -7,10 +5,10 @@ import {
   type TemplateScreen,
 } from "./screen-memory";
 import {
-  DEVICE_MODELS,
+  DEVICE_MODEL_CATALOG as DEVICE_MODELS,
   MODELS_WITH_FINISH,
   type DeviceModelId,
-} from "../models/device-models";
+} from "../models/device-catalog";
 import {
   getPlaceholderImageUrl,
   isAudioObject,

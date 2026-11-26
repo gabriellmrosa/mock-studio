@@ -1,9 +1,7 @@
-"use client";
-
 import {
-  DEVICE_MODELS,
+  DEVICE_MODEL_CATALOG as DEVICE_MODELS,
   type DeviceModelId,
-} from "../models/device-models";
+} from "../models/device-catalog";
 import {
   DEFAULT_OBJECT_TRANSFORM,
   OBJECT_POSITION_MULTIPLIER,

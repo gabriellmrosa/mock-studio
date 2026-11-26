@@ -9,6 +9,9 @@
  * alinhando pelo centro visual, o conjunto desliza de volta para o meio à
  * medida que fecha — suave, para a abertura animada não dar um tranco.
  */
+/** Profundidade do eixo da dobradiça do Duo nas unidades do modelo GLTF. */
+export const DUO_HINGE_Z = 0.012;
+
 export type DuoFoldPose = {
   /** Giro da capa em torno da dobradiça, em radianos: 0 aberta, π fechada. */
   coverRotation: number;

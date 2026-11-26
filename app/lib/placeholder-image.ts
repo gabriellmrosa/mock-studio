@@ -1,5 +1,3 @@
-"use client";
-
 // Placeholder de tela gerado em runtime via canvas — substitui os PNGs
 // estáticos de public/. Estilo: xadrez sutil + tamanho recomendado centralizado,
 // na mesma família tipográfica do corpo da UI (--font-sans).
