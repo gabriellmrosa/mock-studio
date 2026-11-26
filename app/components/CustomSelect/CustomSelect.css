@@ -150,6 +150,12 @@
   text-transform: uppercase;
 }
 
+/* Sobre a opção selecionada (--surface-active), --sidebar-muted cai abaixo do
+   AA no Default e no Dracula; --sidebar-label garante contraste >= 6,7:1. */
+.custom-select-option[data-selected="true"] .custom-select-option-badge {
+  color: var(--sidebar-label);
+}
+
 .custom-select-option-icon {
   align-items: center;
   color: var(--icon-fg);

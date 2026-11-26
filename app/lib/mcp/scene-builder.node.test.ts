@@ -181,5 +181,36 @@ describe("MCP scene core (pure Node)", () => {
         }),
       ).rejects.toThrow(/exceeding the limit/i);
     });
+
+    it("rejects inherited Object.prototype names and overly long names", async () => {
+      await expect(
+        buildScene({ devices: [{ model: "toString" as never }] }),
+      ).rejects.toThrow(McpValidationError);
+      await expect(
+        buildScene({
+          texts: [{ content: "Hi", font: "constructor" as never }],
+        }),
+      ).rejects.toThrow(McpValidationError);
+      await expect(
+        buildScene({
+          devices: [{ model: "smartphone" }],
+          name: "x".repeat(81),
+        }),
+      ).rejects.toThrow(/maximum of 80 characters/i);
+      await expect(
+        buildScene({
+          devices: [{ model: "smartphone", name: "y".repeat(81) }],
+        }),
+      ).rejects.toThrow(/maximum of 80 characters/i);
+
+      // theme e builtinImages com nomes de protótipo viram aviso não-fatal, nunca crash.
+      const res = await buildScene({
+        builtinImages: [{ assetId: "constructor" as never }],
+        devices: [{ model: "smartphone", theme: "toString" }],
+      });
+      expect(res.warnings).toHaveLength(2);
+      expect(res.warnings[0]).toContain("toString");
+      expect(res.warnings[1]).toContain("constructor");
+    });
   });
 });

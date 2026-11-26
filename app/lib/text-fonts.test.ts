@@ -53,8 +53,10 @@ describe("text font weights", () => {
     expect(getNearestWeight("inter", "bold")).toBe(700);
   });
 
-  it("falls back on Regular for anything else", () => {
+  it("falls back on Regular for anything else, including prototype property names", () => {
     expect(getNearestWeight("inter", "heavy")).toBe(400);
+    expect(getNearestWeight("inter", "toString")).toBe(400);
+    expect(getNearestWeight("inter", "constructor")).toBe(400);
     expect(getNearestWeight("inter", undefined)).toBe(400);
     expect(getNearestWeight("inter", Number.NaN)).toBe(400);
   });

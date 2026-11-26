@@ -84,7 +84,7 @@ const LEGACY_WEIGHTS: Record<string, TextWeight> = { bold: 700, regular: 400 };
  */
 export function getNearestWeight(fontId: TextFontId, weight: unknown): TextWeight {
   const requested =
-    typeof weight === "string" && weight in LEGACY_WEIGHTS
+    typeof weight === "string" && Object.hasOwn(LEGACY_WEIGHTS, weight)
       ? LEGACY_WEIGHTS[weight]
       : typeof weight === "number" && Number.isFinite(weight)
         ? weight

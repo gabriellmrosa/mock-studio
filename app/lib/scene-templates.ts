@@ -752,7 +752,8 @@ function isValidTemplateObject(value: unknown): value is TemplateObject {
       ? typeof object.text === "object" && object.text !== null
       : object.kind === "image"
         ? typeof object.aspect === "number"
-        : typeof object.modelId === "string" && object.modelId in DEVICE_MODELS;
+        : typeof object.modelId === "string" &&
+          Object.hasOwn(DEVICE_MODELS, object.modelId);
 
   return (
     hasKind &&

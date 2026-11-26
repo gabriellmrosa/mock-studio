@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-26",
+    version: "3.7.2",
+    items: [
+      {
+        title: {
+          "pt-BR": "Validação de templates e contraste",
+          "en-US": "Template validation and contrast fixes",
+        },
+        description: {
+          "pt-BR":
+            "Templates e links importados ficaram mais rígidos contra dados malformados, e ícones e badges em linhas selecionadas ganharam mais contraste nos temas Default e Drácula.",
+          "en-US":
+            "Imported templates and links now validate identifiers more strictly against malformed data, and secondary icons and badges on selected rows have improved contrast in Default and Dracula themes.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-26",
     version: "3.7.1",
     items: [
       {

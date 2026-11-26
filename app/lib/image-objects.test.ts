@@ -9,6 +9,7 @@ import {
   IMAGE_SPAWN_OFFSET,
   getStickerImage,
   getSvgAspect,
+  isBuiltinImageAssetId,
   isDefaultImagePose,
   normalizeImageAspect,
   normalizeImageSpeed,
@@ -208,5 +209,16 @@ describe("getImageSpawnPosition", () => {
     const phone = { ...createSceneObject({ id: "p", name: "P" }), positionX: o, positionY: o };
 
     expect(getImageSpawnPosition([phone])).toEqual({ positionX: o, positionY: o });
+  });
+});
+
+describe("isBuiltinImageAssetId", () => {
+  it("recognizes bundled assets and rejects inherited Object.prototype names", () => {
+    expect(isBuiltinImageAssetId("mock-studio-logo")).toBe(true);
+    expect(isBuiltinImageAssetId("toString")).toBe(false);
+    expect(isBuiltinImageAssetId("constructor")).toBe(false);
+    expect(isBuiltinImageAssetId("__proto__")).toBe(false);
+    expect(isBuiltinImageAssetId("unknown")).toBe(false);
+    expect(isBuiltinImageAssetId(null)).toBe(false);
   });
 });

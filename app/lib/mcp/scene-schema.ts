@@ -31,6 +31,7 @@ export type McpFramePreset = (typeof MCP_FRAME_PRESETS)[number];
 
 export const MAX_MCP_OBJECTS = 20;
 export const MAX_MCP_KEYFRAMES_PER_OBJECT = 30;
+export const MAX_MCP_NAME_LENGTH = 80;
 export const MIN_MCP_DURATION_MS = 500;
 export const MAX_MCP_DURATION_MS = 60_000;
 
@@ -197,6 +198,18 @@ function assertOptionalString(value: unknown, path: string): string | undefined 
   return value;
 }
 
+function assertOptionalName(value: unknown, path: string): string | undefined {
+  const raw = assertOptionalString(value, path);
+  if (raw === undefined) return undefined;
+  const trimmed = raw.trim();
+  if (trimmed.length > MAX_MCP_NAME_LENGTH) {
+    throw new McpValidationError(
+      `${path} exceeds the maximum of ${MAX_MCP_NAME_LENGTH} characters.`,
+    );
+  }
+  return trimmed;
+}
+
 function validateKeyframes(raw: unknown, path: string): McpKeyframeInput[] | undefined {
   if (raw === undefined) return undefined;
   if (!Array.isArray(raw)) {
@@ -274,7 +287,7 @@ export function validateBuildSceneInput(raw: unknown): McpBuildSceneInput {
     throw new McpValidationError("Scene input must be a JSON object.");
   }
 
-  const name = assertOptionalString(raw.name, "name")?.trim();
+  const name = assertOptionalName(raw.name, "name");
 
   let mode: "static" | "motion" | undefined;
   if (raw.mode !== undefined) {
@@ -443,7 +456,7 @@ export function validateBuildSceneInput(raw: unknown): McpBuildSceneInput {
       if (item.model !== undefined) {
         if (
           typeof item.model !== "string" ||
-          !(item.model in DEVICE_MODEL_CATALOG)
+          !Object.hasOwn(DEVICE_MODEL_CATALOG, item.model)
         ) {
           throw new McpValidationError(
             `${p}.model '${String(item.model)}' is not valid. Valid models: ${DEVICE_MODEL_IDS.join(", ")}.`,
@@ -461,7 +474,7 @@ export function validateBuildSceneInput(raw: unknown): McpBuildSceneInput {
         keyframes: validateKeyframes(item.keyframes, `${p}.keyframes`),
         matteFinish: assertOptionalBool(item.matteFinish, `${p}.matteFinish`),
         model,
-        name: assertOptionalString(item.name, `${p}.name`),
+        name: assertOptionalName(item.name, `${p}.name`),
         opacity:
           item.opacity !== undefined
             ? assertFiniteNumber(item.opacity, `${p}.opacity`)
@@ -501,7 +514,7 @@ export function validateBuildSceneInput(raw: unknown): McpBuildSceneInput {
       }
       let font: TextFontId | undefined;
       if (item.font !== undefined) {
-        if (typeof item.font !== "string" || !(item.font in TEXT_FONTS)) {
+        if (typeof item.font !== "string" || !Object.hasOwn(TEXT_FONTS, item.font)) {
           throw new McpValidationError(
             `${p}.font '${String(item.font)}' is not valid. Valid fonts: ${Object.keys(TEXT_FONTS).join(", ")}.`,
           );
@@ -534,7 +547,7 @@ export function validateBuildSceneInput(raw: unknown): McpBuildSceneInput {
           item.maxWidth === null || item.maxWidth === undefined
             ? (item.maxWidth as null | undefined)
             : assertFiniteNumber(item.maxWidth, `${p}.maxWidth`),
-        name: assertOptionalString(item.name, `${p}.name`),
+        name: assertOptionalName(item.name, `${p}.name`),
         opacity:
           item.opacity !== undefined
             ? assertFiniteNumber(item.opacity, `${p}.opacity`)
@@ -579,7 +592,7 @@ export function validateBuildSceneInput(raw: unknown): McpBuildSceneInput {
       return {
         id: item.id.trim(),
         keyframes: validateKeyframes(item.keyframes, `${p}.keyframes`),
-        name: assertOptionalString(item.name, `${p}.name`),
+        name: assertOptionalName(item.name, `${p}.name`),
         opacity:
           item.opacity !== undefined
             ? assertFiniteNumber(item.opacity, `${p}.opacity`)
@@ -622,7 +635,7 @@ export function validateBuildSceneInput(raw: unknown): McpBuildSceneInput {
       return {
         assetId: item.assetId.trim() as BuiltinImageAssetId,
         keyframes: validateKeyframes(item.keyframes, `${p}.keyframes`),
-        name: assertOptionalString(item.name, `${p}.name`),
+        name: assertOptionalName(item.name, `${p}.name`),
         opacity:
           item.opacity !== undefined
             ? assertFiniteNumber(item.opacity, `${p}.opacity`)

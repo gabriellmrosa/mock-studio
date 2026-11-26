@@ -33,7 +33,7 @@ export type BuiltinImageAssetId = keyof typeof BUILTIN_IMAGE_ASSETS;
 export function isBuiltinImageAssetId(
   value: unknown,
 ): value is BuiltinImageAssetId {
-  return typeof value === "string" && value in BUILTIN_IMAGE_ASSETS;
+  return typeof value === "string" && Object.hasOwn(BUILTIN_IMAGE_ASSETS, value);
 }
 
 export function getBuiltinAssetImage(

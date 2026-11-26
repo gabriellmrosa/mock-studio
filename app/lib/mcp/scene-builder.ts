@@ -481,7 +481,7 @@ export async function buildScene(
       object.colors = model.buildColorsFromPrimary(deviceInput.color);
       object.deviceTheme = "custom";
     } else if (deviceInput.theme) {
-      if (model.themes[deviceInput.theme]) {
+      if (Object.hasOwn(model.themes, deviceInput.theme)) {
         object.deviceTheme = deviceInput.theme;
         object.colors = { ...model.themes[deviceInput.theme] };
       } else {

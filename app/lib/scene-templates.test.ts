@@ -1360,4 +1360,18 @@ describe("screen framing in keyframes", () => {
     });
     expect(rebuilt.keyframes[0].transform).not.toHaveProperty("outerScreenFit");
   });
+
+  it("rejects inherited Object.prototype names like toString and constructor as modelId", () => {
+    const base = createSceneTemplate({
+      mode: "static",
+      name: "Proto check",
+      objects: [createSceneObject({ deletable: false, name: "Phone" })],
+    });
+
+    for (const badModelId of ["toString", "constructor", "__proto__"]) {
+      const tampered = JSON.parse(JSON.stringify(base));
+      tampered.objects[0].modelId = badModelId;
+      expect(isValidTemplate(tampered)).toBe(false);
+    }
+  });
 });

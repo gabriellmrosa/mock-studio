@@ -48,7 +48,9 @@ export function isCustomDeviceTheme(
   deviceTheme: string,
   colors: Record<string, string>,
 ) {
-  const theme = model.themes[deviceTheme];
+  const theme = Object.hasOwn(model.themes, deviceTheme)
+    ? model.themes[deviceTheme]
+    : undefined;
 
   return !theme || model.customizableColorKeys.some((key) => colors[key] !== theme[key]);
 }

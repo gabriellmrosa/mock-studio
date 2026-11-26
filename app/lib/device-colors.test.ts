@@ -56,8 +56,10 @@ describe("isCustomDeviceTheme", () => {
     expect(isCustomDeviceTheme(model, "night-sky", colors)).toBe(true);
   });
 
-  it("is true for a theme the model doesn't have", () => {
+  it("is true for a theme the model doesn't have, including prototype property names", () => {
     expect(isCustomDeviceTheme(model, "nope", model.themes["night-sky"])).toBe(true);
+    expect(isCustomDeviceTheme(model, "toString", model.themes["night-sky"])).toBe(true);
+    expect(isCustomDeviceTheme(model, "constructor", model.themes["night-sky"])).toBe(true);
   });
 });
 

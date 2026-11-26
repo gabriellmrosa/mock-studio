@@ -21,7 +21,7 @@ import type { SceneText } from "./text-objects";
 
 /**
  * Enquadramento do conteúdo na tela, sobre o recorte "cover" automático.
- * - `crop*`: fração de cada borda do arquivo a esconder (0 a 0.25), para
+ * - `crop*`: fração de cada borda do arquivo a esconder (0 a 1), para
  *   molduras gravadas junto — gravações de tela espelhadas costumam trazer uma.
  *   É uma máscara: o conteúdo não muda de tamanho nem de lugar, e a faixa
  *   cortada mostra o `background`.
