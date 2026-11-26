@@ -180,11 +180,11 @@ describe("getScreenLayout", () => {
   it("clamps zoom, pan and crop to their ranges", () => {
     const layout = getScreenLayout(
       ...matching,
-      fit({ cropTop: 0.9, panX: 5, zoom: 0.1 }),
+      fit({ cropTop: 1.5, panX: 5, zoom: 0.1 }),
     );
     const same = getScreenLayout(
       ...matching,
-      fit({ cropTop: 0.25, panX: 1, zoom: 0.5 }),
+      fit({ cropTop: 1, panX: 1, zoom: 0.5 }),
     );
 
     expect(layout).toEqual(same);

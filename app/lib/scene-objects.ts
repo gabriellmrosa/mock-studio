@@ -66,7 +66,8 @@ export const MIN_SCREEN_ZOOM = 0.5;
 export const MAX_SCREEN_ZOOM = 3;
 /** Até onde a posição vai: ±1 = uma largura (ou altura) inteira da imagem. */
 export const MAX_SCREEN_PAN = 1;
-export const MAX_SCREEN_CROP = 0.25;
+/** Até onde o corte vai por borda: 1 = 100% (esconde a imagem inteira). */
+export const MAX_SCREEN_CROP = 1;
 
 /**
  * Gravação de tela enviada pelo usuário. Fica como blob URL (não data URL,

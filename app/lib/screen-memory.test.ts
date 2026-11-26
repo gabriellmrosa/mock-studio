@@ -92,7 +92,7 @@ describe("normalizeTemplateScreen", () => {
 
     expect(screen?.image?.name).toBe("home.png");
     expect(screen?.image?.fit.zoom).toBe(3);
-    expect(screen?.image?.fit.cropTop).toBe(0.25);
+    expect(screen?.image?.fit.cropTop).toBe(1);
     expect(screen?.image?.fit.background).toBe(DEFAULT_SCREEN_FIT.background);
   });
 
