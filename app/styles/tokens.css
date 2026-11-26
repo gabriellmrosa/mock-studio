@@ -96,7 +96,9 @@
   --space-5: 1.25rem; /* 20px */
   --space-6: 1.5rem; /* 24px */
   --space-8: 2rem; /* 32px */
-  --motion-timeline-height: 9.5rem;
+  /* Altura de referência da timeline (3 faixas: Câmera, Fundo e 1 objeto); o
+     palco sobrescreve no Movimento com o ajuste automático pelas faixas. */
+  --motion-timeline-height: calc(10.5rem + 1px);
 
   /* =====================
      SIZING

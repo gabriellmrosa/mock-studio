@@ -33,11 +33,6 @@ import {
 import CameraControlsImpl from "camera-controls";
 import type { AppCopy, Locale, UiTheme } from "../../lib/i18n";
 import {
-  readStorageItem,
-  removeStorageItem,
-  writeStorageItem,
-} from "../../lib/storage";
-import {
   CanvasErrorBoundary,
   CanvasRecoveryCard,
 } from "./CanvasErrorBoundary";
@@ -144,7 +139,9 @@ import { SceneTextMesh } from "./SceneTextMesh";
 import { applyDuoFoldAngle, Duo } from "../Duo";
 import { warmUpModels } from "../../lib/model-warmup";
 import TimelineResizeHandle, {
-  clampTimelineHeight,
+  countTimelineTracks,
+  getAutoTimelineHeightCss,
+  getManualTimelineHeightCss,
 } from "../MotionTimeline/TimelineResizeHandle";
 import {
   estimateRemainingMs,
@@ -298,8 +295,6 @@ type SceneBridgeProps = MockupCanvasProps & {
   spawnOverrides: SpawnOverrides;
 };
 
-
-const TIMELINE_HEIGHT_KEY = "mock-photo-timeline-height";
 
 const CAMERA_POSITION: [number, number, number] = [0, 0, 5];
 const CAMERA_FOV = 45;
@@ -2053,29 +2048,22 @@ export default function MockupCanvas(props: MockupCanvasProps) {
   const [incrementalLoadingDelayElapsed, setIncrementalLoadingDelayElapsed] =
     useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  // Altura escolhida para a timeline, em px; null = a padrão do token. Fica
-  // no navegador, como as preferências do Exportar.
+  // Altura manual escolhida nesta sessão ao arrastar a alça; null = ajusta
+  // automaticamente às faixas visíveis (até 35vh). Não persiste entre sessões
+  // e volta ao automático sempre que o modo Vídeo é reaberto.
   const [timelineHeight, setTimelineHeight] = useState<number | null>(null);
+  const [wasMotionMode, setWasMotionMode] = useState(props.isMotionMode);
 
-  useEffect(() => {
-    // Lida depois de montar: no servidor não há localStorage, e ler durante
-    // o render quebraria a hidratação.
-    const stored = Number(readStorageItem(TIMELINE_HEIGHT_KEY));
-
-    if (stored > 0) {
-      setTimelineHeight(clampTimelineHeight(stored));
-    }
-  }, []);
-
-  function changeTimelineHeight(height: number | null) {
-    setTimelineHeight(height);
-
-    if (height === null) {
-      removeStorageItem(TIMELINE_HEIGHT_KEY);
-    } else {
-      writeStorageItem(TIMELINE_HEIGHT_KEY, String(height));
+  if (wasMotionMode !== props.isMotionMode) {
+    setWasMotionMode(props.isMotionMode);
+    if (!props.isMotionMode) {
+      setTimelineHeight(null);
     }
   }
+
+  const timelineTrackCount = props.isMotionMode
+    ? countTimelineTracks(props.objects)
+    : 0;
   const videoExportHandlerRef = useRef<VideoExportHandler | null>(null);
   const alignmentAreaRef = useRef<HTMLDivElement | null>(null);
   const modeFrameRef = useRef<((pose: CameraPose | null) => void) | null>(null);
@@ -2426,10 +2414,15 @@ export default function MockupCanvas(props: MockupCanvasProps) {
         {
           ...(stageBackground && !isFramed ? { background: stageBackground } : {}),
           // A timeline, a barra flutuante acima dela e o quadro do vídeo leem
-          // este token: mudar aqui move tudo junto. O 50vh segura a janela
-          // que encolheu depois da escolha.
-          ...(timelineHeight !== null
-            ? { "--motion-timeline-height": `min(${timelineHeight}px, 50vh)` }
+          // este token: mudar aqui move tudo junto. No automático acompanha as
+          // faixas (até 35vh); no arraste manual vale o escolhido (até 50vh).
+          ...(props.isMotionMode
+            ? {
+                "--motion-timeline-height":
+                  timelineHeight !== null
+                    ? getManualTimelineHeightCss(timelineHeight)
+                    : getAutoTimelineHeightCss(timelineTrackCount),
+              }
             : {}),
         } as CSSProperties
       }
@@ -2595,7 +2588,8 @@ export default function MockupCanvas(props: MockupCanvasProps) {
             <TimelineResizeHandle
               copy={props.copy}
               height={timelineHeight}
-              onChange={changeTimelineHeight}
+              onChange={setTimelineHeight}
+              trackCount={timelineTrackCount}
             />
             {props.timeline}
           </>

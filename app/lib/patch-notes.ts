@@ -27,6 +27,24 @@ export type PatchNote = {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    date: "2026-11-26",
+    version: "3.7.1",
+    items: [
+      {
+        title: {
+          "pt-BR": "Altura automática da timeline",
+          "en-US": "Auto-sizing video timeline height",
+        },
+        description: {
+          "pt-BR":
+            "A timeline do modo Vídeo agora abre ajustada às faixas visíveis (até 35% da tela) e acompanha faixas adicionadas ou removidas. Arrastar a borda superior segue valendo na sessão (até 50%), com clique duplo para voltar ao automático.",
+          "en-US":
+            "The Video mode timeline now opens sized to fit its visible tracks (up to 35% of the viewport) and adjusts as tracks are added or removed. Dragging its top edge still resizes for the current session (up to 50%), with double-click returning to auto-fit.",
+        },
+      },
+    ],
+  },
+  {
     date: "2026-11-25",
     version: "3.7.0",
     items: [

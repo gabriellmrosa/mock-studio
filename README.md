@@ -99,7 +99,7 @@ Mock Studio is an open source editor for marketing shots and product videos. Dro
 - tooltips on the canvas toolbar icons, shown on hover and keyboard focus
 - `Reset` as a single icon, dimmed when there is nothing to reset
 - timeline zoom: `−` / `+` in its header or a trackpad pinch inside it, anchored on the playhead or under the fingers, with a ruler that refines to tenths of a second
-- a resizable timeline in `Motion`: drag its top edge (or use the arrow keys on it), double-click to reset; the height is remembered
+- an auto-sizing, resizable timeline in `Motion`: opens fitted to the visible tracks (up to 35% of the viewport) and adjusts as tracks are added or removed; drag its top edge (or use the arrow keys on it) to resize for the current session up to 50% of the viewport, and double-click (or press `Home`) to return to auto-fit
 - object opacity, part of the pose: set it in `Transform` and, in `Motion`, animate it per keyframe to fade an object in or out
 - in `Motion` an animated object is in the scene only while its track is on the ruler: it enters at its first keyframe and leaves after the last one, so what the timeline shows is what the video shows (an object with a single keyframe stays from it to the end; one with no keyframes is always there; to keep an object on its final pose, extend its track to the end of the scene)
 - a video size for `Motion` (1920 × 1080 by default), set from the timeline header with 16:9, 1:1, 4:5 and 9:16 presets or width and height in pixels, with an optional aspect-ratio lock; the canvas takes that shape, and `Motion` templates store it
