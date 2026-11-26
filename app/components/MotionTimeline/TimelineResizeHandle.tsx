@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import type { AppCopy } from "../../lib/i18n";
 import {
   getActiveScreenVideos,
@@ -139,6 +139,7 @@ export default function TimelineResizeHandle({
   trackCount: number;
 }) {
   const dragRef = useRef<{ startHeight: number; startY: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
   // Só renderiza no cliente (Movimento aberto): o documento já existe.
   const resolveCurrentHeight = () =>
     height !== null
@@ -153,6 +154,7 @@ export default function TimelineResizeHandle({
 
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
+    setIsDragging(true);
     dragRef.current = { startHeight: resolveCurrentHeight(), startY: event.clientY };
   }
 
@@ -169,6 +171,7 @@ export default function TimelineResizeHandle({
 
   function endDrag(event: PointerEvent<HTMLDivElement>) {
     dragRef.current = null;
+    setIsDragging(false);
 
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -205,7 +208,7 @@ export default function TimelineResizeHandle({
       aria-valuenow={Math.round(current)}
       tabIndex={0}
       title={copy.timelineResizeHint}
-      className="timeline-resize-handle"
+      className={`timeline-resize-handle${isDragging ? " is-dragging" : ""}`}
       onDoubleClick={() => onChange(null)}
       onKeyDown={handleKeyDown}
       onPointerCancel={endDrag}

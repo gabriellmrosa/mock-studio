@@ -28,6 +28,24 @@ export type PatchNote = {
 export const PATCH_NOTES: PatchNote[] = [
   {
     date: "2026-11-26",
+    version: "3.7.3",
+    items: [
+      {
+        title: {
+          "pt-BR": "Alça visível na timeline de vídeo",
+          "en-US": "Visible grab handle on video timeline",
+        },
+        description: {
+          "pt-BR":
+            "A borda superior da timeline agora traz uma micro-pílula discreta no centro indicando que o painel pode ser arrastado, e permanece destacada durante todo o redimensionamento.",
+          "en-US":
+            "The top edge of the video timeline now shows a subtle centered pill grip indicating the panel can be dragged, and stays highlighted throughout resizing.",
+        },
+      },
+    ],
+  },
+  {
+    date: "2026-11-26",
     version: "3.7.2",
     items: [
       {

@@ -25,18 +25,36 @@
   outline: none;
 }
 
-/* Alça de altura na borda de cima da timeline: uma faixa invisível de 7px
-   centrada na borda, que vira uma linha ao passar o mouse ou focar. */
+/* Alça de altura na borda de cima da timeline: uma faixa de 16px que abraça
+   a borda (4px acima) e o respiro superior de 12px (sem invadir os botões do
+   cabeçalho). Mostra uma micro-pílula embutida no centro em repouso e acende
+   junto com a linha da borda ao passar o mouse, focar ou arrastar. */
 .timeline-resize-handle {
-  bottom: calc(var(--motion-timeline-height) - 3px);
+  bottom: calc(var(--motion-timeline-height) - 12px);
   cursor: row-resize;
-  height: 7px;
+  height: 16px;
   left: var(--editor-sidebar-width);
   pointer-events: auto;
   position: absolute;
   right: var(--editor-sidebar-width);
   touch-action: none;
   z-index: 4;
+}
+
+/* Micro-pílula central: pista discreta de que o painel pode ser arrastado. */
+.timeline-resize-handle::before {
+  background: var(--panel-border);
+  border-radius: var(--radius-full);
+  content: "";
+  height: 3px;
+  left: 50%;
+  position: absolute;
+  top: 9px;
+  transform: translateX(-50%);
+  transition:
+    background-color 120ms ease,
+    width 120ms ease;
+  width: 2rem;
 }
 
 .timeline-resize-handle::after {
@@ -46,13 +64,28 @@
   left: 0;
   position: absolute;
   right: 0;
-  top: 2px;
+  top: 3px;
   transition: background-color 120ms ease;
 }
 
-.timeline-resize-handle:hover::after,
-.timeline-resize-handle:focus-visible::after {
+.timeline-resize-handle:hover::before,
+.timeline-resize-handle:focus-visible::before,
+.timeline-resize-handle.is-dragging::before {
   background: var(--timeline-resize-hover);
+  width: 2.5rem;
+}
+
+.timeline-resize-handle:hover::after,
+.timeline-resize-handle:focus-visible::after,
+.timeline-resize-handle.is-dragging::after {
+  background: var(--timeline-resize-hover);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .timeline-resize-handle::before,
+  .timeline-resize-handle::after {
+    transition: none;
+  }
 }
 
 .timeline-resize-handle:focus-visible {

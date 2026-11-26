@@ -141,11 +141,15 @@ describe("TimelineResizeHandle", () => {
     const { handle, onChange } = renderHandle(null, 3);
 
     fireEvent.pointerDown(handle, { button: 0, clientY: 600, pointerId: 1 });
+    expect(handle).toHaveClass("is-dragging");
     fireEvent.pointerMove(handle, { clientY: 500, pointerId: 1 });
     expect(onChange).toHaveBeenLastCalledWith(269);
 
     fireEvent.pointerMove(handle, { clientY: 0, pointerId: 1 });
     expect(onChange).toHaveBeenLastCalledWith(400);
+
+    fireEvent.pointerUp(handle, { pointerId: 1 });
+    expect(handle).not.toHaveClass("is-dragging");
   });
 
   it("starts dragging from the capped 35vh auto height on crowded scenes without jumping", () => {
